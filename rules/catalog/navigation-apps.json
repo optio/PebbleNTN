@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "apps": [
+    {
+      "appId": "google-maps",
+      "displayName": "Google Maps",
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "hasOfficialRules": true,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "waze",
+      "displayName": "Waze",
+      "packageNames": [
+        "com.waze"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "osmand",
+      "displayName": "OsmAnd",
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "organic-maps",
+      "displayName": "Organic Maps",
+      "packageNames": [
+        "app.organicmaps"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "here-wego",
+      "displayName": "HERE WeGo",
+      "packageNames": [
+        "com.here.app.maps"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    }
+  ]
+}

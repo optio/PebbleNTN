@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pebblentn.example/schemas/app-catalog.schema.json",
+  "title": "PebbleNTN Navigation App Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "apps"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "apps": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/app"
+      }
+    }
+  },
+  "$defs": {
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appId",
+        "displayName",
+        "packageNames",
+        "hasOfficialRules",
+        "captureAvailable",
+        "defaultEnabled"
+      ],
+      "properties": {
+        "appId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 60
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "packageNames": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "hasOfficialRules": {
+          "type": "boolean"
+        },
+        "captureAvailable": {
+          "type": "boolean"
+        },
+        "defaultEnabled": {
+          "type": "boolean"
+        },
+        "channelHints": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
