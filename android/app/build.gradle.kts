@@ -24,6 +24,11 @@ tasks.matching {
         it.name == "preBuild"
 }.configureEach { dependsOn(syncCatalog) }
 
+// Export Room schemas so migration tests (M9) can diff versions.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas/room")
+}
+
 android {
     namespace = "com.pebblentn.app"
     // Compile SDK: baseline 36 per target baseline (README). Use the latest stable installed SDK.
@@ -69,6 +74,13 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric-backed unit tests (Room, Android-dependent logic) need merged resources.
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -109,6 +121,9 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.espresso.core)
