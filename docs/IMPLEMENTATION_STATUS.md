@@ -4,15 +4,26 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M10 — Release readiness** (`spec/800-roadmap/Milestones.md`) — **complete (on-device matrix +
-store submission are human/hardware steps, documented in the checklist)**.
+**All roadmap milestones (M0–M11) implemented.** Remaining work is hardware/human: on-device
+verification, non-English rule captures, and Play submission — tracked in the checklists.
 
-> Play disclosures, privacy policy template, signed builds, release CI, physical-device test matrix
-> and beta checklist.
+**M11 — Remote official rules** (`spec/800-roadmap/Milestones.md`) — **complete; feature OFF by
+default (post-v1, requires separate approval + embedded keys)**.
+
+> Signed HTTPS updates, compatibility checks, self-tests, atomic activation and rollback.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M11 — Remote official rules:** complete (feature off by default).
+  - `SignedRuleset` envelope + `RulesetSignatureVerifier` (Ed25519, key rotation).
+  - `official_ruleset` table (schema v5 + migration + test); `RuleUpdateRepository` gates activation
+    behind signature → schema → embedded self-tests, activates atomically, retains last-known-good
+    and supports rollback; feeds the engine's *downloaded* layer.
+  - Off by default (`enabled = false`, no embedded keys, no auto-checks) per the overview.
+  - **185 JVM unit tests, 0 failures**; `assembleDebug test lint` green; all validators pass.
+  - Blocker: actual HTTPS fetch + on-API-31/32 Ed25519 provider are deferred until the feature is
+    approved for release (recorded).
 - **M10 — Release readiness:** complete.
   - Release signing from env (no secrets committed); `verifyReleaseTargetSdk` gate; `bundleRelease`
     verified locally with R8 (AAB produced, no minification breakage).
@@ -88,7 +99,7 @@ store submission are human/hardware steps, documented in the checklist)**.
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M11 — Remote official rules (post-v1, feature off by default)**.
+Next: on-device verification, non-English Google Maps captures, and Play submission (hardware/human steps in RELEASE_CHECKLIST.md).
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the

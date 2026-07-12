@@ -13,6 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * v2 (M3): + notification_debug_event.
  * v3 (M5): + user_rule.
  * v4 (M9): + navigation_state.
+ * v5 (M11): + official_ruleset.
  */
 @Database(
     entities = [
@@ -20,8 +21,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NotificationDebugEventEntity::class,
         UserRuleEntity::class,
         NavigationStateEntity::class,
+        OfficialRulesetEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class PebbleNtnDatabase : RoomDatabase() {
@@ -29,6 +31,7 @@ abstract class PebbleNtnDatabase : RoomDatabase() {
     abstract fun debugEventDao(): DebugEventDao
     abstract fun userRuleDao(): UserRuleDao
     abstract fun navigationStateDao(): NavigationStateDao
+    abstract fun officialRulesetDao(): OfficialRulesetDao
 
     companion object {
         const val NAME = "pebblentn.db"
@@ -101,6 +104,27 @@ abstract class PebbleNtnDatabase : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        /** Adds the official_ruleset table (remote official rules, off by default). */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `official_ruleset` (
+                        `version` TEXT NOT NULL PRIMARY KEY,
+                        `source` TEXT NOT NULL,
+                        `schemaVersion` INTEGER NOT NULL,
+                        `signatureStatus` TEXT NOT NULL,
+                        `activationStatus` TEXT NOT NULL,
+                        `installedTimestamp` INTEGER NOT NULL,
+                        `payloadHash` TEXT NOT NULL,
+                        `canonicalJson` TEXT NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
+        val ALL_MIGRATIONS: Array<Migration> =
+            arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
     }
 }

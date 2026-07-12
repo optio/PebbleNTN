@@ -23,6 +23,7 @@ import com.pebblentn.app.rules.AssetRuleRepository
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleEngine
 import com.pebblentn.app.rules.RulePreviewService
+import com.pebblentn.app.update.RuleUpdateRepository
 import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.SystemNotificationAccess
 import kotlinx.coroutines.CoroutineScope
@@ -65,9 +66,17 @@ class AppContainer(context: Context) {
 
     private val assetRuleRepository = AssetRuleRepository(appContext)
 
+    // Remote official rules are OFF by default in the initial version (spec/000-overview.md).
+    // Maintainers embed the official Ed25519 public key(s) here before enabling remote updates.
+    val ruleUpdateRepository = RuleUpdateRepository(
+        dao = database.officialRulesetDao(),
+        publicKeys = emptyList(),
+    )
+
     private val ruleRepository = RuleRepository {
         LayeredRules(
             user = userRuleRepository.userRulesSnapshot(),
+            downloaded = ruleUpdateRepository.downloadedLayer(),
             bundled = assetRuleRepository.current().bundled,
         )
     }
@@ -121,6 +130,7 @@ class AppContainer(context: Context) {
             navigationController.start()
             enabledAppRepository.refreshCache()
             userRuleRepository.refreshCache()
+            ruleUpdateRepository.refreshCache()
         }
     }
 
