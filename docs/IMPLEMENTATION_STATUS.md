@@ -4,14 +4,22 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M9 — Hardening** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M10 — Release readiness** (`spec/800-roadmap/Milestones.md`) — **complete (on-device matrix +
+store submission are human/hardware steps, documented in the checklist)**.
 
-> Process restoration, connection loss, stale state, performance, regex limits, migration tests and
-> privacy review.
+> Play disclosures, privacy policy template, signed builds, release CI, physical-device test matrix
+> and beta checklist.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M10 — Release readiness:** complete.
+  - Release signing from env (no secrets committed); `verifyReleaseTargetSdk` gate; `bundleRelease`
+    verified locally with R8 (AAB produced, no minification breakage).
+  - `docs/PRIVACY_POLICY.md` (template), `docs/PLAY_DATA_SAFETY.md` (Data Safety answers),
+    `docs/RELEASE_CHECKLIST.md` (automated gates + physical-device matrix + beta checklist).
+  - **Human/hardware steps** (device matrix, store submission, App Signing) are the release
+    checklist's manual section — they cannot run in this environment.
 - **M9 — Hardening:** complete and verified.
   - Process restoration: `navigation_state` (schema v4 + migration + test) +
     `NavigationStateRepository`; controller persists/restores the single current state.
@@ -80,7 +88,7 @@ _Last updated: 2026-07-12_
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M10 — Release readiness**.
+Next: **M11 — Remote official rules (post-v1, feature off by default)**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the
