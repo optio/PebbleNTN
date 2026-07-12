@@ -51,6 +51,20 @@ tasks.withType<Test>().configureEach {
     maxParallelForks = 1
 }
 
+// Release automation gate: verify the target SDK still meets the current Play submission floor
+// (spec/600-security-release/BuildRelease.md). Bump PLAY_MIN_TARGET_SDK as Google raises it.
+val playMinTargetSdk = 35
+tasks.register("verifyReleaseTargetSdk") {
+    doLast {
+        val target = android.defaultConfig.targetSdk
+            ?: throw GradleException("targetSdk is not set")
+        if (target < playMinTargetSdk) {
+            throw GradleException("targetSdk $target is below the Play submission floor $playMinTargetSdk")
+        }
+        println("targetSdk $target meets the Play floor ($playMinTargetSdk).")
+    }
+}
+
 android {
     namespace = "com.pebblentn.app"
     // Compile SDK: baseline 36 per target baseline (README). Use the latest stable installed SDK.
@@ -68,6 +82,20 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    // Release signing from environment (CI supplies these via a protected environment). Never
+    // committed; when absent (local dev), release builds are produced unsigned.
+    val releaseKeystore = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
@@ -79,6 +107,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (releaseKeystore != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
