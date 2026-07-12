@@ -7,7 +7,7 @@ This guide explains how to build, test, and run the two apps in this repo:
 
 It also covers the developer tooling (rule validators, protocol/bitmap generators, fixtures).
 
-> Status: milestones M0–M7 are implemented. The phone↔watch link and the Google Maps rules still
+> Status: milestones M0–M11 are implemented. The phone↔watch link and the Google Maps rules still
 > need on-device / real-capture verification — see `docs/IMPLEMENTATION_STATUS.md` for exactly what
 > is verified vs. pending.
 
@@ -28,7 +28,9 @@ Check what you have:
 ./scripts/bootstrap.sh
 ```
 
-It prints which tools are present/missing (it does **not** auto-install SDKs).
+It prints which tools are present and, for anything missing, the exact commands to install it on
+your platform (apt/dnf/pacman/zypper/Homebrew are detected automatically). It never installs
+anything itself, and it exits non-zero while something is still missing.
 
 ### Point Gradle at your Android SDK
 
