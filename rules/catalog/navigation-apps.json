@@ -51,6 +51,16 @@
       "hasOfficialRules": false,
       "captureAvailable": true,
       "defaultEnabled": true
+    },
+    {
+      "appId": "pebblentn-fixtures",
+      "displayName": "PebbleNTN Fixtures (debug)",
+      "packageNames": [
+        "com.pebblentn.fixturepublisher"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
     }
   ]
 }

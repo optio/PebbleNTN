@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "PebbleNTN"
 include(":app")
+include(":fixture-publisher")

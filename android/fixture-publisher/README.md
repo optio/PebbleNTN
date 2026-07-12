@@ -1,8 +1,15 @@
 # fixture-publisher
 
-Debug-only Android module that posts controlled navigation-like notifications for testing
-the listener, allowlist and rule engine without a real navigation app.
+Debug-only Android app that posts controlled, synthetic navigation-like notifications so the
+PebbleNTN listener, allowlist and (later) rule engine can be exercised without a real navigation
+app (spec/500-testing/Testing.md → "Synthetic notification publisher").
 
-Introduced in **M3 — Debug capture** (synthetic publisher). Kept as an unwired placeholder in
-M0 so the monorepo layout matches `spec/200-architecture/System.md`. Not included in
-`settings.gradle.kts` until it has real content.
+- Package: `com.pebblentn.fixturepublisher` (registered in `rules/catalog/navigation-apps.json` as a
+  capture-only entry, so PebbleNTN captures it **only when this app is actually installed** — the
+  entry is inert for normal users).
+- UI: one button per fixture (see `NavigationFixtures`) posting an ongoing, navigation-category
+  notification, plus Clear.
+- Build/install: `./gradlew :fixture-publisher:installDebug` (needs a device/emulator), then enable
+  "PebbleNTN Fixtures" in the PebbleNTN app and grant notification access.
+
+Introduced in **M3 — Debug capture**.

@@ -4,32 +4,33 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M2 — Notification access and early filtering** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M3 — Debug capture** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Onboarding, listener declaration, permission status, app catalog and strict package allowlist.
+> Snapshot selected fields, Room history, retention, debug list/detail, deletion and synthetic
+> publisher.
 
-- **M0 — Repository and builds:** complete and verified (Android + watch builds green locally).
+- **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
-- **M2 — Notification access and early filtering:** complete and verified.
-  - Bundled navigation-app catalog (`rules/catalog/navigation-apps.json` + schema) staged into
-    app assets and test classpath; pure `NavigationAppCatalog` loader.
-  - Room (`PebbleNtnDatabase` v1, schema exported) + `EnabledAppRepository` with a `@Volatile`
-    allowlist cache for synchronous `isEnabled()` on the callback thread.
-  - `NavigationNotificationListenerService` + pure `NotificationDispatcher` (allowlist before any
-    content read) + `SerialProcessingQueue`; manual `AppContainer` DI; `<queries>` for installed
-    detection.
-  - Onboarding + disclosure UI (exact REQ-SEC-004 text), `AccessStatusChip`, minimal dashboard,
-    `OnboardingViewModel`; Robolectric enabled for Room/Android unit tests.
-  - **72 JVM unit tests, 0 failures**; `assembleDebug test lint` green; validators pass.
+- **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M3 — Debug capture:** complete and verified.
+  - `NotificationSnapshot` (selected fields only) + `NotificationSnapshotFactory`.
+  - `notification_debug_event` table (schema v2 + `MIGRATION_1_2`, migration test);
+    `DebugHistoryRepository` with hashed key/tag and transactional retention (default 500;
+    50/100/500/1000/unlimited).
+  - Reworked processor seam: `DebugCaptureProcessor` stores eligible posts; the content builder is
+    only invoked after the allowlist passes.
+  - Debug history list/detail/delete UI + Navigation Compose; `DebugHistoryViewModel`.
+  - `fixture-publisher` debug app posting synthetic navigation notifications (catalog entry inert
+    unless installed).
+  - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M3 — Debug capture**.
+Next: **M4 — Rule engine**.
 
-### Known local limitation (M2)
-Instrumented tests (`connectedDebugAndroidTest`) and manual UI runs need an emulator/device, which
-is not available here. The REQ-ANDROID-003 acceptance ("instrumented spy proves snapshot factory /
-parser / DB are never called for a disabled package") is covered locally at the unit level by
-`NotificationDispatcherTest` (spy processor never invoked for disabled packages); the full
-instrumented spy should run in CI.
+### Known local limitation
+Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the
+fixture-publisher end-to-end flow) need an emulator/device, unavailable here. The REQ-ANDROID-003
+acceptance is covered locally at the unit level by `NotificationDispatcherTest` (content builder /
+processor never invoked for a disabled package); the full instrumented spy runs in CI.
 
 ## Requirements in scope for M0
 
@@ -122,16 +123,19 @@ SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
 
 ## Next atomic task
 
-Begin **M3 — Debug capture** (REQ-DEBUG-001/002, REQ-SEC-003, REQ-ANDROID-008,
-spec/300-data/Database.md):
+Begin **M4 — Rule engine** (spec/200-architecture/RuleEngine.md, spec/300-data/RulesJSON.md,
+REQ-RULES):
 
-1. `NotificationSnapshotFactory` — build the minimal documented snapshot (selected fields only,
-   excluding PendingIntents/actions/RemoteViews/bundles) from an eligible `StatusBarNotification`.
-2. `notification_debug_event` Room entity/DAO + `DebugHistoryRepository`; hash notification key/tag.
-3. Extend the M2 `NotificationProcessor` to snapshot + store eligible events (never for disabled
-   packages — REQ-DEBUG-002).
-4. Retention (default 500; 50/100/500/1000/unlimited) with transactional cleanup after insert.
-5. Debug history list/detail + delete UI; synthetic `fixture-publisher` app.
+1. Ruleset domain model (kotlinx.serialization) matching `schemas/ruleset.schema.json`; strict +
+   canonical parsing.
+2. Condition operators (exists/equals/contains/startsWith/endsWith/regex/in + case-insensitive
+   variants) with short-circuit evaluation.
+3. Extractors (literal, regexCapture, fieldCopy, firstNonEmpty, distance, duration, maneuverMap,
+   normalizeString, boundedJoin) producing a `NavigationInstruction`.
+4. Field resolution over the `NotificationSnapshot` (title/text/…/combinedText).
+5. Regex safety (pattern/input/rule limits, time budget) and layer precedence
+   (user → downloaded → bundled), stable sort by priority then id.
+6. Structured trace; pure JVM unit tests for every operator/extractor + fixtures.
 
 ## Notes / decisions
 
