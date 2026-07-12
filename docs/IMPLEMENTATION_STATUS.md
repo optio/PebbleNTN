@@ -4,12 +4,22 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M0 — Repository and builds** (`spec/800-roadmap/Milestones.md`)
+**M1 — Domain model and protocol** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Create monorepo, licenses, wrappers, scripts, CI skeleton, empty Android app and empty Pebble
-> watchapp.
+> Implement generated protocol constants, normalized navigation model, session reducer and fake
+> watch transport.
 
-Status: **complete except for compile-verification of the Android build** (see Blockers).
+- **M0 — Repository and builds:** complete and verified (Android + watch builds green locally).
+- **M1 — Domain model and protocol:** complete and verified.
+  - `protocol/` single-source definition + Python generator → read-only `Protocol.kt` and
+    `protocol.h` (with `--check` gate wired into CI and `test-all.sh`).
+  - `core/`: `Maneuver`, `NavigationInstruction`, `NavigationState`, `WatchSettings`,
+    `DistanceQuantizer`, and the pure `NavigationSessionReducer` (events/effects/state).
+  - `protocol/`: `AppMessage`, `ProtocolCodec` (encode/decode), `WatchTransport` interface +
+    `FakeWatchTransport` test double.
+  - 48 JVM unit tests, 0 failures; `test lint assembleDebug` green.
+
+Next: **M2 — Notification access and early filtering**.
 
 ## Requirements in scope for M0
 
@@ -102,18 +112,30 @@ SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
 
 ## Next atomic task
 
-Begin **M1 — Domain model and protocol**:
+Begin **M2 — Notification access and early filtering** (REQ-ANDROID-002/003/004/005,
+REQ-SEC-003/004):
 
-1. Add a `protocol/` code generator that reads `examples/protocol-definition.json` and emits a
-   **read-only** Kotlin constants file (into `:app` or a `core-model` module) and a C header for
-   the watchapp (AGENTS.md rule 5 — never hand-edit generated protocol files).
-2. Define the normalized navigation model (immutable data classes, sealed event/result types)
-   with no Android framework types.
-3. Implement the `NavigationSessionReducer` (session start/end, dedup, distance quantization,
-   launch-once, READY sync, stale detection, stop behavior) with pure JVM unit tests.
-4. Provide a fake `WatchTransport` test double.
+1. Bundled navigation-app catalog (`rules/catalog/`) + loader: app id, packages, display name,
+   capture-only vs official-rules flags, default-enabled policy.
+2. `EnabledAppRepository` (Room) — default-enable installed catalog apps; user can disable.
+3. `NavigationNotificationListenerService` performing the **package allowlist check before reading
+   any notification content** (REQ-ANDROID-003), dispatching to a serialized processing queue.
+4. `NotificationSnapshotFactory` producing the minimal documented snapshot (REQ-SEC-003) — only
+   after allowlisting.
+5. Onboarding + notification-access disclosure screen (REQ-SEC-004) before sending to system
+   settings.
+6. Instrumented spy test proving the snapshot factory / parser / DB are never touched for a
+   disabled package. (Instrumented tests need a device/emulator — not available locally; gate in
+   CI or mark as a known local limitation.)
 
 ## Notes / decisions
+
+- Kept everything in `:app` for M1 (pure `core`/`protocol` packages have no Android imports, so a
+  future `:core-model` extraction is mechanical). Revisit module split when compile coupling
+  warrants it (likely around M4 rule engine).
+- Authoritative protocol input lives at `protocol/protocol-definition.json` (not the
+  integrity-protected `examples/` copy); `check_consistency.py` prevents drift and lets us define
+  flag bits + maneuver codes the example asset does not carry.
 
 - Modules kept minimal (`:app` only) per System.md guidance ("do not prematurely create dozens
   of modules"); `core-model` / `rule-engine` / `pebble-transport` extraction deferred until the
