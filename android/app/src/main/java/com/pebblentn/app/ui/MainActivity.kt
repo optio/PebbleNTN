@@ -18,13 +18,19 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.pebblentn.app.PebbleNtnApplication
+import com.pebblentn.app.R
 import com.pebblentn.app.data.DebugEvent
+import com.pebblentn.app.rules.PreviewResult
+import com.pebblentn.app.rules.RuleValidationResult
 import com.pebblentn.app.ui.dashboard.DashboardScreen
 import com.pebblentn.app.ui.debug.DebugDetailScreen
 import com.pebblentn.app.ui.debug.DebugHistoryScreen
 import com.pebblentn.app.ui.debug.DebugHistoryViewModel
 import com.pebblentn.app.ui.onboarding.OnboardingScreen
 import com.pebblentn.app.ui.onboarding.OnboardingViewModel
+import com.pebblentn.app.ui.rules.RuleEditorScreen
+import com.pebblentn.app.ui.rules.RulesScreen
+import com.pebblentn.app.ui.rules.RulesViewModel
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
 
 /**
@@ -43,6 +49,22 @@ class MainActivity : ComponentActivity() {
     private val debugViewModel: DebugHistoryViewModel by lazy {
         val repo = container.debugHistoryRepository
         ViewModelProvider(this, viewModelFactory { initializer { DebugHistoryViewModel(repo) } })[DebugHistoryViewModel::class.java]
+    }
+
+    private val rulesViewModel: RulesViewModel by lazy {
+        ViewModelProvider(
+            this,
+            viewModelFactory {
+                initializer {
+                    RulesViewModel(
+                        userRuleRepository = container.userRuleRepository,
+                        debugHistoryRepository = container.debugHistoryRepository,
+                        previewService = container.rulePreviewService,
+                        officialRules = container.bundledOfficialRules,
+                    )
+                }
+            },
+        )[RulesViewModel::class.java]
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +99,7 @@ class MainActivity : ComponentActivity() {
                     accessGranted = true,
                     lastEligibleAtMillis = lastEligible,
                     onOpenDebugHistory = { navController.navigate("debug") },
+                    onOpenRules = { navController.navigate("rules") },
                 )
             }
             composable("debug") {
@@ -102,6 +125,58 @@ class MainActivity : ComponentActivity() {
                         navController.popBackStack()
                     },
                 )
+            }
+            composable("rules") {
+                val userRules by rulesViewModel.userRules.collectAsState()
+                RulesScreen(
+                    officialRules = rulesViewModel.officialRules,
+                    userRules = userRules,
+                    onClone = { rulesViewModel.clone(it) },
+                    onToggleUser = { id, enabled -> rulesViewModel.setEnabled(id, enabled) },
+                    onEditUser = { id -> navController.navigate("rule-editor/$id") },
+                    onDeleteUser = { id -> rulesViewModel.delete(id) },
+                    onNewRule = { navController.navigate("rule-editor") },
+                )
+            }
+            composable("rule-editor") { RuleEditorRoute(navController, ruleId = null) }
+            composable(
+                route = "rule-editor/{ruleId}",
+                arguments = listOf(navArgument("ruleId") { type = NavType.StringType }),
+            ) { entry -> RuleEditorRoute(navController, ruleId = entry.arguments?.getString("ruleId")) }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun RuleEditorRoute(navController: androidx.navigation.NavController, ruleId: String?) {
+        val initialJson by produceState<String?>(initialValue = null, ruleId) {
+            value = rulesViewModel.editorInitialJson(ruleId)
+        }
+        initialJson?.let { json ->
+            RuleEditorScreen(
+                initialJson = json,
+                onBack = { navController.popBackStack() },
+                onValidate = { text -> (rulesViewModel.validate(text) as? RuleValidationResult.Invalid)?.errors ?: emptyList() },
+                onFormat = { text -> rulesViewModel.format(text) },
+                onSave = { text ->
+                    when (val result = rulesViewModel.save(text)) {
+                        is RuleValidationResult.Valid -> emptyList()
+                        is RuleValidationResult.Invalid -> result.errors
+                    }
+                },
+                onPreview = { text -> previewDisplay(rulesViewModel.previewAgainstLatest(text)) },
+            )
+        }
+    }
+
+    private fun previewDisplay(result: PreviewResult?): String? = when (result) {
+        null -> null
+        is PreviewResult.InvalidRule -> result.errors.joinToString("; ")
+        is PreviewResult.Evaluated -> {
+            val eval = result.evaluation
+            if (eval.matched) {
+                getString(R.string.rule_editor_preview_matched, eval.instruction!!.maneuver.name)
+            } else {
+                getString(R.string.rule_editor_preview_unmatched, eval.trace.size)
             }
         }
     }

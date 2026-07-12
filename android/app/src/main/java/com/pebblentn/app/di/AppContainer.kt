@@ -14,7 +14,9 @@ import com.pebblentn.app.notification.LastEligibleNotificationStore
 import com.pebblentn.app.notification.NotificationDispatcher
 import com.pebblentn.app.notification.SerialProcessingQueue
 import com.pebblentn.app.rules.AssetRuleRepository
+import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleEngine
+import com.pebblentn.app.rules.RulePreviewService
 import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.SystemNotificationAccess
 import kotlinx.coroutines.CoroutineScope
@@ -63,6 +65,11 @@ class AppContainer(context: Context) {
             bundled = assetRuleRepository.current().bundled,
         )
     }
+
+    /** Bundled official rules, for the Rules screen's official tab. */
+    val bundledOfficialRules: List<Rule> get() = assetRuleRepository.current().bundled
+
+    val rulePreviewService = RulePreviewService(localeProvider = { Locale.getDefault().toLanguageTag() })
 
     private val notificationProcessor = DebugCaptureProcessor(
         debugHistory = debugHistoryRepository,

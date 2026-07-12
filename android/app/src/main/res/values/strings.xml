@@ -21,6 +21,31 @@
     <string name="dashboard_last_eligible">Last eligible notification: %1$s</string>
 
     <string name="dashboard_open_debug">Debug history</string>
+    <string name="dashboard_open_rules">Rules</string>
+
+    <!-- Rules -->
+    <string name="rules_title">Rules</string>
+    <string name="rules_tab_official">Official</string>
+    <string name="rules_tab_user">Your rules</string>
+    <string name="rules_official_empty">No bundled official rules yet</string>
+    <string name="rules_user_empty">You have no rules yet</string>
+    <string name="rules_clone">Clone to your rules</string>
+    <string name="rules_new">New rule</string>
+    <string name="rules_edit">Edit</string>
+    <string name="rules_delete">Delete</string>
+    <string name="rules_invalid_badge">Invalid</string>
+
+    <!-- Rule editor -->
+    <string name="rule_editor_title">Rule editor</string>
+    <string name="rule_editor_validate">Validate</string>
+    <string name="rule_editor_format">Format</string>
+    <string name="rule_editor_save">Save</string>
+    <string name="rule_editor_preview">Preview against last capture</string>
+    <string name="rule_editor_valid">Rule is valid</string>
+    <string name="rule_editor_saved">Saved</string>
+    <string name="rule_editor_no_capture">No captured notification to preview against</string>
+    <string name="rule_editor_preview_matched">Matched: %1$s</string>
+    <string name="rule_editor_preview_unmatched">No match (%1$d rule(s) evaluated)</string>
 
     <!-- Debug history -->
     <string name="debug_title">Debug history</string>

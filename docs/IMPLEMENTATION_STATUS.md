@@ -4,13 +4,22 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M4 — Rule engine** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M5 — Editors and preview** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Schemas, canonicalization, operators, extractors, trace, layer precedence, unit tests.
+> Simple editor backed by JSON, expert editor, validation, test bench and event rerun.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M5 — Editors and preview:** complete and verified.
+  - `user_rule` table (schema v3 + migration + test); `UserRuleRepository` (CRUD, clone-to-user,
+    volatile snapshot as the engine's user layer).
+  - `RuleValidator` (structural + semantic, collected errors); `RulePreviewService` (rerun a
+    captured event against current or candidate rules with full trace).
+  - Rules screen (official / user tabs, clone, enable/disable, delete) + expert JSON editor
+    (validate / canonical-format / preview-against-last-capture / save-only-if-valid);
+    `RulesViewModel`. Navigation from the dashboard.
+  - **150 JVM unit tests, 0 failures**; `assembleDebug test lint` green; validators pass.
 - **M4 — Rule engine:** complete and verified.
   - Ruleset model + strict/canonical `RulesetCodec`; condition operators + `SafeRegex`
     (bounds + time budget); extractors + distance/duration parsers; `RuleEngine` (package
@@ -31,7 +40,7 @@ _Last updated: 2026-07-12_
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M5 — Editors and preview**.
+Next: **M6 — Google Maps initial rules**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the
@@ -130,18 +139,20 @@ SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
 
 ## Next atomic task
 
-Begin **M5 — Editors and preview** (spec/200-architecture/RuleEngine.md "Simple/Expert editor",
-spec/400-ui/AndroidUI.md "Rules", REQ-RULES):
+Begin **M6 — Google Maps initial rules** (spec/500-testing/RuleMaintainerWorkflow.md, REQ-RULES):
 
-1. `user_rule` Room table (schema v3 + migration + test) + `UserRuleRepository`; clone-to-user.
-2. Rules screen: tabs (bundled official / user), immutable official detail, clone action,
-   enable/disable user rule, priority.
-3. Expert JSON editor backed by the same domain model: schema + semantic validation, canonical
-   format command, cannot save invalid JSON.
-4. Simple editor as a projection over the JSON (falls back to expert-only for advanced structures
-   without data loss).
-5. Test bench / preview: run a candidate rule (or ruleset) against a captured debug event and show
-   the trace + normalized output; rerun a stored event.
+1. Capture/derive representative Google Maps notification shapes (English first; then nl/fr/de as
+   evidence supports); create sanitized fixtures with expected extraction results under
+   `rules/fixtures/` and `rules/test-cases/`.
+2. Author the bundled Google Maps ruleset in `rules/bundled/` (maneuvers, distance, road text)
+   using the M4 operators/extractors; validate against the schema and the engine.
+3. Rule regression: a JVM test (and `validate-rules.sh` extension) that runs each fixture through
+   the engine and checks the expected normalized output.
+4. Document coverage and known gaps.
+
+Note: real device captures are unavailable in this environment; fixtures will be authored to match
+documented Google Maps notification structure and clearly marked as synthetic where not
+capture-derived (AGENTS.md — do not fabricate; record provenance).
 
 ## Notes / decisions
 

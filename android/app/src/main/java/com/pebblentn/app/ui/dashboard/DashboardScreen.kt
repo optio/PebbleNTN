@@ -28,6 +28,7 @@ fun DashboardScreen(
     accessGranted: Boolean,
     lastEligibleAtMillis: Long?,
     onOpenDebugHistory: () -> Unit = {},
+    onOpenRules: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
@@ -56,6 +57,9 @@ fun DashboardScreen(
             )
             OutlinedButton(onClick = onOpenDebugHistory) {
                 Text(stringResource(R.string.dashboard_open_debug))
+            }
+            OutlinedButton(onClick = onOpenRules) {
+                Text(stringResource(R.string.dashboard_open_rules))
             }
         }
     }
