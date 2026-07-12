@@ -61,6 +61,9 @@ catalog and update this table.
 ## Commands executed this session
 
 ```bash
+# Android build — PASSED (assembleDebug + test + lint) after installing local JDK 21 + SDK 36
+source ~/.local/pebblentn-env.sh && ./android/gradlew -p android assembleDebug test lint
+
 # Watchapp build — PASSED (5 platforms: aplite, basalt, chalk, diorite, emery -> watchapp.pbw)
 cd watchapp && pebble build
 
@@ -73,20 +76,29 @@ cd watchapp && pebble build
 # YAML + bash syntax checks — PASSED (all workflows, all scripts)
 ```
 
+## Local toolchain
+
+Resolved the earlier "no JVM/Android toolchain" blocker by installing a local toolchain (network
+was available):
+
+- Temurin **JDK 21.0.11** at `~/.local/jdk-21.0.11+10`.
+- Android SDK at `~/.local/android-sdk` — `platforms;android-36`, `build-tools;36.0.0`,
+  `platform-tools`; licenses accepted.
+- Env helper: `source ~/.local/pebblentn-env.sh` sets `JAVA_HOME`/`ANDROID_HOME`/`PATH`.
+- `android/local.properties` (git-ignored) points Gradle at the SDK.
+
+**M0 Android build is now verified locally:** `./gradlew assembleDebug test lint` → BUILD
+SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
+`buildFeatures.buildConfig = true` under AGP 8.)
+
 ## Blockers
 
-1. **No JVM/Android toolchain in the current environment** — `java`, `gradle`, `sdkmanager`,
-   `adb`, and `emulator` are absent; `ANDROID_HOME` is unset. Therefore the Android build
-   (`./android/gradlew -p android test lint assembleDebug`) **could not be compile-verified
-   locally**. The Gradle project, version catalog, manifest, Compose sources and unit test are
-   written to standard, buildable conventions and are exercised by `.github/workflows/android.yml`
-   (JDK 21 + `android-actions/setup-android`). Per AGENTS.md rule 12, this blocker is recorded
-   rather than worked around by fabricating results.
-   - To verify locally: install JDK 21 + Android SDK (compileSdk 36), then run
-     `./scripts/bootstrap.sh` followed by `./scripts/test-all.sh`.
-2. **Pebble SDK build in CI is best-effort** — `watchapp.yml` installs `pebble-tool` and the SDK
+1. **Pebble SDK build in CI is best-effort** — `watchapp.yml` installs `pebble-tool` and the SDK
    at run time. The local build passes with SDK v4.9.169; pin a maintained SDK image if the
    public distribution changes.
+2. **No emulator / connected device** — instrumented tests
+   (`connectedDebugAndroidTest`) and manual UI runs cannot execute here; JVM unit tests, lint,
+   and APK/AAB assembly all run locally.
 
 ## Next atomic task
 
