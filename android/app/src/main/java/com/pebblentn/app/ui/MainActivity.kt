@@ -10,8 +10,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.launch
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -107,6 +109,7 @@ class MainActivity : ComponentActivity() {
                     events = events,
                     onEventClick = { id -> navController.navigate("debug/$id") },
                     onDeleteAll = debugViewModel::deleteAll,
+                    onExport = ::exportDiagnostics,
                 )
             }
             composable(
@@ -183,5 +186,13 @@ class MainActivity : ComponentActivity() {
 
     private fun openNotificationListenerSettings() {
         startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    }
+
+    /** Build the export payload off the main thread, then open the Sharesheet (never auto-sends). */
+    private fun exportDiagnostics(mode: com.pebblentn.app.export.ExportMode) {
+        lifecycleScope.launch {
+            val json = container.diagnosticExporter.build(mode)
+            container.diagnosticShareManager.share(json, mode)
+        }
     }
 }

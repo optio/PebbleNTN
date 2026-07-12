@@ -7,6 +7,8 @@ import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
 import com.pebblentn.app.data.UserRuleRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
+import com.pebblentn.app.export.DiagnosticExporter
+import com.pebblentn.app.export.DiagnosticShareManager
 import com.pebblentn.app.rules.LayeredRules
 import com.pebblentn.app.rules.RuleRepository
 import com.pebblentn.app.notification.DebugCaptureProcessor
@@ -73,6 +75,14 @@ class AppContainer(context: Context) {
     val bundledOfficialRules: List<Rule> get() = assetRuleRepository.current().bundled
 
     val rulePreviewService = RulePreviewService(localeProvider = { Locale.getDefault().toLanguageTag() })
+
+    val diagnosticExporter = DiagnosticExporter(
+        debugHistory = debugHistoryRepository,
+        userRules = userRuleRepository,
+        appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
+    )
+
+    val diagnosticShareManager = DiagnosticShareManager(appContext)
 
     val watchTransport: WatchTransport = PebbleWatchTransport(appContext)
 

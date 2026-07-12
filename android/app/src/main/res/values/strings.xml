@@ -51,6 +51,18 @@
     <string name="debug_title">Debug history</string>
     <string name="debug_empty">No captured notifications yet</string>
     <string name="debug_delete_all">Delete all</string>
+    <string name="debug_export">Export</string>
+
+    <!-- Export -->
+    <string name="export_dialog_title">Export diagnostics</string>
+    <string name="export_rules_only">Rules only (no notification content)</string>
+    <string name="export_privacy_safe">Privacy-safe diagnostics</string>
+    <string name="export_full">Full diagnostics (raw content)</string>
+    <string name="export_cancel">Cancel</string>
+    <string name="export_confirm">Export</string>
+    <string name="export_privacy_warning_title">Before you export</string>
+    <!-- Exact required privacy explanation (REQ-DEBUG-007, spec/600-security-release). -->
+    <string name="export_privacy_warning">Diagnostic notification content can contain only information that the navigation app placed in its Android notification. This can still include private information such as destinations, road names, saved-place labels, route context, and travel timing.</string>
     <string name="debug_delete">Delete</string>
     <string name="debug_detail_title">Event detail</string>
     <string name="debug_field_package">Package</string>
