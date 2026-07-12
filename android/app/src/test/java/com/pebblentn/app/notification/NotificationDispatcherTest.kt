@@ -3,54 +3,64 @@ package com.pebblentn.app.notification
 import com.pebblentn.app.core.AppAllowlist
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationDispatcherTest {
 
-    private fun queue(scheduler: kotlinx.coroutines.test.TestCoroutineScheduler) =
+    private fun queue(scheduler: TestCoroutineScheduler) =
         SerialProcessingQueue(CoroutineScope(UnconfinedTestDispatcher(scheduler)))
 
-    /** Spy processor recording every call, to prove disabled packages are never processed. */
     private class SpyProcessor : NotificationProcessor {
-        val posted = mutableListOf<Pair<String, Long>>()
+        val posted = mutableListOf<PostedNotification>()
         val removed = mutableListOf<String>()
-        override suspend fun onEligiblePosted(packageName: String, postedAtMillis: Long) {
-            posted += packageName to postedAtMillis
-        }
-        override suspend fun onEligibleRemoved(packageName: String) {
-            removed += packageName
-        }
+        override suspend fun onPosted(event: PostedNotification) { posted += event }
+        override suspend fun onRemoved(packageName: String) { removed += packageName }
     }
 
     private val allowlist = AppAllowlist { it == "com.google.android.apps.maps" }
 
+    private fun posted(pkg: String) = PostedNotification(
+        snapshot = NotificationSnapshot(packageName = pkg, notificationId = 1, postTimeMillis = 10),
+        notificationKey = "key",
+        tag = null,
+        receivedAtMillis = 20,
+    )
+
     @Test
-    fun disabledPackageIsNeverProcessed() = runTest {
+    fun disabledPackageIsNeverProcessedAndContentNeverBuilt() = runTest {
         val spy = SpyProcessor()
         val dispatcher = NotificationDispatcher(allowlist, queue(testScheduler), spy)
+        var builderInvoked = false
 
-        dispatcher.onPosted("com.evil.spyware", postedAtMillis = 100)
+        dispatcher.onPosted("com.evil.spyware") {
+            builderInvoked = true // reading content would happen here
+            posted("com.evil.spyware")
+        }
         dispatcher.onRemoved("com.evil.spyware")
         testScheduler.advanceUntilIdle()
 
-        assertTrue("disabled posts must not be processed", spy.posted.isEmpty())
-        assertTrue("disabled removals must not be processed", spy.removed.isEmpty())
+        assertFalse("content builder must not run for a disabled package", builderInvoked)
+        assertTrue(spy.posted.isEmpty())
+        assertTrue(spy.removed.isEmpty())
     }
 
     @Test
-    fun enabledPackageIsProcessedWithTimestamp() = runTest {
+    fun enabledPackageIsProcessed() = runTest {
         val spy = SpyProcessor()
         val dispatcher = NotificationDispatcher(allowlist, queue(testScheduler), spy)
 
-        dispatcher.onPosted("com.google.android.apps.maps", postedAtMillis = 1_234)
+        dispatcher.onPosted("com.google.android.apps.maps") { posted("com.google.android.apps.maps") }
         testScheduler.advanceUntilIdle()
 
-        assertEquals(listOf("com.google.android.apps.maps" to 1_234L), spy.posted)
+        assertEquals(1, spy.posted.size)
+        assertEquals("com.google.android.apps.maps", spy.posted.single().snapshot.packageName)
     }
 
     @Test
@@ -58,7 +68,7 @@ class NotificationDispatcherTest {
         val spy = SpyProcessor()
         val dispatcher = NotificationDispatcher(allowlist, queue(testScheduler), spy)
 
-        dispatcher.onPosted(null, postedAtMillis = 1)
+        dispatcher.onPosted(null) { posted("x") }
         dispatcher.onRemoved(null)
         testScheduler.advanceUntilIdle()
 

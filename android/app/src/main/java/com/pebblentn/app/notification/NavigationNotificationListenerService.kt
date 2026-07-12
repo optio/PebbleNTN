@@ -22,7 +22,16 @@ class NavigationNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
-        dispatcher.onPosted(sbn.packageName, sbn.postTime)
+        // The snapshot lambda reads content; the dispatcher only invokes it if the package is
+        // allowlisted, so content is never read for a disabled package (REQ-ANDROID-003).
+        dispatcher.onPosted(sbn.packageName) {
+            PostedNotification(
+                snapshot = NotificationSnapshotFactory.create(sbn),
+                notificationKey = sbn.key,
+                tag = sbn.tag,
+                receivedAtMillis = System.currentTimeMillis(),
+            )
+        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {

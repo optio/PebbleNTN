@@ -1,14 +1,22 @@
 package com.pebblentn.app.notification
 
 /**
- * Handles notifications that have already passed the package allowlist. This seam is where M3 adds
- * snapshotting and debug-history storage; in M2 the only implementation records that an eligible
- * notification arrived (for the dashboard's "last eligible notification" indicator).
- *
- * Implementations receive only the package name and metadata timestamps — never notification
- * content in M2.
+ * An eligible posted notification, assembled only after the package allowlist has passed. Carries
+ * the minimal snapshot plus the raw key/tag (used solely for hashing, never stored in the clear)
+ * and the receipt time.
+ */
+data class PostedNotification(
+    val snapshot: NotificationSnapshot,
+    val notificationKey: String,
+    val tag: String?,
+    val receivedAtMillis: Long,
+)
+
+/**
+ * Handles notifications that have already passed the package allowlist. In M3 the implementation
+ * snapshots and stores eligible events; the rule engine and transport extend it in later milestones.
  */
 interface NotificationProcessor {
-    suspend fun onEligiblePosted(packageName: String, postedAtMillis: Long)
-    suspend fun onEligibleRemoved(packageName: String)
+    suspend fun onPosted(event: PostedNotification)
+    suspend fun onRemoved(packageName: String)
 }

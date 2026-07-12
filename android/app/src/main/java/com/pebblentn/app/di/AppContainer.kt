@@ -3,11 +3,12 @@ package com.pebblentn.app.di
 import android.content.Context
 import androidx.room.Room
 import com.pebblentn.app.catalog.NavigationAppCatalog
+import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
+import com.pebblentn.app.notification.DebugCaptureProcessor
 import com.pebblentn.app.notification.LastEligibleNotificationStore
 import com.pebblentn.app.notification.NotificationDispatcher
-import com.pebblentn.app.notification.RecordingNotificationProcessor
 import com.pebblentn.app.notification.SerialProcessingQueue
 import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.SystemNotificationAccess
@@ -32,9 +33,11 @@ class AppContainer(context: Context) {
         appContext,
         PebbleNtnDatabase::class.java,
         PebbleNtnDatabase.NAME,
-    ).build()
+    ).addMigrations(*PebbleNtnDatabase.ALL_MIGRATIONS).build()
 
     val enabledAppRepository = EnabledAppRepository(database.appEnablementDao(), catalog)
+
+    val debugHistoryRepository = DebugHistoryRepository(database.debugEventDao())
 
     val processingQueue = SerialProcessingQueue(applicationScope)
 
@@ -42,7 +45,7 @@ class AppContainer(context: Context) {
 
     val notificationAccess: NotificationAccess = SystemNotificationAccess(appContext)
 
-    private val notificationProcessor = RecordingNotificationProcessor(lastEligibleNotificationStore)
+    private val notificationProcessor = DebugCaptureProcessor(debugHistoryRepository, lastEligibleNotificationStore)
 
     val notificationDispatcher = NotificationDispatcher(
         allowlist = enabledAppRepository,
