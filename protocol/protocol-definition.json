@@ -1,0 +1,52 @@
+{
+  "_comment": "Authoritative AppMessage protocol definition. Single source of truth for generated Kotlin (phone) and C (watch) constants. Regenerate with scripts/generate-protocol.sh; never hand-edit the generated files (AGENTS.md rule 5). The keys/events/versions here MUST stay consistent with examples/protocol-definition.json (checked by scripts/check-protocol.py); this file additionally defines flag bits and maneuver codes that the watch and phone must agree on.",
+  "protocolMajor": 1,
+  "protocolMinor": 0,
+  "keys": {
+    "EVENT": 0,
+    "PROTOCOL_MAJOR": 1,
+    "PROTOCOL_MINOR": 2,
+    "MANEUVER": 3,
+    "DISTANCE_METERS": 4,
+    "PRIMARY_TEXT": 5,
+    "SECONDARY_TEXT": 6,
+    "ETA_EPOCH_SECONDS": 7,
+    "STATE_TIMESTAMP_SECONDS": 8,
+    "SESSION_ID": 9,
+    "FLAGS": 10,
+    "APP_VERSION": 11,
+    "ERROR_CODE": 12
+  },
+  "events": {
+    "NAVIGATION_UPDATE": 1,
+    "NAVIGATION_STOPPED": 2,
+    "NO_ACTIVE_NAVIGATION": 3,
+    "WATCH_READY": 10,
+    "WATCH_REQUEST_STATE": 11,
+    "PHONE_COMPATIBILITY_ERROR": 12
+  },
+  "flagBits": {
+    "EXIT_TO_WATCHFACE_ON_STOP": 0,
+    "VIBRATE_ON_MANEUVER_CHANGE": 1,
+    "ACTIVATE_BACKLIGHT": 2,
+    "STATE_IS_STALE": 3
+  },
+  "maneuvers": {
+    "UNKNOWN": 0,
+    "STRAIGHT": 1,
+    "SLIGHT_LEFT": 2,
+    "LEFT": 3,
+    "SHARP_LEFT": 4,
+    "SLIGHT_RIGHT": 5,
+    "RIGHT": 6,
+    "SHARP_RIGHT": 7,
+    "UTURN_LEFT": 8,
+    "UTURN_RIGHT": 9,
+    "ROUNDABOUT": 10,
+    "ARRIVE": 11
+  },
+  "errorCodes": {
+    "NONE": 0,
+    "INCOMPATIBLE_PROTOCOL_MAJOR": 1
+  }
+}

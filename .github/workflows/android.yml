@@ -29,6 +29,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Check generated protocol constants are current
+        run: ./scripts/generate-protocol.sh --check
+        working-directory: ${{ github.workspace }}
+
       - name: Gradle cache
         uses: actions/cache@v4
         with:

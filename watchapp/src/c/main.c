@@ -11,6 +11,11 @@
 
 #include <pebble.h>
 
+#include "generated/protocol.h"
+
+// Compile-time sanity: the generated protocol header must define the handshake version.
+_Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
+
 static Window *s_window;
 static TextLayer *s_status_layer;
 

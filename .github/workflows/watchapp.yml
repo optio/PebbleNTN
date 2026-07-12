@@ -33,6 +33,9 @@ jobs:
           yes | pebble sdk install latest || pebble sdk install latest
           pebble sdk list
 
+      - name: Check generated protocol constants are current
+        run: ./scripts/generate-protocol.sh --check
+
       - name: Build watchapp
         run: ./scripts/build-watchapp.sh
 
