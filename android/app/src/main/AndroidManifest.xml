@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Targeted package visibility (Android 11+): only the bundled navigation-app packages, so we
+         can detect which are installed without QUERY_ALL_PACKAGES. -->
+    <queries>
+        <package android:name="com.google.android.apps.maps" />
+        <package android:name="com.waze" />
+        <package android:name="net.osmand" />
+        <package android:name="net.osmand.plus" />
+        <package android:name="app.organicmaps" />
+        <package android:name="com.here.app.maps" />
+    </queries>
+
     <application
         android:name=".PebbleNtnApplication"
         android:allowBackup="false"
@@ -19,6 +30,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".notification.NavigationNotificationListenerService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
     </application>
 
