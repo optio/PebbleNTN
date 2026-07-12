@@ -11,18 +11,21 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *
  * v1 (M2): supported_app_settings.
  * v2 (M3): + notification_debug_event.
+ * v3 (M5): + user_rule.
  */
 @Database(
     entities = [
         SupportedAppSettingsEntity::class,
         NotificationDebugEventEntity::class,
+        UserRuleEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class PebbleNtnDatabase : RoomDatabase() {
     abstract fun appEnablementDao(): AppEnablementDao
     abstract fun debugEventDao(): DebugEventDao
+    abstract fun userRuleDao(): UserRuleDao
 
     companion object {
         const val NAME = "pebblentn.db"
@@ -56,6 +59,26 @@ abstract class PebbleNtnDatabase : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+        /** Adds the user_rule table. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `user_rule` (
+                        `ruleId` TEXT NOT NULL PRIMARY KEY,
+                        `sourceRuleId` TEXT,
+                        `packageName` TEXT NOT NULL,
+                        `canonicalJson` TEXT NOT NULL,
+                        `enabled` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `validationStatus` TEXT NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
+        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
     }
 }

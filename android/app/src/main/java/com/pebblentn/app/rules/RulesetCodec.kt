@@ -47,6 +47,12 @@ object RulesetCodec {
         return canonical.encodeToString(Ruleset.serializer(), sorted)
     }
 
+    /** Strictly parse a single rule (used by the rule editor). */
+    fun parseRule(text: String): Rule = strict.decodeFromString(Rule.serializer(), text)
+
+    /** Canonical form of a single rule (used to store user rules). */
+    fun canonicalizeRule(rule: Rule): String = canonical.encodeToString(Rule.serializer(), rule)
+
     private val RULE_ORDER: Comparator<Rule> = compareBy<Rule>(
         { it.packageNames.firstOrNull().orEmpty() },
         { -it.priority },

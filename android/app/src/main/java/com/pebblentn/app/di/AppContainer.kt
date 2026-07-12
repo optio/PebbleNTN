@@ -5,7 +5,10 @@ import androidx.room.Room
 import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
+import com.pebblentn.app.data.UserRuleRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
+import com.pebblentn.app.rules.LayeredRules
+import com.pebblentn.app.rules.RuleRepository
 import com.pebblentn.app.notification.DebugCaptureProcessor
 import com.pebblentn.app.notification.LastEligibleNotificationStore
 import com.pebblentn.app.notification.NotificationDispatcher
@@ -50,7 +53,16 @@ class AppContainer(context: Context) {
 
     private val ruleEngine = RuleEngine()
 
-    private val ruleRepository = AssetRuleRepository(appContext)
+    val userRuleRepository = UserRuleRepository(database.userRuleDao())
+
+    private val assetRuleRepository = AssetRuleRepository(appContext)
+
+    private val ruleRepository = RuleRepository {
+        LayeredRules(
+            user = userRuleRepository.userRulesSnapshot(),
+            bundled = assetRuleRepository.current().bundled,
+        )
+    }
 
     private val notificationProcessor = DebugCaptureProcessor(
         debugHistory = debugHistoryRepository,
@@ -68,9 +80,12 @@ class AppContainer(context: Context) {
 
     private val installedAppsProvider = InstalledAppsProvider(appContext)
 
-    /** Warm the allowlist cache on app start so the gate is authoritative before any callback. */
+    /** Warm the allowlist + user-rule caches on app start so they are authoritative early. */
     fun start() {
-        applicationScope.launch { enabledAppRepository.refreshCache() }
+        applicationScope.launch {
+            enabledAppRepository.refreshCache()
+            userRuleRepository.refreshCache()
+        }
     }
 
     /**

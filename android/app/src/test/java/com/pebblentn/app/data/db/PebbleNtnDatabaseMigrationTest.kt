@@ -63,6 +63,8 @@ class PebbleNtnDatabaseMigrationTest {
             assertEquals("com.google.android.apps.maps", db.appEnablementDao().getByAppId("google-maps")?.packageName)
             // The new table exists and is usable (empty).
             assertEquals(0, db.debugEventDao().count())
+            // v3 table is present too (migrations run in sequence).
+            assertEquals(null, db.userRuleDao().getById("none"))
         }
         db.close()
     }
