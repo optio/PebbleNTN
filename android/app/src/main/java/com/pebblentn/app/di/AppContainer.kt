@@ -9,6 +9,8 @@ import com.pebblentn.app.notification.LastEligibleNotificationStore
 import com.pebblentn.app.notification.NotificationDispatcher
 import com.pebblentn.app.notification.RecordingNotificationProcessor
 import com.pebblentn.app.notification.SerialProcessingQueue
+import com.pebblentn.app.system.NotificationAccess
+import com.pebblentn.app.system.SystemNotificationAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +39,8 @@ class AppContainer(context: Context) {
     val processingQueue = SerialProcessingQueue(applicationScope)
 
     val lastEligibleNotificationStore = LastEligibleNotificationStore()
+
+    val notificationAccess: NotificationAccess = SystemNotificationAccess(appContext)
 
     private val notificationProcessor = RecordingNotificationProcessor(lastEligibleNotificationStore)
 

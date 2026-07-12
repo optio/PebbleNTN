@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PebbleNTN</string>
-    <string name="home_placeholder">Setup coming soon</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to PebbleNTN</string>
+    <string name="onboarding_intro">PebbleNTN turns navigation-app notifications into turn-by-turn instructions on your Pebble watch.</string>
+    <!-- Exact prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
+    <string name="onboarding_disclosure">PebbleNTN reads notifications from navigation apps you enable, extracts upcoming turn information, and sends it to your Pebble watch. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them.</string>
+    <string name="onboarding_open_settings">Grant notification access</string>
+    <string name="onboarding_privacy_note">You can disable any app or revoke access at any time in system settings.</string>
+
+    <!-- Notification-access status -->
+    <string name="access_status_granted">Notification access granted</string>
+    <string name="access_status_denied">Notification access not granted</string>
+    <string name="access_status_label">Notification access</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">PebbleNTN</string>
+    <string name="dashboard_last_eligible_none">No eligible notifications yet</string>
+    <string name="dashboard_last_eligible">Last eligible notification: %1$s</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_access_granted">Notification access is granted</string>
+    <string name="cd_access_denied">Notification access is not granted</string>
 </resources>

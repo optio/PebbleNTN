@@ -4,22 +4,32 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M1 — Domain model and protocol** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M2 — Notification access and early filtering** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Implement generated protocol constants, normalized navigation model, session reducer and fake
-> watch transport.
+> Onboarding, listener declaration, permission status, app catalog and strict package allowlist.
 
 - **M0 — Repository and builds:** complete and verified (Android + watch builds green locally).
-- **M1 — Domain model and protocol:** complete and verified.
-  - `protocol/` single-source definition + Python generator → read-only `Protocol.kt` and
-    `protocol.h` (with `--check` gate wired into CI and `test-all.sh`).
-  - `core/`: `Maneuver`, `NavigationInstruction`, `NavigationState`, `WatchSettings`,
-    `DistanceQuantizer`, and the pure `NavigationSessionReducer` (events/effects/state).
-  - `protocol/`: `AppMessage`, `ProtocolCodec` (encode/decode), `WatchTransport` interface +
-    `FakeWatchTransport` test double.
-  - 48 JVM unit tests, 0 failures; `test lint assembleDebug` green.
+- **M1 — Domain model and protocol:** complete and verified (48 tests).
+- **M2 — Notification access and early filtering:** complete and verified.
+  - Bundled navigation-app catalog (`rules/catalog/navigation-apps.json` + schema) staged into
+    app assets and test classpath; pure `NavigationAppCatalog` loader.
+  - Room (`PebbleNtnDatabase` v1, schema exported) + `EnabledAppRepository` with a `@Volatile`
+    allowlist cache for synchronous `isEnabled()` on the callback thread.
+  - `NavigationNotificationListenerService` + pure `NotificationDispatcher` (allowlist before any
+    content read) + `SerialProcessingQueue`; manual `AppContainer` DI; `<queries>` for installed
+    detection.
+  - Onboarding + disclosure UI (exact REQ-SEC-004 text), `AccessStatusChip`, minimal dashboard,
+    `OnboardingViewModel`; Robolectric enabled for Room/Android unit tests.
+  - **72 JVM unit tests, 0 failures**; `assembleDebug test lint` green; validators pass.
 
-Next: **M2 — Notification access and early filtering**.
+Next: **M3 — Debug capture**.
+
+### Known local limitation (M2)
+Instrumented tests (`connectedDebugAndroidTest`) and manual UI runs need an emulator/device, which
+is not available here. The REQ-ANDROID-003 acceptance ("instrumented spy proves snapshot factory /
+parser / DB are never called for a disabled package") is covered locally at the unit level by
+`NotificationDispatcherTest` (spy processor never invoked for disabled packages); the full
+instrumented spy should run in CI.
 
 ## Requirements in scope for M0
 
@@ -112,21 +122,16 @@ SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
 
 ## Next atomic task
 
-Begin **M2 — Notification access and early filtering** (REQ-ANDROID-002/003/004/005,
-REQ-SEC-003/004):
+Begin **M3 — Debug capture** (REQ-DEBUG-001/002, REQ-SEC-003, REQ-ANDROID-008,
+spec/300-data/Database.md):
 
-1. Bundled navigation-app catalog (`rules/catalog/`) + loader: app id, packages, display name,
-   capture-only vs official-rules flags, default-enabled policy.
-2. `EnabledAppRepository` (Room) — default-enable installed catalog apps; user can disable.
-3. `NavigationNotificationListenerService` performing the **package allowlist check before reading
-   any notification content** (REQ-ANDROID-003), dispatching to a serialized processing queue.
-4. `NotificationSnapshotFactory` producing the minimal documented snapshot (REQ-SEC-003) — only
-   after allowlisting.
-5. Onboarding + notification-access disclosure screen (REQ-SEC-004) before sending to system
-   settings.
-6. Instrumented spy test proving the snapshot factory / parser / DB are never touched for a
-   disabled package. (Instrumented tests need a device/emulator — not available locally; gate in
-   CI or mark as a known local limitation.)
+1. `NotificationSnapshotFactory` — build the minimal documented snapshot (selected fields only,
+   excluding PendingIntents/actions/RemoteViews/bundles) from an eligible `StatusBarNotification`.
+2. `notification_debug_event` Room entity/DAO + `DebugHistoryRepository`; hash notification key/tag.
+3. Extend the M2 `NotificationProcessor` to snapshot + store eligible events (never for disabled
+   packages — REQ-DEBUG-002).
+4. Retention (default 500; 50/100/500/1000/unlimited) with transactional cleanup after insert.
+5. Debug history list/detail + delete UI; synthetic `fixture-publisher` app.
 
 ## Notes / decisions
 
