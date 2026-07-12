@@ -20,7 +20,30 @@
     <string name="dashboard_last_eligible_none">No eligible notifications yet</string>
     <string name="dashboard_last_eligible">Last eligible notification: %1$s</string>
 
+    <string name="dashboard_open_debug">Debug history</string>
+
+    <!-- Debug history -->
+    <string name="debug_title">Debug history</string>
+    <string name="debug_empty">No captured notifications yet</string>
+    <string name="debug_delete_all">Delete all</string>
+    <string name="debug_delete">Delete</string>
+    <string name="debug_detail_title">Event detail</string>
+    <string name="debug_field_package">Package</string>
+    <string name="debug_field_event_type">Event type</string>
+    <string name="debug_field_received">Received</string>
+    <string name="debug_field_posted">Posted</string>
+    <string name="debug_field_disposition">Disposition</string>
+    <string name="debug_field_title">Title</string>
+    <string name="debug_field_text">Text</string>
+    <string name="debug_field_subtext">Sub text</string>
+    <string name="debug_field_bigtext">Big text</string>
+    <string name="debug_field_category">Category</string>
+    <string name="debug_field_channel">Channel</string>
+    <string name="debug_not_found">This event is no longer available.</string>
+    <string name="cd_back">Back</string>
+
     <!-- Content descriptions -->
     <string name="cd_access_granted">Notification access is granted</string>
     <string name="cd_access_denied">Notification access is not granted</string>
+    <string name="cd_delete_event">Delete this event</string>
 </resources>
