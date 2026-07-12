@@ -36,3 +36,6 @@ jobs:
 
       - name: Validate rulesets against schema
         run: ./scripts/validate-rules.sh
+
+      - name: Rule regression (rule-workbench)
+        run: python3 tools/rule-workbench/workbench.py regression

@@ -4,15 +4,22 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M7 — Pebble integration** (`spec/800-roadmap/Milestones.md`) — **complete (on-device end-to-end
-pending; no watch available here)**.
+**M8 — Export and maintainer workflow** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Pebble transport, launch once, READY handshake, current-state sync, watch renderer, bitmap
-> assets, stop/exit behavior.
+> Rules-only, privacy-safe and full diagnostic exports; rule-workbench inspect/test/diff/scaffold/
+> sanitize/promote commands.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M8 — Export and maintainer workflow:** complete and verified.
+  - `ExportBuilder` (rules-only / privacy-safe / full) + `Redactor`; `DiagnosticExporter` +
+    `DiagnosticShareManager` (FileProvider + Sharesheet, temp URIs, never auto-sends); export UI
+    with the exact REQ-DEBUG-007 privacy warning for full exports.
+  - `tools/rule-workbench/workbench.py` CLI: inspect / validate / diff / scaffold / sanitize /
+    promote / test / regression; the Python subset engine agrees with the Kotlin engine on all
+    Google Maps fixtures (9/9). Wired into `test-all.sh` and `rules.yml`.
+  - **169 JVM unit tests, 0 failures**; workbench regression green; `assembleDebug test lint` green.
 - **M7 — Pebble integration:** complete.
   - Watch renderer (`watchapp/src/c/main.c`) + 12 generated maneuver bitmaps; READY handshake;
     NAVIGATION_UPDATE / STOPPED (exit-to-watchface) / NO_ACTIVE_NAVIGATION / COMPATIBILITY_ERROR
@@ -63,7 +70,7 @@ pending; no watch available here)**.
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M8 — Export and maintainer workflow**.
+Next: **M9 — Hardening**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the

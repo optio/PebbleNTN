@@ -13,6 +13,9 @@ echo "==> Generated protocol constants up to date"
 echo "==> Rule schema validation"
 "$REPO_ROOT/scripts/validate-rules.sh"
 
+echo "==> Rule regression (rule-workbench)"
+python3 "$REPO_ROOT/tools/rule-workbench/workbench.py" regression
+
 echo "==> Android unit tests + lint"
 "$REPO_ROOT/android/gradlew" -p "$REPO_ROOT/android" test lint
 
