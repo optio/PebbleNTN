@@ -4,14 +4,21 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M3 — Debug capture** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M4 — Rule engine** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Snapshot selected fields, Room history, retention, debug list/detail, deletion and synthetic
-> publisher.
+> Schemas, canonicalization, operators, extractors, trace, layer precedence, unit tests.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M4 — Rule engine:** complete and verified.
+  - Ruleset model + strict/canonical `RulesetCodec`; condition operators + `SafeRegex`
+    (bounds + time budget); extractors + distance/duration parsers; `RuleEngine` (package
+    select, enabled/locale filter, priority+layer order, short-circuit, trace).
+  - Wired into `DebugCaptureProcessor`: eligible notification → snapshot → engine → debug event
+    records `matchedRuleId`, extraction and trace, disposition MATCHED / CAPTURED_UNMATCHED.
+    `AssetRuleRepository` loads bundled rulesets from assets (empty until M6).
+  - **125 JVM unit tests, 0 failures**; `assembleDebug test lint` green; validators pass.
 - **M3 — Debug capture:** complete and verified.
   - `NotificationSnapshot` (selected fields only) + `NotificationSnapshotFactory`.
   - `notification_debug_event` table (schema v2 + `MIGRATION_1_2`, migration test);
@@ -24,7 +31,7 @@ _Last updated: 2026-07-12_
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M4 — Rule engine**.
+Next: **M5 — Editors and preview**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the
@@ -123,19 +130,18 @@ SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
 
 ## Next atomic task
 
-Begin **M4 — Rule engine** (spec/200-architecture/RuleEngine.md, spec/300-data/RulesJSON.md,
-REQ-RULES):
+Begin **M5 — Editors and preview** (spec/200-architecture/RuleEngine.md "Simple/Expert editor",
+spec/400-ui/AndroidUI.md "Rules", REQ-RULES):
 
-1. Ruleset domain model (kotlinx.serialization) matching `schemas/ruleset.schema.json`; strict +
-   canonical parsing.
-2. Condition operators (exists/equals/contains/startsWith/endsWith/regex/in + case-insensitive
-   variants) with short-circuit evaluation.
-3. Extractors (literal, regexCapture, fieldCopy, firstNonEmpty, distance, duration, maneuverMap,
-   normalizeString, boundedJoin) producing a `NavigationInstruction`.
-4. Field resolution over the `NotificationSnapshot` (title/text/…/combinedText).
-5. Regex safety (pattern/input/rule limits, time budget) and layer precedence
-   (user → downloaded → bundled), stable sort by priority then id.
-6. Structured trace; pure JVM unit tests for every operator/extractor + fixtures.
+1. `user_rule` Room table (schema v3 + migration + test) + `UserRuleRepository`; clone-to-user.
+2. Rules screen: tabs (bundled official / user), immutable official detail, clone action,
+   enable/disable user rule, priority.
+3. Expert JSON editor backed by the same domain model: schema + semantic validation, canonical
+   format command, cannot save invalid JSON.
+4. Simple editor as a projection over the JSON (falls back to expert-only for advanced structures
+   without data loss).
+5. Test bench / preview: run a candidate rule (or ruleset) against a captured debug event and show
+   the trace + normalized output; rerun a stored event.
 
 ## Notes / decisions
 

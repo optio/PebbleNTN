@@ -6,23 +6,28 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// Stage rules/catalog/*.json into build/ so it feeds both app assets and unit-test resources.
-val catalogStageDir = layout.buildDirectory.dir("generated/catalog")
-val syncCatalog = tasks.register<Sync>("syncCatalog") {
-    description = "Stage rules/catalog JSON as an app asset + test resource."
-    into(catalogStageDir)
+// Stage bundled rule data (catalog + bundled rulesets) into build/ so it feeds both app assets and
+// unit-test resources — a single source of truth for runtime and tests.
+val ruleDataStageDir = layout.buildDirectory.dir("generated/rule-data")
+val syncRuleData = tasks.register<Sync>("syncRuleData") {
+    description = "Stage rules/catalog + rules/bundled JSON as app assets + test resources."
+    into(ruleDataStageDir)
     from(rootProject.file("../rules/catalog")) {
         include("*.json")
         into("catalog")
     }
+    from(rootProject.file("../rules/bundled")) {
+        include("*.json")
+        into("rules/bundled")
+    }
 }
 
-// Ensure the catalog is staged before any task that consumes it as assets or test resources.
+// Ensure rule data is staged before any task that consumes it as assets or test resources.
 tasks.matching {
     it.name.endsWith("UnitTestJavaRes") ||
         it.name.endsWith("Assets") ||
         it.name == "preBuild"
-}.configureEach { dependsOn(syncCatalog) }
+}.configureEach { dependsOn(syncRuleData) }
 
 // Export Room schemas so migration tests (M9) can diff versions.
 ksp {
@@ -91,8 +96,8 @@ android {
     // staged into build/ so it is packaged as an app asset (catalog/navigation-apps.json) AND
     // available on the unit-test classpath — a single source of truth for runtime and tests.
     sourceSets {
-        getByName("main").assets.srcDir(catalogStageDir)
-        getByName("test").resources.srcDir(catalogStageDir)
+        getByName("main").assets.srcDir(ruleDataStageDir)
+        getByName("test").resources.srcDir(ruleDataStageDir)
     }
 }
 

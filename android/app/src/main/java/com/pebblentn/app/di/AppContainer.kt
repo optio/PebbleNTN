@@ -10,9 +10,12 @@ import com.pebblentn.app.notification.DebugCaptureProcessor
 import com.pebblentn.app.notification.LastEligibleNotificationStore
 import com.pebblentn.app.notification.NotificationDispatcher
 import com.pebblentn.app.notification.SerialProcessingQueue
+import com.pebblentn.app.rules.AssetRuleRepository
+import com.pebblentn.app.rules.RuleEngine
 import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.SystemNotificationAccess
 import kotlinx.coroutines.CoroutineScope
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -45,7 +48,17 @@ class AppContainer(context: Context) {
 
     val notificationAccess: NotificationAccess = SystemNotificationAccess(appContext)
 
-    private val notificationProcessor = DebugCaptureProcessor(debugHistoryRepository, lastEligibleNotificationStore)
+    private val ruleEngine = RuleEngine()
+
+    private val ruleRepository = AssetRuleRepository(appContext)
+
+    private val notificationProcessor = DebugCaptureProcessor(
+        debugHistory = debugHistoryRepository,
+        lastEligibleStore = lastEligibleNotificationStore,
+        ruleEngine = ruleEngine,
+        ruleRepository = ruleRepository,
+        localeProvider = { Locale.getDefault().toLanguageTag() },
+    )
 
     val notificationDispatcher = NotificationDispatcher(
         allowlist = enabledAppRepository,

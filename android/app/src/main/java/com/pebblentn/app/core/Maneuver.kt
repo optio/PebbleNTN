@@ -1,6 +1,7 @@
 package com.pebblentn.app.core
 
 import com.pebblentn.app.protocol.Protocol
+import kotlinx.serialization.Serializable
 
 /**
  * Normalized turn maneuver.
@@ -10,6 +11,7 @@ import com.pebblentn.app.protocol.Protocol
  * name doubles as the stable token that rule outputs use (e.g. the `maneuver` extractor emitting
  * `"RIGHT"`), so the rule JSON and this type share one vocabulary.
  */
+@Serializable
 enum class Maneuver(val code: Int) {
     UNKNOWN(Protocol.ManeuverCodes.UNKNOWN),
     STRAIGHT(Protocol.ManeuverCodes.STRAIGHT),

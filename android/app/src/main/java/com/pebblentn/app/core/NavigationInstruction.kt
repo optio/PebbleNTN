@@ -1,5 +1,7 @@
 package com.pebblentn.app.core
 
+import kotlinx.serialization.Serializable
+
 /**
  * A single normalized turn instruction produced by the rule engine from one notification.
  *
@@ -12,6 +14,7 @@ package com.pebblentn.app.core
  * @property secondaryText optional secondary line.
  * @property etaEpochSeconds estimated arrival time as a Unix epoch second, or null.
  */
+@Serializable
 data class NavigationInstruction(
     val maneuver: Maneuver = Maneuver.UNKNOWN,
     val distanceMeters: Int? = null,

@@ -3,8 +3,10 @@ package com.pebblentn.app.rules
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.notification.NotificationSnapshot
+import kotlinx.serialization.Serializable
 
 /** Rule precedence layers (spec/200-architecture/RuleEngine.md). User overrides win. */
+@Serializable
 enum class RuleLayer { USER, DOWNLOADED, BUNDLED }
 
 /** Rules grouped by layer. Evaluated user-first, then downloaded, then bundled. */
@@ -26,8 +28,10 @@ data class LayeredRules(
 }
 
 /** Outcome recorded for each evaluated rule (debug trace). */
+@Serializable
 enum class RuleOutcome { MATCHED, CONDITIONS_FAILED, DISABLED, SKIPPED_LOCALE, ERROR }
 
+@Serializable
 data class RuleTraceEntry(
     val ruleId: String,
     val layer: RuleLayer,
