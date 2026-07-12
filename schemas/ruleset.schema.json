@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pebblentn.example/schemas/ruleset.schema.json",
+  "title": "PebbleNTN Ruleset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "rulesetVersion",
+    "minimumAppVersionCode",
+    "createdAt",
+    "publisher",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "rulesetVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "minimumAppVersionCode": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "rules": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "operator"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "exists",
+            "notExists",
+            "equals",
+            "equalsIgnoreCase",
+            "contains",
+            "containsIgnoreCase",
+            "startsWith",
+            "endsWith",
+            "regex",
+            "in"
+          ]
+        },
+        "value": {},
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100
+        }
+      }
+    },
+    "extractor": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "literal",
+            "regexCapture",
+            "fieldCopy",
+            "firstNonEmpty",
+            "distance",
+            "duration",
+            "maneuverMap",
+            "normalizeString",
+            "boundedJoin"
+          ]
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "enabled",
+        "priority",
+        "packageNames",
+        "conditions",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 120
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": -100000,
+          "maximum": 100000
+        },
+        "packageNames": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string"
+          }
+        },
+        "locales": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "string"
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maneuver": {
+              "$ref": "#/$defs/extractor"
+            },
+            "distanceMeters": {
+              "$ref": "#/$defs/extractor"
+            },
+            "primaryText": {
+              "$ref": "#/$defs/extractor"
+            },
+            "secondaryText": {
+              "$ref": "#/$defs/extractor"
+            },
+            "etaEpochSeconds": {
+              "$ref": "#/$defs/extractor"
+            }
+          }
+        }
+      }
+    }
+  }
+}

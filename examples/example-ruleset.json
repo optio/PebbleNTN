@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "bundled-initial",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-07-12T00:00:00Z",
+  "publisher": "PebbleNTN maintainers",
+  "rules": [
+    {
+      "id": "google-maps-example-turn-right-en",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "protocolMajor": 1,
+  "protocolMinor": 0,
+  "keys": {
+    "EVENT": 0,
+    "PROTOCOL_MAJOR": 1,
+    "PROTOCOL_MINOR": 2,
+    "MANEUVER": 3,
+    "DISTANCE_METERS": 4,
+    "PRIMARY_TEXT": 5,
+    "SECONDARY_TEXT": 6,
+    "ETA_EPOCH_SECONDS": 7,
+    "STATE_TIMESTAMP_SECONDS": 8,
+    "SESSION_ID": 9,
+    "FLAGS": 10,
+    "APP_VERSION": 11,
+    "ERROR_CODE": 12
+  },
+  "events": {
+    "NAVIGATION_UPDATE": 1,
+    "NAVIGATION_STOPPED": 2,
+    "NO_ACTIVE_NAVIGATION": 3,
+    "WATCH_READY": 10,
+    "WATCH_REQUEST_STATE": 11,
+    "PHONE_COMPATIBILITY_ERROR": 12
+  }
+}

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme used before Compose takes over. Compose supplies the Material 3 color scheme. -->
+    <style name="Theme.PebbleNTN" parent="android:Theme.Material.NoActionBar" />
+</resources>

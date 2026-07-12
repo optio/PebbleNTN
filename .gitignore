@@ -1,0 +1,19 @@
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+*.iml
+
+# Android (module-level .gitignore also applies)
+android/local.properties
+
+# Pebble build output
+watchapp/build/
+watchapp/.lock-waf_*
+*.pbw
+
+# Scratch / secrets — never commit signing material or private captures
+*.keystore
+!android/app/debug.keystore
+secrets/
+captures-private/

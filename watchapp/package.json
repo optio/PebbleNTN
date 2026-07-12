@@ -1,0 +1,30 @@
+{
+  "name": "pebblentn",
+  "author": "PebbleNTN maintainers",
+  "version": "0.0.1",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "PebbleNTN",
+    "uuid": "9c7cef54-517e-42c8-8e95-0a8316e70cf1",
+    "sdkVersion": "3",
+    "enableMultiJS": false,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "dummy"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}

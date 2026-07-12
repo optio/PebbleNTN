@@ -1,0 +1,44 @@
+name: watchapp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "watchapp/**"
+      - ".github/workflows/watchapp.yml"
+  pull_request:
+    paths:
+      - "watchapp/**"
+      - ".github/workflows/watchapp.yml"
+
+# Building the Pebble watchapp requires the (legacy) Pebble SDK + toolchain. The steps below
+# install the pebble-tool and SDK; pin/replace with a maintained SDK image if the public
+# distribution URL changes. The build must produce watchapp/build/watchapp.pbw.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pebble tool
+        run: python -m pip install --upgrade pebble-tool
+
+      - name: Install Pebble SDK
+        run: |
+          yes | pebble sdk install latest || pebble sdk install latest
+          pebble sdk list
+
+      - name: Build watchapp
+        run: ./scripts/build-watchapp.sh
+
+      - name: Upload pbw
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchapp-pbw
+          path: watchapp/build/watchapp.pbw
+          if-no-files-found: error
