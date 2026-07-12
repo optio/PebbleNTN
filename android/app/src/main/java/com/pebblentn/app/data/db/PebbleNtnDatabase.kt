@@ -12,20 +12,23 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * v1 (M2): supported_app_settings.
  * v2 (M3): + notification_debug_event.
  * v3 (M5): + user_rule.
+ * v4 (M9): + navigation_state.
  */
 @Database(
     entities = [
         SupportedAppSettingsEntity::class,
         NotificationDebugEventEntity::class,
         UserRuleEntity::class,
+        NavigationStateEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class PebbleNtnDatabase : RoomDatabase() {
     abstract fun appEnablementDao(): AppEnablementDao
     abstract fun debugEventDao(): DebugEventDao
     abstract fun userRuleDao(): UserRuleDao
+    abstract fun navigationStateDao(): NavigationStateDao
 
     companion object {
         const val NAME = "pebblentn.db"
@@ -79,6 +82,25 @@ abstract class PebbleNtnDatabase : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+        /** Adds the navigation_state singleton table. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `navigation_state` (
+                        `id` INTEGER NOT NULL PRIMARY KEY,
+                        `sessionId` INTEGER,
+                        `active` INTEGER NOT NULL,
+                        `normalizedStateJson` TEXT NOT NULL,
+                        `stateTimestampSeconds` INTEGER NOT NULL,
+                        `nextSessionId` INTEGER NOT NULL,
+                        `launchedSessionId` INTEGER
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
+        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
     }
 }

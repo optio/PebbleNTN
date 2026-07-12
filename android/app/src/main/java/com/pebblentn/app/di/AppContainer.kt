@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
+import com.pebblentn.app.data.NavigationStateRepository
 import com.pebblentn.app.data.UserRuleRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
 import com.pebblentn.app.export.DiagnosticExporter
@@ -86,10 +87,13 @@ class AppContainer(context: Context) {
 
     val watchTransport: WatchTransport = PebbleWatchTransport(appContext)
 
+    private val navigationStateRepository = NavigationStateRepository(database.navigationStateDao())
+
     val navigationController = NavigationController(
         transport = watchTransport,
         scope = applicationScope,
         appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
+        stateStore = navigationStateRepository,
     )
 
     private val notificationProcessor = DebugCaptureProcessor(
@@ -110,10 +114,11 @@ class AppContainer(context: Context) {
 
     private val installedAppsProvider = InstalledAppsProvider(appContext)
 
-    /** Warm the caches and begin listening for watch messages on app start. */
+    /** Restore state, warm the caches, and begin listening for watch messages on app start. */
     fun start() {
-        navigationController.start()
         applicationScope.launch {
+            navigationController.restore()
+            navigationController.start()
             enabledAppRepository.refreshCache()
             userRuleRepository.refreshCache()
         }

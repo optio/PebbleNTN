@@ -7,6 +7,7 @@ import com.pebblentn.app.core.ReducerEffect
 import com.pebblentn.app.core.ReducerEvent
 import com.pebblentn.app.core.ReducerState
 import com.pebblentn.app.core.WatchSettings
+import com.pebblentn.app.data.NavigationStateRepository
 import com.pebblentn.app.protocol.AppMessage
 import com.pebblentn.app.protocol.ProtocolCodec
 import com.pebblentn.app.protocol.SendResult
@@ -35,6 +36,7 @@ class NavigationController(
     private val clock: EpochClock = EpochClock.SYSTEM,
     private val maxSendAttempts: Int = 3,
     private val baseBackoffMillis: Long = 50,
+    private val stateStore: NavigationStateRepository? = null,
 ) {
     private val mutex = Mutex()
     private var state = ReducerState()
@@ -42,6 +44,15 @@ class NavigationController(
     /** Begin collecting inbound watch messages. */
     fun start() {
         scope.launch { transport.inbound.collect { handleInbound(it) } }
+    }
+
+    /**
+     * Restore the last cached navigation state (REQ-ANDROID-010). Safe to call once on startup
+     * before [start]; watch readiness is not restored, so the watch re-handshakes.
+     */
+    suspend fun restore() {
+        val restored = stateStore?.loadReducerState() ?: return
+        mutex.withLock { state = restored }
     }
 
     suspend fun onInstruction(instruction: NavigationInstruction) =
@@ -62,6 +73,11 @@ class NavigationController(
         state = result.state
         for (effect in result.effects) {
             runEffect(effect)
+        }
+        // Persist the latest state so it can be restored after process death (no queue is kept).
+        stateStore?.let { store ->
+            val snapshot = state
+            scope.launch { store.save(snapshot) }
         }
     }
 

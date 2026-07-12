@@ -44,6 +44,13 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas/room")
 }
 
+// Robolectric sandboxes are memory-heavy; give the unit-test JVM room and a single fork so the
+// Android environment stays initialized across the growing Robolectric suite.
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "2g"
+    maxParallelForks = 1
+}
+
 android {
     namespace = "com.pebblentn.app"
     // Compile SDK: baseline 36 per target baseline (README). Use the latest stable installed SDK.

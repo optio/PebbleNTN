@@ -1,15 +1,21 @@
 package com.pebblentn.app.core
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 /**
  * The phone's current belief about navigation, and the single value it synchronizes to the watch.
  *
  * This is a *state*, never a queue: the phone always holds exactly one current [NavigationState]
  * per the last-known-state principle (REQ-ANDROID-010, REQ-WATCH-004). Obsolete instructions are
- * replaced, never replayed.
+ * replaced, never replayed. Serializable so the current state can be persisted and safely restored.
  */
+@Serializable
 sealed interface NavigationState {
 
     /** No navigation session is active. Maps to the `NO_ACTIVE_NAVIGATION` event. */
+    @Serializable
+    @SerialName("none")
     data object NoActiveNavigation : NavigationState
 
     /**
@@ -21,6 +27,8 @@ sealed interface NavigationState {
      * @property stale true when the state is older than the freshness budget and should be shown
      *   as potentially outdated (sets the `STATE_IS_STALE` flag).
      */
+    @Serializable
+    @SerialName("navigating")
     data class Navigating(
         val sessionId: Int,
         val instruction: NavigationInstruction,
@@ -34,5 +42,7 @@ sealed interface NavigationState {
      *
      * @property sessionId the session that ended.
      */
+    @Serializable
+    @SerialName("stopped")
     data class Stopped(val sessionId: Int) : NavigationState
 }
