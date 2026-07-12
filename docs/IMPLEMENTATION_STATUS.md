@@ -4,13 +4,23 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M5 — Editors and preview** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M6 — Google Maps initial rules** (`spec/800-roadmap/Milestones.md`) — **complete (English;
+non-English + real-capture verification are documented gaps)**.
 
-> Simple editor backed by JSON, expert editor, validation, test bench and event rerun.
+> Capture corpus, sanitize fixtures, implement variants that evidence supports, document gaps.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M6 — Google Maps initial rules:** complete for English.
+  - `rules/bundled/google-maps.json` (12 rules: arrive, roundabout, u-turn, sharp/slight L+R,
+    keep L+R, turn L/R, continue) — schema-valid, packaged as an app asset, active at runtime.
+  - Synthetic fixtures (`rules/fixtures/google-maps.json`, provenance in the fixtures README) +
+    `GoogleMapsRulesRegressionTest` runs every fixture through the engine.
+  - **152 JVM unit tests, 0 failures**; `assembleDebug test lint` green; validators pass.
+  - **Gap (documented):** authored from documented notification patterns, not real captures; only
+    English is implemented — nl/fr/de and capture-verification remain, per the roadmap's
+    "evidence supports" rule.
 - **M5 — Editors and preview:** complete and verified.
   - `user_rule` table (schema v3 + migration + test); `UserRuleRepository` (CRUD, clone-to-user,
     volatile snapshot as the engine's user layer).
@@ -40,7 +50,7 @@ _Last updated: 2026-07-12_
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M6 — Google Maps initial rules**.
+Next: **M7 — Pebble integration**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the

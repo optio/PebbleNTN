@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "google-maps-en-2026.07",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-07-12T00:00:00Z",
+  "publisher": "PebbleNTN maintainers",
+  "rules": [
+    {
+      "id": "google-maps-arrive-en",
+      "enabled": true,
+      "priority": 200,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\b(arrive|arriving|destination)\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "ARRIVE"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-roundabout-en",
+      "enabled": true,
+      "priority": 190,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\broundabout\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "ROUNDABOUT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-uturn-en",
+      "enabled": true,
+      "priority": 180,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bu-?turn\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "UTURN_LEFT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-sharp-right-en",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bsharp\\s+right\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "SHARP_RIGHT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-sharp-left-en",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bsharp\\s+left\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "SHARP_LEFT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-slight-right-en",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bslight(ly)?\\s+right\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "SLIGHT_RIGHT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-slight-left-en",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bslight(ly)?\\s+left\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "SLIGHT_LEFT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-keep-right-en",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bkeep\\s+right\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "SLIGHT_RIGHT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-keep-left-en",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bkeep\\s+left\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "SLIGHT_LEFT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-turn-right-en",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bturn\\s+right\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "RIGHT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-turn-left-en",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bturn\\s+left\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "LEFT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    },
+    {
+      "id": "google-maps-continue-en",
+      "enabled": true,
+      "priority": 50,
+      "packageNames": ["com.google.android.apps.maps"],
+      "locales": ["en"],
+      "conditions": [
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\b(continue|head|go)\\s+(straight|north|south|east|west|on)\\b"}
+      ],
+      "output": {
+        "maneuver": {"type": "literal", "value": "STRAIGHT"},
+        "distanceMeters": {"type": "distance", "field": "combinedText"},
+        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+      }
+    }
+  ]
+}

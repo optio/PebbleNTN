@@ -1,0 +1,14 @@
+{
+  "note": "SYNTHETIC fixtures authored from documented Google Maps navigation-notification patterns. No real captures were used; content contains no real destinations. Provenance/gaps: see rules/fixtures/README.md.",
+  "fixtures": [
+    {"name": "turn-right", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn right", "text": "500 m", "subText": "Sample Street"}, "expected": {"maneuver": "RIGHT", "distanceMeters": 500}},
+    {"name": "turn-left", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn left", "text": "200 m", "subText": "Example Avenue"}, "expected": {"maneuver": "LEFT", "distanceMeters": 200}},
+    {"name": "slight-right", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Slight right", "text": "1.2 km"}, "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 1200}},
+    {"name": "sharp-left", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Sharp left", "text": "80 m"}, "expected": {"maneuver": "SHARP_LEFT", "distanceMeters": 80}},
+    {"name": "keep-left", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Keep left", "text": "300 m"}, "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 300}},
+    {"name": "roundabout", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "At the roundabout, take the 2nd exit", "text": "400 m"}, "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 400}},
+    {"name": "uturn", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Make a U-turn", "text": "150 m"}, "expected": {"maneuver": "UTURN_LEFT", "distanceMeters": 150}},
+    {"name": "continue", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Continue straight", "text": "3.0 km"}, "expected": {"maneuver": "STRAIGHT", "distanceMeters": 3000}},
+    {"name": "arrive", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "You have arrived at your destination", "text": "Now"}, "expected": {"maneuver": "ARRIVE"}}
+  ]
+}

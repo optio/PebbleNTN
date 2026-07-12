@@ -22,12 +22,22 @@ val syncRuleData = tasks.register<Sync>("syncRuleData") {
     }
 }
 
+// Test-only fixtures (never shipped in the APK): staged to the unit-test classpath only.
+val testFixtureStageDir = layout.buildDirectory.dir("generated/test-fixtures")
+val syncTestFixtures = tasks.register<Sync>("syncTestFixtures") {
+    description = "Stage rules/fixtures + rules/test-cases as unit-test resources."
+    into(testFixtureStageDir)
+    from(rootProject.file("../rules/fixtures")) {
+        include("**/*.json")
+        into("fixtures")
+    }
+}
+
 // Ensure rule data is staged before any task that consumes it as assets or test resources.
-tasks.matching {
-    it.name.endsWith("UnitTestJavaRes") ||
-        it.name.endsWith("Assets") ||
-        it.name == "preBuild"
-}.configureEach { dependsOn(syncRuleData) }
+tasks.matching { it.name.endsWith("Assets") || it.name == "preBuild" }
+    .configureEach { dependsOn(syncRuleData) }
+tasks.matching { it.name.endsWith("UnitTestJavaRes") }
+    .configureEach { dependsOn(syncRuleData, syncTestFixtures) }
 
 // Export Room schemas so migration tests (M9) can diff versions.
 ksp {
@@ -98,6 +108,7 @@ android {
     sourceSets {
         getByName("main").assets.srcDir(ruleDataStageDir)
         getByName("test").resources.srcDir(ruleDataStageDir)
+        getByName("test").resources.srcDir(testFixtureStageDir)
     }
 }
 
