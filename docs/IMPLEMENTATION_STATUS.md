@@ -4,14 +4,24 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M8 — Export and maintainer workflow** (`spec/800-roadmap/Milestones.md`) — **complete**.
+**M9 — Hardening** (`spec/800-roadmap/Milestones.md`) — **complete**.
 
-> Rules-only, privacy-safe and full diagnostic exports; rule-workbench inspect/test/diff/scaffold/
-> sanitize/promote commands.
+> Process restoration, connection loss, stale state, performance, regex limits, migration tests and
+> privacy review.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M9 — Hardening:** complete and verified.
+  - Process restoration: `navigation_state` (schema v4 + migration + test) +
+    `NavigationStateRepository`; controller persists/restores the single current state.
+  - Connection loss + stale state already handled by the reducer/controller (ConnectionLost,
+    FreshnessChecked; staleness computed at send time — no polling, REQ-ANDROID-007).
+  - Regex limits + per-run time budget (`SafeRegex`); bounded rules-per-package (500) in the engine.
+  - Migration tests through v4; `docs/PRIVACY_REVIEW.md` maps every privacy boundary to its
+    enforcement + test.
+  - Fixed a latent bug: unit tests bootstrapped the real Application; now use a stub Application.
+  - **173 JVM unit tests, 0 failures**; `assembleDebug test lint` green.
 - **M8 — Export and maintainer workflow:** complete and verified.
   - `ExportBuilder` (rules-only / privacy-safe / full) + `Redactor`; `DiagnosticExporter` +
     `DiagnosticShareManager` (FileProvider + Sharesheet, temp URIs, never auto-sends); export UI
@@ -70,7 +80,7 @@ _Last updated: 2026-07-12_
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M9 — Hardening**.
+Next: **M10 — Release readiness**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the

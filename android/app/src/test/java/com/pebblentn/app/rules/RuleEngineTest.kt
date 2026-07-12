@@ -104,6 +104,21 @@ class RuleEngineTest {
     }
 
     @Test
+    fun evaluationIsBoundedByMaxRulesPerPackage() {
+        // More package rules than the cap, none matching: only the cap is evaluated (bounded work).
+        val many = (0 until RuleEngine.MAX_RULES_PER_PACKAGE + 100).map { i ->
+            rule(
+                id = "r%04d".format(i),
+                priority = 100,
+                conditions = listOf(Condition("combinedText", ConditionOperator.CONTAINS, "no-match-token")),
+            )
+        }
+        val result = engine.evaluate(snapshot(text = "turn right"), LayeredRules(bundled = many))
+        assertFalse(result.matched)
+        assertEquals(RuleEngine.MAX_RULES_PER_PACKAGE, result.trace.size)
+    }
+
+    @Test
     fun regexTimeoutDisablesRuleForRunAndRecordsError() {
         val slow = rule(
             id = "slow",

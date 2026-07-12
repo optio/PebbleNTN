@@ -66,6 +66,11 @@ class RuleEngine(
     private val conditions = ConditionEvaluator(regexBudgetMillis)
     private val extractors = ExtractorRunner(regexBudgetMillis)
 
+    companion object {
+        /** Safety bound on rules evaluated per source package (RuleEngine "Regex safety"). */
+        const val MAX_RULES_PER_PACKAGE = 500
+    }
+
     fun evaluate(
         snapshot: NotificationSnapshot,
         rules: LayeredRules,
@@ -73,9 +78,13 @@ class RuleEngine(
         nowEpochSeconds: Long = 0,
     ): RuleEvaluation {
         val trace = mutableListOf<RuleTraceEntry>()
+        var evaluatedForPackage = 0
 
         for ((rule, layer) in rules.inPrecedenceOrder()) {
             if (snapshot.packageName !in rule.packageNames) continue // not evaluated; not traced
+            // Bound work per package (RuleEngine "Maximum rules per package").
+            if (evaluatedForPackage >= MAX_RULES_PER_PACKAGE) break
+            evaluatedForPackage++
             if (!rule.enabled) {
                 trace += RuleTraceEntry(rule.id, layer, RuleOutcome.DISABLED)
                 continue
