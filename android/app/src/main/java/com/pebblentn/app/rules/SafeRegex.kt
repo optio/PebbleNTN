@@ -31,9 +31,29 @@ object SafeRegex {
      * @throws RegexTimeoutException if evaluation exceeds [budgetMillis].
      */
     fun containsMatch(pattern: Pattern, input: String, budgetMillis: Long = DEFAULT_BUDGET_MILLIS): Boolean {
-        val bounded = if (input.length > MAX_INPUT_LENGTH) input.substring(0, MAX_INPUT_LENGTH) else input
         val deadlineNanos = System.nanoTime() + budgetMillis * 1_000_000
-        return pattern.matcher(DeadlineCharSequence(bounded, deadlineNanos)).find()
+        return pattern.matcher(boundedInput(input, deadlineNanos)).find()
+    }
+
+    /**
+     * First-match capture [group] (1-based) of [pattern] in [input], or null if there is no match or
+     * the group did not participate. @throws RegexTimeoutException if [budgetMillis] is exceeded.
+     */
+    fun captureGroup(
+        pattern: Pattern,
+        input: String,
+        group: Int = 1,
+        budgetMillis: Long = DEFAULT_BUDGET_MILLIS,
+    ): String? {
+        val deadlineNanos = System.nanoTime() + budgetMillis * 1_000_000
+        val matcher = pattern.matcher(boundedInput(input, deadlineNanos))
+        if (!matcher.find() || group > matcher.groupCount()) return null
+        return matcher.group(group)
+    }
+
+    private fun boundedInput(input: String, deadlineNanos: Long): CharSequence {
+        val bounded = if (input.length > MAX_INPUT_LENGTH) input.substring(0, MAX_INPUT_LENGTH) else input
+        return DeadlineCharSequence(bounded, deadlineNanos)
     }
 
     private class DeadlineCharSequence(
