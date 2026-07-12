@@ -13,6 +13,9 @@ import com.pebblentn.app.notification.DebugCaptureProcessor
 import com.pebblentn.app.notification.LastEligibleNotificationStore
 import com.pebblentn.app.notification.NotificationDispatcher
 import com.pebblentn.app.notification.SerialProcessingQueue
+import com.pebblentn.app.pebble.NavigationController
+import com.pebblentn.app.pebble.PebbleWatchTransport
+import com.pebblentn.app.protocol.WatchTransport
 import com.pebblentn.app.rules.AssetRuleRepository
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleEngine
@@ -71,12 +74,22 @@ class AppContainer(context: Context) {
 
     val rulePreviewService = RulePreviewService(localeProvider = { Locale.getDefault().toLanguageTag() })
 
+    val watchTransport: WatchTransport = PebbleWatchTransport(appContext)
+
+    val navigationController = NavigationController(
+        transport = watchTransport,
+        scope = applicationScope,
+        appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
+    )
+
     private val notificationProcessor = DebugCaptureProcessor(
         debugHistory = debugHistoryRepository,
         lastEligibleStore = lastEligibleNotificationStore,
         ruleEngine = ruleEngine,
         ruleRepository = ruleRepository,
         localeProvider = { Locale.getDefault().toLanguageTag() },
+        onMatchedInstruction = { navigationController.onInstruction(it) },
+        onSessionEnded = { navigationController.onNavigationStopped() },
     )
 
     val notificationDispatcher = NotificationDispatcher(
@@ -87,8 +100,9 @@ class AppContainer(context: Context) {
 
     private val installedAppsProvider = InstalledAppsProvider(appContext)
 
-    /** Warm the allowlist + user-rule caches on app start so they are authoritative early. */
+    /** Warm the caches and begin listening for watch messages on app start. */
     fun start() {
+        navigationController.start()
         applicationScope.launch {
             enabledAppRepository.refreshCache()
             userRuleRepository.refreshCache()

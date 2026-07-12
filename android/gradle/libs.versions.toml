@@ -17,6 +17,7 @@ kotlinxSerialization = "1.7.3"
 kotlinxCoroutines = "1.9.0"
 datastore = "1.1.1"
 timber = "5.0.1"
+pebblekit = "4.0.1"
 junit = "4.13.2"
 androidxTestExtJunit = "1.2.1"
 espresso = "3.6.1"
@@ -47,6 +48,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+pebblekit = { group = "com.getpebble", name = "pebblekit", version.ref = "pebblekit" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }

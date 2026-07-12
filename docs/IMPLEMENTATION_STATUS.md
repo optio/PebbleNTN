@@ -4,14 +4,27 @@ _Last updated: 2026-07-12_
 
 ## Current milestone
 
-**M6 — Google Maps initial rules** (`spec/800-roadmap/Milestones.md`) — **complete (English;
-non-English + real-capture verification are documented gaps)**.
+**M7 — Pebble integration** (`spec/800-roadmap/Milestones.md`) — **complete (on-device end-to-end
+pending; no watch available here)**.
 
-> Capture corpus, sanitize fixtures, implement variants that evidence supports, document gaps.
+> Pebble transport, launch once, READY handshake, current-state sync, watch renderer, bitmap
+> assets, stop/exit behavior.
 
 - **M0 — Repository and builds:** complete and verified.
 - **M1 — Domain model and protocol:** complete and verified (48 tests).
 - **M2 — Notification access and early filtering:** complete and verified (72 tests).
+- **M7 — Pebble integration:** complete.
+  - Watch renderer (`watchapp/src/c/main.c`) + 12 generated maneuver bitmaps; READY handshake;
+    NAVIGATION_UPDATE / STOPPED (exit-to-watchface) / NO_ACTIVE_NAVIGATION / COMPATIBILITY_ERROR
+    states; vibrate-on-change + backlight + stale marker. `pebble build` green (5 platforms).
+  - `PebbleWatchTransport` (real PebbleKit 4.0.1 impl of `WatchTransport`) + `PebbleAppMessageMapper`.
+  - `NavigationController`: serializes reducer access, runs effects (launch-once, send current
+    state with bounded-backoff retry, compatibility error), decodes inbound READY / REQUEST_STATE.
+  - Full pipeline wired: notification → snapshot → rule engine → matched instruction →
+    `NavigationController` → transport → watch.
+  - **157 JVM unit tests, 0 failures**; `assembleDebug test lint` green; watch build green.
+  - **Blocker (recorded):** `PebbleWatchTransport` and the end-to-end phone↔watch flow are verified
+    by compilation only — no Pebble/emulator here; on-device testing is a release gate.
 - **M6 — Google Maps initial rules:** complete for English.
   - `rules/bundled/google-maps.json` (12 rules: arrive, roundabout, u-turn, sharp/slight L+R,
     keep L+R, turn L/R, continue) — schema-valid, packaged as an app asset, active at runtime.
@@ -50,7 +63,7 @@ non-English + real-capture verification are documented gaps)**.
     unless installed).
   - **85 JVM unit tests, 0 failures**; both app modules assemble; `test lint` green; validators pass.
 
-Next: **M7 — Pebble integration**.
+Next: **M8 — Export and maintainer workflow**.
 
 ### Known local limitation
 Instrumented tests (`connectedDebugAndroidTest`) and manual device runs (incl. the

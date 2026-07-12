@@ -1,6 +1,7 @@
 package com.pebblentn.app.notification
 
 import com.pebblentn.app.core.EpochClock
+import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.rules.RuleEngine
 import com.pebblentn.app.rules.RuleRepository
@@ -18,6 +19,10 @@ class DebugCaptureProcessor(
     private val ruleRepository: RuleRepository,
     private val clock: EpochClock = EpochClock.SYSTEM,
     private val localeProvider: () -> String? = { null },
+    /** Invoked with the normalized instruction of a matched rule (forwarded to the watch). */
+    private val onMatchedInstruction: suspend (NavigationInstruction) -> Unit = {},
+    /** Invoked when a source app's notification is removed (candidate session end). */
+    private val onSessionEnded: suspend () -> Unit = {},
 ) : NotificationProcessor {
 
     override suspend fun onPosted(event: PostedNotification) {
@@ -29,9 +34,10 @@ class DebugCaptureProcessor(
         )
         debugHistory.recordPosted(event, evaluation)
         lastEligibleStore.record(event.snapshot.postTimeMillis)
+        evaluation.instruction?.let { onMatchedInstruction(it) }
     }
 
     override suspend fun onRemoved(packageName: String) {
-        // Session-end handling arrives with the reducer/transport wiring in a later milestone.
+        onSessionEnded()
     }
 }
