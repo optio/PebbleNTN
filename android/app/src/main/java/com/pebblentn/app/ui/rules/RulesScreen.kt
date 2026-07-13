@@ -1,5 +1,6 @@
 package com.pebblentn.app.ui.rules
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -23,17 +27,20 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.data.RuleValidationStatus
 import com.pebblentn.app.data.UserRule
 import com.pebblentn.app.rules.Rule
+import com.pebblentn.app.rules.RulesetCodec
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,16 +84,70 @@ private fun OfficialList(rules: List<Rule>, onClone: (Rule) -> Unit) {
         EmptyState(stringResource(R.string.rules_official_empty))
         return
     }
+    var viewing by remember { mutableStateOf<Rule?>(null) }
+
     LazyColumn {
         items(rules, key = { it.id }) { rule ->
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { viewing = rule }
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(rule.id, style = MaterialTheme.typography.bodyLarge)
                 Text(rule.packageNames.joinToString(), style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { onClone(rule) }) { Text(stringResource(R.string.rules_clone)) }
+                Row {
+                    TextButton(onClick = { viewing = rule }) { Text(stringResource(R.string.rules_view)) }
+                    TextButton(onClick = { onClone(rule) }) { Text(stringResource(R.string.rules_clone)) }
+                }
             }
             HorizontalDivider()
         }
     }
+
+    viewing?.let { rule ->
+        OfficialRuleDialog(
+            rule = rule,
+            onClone = {
+                onClone(rule)
+                viewing = null
+            },
+            onDismiss = { viewing = null },
+        )
+    }
+}
+
+/**
+ * Read-only view of an official rule: official rules ship with the app and cannot be edited in
+ * place — cloning is the supported way to change one (REQ-RULES: user rules override official ones).
+ */
+@Composable
+private fun OfficialRuleDialog(rule: Rule, onClone: () -> Unit, onDismiss: () -> Unit) {
+    val json = remember(rule) { RulesetCodec.canonicalizeRule(rule) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(rule.id) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    stringResource(R.string.rules_official_read_only),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                rule.comment?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                Text(
+                    text = json,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onClone) { Text(stringResource(R.string.rules_clone)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+    )
 }
 
 @Composable

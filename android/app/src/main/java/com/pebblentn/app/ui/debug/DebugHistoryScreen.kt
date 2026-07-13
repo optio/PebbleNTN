@@ -108,6 +108,15 @@ private fun DebugEventRow(event: DebugEvent, onClick: () -> Unit) {
             text = event.packageName,
             style = MaterialTheme.typography.bodySmall,
         )
+        // What went to the watch, so a drive can be scanned without opening every event.
+        event.instruction?.let { instruction ->
+            val distance = instruction.distanceMeters?.let { stringResource(R.string.debug_distance_meters, it) }
+            Text(
+                text = listOfNotNull(instruction.maneuver.name, distance, instruction.primaryText).joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         Text(
             text = "${event.eventType.name} · ${event.disposition}",
             style = MaterialTheme.typography.labelSmall,

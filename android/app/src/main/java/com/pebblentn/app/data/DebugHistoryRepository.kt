@@ -69,6 +69,9 @@ class DebugHistoryRepository(
         val snapshot = runCatching {
             json.decodeFromString(NotificationSnapshot.serializer(), entity.selectedSnapshotJson)
         }.getOrNull()
+        val instruction = entity.extractionJson?.let {
+            runCatching { json.decodeFromString(NavigationInstruction.serializer(), it) }.getOrNull()
+        }
         return DebugEvent(
             id = entity.id,
             packageName = entity.packageName,
@@ -78,6 +81,7 @@ class DebugHistoryRepository(
             snapshot = snapshot,
             matchedRuleId = entity.matchedRuleId,
             disposition = entity.disposition,
+            instruction = instruction,
         )
     }
 

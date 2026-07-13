@@ -24,13 +24,22 @@ class GoogleMapsRulesRegressionTest {
     )
 
     @Serializable
-    private data class Expected(val maneuver: String, val distanceMeters: Int? = null)
+    private data class Expected(
+        /** True unless the fixture asserts that nothing should match. */
+        val matched: Boolean = true,
+        val maneuver: String? = null,
+        val distanceMeters: Int? = null,
+        /** When set, the rule that must win — pins precedence, not just the maneuver. */
+        val ruleId: String? = null,
+    )
 
     @Serializable
     private data class Fixture(
         val name: String,
         val locale: String,
         val packageName: String,
+        /** "capture" (derived from a real notification) or "synthetic". */
+        val source: String = "synthetic",
         val snapshot: FixtureSnapshot,
         val expected: Expected,
     )
@@ -72,6 +81,15 @@ class GoogleMapsRulesRegressionTest {
             )
             val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
 
+            if (!fixture.expected.matched) {
+                assertEquals(
+                    "fixture '${fixture.name}' must not match any rule (matched ${result.matchedRuleId})",
+                    null,
+                    result.instruction,
+                )
+                continue
+            }
+
             assertTrue("fixture '${fixture.name}' should match a rule", result.matched)
             assertEquals(
                 "fixture '${fixture.name}' maneuver",
@@ -81,6 +99,33 @@ class GoogleMapsRulesRegressionTest {
             fixture.expected.distanceMeters?.let { expected ->
                 assertEquals("fixture '${fixture.name}' distance", expected, result.instruction.distanceMeters)
             }
+            fixture.expected.ruleId?.let { expected ->
+                assertEquals("fixture '${fixture.name}' matched rule", expected, result.matchedRuleId)
+            }
+        }
+    }
+
+    /**
+     * The regression that motivated the fixture rewrite: Google Maps carries the ETA in subText
+     * ("Arrive 23:51") on *every* navigation notification. A rule matching /arrive/ on combinedText
+     * therefore classified every turn as ARRIVE (real capture, 2026-07-13). ARRIVE must come from
+     * the title alone.
+     */
+    @Test
+    fun etaInSubTextNeverProducesArrive() {
+        for (title in listOf("Head toward Example Street", "Turn left onto Sample Avenue", "At the roundabout, take the 2nd exit")) {
+            val snapshot = NotificationSnapshot(
+                packageName = "com.google.android.apps.maps",
+                notificationId = 1,
+                title = title,
+                subText = "Arrive 23:51",
+            )
+            val result = engine.evaluate(snapshot, bundledRules, locale = "en", nowEpochSeconds = 0)
+            assertTrue("'$title' should match a rule", result.matched)
+            assertTrue(
+                "'$title' + ETA subText must not be classified ARRIVE",
+                result.instruction!!.maneuver.name != "ARRIVE",
+            )
         }
     }
 }

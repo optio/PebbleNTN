@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.07",
+  "rulesetVersion": "google-maps-en-2026.07.2",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -11,8 +11,9 @@
       "priority": 200,
       "packageNames": ["com.google.android.apps.maps"],
       "locales": ["en"],
+      "comment": "Title only, and never the bare word 'arrive'. Google Maps puts the ETA in subText ('Arrive 23:51') on EVERY navigation notification, so matching combinedText here classified every turn as ARRIVE (real capture, 2026-07-13).",
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\b(arrive|arriving|destination)\\b"}
+        {"field": "title", "operator": "regex", "value": "(?i)\\b(arriving|arrived|destination)\\b"}
       ],
       "output": {
         "maneuver": {"type": "literal", "value": "ARRIVE"},
@@ -175,8 +176,9 @@
       "priority": 50,
       "packageNames": ["com.google.android.apps.maps"],
       "locales": ["en"],
+      "comment": "Covers the step Google Maps opens a route with: 'Head toward <road>' / 'Head east on <road>' (real capture, 2026-07-13).",
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\b(continue|head|go)\\s+(straight|north|south|east|west|on)\\b"}
+        {"field": "combinedText", "operator": "regex", "value": "(?i)\\b(continue|head|go|proceed)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"}
       ],
       "output": {
         "maneuver": {"type": "literal", "value": "STRAIGHT"},

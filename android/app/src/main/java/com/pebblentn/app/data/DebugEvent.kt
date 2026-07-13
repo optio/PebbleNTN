@@ -1,5 +1,6 @@
 package com.pebblentn.app.data
 
+import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.notification.NotificationSnapshot
 
 /** Event types recorded in debug history. */
@@ -26,4 +27,10 @@ data class DebugEvent(
     val snapshot: NotificationSnapshot?,
     val matchedRuleId: String?,
     val disposition: String,
+    /**
+     * What the watch was shown for this notification: the normalized instruction the matched rule
+     * produced. Null when nothing matched (nothing was sent). This is the extraction result, so it
+     * is exactly what the watch rendered, not a re-derivation.
+     */
+    val instruction: NavigationInstruction? = null,
 )

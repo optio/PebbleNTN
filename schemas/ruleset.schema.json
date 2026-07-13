@@ -118,6 +118,11 @@
           "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
           "maxLength": 120
         },
+        "comment": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Maintainer note: why this rule is shaped the way it is. Ignored by the engine."
+        },
         "enabled": {
           "type": "boolean"
         },

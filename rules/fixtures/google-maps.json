@@ -1,14 +1,34 @@
 {
-  "note": "SYNTHETIC fixtures authored from documented Google Maps navigation-notification patterns. No real captures were used; content contains no real destinations. Provenance/gaps: see rules/fixtures/README.md.",
+  "note": "Mixed provenance. Fixtures with source=capture are derived from a real Google Maps capture on Android 16 (2026-07-13); street names and destinations are replaced with placeholders, but the FIELD STRUCTURE is real — note the ETA in subText ('Arrive 23:51') on every navigation notification. Fixtures with source=synthetic were authored from documented notification patterns. See rules/fixtures/README.md.",
   "fixtures": [
-    {"name": "turn-right", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn right", "text": "500 m", "subText": "Sample Street"}, "expected": {"maneuver": "RIGHT", "distanceMeters": 500}},
-    {"name": "turn-left", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn left", "text": "200 m", "subText": "Example Avenue"}, "expected": {"maneuver": "LEFT", "distanceMeters": 200}},
-    {"name": "slight-right", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Slight right", "text": "1.2 km"}, "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 1200}},
-    {"name": "sharp-left", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Sharp left", "text": "80 m"}, "expected": {"maneuver": "SHARP_LEFT", "distanceMeters": 80}},
-    {"name": "keep-left", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Keep left", "text": "300 m"}, "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 300}},
-    {"name": "roundabout", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "At the roundabout, take the 2nd exit", "text": "400 m"}, "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 400}},
-    {"name": "uturn", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Make a U-turn", "text": "150 m"}, "expected": {"maneuver": "UTURN_LEFT", "distanceMeters": 150}},
-    {"name": "continue", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Continue straight", "text": "3.0 km"}, "expected": {"maneuver": "STRAIGHT", "distanceMeters": 3000}},
-    {"name": "arrive", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "You have arrived at your destination", "text": "Now"}, "expected": {"maneuver": "ARRIVE"}}
+    {"name": "capture-head-toward", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
+      "snapshot": {"title": "Head toward Example Street", "subText": "Arrive 23:51"},
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "google-maps-continue-en"}},
+
+    {"name": "capture-head-east-on", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
+      "snapshot": {"title": "Head east on Sample Avenue", "subText": "Arrive 23:41"},
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "google-maps-continue-en"}},
+
+    {"name": "capture-arriving", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
+      "snapshot": {"title": "Arriving", "text": "at Destination"},
+      "expected": {"maneuver": "ARRIVE", "ruleId": "google-maps-arrive-en"}},
+
+    {"name": "capture-starting-navigation", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
+      "snapshot": {"title": "Starting navigation…"},
+      "expected": {"matched": false}},
+
+    {"name": "eta-subtext-must-not-mean-arrive", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
+      "snapshot": {"title": "Turn right onto Example Street", "text": "300 m", "subText": "Arrive 23:59"},
+      "expected": {"maneuver": "RIGHT", "distanceMeters": 300, "ruleId": "google-maps-turn-right-en"}},
+
+    {"name": "turn-right", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn right", "text": "500 m", "subText": "Arrive 12:05"}, "expected": {"maneuver": "RIGHT", "distanceMeters": 500}},
+    {"name": "turn-left", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn left", "text": "200 m", "subText": "Arrive 12:07"}, "expected": {"maneuver": "LEFT", "distanceMeters": 200}},
+    {"name": "slight-right", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Slight right", "text": "1.2 km"}, "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 1200}},
+    {"name": "sharp-left", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Sharp left", "text": "80 m"}, "expected": {"maneuver": "SHARP_LEFT", "distanceMeters": 80}},
+    {"name": "keep-left", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Keep left", "text": "300 m"}, "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 300}},
+    {"name": "roundabout", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "At the roundabout, take the 2nd exit", "text": "400 m"}, "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 400}},
+    {"name": "uturn", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Make a U-turn", "text": "150 m"}, "expected": {"maneuver": "UTURN_LEFT", "distanceMeters": 150}},
+    {"name": "continue", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Continue straight", "text": "3.0 km"}, "expected": {"maneuver": "STRAIGHT", "distanceMeters": 3000}},
+    {"name": "arrive", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "You have arrived at your destination", "text": "Now"}, "expected": {"maneuver": "ARRIVE"}}
   ]
 }

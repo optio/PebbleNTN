@@ -30,6 +30,9 @@
     <string name="rules_official_empty">No bundled official rules yet</string>
     <string name="rules_user_empty">You have no rules yet</string>
     <string name="rules_clone">Clone to your rules</string>
+    <string name="rules_view">View</string>
+    <string name="rules_official_read_only">Official rules ship with the app and are read-only. Clone this rule to change it — your copy takes precedence.</string>
+    <string name="close">Close</string>
     <string name="rules_new">New rule</string>
     <string name="rules_edit">Edit</string>
     <string name="rules_delete">Delete</string>
@@ -77,6 +80,16 @@
     <string name="debug_field_category">Category</string>
     <string name="debug_field_channel">Channel</string>
     <string name="debug_not_found">This event is no longer available.</string>
+    <string name="debug_watch_output">Sent to watch</string>
+    <string name="debug_watch_none">Nothing sent — no rule matched this notification.</string>
+    <string name="debug_field_matched_rule">Matched rule</string>
+    <string name="debug_field_maneuver">Maneuver</string>
+    <string name="debug_field_distance">Distance</string>
+    <string name="debug_field_primary_text">Primary text</string>
+    <string name="debug_field_secondary_text">Secondary text</string>
+    <string name="debug_notification_section">Notification</string>
+    <string name="debug_distance_meters">%1$d m</string>
+    <string name="debug_no_distance">none</string>
     <string name="cd_back">Back</string>
 
     <!-- Content descriptions -->

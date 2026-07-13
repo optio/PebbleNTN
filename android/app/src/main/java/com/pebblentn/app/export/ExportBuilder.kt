@@ -27,12 +27,25 @@ data class ExportMetadata(
     val androidRelease: String,
 )
 
+/**
+ * What the watch was shown for an event: the normalized instruction the matched rule produced.
+ * Absent when nothing matched — then nothing was sent to the watch.
+ */
+@Serializable
+data class ExportedWatchOutput(
+    val maneuver: String,
+    val distanceMeters: Int? = null,
+    val primaryText: String? = null,
+    val secondaryText: String? = null,
+)
+
 @Serializable
 data class ExportedEvent(
     val packageName: String,
     val eventType: String,
     val disposition: String,
     val matchedRuleId: String? = null,
+    val watchOutput: ExportedWatchOutput? = null,
     val snapshot: NotificationSnapshot? = null,
 )
 
@@ -71,11 +84,22 @@ class ExportBuilder(
 
     private fun toExported(event: DebugEvent, redact: Boolean): ExportedEvent {
         val snapshot = event.snapshot?.let { if (redact) redactor.redact(it) else it }
+        // The maneuver and distance are already normalized (no free text), so they survive
+        // redaction; the road text came from the notification and must not.
+        val watchOutput = event.instruction?.let {
+            ExportedWatchOutput(
+                maneuver = it.maneuver.name,
+                distanceMeters = it.distanceMeters,
+                primaryText = it.primaryText?.let { text -> if (redact) redactor.redactText(text) else text },
+                secondaryText = it.secondaryText?.let { text -> if (redact) redactor.redactText(text) else text },
+            )
+        }
         return ExportedEvent(
             packageName = event.packageName,
             eventType = event.eventType.name,
             disposition = event.disposition,
             matchedRuleId = event.matchedRuleId,
+            watchOutput = watchOutput,
             snapshot = snapshot,
         )
     }

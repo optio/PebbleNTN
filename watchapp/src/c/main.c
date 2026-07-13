@@ -24,6 +24,7 @@ static BitmapLayer *s_maneuver_layer;
 static TextLayer *s_distance_layer;
 static TextLayer *s_primary_layer;
 static TextLayer *s_status_layer;
+static TextLayer *s_message_layer;
 
 static GBitmap *s_maneuver_bitmaps[12];
 static int s_last_maneuver = -1;
@@ -31,6 +32,16 @@ static int s_last_maneuver = -1;
 static char s_distance_buf[24];
 static char s_primary_buf[PRIMARY_TEXT_MAX + 1];
 static char s_status_buf[32];
+static char s_message_buf[32];
+
+// Show either the navigation layers or the full-screen message layer, never both.
+static void set_message_mode(bool message) {
+  layer_set_hidden(bitmap_layer_get_layer(s_maneuver_layer), message);
+  layer_set_hidden(text_layer_get_layer(s_distance_layer), message);
+  layer_set_hidden(text_layer_get_layer(s_primary_layer), message);
+  layer_set_hidden(text_layer_get_layer(s_status_layer), message);
+  layer_set_hidden(text_layer_get_layer(s_message_layer), !message);
+}
 
 // --- Maneuver bitmap lookup -------------------------------------------------------------------
 
@@ -74,14 +85,12 @@ static void set_distance_text(int32_t meters) {
   text_layer_set_text(s_distance_layer, s_distance_buf);
 }
 
+// Connecting / no navigation / arrived / incompatible: one large centred line, no maneuver icon
+// (an icon here would be read as a maneuver).
 static void show_message(const char *message) {
-  bitmap_layer_set_bitmap(s_maneuver_layer, maneuver_bitmap(PBNTN_MANEUVER_UNKNOWN));
-  s_distance_buf[0] = '\0';
-  text_layer_set_text(s_distance_layer, s_distance_buf);
-  s_primary_buf[0] = '\0';
-  text_layer_set_text(s_primary_layer, s_primary_buf);
-  snprintf(s_status_buf, sizeof(s_status_buf), "%s", message);
-  text_layer_set_text(s_status_layer, s_status_buf);
+  snprintf(s_message_buf, sizeof(s_message_buf), "%s", message);
+  text_layer_set_text(s_message_layer, s_message_buf);
+  set_message_mode(true);
 }
 
 static void render_navigation(DictionaryIterator *iter) {
@@ -93,6 +102,7 @@ static void render_navigation(DictionaryIterator *iter) {
   int maneuver = maneuver_t ? maneuver_t->value->int32 : PBNTN_MANEUVER_UNKNOWN;
   int32_t flags = flags_t ? flags_t->value->int32 : 0;
 
+  set_message_mode(false);
   bitmap_layer_set_bitmap(s_maneuver_layer, maneuver_bitmap(maneuver));
   set_distance_text(distance_t ? distance_t->value->int32 : -1);
 
@@ -172,30 +182,47 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
 // --- Window ------------------------------------------------------------------------------------
 
+// Read at arm's length while driving: the maneuver icon and the distance carry the screen, so they
+// get the biggest glyphs the system offers; the road name is secondary and the stale marker is a
+// footnote. Heights are derived from the window so round (chalk) and large (emery) screens work.
 static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
+  const int16_t w = bounds.size.w;
+  const int16_t h = bounds.size.h;
 
-  const int16_t bmp = 52;
-  s_maneuver_layer = bitmap_layer_create(GRect((bounds.size.w - bmp) / 2, 6, bmp, bmp));
+  const int16_t icon = 64;                       // matches the generated bitmaps
+  const int16_t icon_y = PBL_IF_ROUND_ELSE(10, 2);
+  const int16_t distance_y = icon_y + icon;
+  const int16_t distance_h = 46;                 // Bitham 42 line box
+  const int16_t status_h = 20;
+  const int16_t primary_y = distance_y + distance_h;
+  const int16_t primary_h = h - primary_y - status_h;
+
+  s_maneuver_layer = bitmap_layer_create(GRect((w - icon) / 2, icon_y, icon, icon));
   bitmap_layer_set_compositing_mode(s_maneuver_layer, GCompOpSet);
   layer_add_child(root, bitmap_layer_get_layer(s_maneuver_layer));
 
-  s_distance_layer = text_layer_create(GRect(0, 60, bounds.size.w, 34));
-  text_layer_set_font(s_distance_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  s_distance_layer = text_layer_create(GRect(0, distance_y, w, distance_h));
+  text_layer_set_font(s_distance_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(s_distance_layer, GTextAlignmentCenter);
   layer_add_child(root, text_layer_get_layer(s_distance_layer));
 
-  s_primary_layer = text_layer_create(GRect(4, 98, bounds.size.w - 8, 44));
-  text_layer_set_font(s_primary_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  s_primary_layer = text_layer_create(GRect(2, primary_y, w - 4, primary_h));
+  text_layer_set_font(s_primary_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(s_primary_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_primary_layer, GTextOverflowModeTrailingEllipsis);
   layer_add_child(root, text_layer_get_layer(s_primary_layer));
 
-  s_status_layer = text_layer_create(GRect(0, bounds.size.h - 20, bounds.size.w, 18));
-  text_layer_set_font(s_status_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  s_status_layer = text_layer_create(GRect(0, h - status_h, w, status_h));
+  text_layer_set_font(s_status_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_status_layer, GTextAlignmentCenter);
   layer_add_child(root, text_layer_get_layer(s_status_layer));
+
+  s_message_layer = text_layer_create(GRect(4, h / 2 - 30, w - 8, 60));
+  text_layer_set_font(s_message_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+  text_layer_set_text_alignment(s_message_layer, GTextAlignmentCenter);
+  layer_add_child(root, text_layer_get_layer(s_message_layer));
 
   show_message("Connecting");
 }
@@ -205,6 +232,7 @@ static void window_unload(Window *window) {
   text_layer_destroy(s_distance_layer);
   text_layer_destroy(s_primary_layer);
   text_layer_destroy(s_status_layer);
+  text_layer_destroy(s_message_layer);
 }
 
 static void init(void) {

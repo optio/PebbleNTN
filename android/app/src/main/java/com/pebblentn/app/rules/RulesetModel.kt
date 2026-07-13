@@ -31,6 +31,8 @@ data class Rule(
     val locales: List<String> = emptyList(),
     val conditions: List<Condition>,
     val output: RuleOutput,
+    /** Maintainer note: why the rule is shaped this way. Ignored by the engine; shown in the UI. */
+    val comment: String? = null,
 )
 
 /** Operators for a [Condition]. Serialized names match the schema enum. */

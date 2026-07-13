@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +66,33 @@ fun DebugDetailScreen(
                 Text(stringResource(R.string.debug_not_found))
                 return@Column
             }
+            // What the watch actually showed for this notification — the first thing a rule author
+            // or a user debugging a wrong arrow wants to see.
+            Text(
+                text = stringResource(R.string.debug_watch_output),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            val instruction = event.instruction
+            if (instruction == null) {
+                Text(stringResource(R.string.debug_watch_none), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Field(stringResource(R.string.debug_field_maneuver), instruction.maneuver.name)
+                Field(
+                    stringResource(R.string.debug_field_distance),
+                    instruction.distanceMeters
+                        ?.let { stringResource(R.string.debug_distance_meters, it) }
+                        ?: stringResource(R.string.debug_no_distance),
+                )
+                Field(stringResource(R.string.debug_field_primary_text), instruction.primaryText)
+                Field(stringResource(R.string.debug_field_secondary_text), instruction.secondaryText)
+            }
+            Field(stringResource(R.string.debug_field_matched_rule), event.matchedRuleId)
+
+            HorizontalDivider()
+            Text(
+                text = stringResource(R.string.debug_notification_section),
+                style = MaterialTheme.typography.titleMedium,
+            )
             Field(stringResource(R.string.debug_field_package), event.packageName)
             Field(stringResource(R.string.debug_field_event_type), event.eventType.name)
             Field(stringResource(R.string.debug_field_disposition), event.disposition)
