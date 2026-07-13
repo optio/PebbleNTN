@@ -162,7 +162,17 @@ python3 watchapp/tools/gen_maneuver_bitmaps.py
 
 ```bash
 ./scripts/test-all.sh     # spec + protocol + rules validation, then Android unit tests + lint
-./scripts/build-all.sh    # Android debug APK + watchapp .pbw
+./scripts/build-all.sh    # Android debug APKs + watchapp .pbw
+```
+
+`build-all.sh` ends with an artifact report giving the absolute path of every file it produced, and
+`FAILED` for anything it did not; it exits non-zero if any artifact is missing:
+
+```
+Artifacts:
+  OK      phone app (debug)      /…/android/app/build/outputs/apk/debug/app-debug.apk (27M)
+  OK      fixture publisher      /…/android/fixture-publisher/build/outputs/apk/debug/fixture-publisher-debug.apk (6.0M)
+  OK      watchapp               /…/watchapp/build/watchapp.pbw (48K)
 ```
 
 ---
