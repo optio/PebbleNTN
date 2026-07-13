@@ -109,4 +109,26 @@ class NavigationControllerTest {
 
         assertTrue(events(transport).contains(Protocol.Events.PHONE_COMPATIBILITY_ERROR))
     }
+
+    /**
+     * A transport whose inbound stream fails (e.g. the platform rejects the Pebble broadcast
+     * receiver) must not take the app down: outbound navigation must keep working.
+     */
+    @Test
+    fun failingInboundStreamDoesNotKillTheController() = runTest {
+        val transport = object : FakeWatchTransport() {
+            override val inbound = kotlinx.coroutines.flow.flow<AppMessage> {
+                throw SecurityException("receiver rejected")
+            }
+        }
+        val controller = controller(transport, backgroundScope)
+
+        controller.start()
+        runCurrent()
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        runCurrent()
+
+        assertEquals("watch app still launched", 1, transport.launchCount)
+    }
 }

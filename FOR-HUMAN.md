@@ -64,12 +64,28 @@ cd android
 The unit tests include Robolectric-backed Room/ViewModel tests and the Google Maps rule regression,
 so no device is required for them.
 
-### Install & launch on a real phone
+### Install & launch
 
 ```bash
-./scripts/install-android-debug.sh      # builds + installs the debug APK (needs adb + a device)
-# then open the "PebbleNTN" app
+./scripts/install-android-debug.sh                # build + install + launch on the connected device/emulator
+./scripts/install-android-debug.sh --fixtures     # also install the fixture publisher (see below)
+./scripts/install-android-debug.sh --no-launch    # install only
 ```
+
+It finds `adb` inside the SDK (via `ANDROID_HOME`/`ANDROID_SDK_ROOT` or `android/local.properties`),
+so you do not need it on `PATH`. With several devices connected, set `ANDROID_SERIAL` to pick one.
+
+### Seeing a crash ("PebbleNTN keeps stopping")
+
+`adb` lives at `$ANDROID_HOME/platform-tools/adb` (the install script prints these two commands too):
+
+```bash
+adb logcat -b crash -v time                          # the crash buffer: the last fatal stack trace
+adb logcat --pid=$(adb shell pidof -s com.pebblentn.app)   # everything the running app logs
+```
+
+Add `-d` to dump the buffer and exit instead of following it, and `adb logcat -c` to clear it before
+reproducing.
 
 ### Run it in an emulator
 

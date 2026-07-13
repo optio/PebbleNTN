@@ -1,6 +1,9 @@
 package com.pebblentn.app.pebble
 
 import android.content.Context
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
+import com.getpebble.android.kit.Constants
 import com.getpebble.android.kit.PebbleKit
 import com.getpebble.android.kit.util.PebbleDictionary
 import com.pebblentn.app.protocol.AppMessage
@@ -34,7 +37,16 @@ class PebbleWatchTransport(
                 trySend(PebbleAppMessageMapper.fromDictionary(data))
             }
         }
-        PebbleKit.registerReceivedDataHandler(context, receiver)
+        // NOT PebbleKit.registerReceivedDataHandler: it calls registerReceiver() without an export
+        // flag, which is a fatal SecurityException from API 34 on. The broadcast originates in the
+        // Pebble app, so the receiver must be exported; PebbleDataReceiver drops any message whose
+        // UUID is not ours, so a hostile broadcast cannot inject watch messages.
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(Constants.INTENT_APP_RECEIVE),
+            ContextCompat.RECEIVER_EXPORTED,
+        )
         awaitClose { runCatching { context.unregisterReceiver(receiver) } }
     }
 

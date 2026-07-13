@@ -192,9 +192,9 @@ SUCCESSFUL. (Fixed one real defect found this way: `BuildConfig.DEBUG` required
 1. **Pebble SDK build in CI is best-effort** — `watchapp.yml` installs `pebble-tool` and the SDK
    at run time. The local build passes with SDK v4.9.169; pin a maintained SDK image if the
    public distribution changes.
-2. **No emulator / connected device** — instrumented tests
-   (`connectedDebugAndroidTest`) and manual UI runs cannot execute here; JVM unit tests, lint,
-   and APK/AAB assembly all run locally.
+2. **No Pebble watch** — the phone↔watch link cannot be exercised locally. An emulator is now
+   available (see "Post-M11" below) and runs the app, but it has no Bluetooth stack, so PebbleKit
+   cannot reach a watch there. Instrumented tests (`connectedDebugAndroidTest`) remain unwritten.
 
 ## Next atomic task
 
@@ -230,3 +230,27 @@ capture-derived (AGENTS.md — do not fabricate; record provenance).
   owning milestones.
 - Watchapp `main.c` deliberately defines **no** protocol key/event constants — those come from the
   generated header in M1.
+
+## Post-M11: first emulator run (2026-07-13)
+
+Installed an Android emulator locally (`emulator` + `system-images;android-34;google_apis;x86_64`,
+AVD `pebblentn-api34`) and ran the debug APK on it for the first time. This closed blocker 2 for
+manual UI runs (instrumented tests still need `connectedDebugAndroidTest` to be written) and
+immediately surfaced one real defect:
+
+**PebbleKit 4.0.1 crashes the app on Android 14+.** `PebbleKit.registerReceivedDataHandler` calls
+`Context.registerReceiver` without `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`, which API 34 makes a
+fatal `SecurityException` for non-system broadcasts. It was thrown on a `Dispatchers.Default` worker
+inside `PebbleWatchTransport.inbound`, so the process died at startup ("PebbleNTN keeps stopping").
+Fixes:
+
+1. `PebbleWatchTransport` registers the `PebbleDataReceiver` itself via
+   `ContextCompat.registerReceiver(..., RECEIVER_EXPORTED)` on `Constants.INTENT_APP_RECEIVE`.
+   Exported is required (the broadcast comes from the Pebble app); `PebbleDataReceiver` filters by
+   our UUID, so foreign broadcasts cannot inject watch messages.
+2. `NavigationController.start` now `catch`es the inbound stream: a transport failure degrades the
+   watch link instead of killing the process. Regression test:
+   `NavigationControllerTest.failingInboundStreamDoesNotKillTheController`.
+
+Verified on the emulator: no crash, onboarding renders, process stays alive. The watch link itself
+remains unverifiable there (no Bluetooth stack) — still a hardware step.

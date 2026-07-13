@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
  * Test double for [WatchTransport]. Records launches and sent messages, lets a test push inbound
  * messages, and can be scripted to fail sends. No Android or Pebble dependency.
  */
-class FakeWatchTransport(
+open class FakeWatchTransport(
     /** Results returned by successive [send] calls; the last entry repeats once exhausted. */
     private val sendResults: List<SendResult> = listOf(SendResult.SENT),
 ) : WatchTransport {

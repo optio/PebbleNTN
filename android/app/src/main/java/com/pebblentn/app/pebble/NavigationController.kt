@@ -14,10 +14,12 @@ import com.pebblentn.app.protocol.SendResult
 import com.pebblentn.app.protocol.WatchTransport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import timber.log.Timber
 
 /**
  * Bridges the notification/rule pipeline and the watch: it feeds events into the pure
@@ -41,9 +43,17 @@ class NavigationController(
     private val mutex = Mutex()
     private var state = ReducerState()
 
-    /** Begin collecting inbound watch messages. */
+    /**
+     * Begin collecting inbound watch messages. A transport failure (no Pebble app installed, a
+     * receiver the platform rejects, …) must degrade the watch link, not take the process down with
+     * it, so the stream is caught rather than left to reach the scope's uncaught handler.
+     */
     fun start() {
-        scope.launch { transport.inbound.collect { handleInbound(it) } }
+        scope.launch {
+            transport.inbound
+                .catch { Timber.e(it, "Watch transport failed; inbound watch messages are disabled") }
+                .collect { handleInbound(it) }
+        }
     }
 
     /**
