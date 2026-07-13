@@ -64,18 +64,48 @@ cd android
 The unit tests include Robolectric-backed Room/ViewModel tests and the Google Maps rule regression,
 so no device is required for them.
 
-### Install & launch on a device/emulator
+### Install & launch on a real phone
 
 ```bash
 ./scripts/install-android-debug.sh      # builds + installs the debug APK (needs adb + a device)
 # then open the "PebbleNTN" app
 ```
 
-Or start an emulator first:
+### Run it in an emulator
+
+The emulator has **no Bluetooth stack**, so PebbleKit cannot reach a watch there. It still exercises
+everything upstream of the watch — notification access, the package allowlist gate, rule matching,
+and the debug history with the match trace — which is what you want for rule work. Pair it with the
+fixture publisher (below) to inject synthetic turn notifications. For the phone↔watch half you need
+a real phone and a Pebble.
+
+**One-time setup**
 
 ```bash
-./scripts/run-android-emulator.sh [avd-name]
+# 1. Hardware acceleration (Linux/WSL2). Without KVM the emulator is unusably slow.
+sudo usermod -aG kvm $USER
+#    then re-login — on WSL2 run 'wsl --shutdown' from Windows so the group takes effect.
+#    (WSL2 also needs nested virtualisation; check that /dev/kvm exists.)
+
+# 2. Emulator + a system image (~1.5 GB).
+sdkmanager 'emulator' 'system-images;android-34;google_apis;x86_64'
+
+# 3. The AVD. Use this name — it is the default that run-android-emulator.sh expects.
+avdmanager create avd -n pebblentn-api34 -k 'system-images;android-34;google_apis;x86_64'
 ```
+
+`sdkmanager` and `avdmanager` live in `$ANDROID_HOME/cmdline-tools/latest/bin`. Do not run two
+`sdkmanager` installs at once — concurrent runs corrupt the downloaded image.
+
+**Every time**
+
+```bash
+./scripts/run-android-emulator.sh              # blocks; give it its own terminal. [avd-name] optional
+./scripts/install-android-debug.sh             # in a second terminal: build + install + launch hint
+```
+
+On WSL2 the emulator window appears via WSLg. `run-android-emulator.sh` finds the `emulator` binary
+under the SDK even when it is not on `PATH`, and warns if `/dev/kvm` is not usable.
 
 ### Using the app
 
