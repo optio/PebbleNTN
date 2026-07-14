@@ -37,3 +37,8 @@ Settings SHALL include per-app enablement, auto-launch, return-to-watchface, vib
 
 ## REQ-ANDROID-010 — Process recovery
 The app SHALL restore latest state safely and SHALL never replay obsolete turn events as a queue.
+
+## REQ-ANDROID-011 — Master switch
+The app SHALL provide a global enable/disable toggle, enabled by default. While disabled the app SHALL NOT read notification content, SHALL NOT store events, and SHALL NOT send state to the watch; the check SHALL happen before notification content is accessed. Disabling SHALL end any navigation currently shown on the watch. The setting SHALL persist across restarts.
+
+**Acceptance:** Dispatcher unit test proving the content builder is never invoked while disabled (even for an allowlisted package); persistence test across repository instances.

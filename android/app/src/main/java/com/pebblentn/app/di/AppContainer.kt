@@ -3,6 +3,7 @@ package com.pebblentn.app.di
 import android.content.Context
 import androidx.room.Room
 import com.pebblentn.app.catalog.NavigationAppCatalog
+import com.pebblentn.app.data.AppEnabledRepository
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
 import com.pebblentn.app.data.NavigationStateRepository
@@ -43,6 +44,9 @@ class AppContainer(context: Context) {
     val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val catalog: NavigationAppCatalog = AssetCatalogSource(appContext).load()
+
+    /** Master switch (REQ-ANDROID-011); on by default. */
+    val appEnabledRepository = AppEnabledRepository(appContext)
 
     private val database: PebbleNtnDatabase = Room.databaseBuilder(
         appContext,
@@ -119,7 +123,20 @@ class AppContainer(context: Context) {
         allowlist = enabledAppRepository,
         queue = processingQueue,
         processor = notificationProcessor,
+        appEnabled = appEnabledRepository::isEnabled,
     )
+
+    /**
+     * Flip the master switch. Turning it off also ends any navigation currently on the watch —
+     * leaving a stale arrow on someone's wrist after they disabled the app would be worse than
+     * useless.
+     */
+    fun setAppEnabled(enabled: Boolean) {
+        appEnabledRepository.setEnabled(enabled)
+        if (!enabled) {
+            applicationScope.launch { navigationController.onNavigationStopped() }
+        }
+    }
 
     private val installedAppsProvider = InstalledAppsProvider(appContext)
 

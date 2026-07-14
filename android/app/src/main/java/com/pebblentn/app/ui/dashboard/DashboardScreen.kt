@@ -2,13 +2,18 @@ package com.pebblentn.app.ui.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -19,14 +24,14 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * Minimal M2 dashboard: notification-access status and the last eligible notification time. More
- * (watch connection, current navigation state, active ruleset, shortcuts) is added in later
- * milestones.
+ * Dashboard: the master switch, notification-access status, and the last eligible notification.
  */
 @Composable
 fun DashboardScreen(
     accessGranted: Boolean,
     lastEligibleAtMillis: Long?,
+    appEnabled: Boolean = true,
+    onAppEnabledChange: (Boolean) -> Unit = {},
     onOpenDebugHistory: () -> Unit = {},
     onOpenRules: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -43,6 +48,29 @@ fun DashboardScreen(
                 text = stringResource(R.string.dashboard_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
+
+            // The master switch, first thing on the screen: when it is off nothing is read, matched,
+            // stored, or sent to the watch.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.dashboard_app_enabled),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringResource(
+                            if (appEnabled) R.string.dashboard_app_enabled_on else R.string.dashboard_app_enabled_off,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(checked = appEnabled, onCheckedChange = onAppEnabledChange)
+            }
+            HorizontalDivider()
+
             AccessStatusChip(accessGranted = accessGranted)
             Text(
                 text = if (lastEligibleAtMillis == null) {

@@ -94,12 +94,15 @@ class MainActivity : ComponentActivity() {
         val navController = rememberNavController()
         val lastEligible by container.lastEligibleNotificationStore.lastEligibleAtMillis.collectAsState()
         val events by debugViewModel.events.collectAsState()
+        val appEnabled by container.appEnabledRepository.enabled.collectAsState()
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
                 DashboardScreen(
                     accessGranted = true,
                     lastEligibleAtMillis = lastEligible,
+                    appEnabled = appEnabled,
+                    onAppEnabledChange = container::setAppEnabled,
                     onOpenDebugHistory = { navController.navigate("debug") },
                     onOpenRules = { navController.navigate("rules") },
                 )

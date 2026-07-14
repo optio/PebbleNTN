@@ -17,6 +17,9 @@
 
     <!-- Dashboard -->
     <string name="dashboard_title">PebbleNTN</string>
+    <string name="dashboard_app_enabled">PebbleNTN enabled</string>
+    <string name="dashboard_app_enabled_on">Navigation notifications are read and sent to your watch.</string>
+    <string name="dashboard_app_enabled_off">Paused. No notifications are read, stored, or sent to your watch.</string>
     <string name="dashboard_last_eligible_none">No eligible notifications yet</string>
     <string name="dashboard_last_eligible">Last eligible notification: %1$s</string>
 

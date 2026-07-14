@@ -29,3 +29,8 @@ The watch SHALL not vibrate on every distance update; maneuver-change vibration 
 
 ## REQ-WATCH-010 — Compatibility
 Protocol incompatibility SHALL produce an explicit state rather than silent failure.
+
+## REQ-WATCH-011 — Appearance settings
+The watchapp SHALL provide on-watch settings for accent colour, inverted display and distance units, applied immediately and persisted across launches. The colour list SHALL be reduced to the colours the watch can display: 16 accents on colour watches (e.g. Pebble Time 2), black/white on black-and-white watches (e.g. Pebble 2 Duo), so both polarities and their inverses remain reachable on every model.
+
+**Acceptance:** Emulator verification on a colour platform (basalt) and a black-and-white platform (diorite).

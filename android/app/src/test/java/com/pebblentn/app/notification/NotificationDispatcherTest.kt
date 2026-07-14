@@ -75,4 +75,40 @@ class NotificationDispatcherTest {
         assertTrue(spy.posted.isEmpty())
         assertTrue(spy.removed.isEmpty())
     }
+
+    /**
+     * The master switch (REQ-ANDROID-011) must gate *before* content is read — turning the app off
+     * has to mean "reads nothing", not "reads it and throws it away", even for an allowlisted app.
+     */
+    @Test
+    fun masterSwitchOffProcessesNothingAndNeverBuildsContent() = runTest {
+        val spy = SpyProcessor()
+        val dispatcher = NotificationDispatcher(allowlist, queue(testScheduler), spy, appEnabled = { false })
+        var builderInvoked = false
+
+        dispatcher.onPosted("com.google.android.apps.maps") {
+            builderInvoked = true // reading content would happen here
+            posted("com.google.android.apps.maps")
+        }
+        dispatcher.onRemoved("com.google.android.apps.maps")
+        testScheduler.advanceUntilIdle()
+
+        assertFalse("content must not be read while the app is disabled", builderInvoked)
+        assertTrue(spy.posted.isEmpty())
+        assertTrue(spy.removed.isEmpty())
+    }
+
+    @Test
+    fun masterSwitchIsReReadPerEventSoTogglingTakesEffectImmediately() = runTest {
+        val spy = SpyProcessor()
+        var enabled = true
+        val dispatcher = NotificationDispatcher(allowlist, queue(testScheduler), spy, appEnabled = { enabled })
+
+        dispatcher.onPosted("com.google.android.apps.maps") { posted("com.google.android.apps.maps") }
+        enabled = false
+        dispatcher.onPosted("com.google.android.apps.maps") { posted("com.google.android.apps.maps") }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, spy.posted.size)
+    }
 }

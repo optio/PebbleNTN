@@ -8,6 +8,7 @@ verified in code. It complements the normative requirements in `requirements/REQ
 
 | Boundary | Requirement | Enforcement | Verified by |
 |---|---|---|---|
+| Master switch **before** reading content | REQ-ANDROID-011 | `NotificationDispatcher` checks the user's global toggle before the allowlist and before the snapshot builder; disabling also ends navigation on the watch. Default on; persisted in `AppEnabledRepository` (`@Volatile` cache, no I/O on the callback thread) | `NotificationDispatcherTest.masterSwitchOffProcessesNothingAndNeverBuildsContent`, `AppEnabledRepositoryTest` |
 | Package allowlist **before** reading content | REQ-ANDROID-003 | `NotificationDispatcher` consults `AppAllowlist.isEnabled` before the snapshot builder is ever invoked; the listener passes only the package name + post time to the dispatcher | `NotificationDispatcherTest.disabledPackageIsNeverProcessedAndContentNeverBuilt` (content builder never runs for a disabled package) |
 | Synchronous, non-blocking allowlist on the callback thread | REQ-ANDROID-003/006 | `EnabledAppRepository` keeps a `@Volatile` cache; `isEnabled` reads only the cache, never the DB | `EnabledAppRepositoryTest` |
 | No debug record for disabled packages | REQ-DEBUG-002 | Only eligible (allowlisted) posts reach `DebugCaptureProcessor` | dispatcher + processor tests |
