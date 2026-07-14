@@ -1,18 +1,40 @@
 name: release
 
-# Signed release build. Runs on version tags. Secrets are supplied by a protected GitHub
-# environment; no signing material is stored in the repository (REQ-SEC-007).
+# Every successful push to main publishes a GitHub release: a version bump, a changelog, and the two
+# installable artifacts (pebble-ntn.apk, pebble-ntn.pbw).
+#
+# "Successful" is enforced, not assumed: the verify job runs the same checks as CI and the release
+# job only runs if it passes, so nothing is ever tagged or published from a broken commit.
+#
+# No loop: the version-bump commit is pushed with GITHUB_TOKEN, and GitHub does not start workflows
+# for pushes made with that token. ([skip ci] in the subject is a second belt.)
+#
+# Signing: with the release keystore secrets configured the APK is a signed release build; without
+# them it is a debug-signed build — installable, but not a Play-grade artifact. The release notes say
+# which one it is rather than leaving it ambiguous. The signed AAB for Play is a separate, manual
+# flow (play-release.yml).
+
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump level"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  release:
+  verify:
     runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
 
@@ -25,42 +47,156 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Verify Play target-SDK policy
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install validator deps
+        run: python -m pip install --upgrade jsonschema
+
+      - name: Spec assets, protocol, rules, version sync
         run: |
-          ./gradlew -q verifyReleaseTargetSdk || echo "TODO(M10) implement release-time target SDK policy check"
+          ./scripts/validate-spec-assets.sh
+          ./scripts/generate-protocol.sh --check
+          ./scripts/validate-rules.sh
+          ./scripts/version.sh --check
+          python3 tools/rule-workbench/workbench.py regression
+
+      - name: Android unit tests + lint
+        run: ./gradlew test lint
         working-directory: android
 
-      - name: Decode signing keystore
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the changelog needs history and tags
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Pebble SDK
+        run: |
+          python -m pip install --upgrade pebble-tool
+          yes | pebble sdk install latest || pebble sdk install latest
+
+      - name: Bump version
+        id: version
+        run: |
+          previous_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          version=$(./scripts/version.sh bump "${{ inputs.bump || 'patch' }}")
+          ./scripts/version.sh --check
+          {
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "previous_tag=$previous_tag"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing v$version (previous: ${previous_tag:-none})"
+
+      - name: Generate changelog
+        env:
+          PREVIOUS_TAG: ${{ steps.version.outputs.previous_tag }}
+        run: |
+          if [ -n "$PREVIOUS_TAG" ]; then
+            range="$PREVIOUS_TAG..HEAD"
+          else
+            range="HEAD"
+          fi
+          python3 scripts/changelog.py "$range" > CHANGELOG_RELEASE.md
+          cat CHANGELOG_RELEASE.md
+
+      - name: Decode signing keystore (if configured)
+        id: signing
         env:
           KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "No signing keystore configured; failing release." >&2
-            exit 1
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No signing keystore configured; the APK will be a debug-signed build."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
 
-      - name: Build signed AAB
+      - name: Build the APK
         env:
-          KEYSTORE_PATH: ${{ runner.temp }}/upload.keystore
+          KEYSTORE_PATH: ${{ steps.signing.outputs.signed == 'true' && format('{0}/upload.keystore', runner.temp) || '' }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew bundleRelease
+          SIGNED: ${{ steps.signing.outputs.signed }}
+        run: |
+          if [ "$SIGNED" = "true" ]; then
+            ./gradlew :app:assembleRelease
+            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/pebble-ntn.apk"
+          else
+            ./gradlew :app:assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/pebble-ntn.apk"
+          fi
         working-directory: android
 
-      - name: Compute checksums
+      - name: Build the watchapp
         run: |
-          shopt -s nullglob
-          for f in android/app/build/outputs/bundle/release/*.aab; do
-            sha256sum "$f" > "$f.sha256"
-          done
+          pebble build
+          cp build/watchapp.pbw "$GITHUB_WORKSPACE/pebble-ntn.pbw"
+        working-directory: watchapp
 
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-aab
-          path: |
-            android/app/build/outputs/bundle/release/*.aab
-            android/app/build/outputs/bundle/release/*.sha256
-          if-no-files-found: error
+      - name: Checksums
+        run: sha256sum pebble-ntn.apk pebble-ntn.pbw | tee SHA256SUMS.txt
+
+      - name: Commit and tag the version bump
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION android/app/build.gradle.kts watchapp/package.json watchapp/src/c/main.c
+          git commit -m "chore(release): ${TAG} [skip ci]"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin HEAD:main
+          git push origin "$TAG"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SIGNED: ${{ steps.signing.outputs.signed }}
+        run: |
+          {
+            if [ "$SIGNED" != "true" ]; then
+              echo "> **Note:** \`pebble-ntn.apk\` is a **debug-signed** build — no release keystore is"
+              echo "> configured for this repository. It installs on a device, but it is not a"
+              echo "> Play-grade artifact. To sign properly, set the UPLOAD_KEYSTORE_BASE64,"
+              echo "> KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD secrets."
+              echo
+            fi
+            cat CHANGELOG_RELEASE.md
+            echo "## Install"
+            echo
+            echo "- **Phone:** download \`pebble-ntn.apk\`, allow installs from unknown sources, open it."
+            echo "- **Watch:** download \`pebble-ntn.pbw\` and open it with the Pebble app, or run"
+            echo "  \`pebble install --phone <PHONE_IP> pebble-ntn.pbw\`."
+            echo
+            echo "Checksums: \`SHA256SUMS.txt\`."
+          } > RELEASE_NOTES.md
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file RELEASE_NOTES.md \
+            pebble-ntn.apk pebble-ntn.pbw SHA256SUMS.txt

@@ -245,7 +245,39 @@ Artifacts:
 
 ---
 
-## 7. CI
+## 7. Versioning and releases
+
+The version lives in **`VERSION`** at the repo root — the single source of truth. Three other files
+must agree with it (the phone reports its version to the watch, and vice versa, in the handshake):
+`android/app/build.gradle.kts` (`versionName` + `versionCode`), `watchapp/package.json`, and
+`watchapp/src/c/main.c` (`APP_VERSION_STR`).
+
+```bash
+./scripts/version.sh                # print the current version
+./scripts/version.sh --check        # verify all four files agree (pre-commit + CI run this)
+./scripts/version.sh bump patch     # 0.1.2 -> 0.1.3, and sync every file
+./scripts/version.sh set 1.0.0      # exact version
+```
+
+`versionCode` is derived from the semver (`major*10000 + minor*100 + patch`), so it is monotonic and
+needs no separate bookkeeping.
+
+**Every successful push to `main` publishes a GitHub release** (`.github/workflows/release.yml`):
+
+1. `verify` runs the same checks as CI — nothing is tagged or published from a broken commit;
+2. the patch version is bumped and committed (`chore(release): vX.Y.Z [skip ci]`) and tagged;
+3. a changelog is generated from the commits since the previous tag, grouped by Conventional Commit
+   type (`scripts/changelog.py`);
+4. the release is published with **`pebble-ntn.apk`**, **`pebble-ntn.pbw`** and `SHA256SUMS.txt`.
+
+Use **Run workflow** on the release workflow to choose a `minor` or `major` bump instead of `patch`.
+
+> The APK is **debug-signed** until the release keystore secrets (`UPLOAD_KEYSTORE_BASE64`,
+> `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) are configured. It installs fine; it is not a
+> Play-grade artifact, and the release notes say so. The signed **AAB** for Play is a separate,
+> manually triggered workflow (`play-release.yml`).
+
+## 8. CI
 
 GitHub Actions build and gate PRs: `android.yml` (unit tests, lint, APK), `watchapp.yml` (.pbw),
 `rules.yml` (schema/regression), `release.yml` (signed AAB, tag-triggered), `codeql.yml`.

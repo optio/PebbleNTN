@@ -354,3 +354,29 @@ syntax → Android unit tests + lint (only when `android/` is touched). Cheapest
 failures report in under a second. Verified against four deliberate breakages: an unsynced manifest
 (the failure above), a staged keystore/`local.properties`, a signing password in a diff, and a rule
 change that breaks the fixtures. `--no-verify` and `PEBBLENTN_SKIP_GRADLE=1` are the escape hatches.
+
+## Release automation (2026-07-14)
+
+**Single source of truth for the version:** `VERSION` at the repo root. It was duplicated in three
+files that could silently disagree (`build.gradle.kts`, `watchapp/package.json`,
+`main.c APP_VERSION_STR`) — and the phone and watch exchange their versions in the READY handshake,
+so drift is not cosmetic. `scripts/version.sh` bumps/sets/verifies all of them; `--check` runs in the
+pre-commit hook, `test-all.sh` and the release workflow's verify job. `versionCode` is derived from
+the semver (`major*10000 + minor*100 + patch`), so it is monotonic without separate bookkeeping.
+
+**`release.yml` (rewritten):** every push to `main` → verify (same checks as CI; nothing is published
+from a broken commit) → bump patch → changelog from the commits since the last tag, grouped by
+Conventional Commit type (`scripts/changelog.py`) → tag → GitHub release with `pebble-ntn.apk`,
+`pebble-ntn.pbw` and `SHA256SUMS.txt`. `workflow_dispatch` allows a minor/major bump. No loop: the
+bump commit is pushed with `GITHUB_TOKEN`, and GitHub does not start workflows for those pushes.
+
+**`play-release.yml`:** the old tag-triggered signed-AAB job, now manual (`workflow_dispatch` with a
+tag input). A Play upload should be a deliberate act, not a side effect of pushing to main.
+
+**Signing caveat (deliberate, and stated in every release note):** with no keystore secrets set, the
+published APK is **debug-signed**. It installs, but it is not a Play-grade artifact. Setting
+`UPLOAD_KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD` switches it to a signed
+release build automatically.
+
+**Unverified:** the release workflow cannot be run locally. The version script, the changelog
+generator and the YAML are verified here; the first release run is the real check.

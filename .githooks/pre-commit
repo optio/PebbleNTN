@@ -7,6 +7,7 @@
 #   1. secrets / keystores / local paths        (AGENTS.md: never commit these)
 #   2. spec asset integrity                     (protected files vs MANIFEST.sha256.json)
 #   3. generated protocol constants up to date  (never hand-edited)
+#   3b. version sync                           (VERSION vs gradle/package.json/main.c)
 #   4. rule schemas + rule regression           (AGENTS.md: rule changes need fixtures + tests)
 #   5. shell/YAML/Python syntax
 #   6. Android unit tests + lint                (only when android/ is touched; the slow one)
@@ -67,6 +68,17 @@ if out="$(./scripts/generate-protocol.sh --check 2>&1)"; then
   pass "Protocol.kt / protocol.h match protocol-definition.json"
 else
   fail "generated protocol files are stale — run ./scripts/generate-protocol.sh"
+  sed 's/^/       /' <<<"$out" >&2
+fi
+
+# --- 3b. Version sync ---------------------------------------------------------------------------
+# The version lives in four files (VERSION is the source of truth). They drift silently otherwise,
+# and the release workflow refuses to publish when they disagree.
+step "Version sync"
+if out="$(./scripts/version.sh --check 2>&1)"; then
+  pass "$out"
+else
+  fail "version files disagree with VERSION"
   sed 's/^/       /' <<<"$out" >&2
 fi
 

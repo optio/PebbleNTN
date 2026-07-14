@@ -10,6 +10,9 @@ echo "==> Spec asset integrity"
 echo "==> Generated protocol constants up to date"
 "$REPO_ROOT/scripts/generate-protocol.sh" --check
 
+echo "==> Version sync (VERSION vs gradle/package.json/main.c)"
+"$REPO_ROOT/scripts/version.sh" --check
+
 echo "==> Rule schema validation"
 "$REPO_ROOT/scripts/validate-rules.sh"
 
