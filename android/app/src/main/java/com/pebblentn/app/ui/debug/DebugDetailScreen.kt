@@ -66,27 +66,69 @@ fun DebugDetailScreen(
                 Text(stringResource(R.string.debug_not_found))
                 return@Column
             }
-            // What the watch actually showed for this notification — the first thing a rule author
-            // or a user debugging a wrong arrow wants to see.
+            // The parse result broken down per watchface element — the first thing a rule author or
+            // a user debugging a wrong arrow wants to see. Every element the watch renders is shown
+            // with its own key, even when empty, so it is obvious what each element resolved to.
             Text(
-                text = stringResource(R.string.debug_watch_output),
+                text = stringResource(R.string.debug_watch_elements),
                 style = MaterialTheme.typography.titleMedium,
             )
             val instruction = event.instruction
+            val emptyPlaceholder = stringResource(R.string.debug_element_none)
             if (instruction == null) {
                 Text(stringResource(R.string.debug_watch_none), style = MaterialTheme.typography.bodyMedium)
             } else {
-                Field(stringResource(R.string.debug_field_maneuver), instruction.maneuver.name)
-                Field(
+                val maneuverValue =
+                    if (instruction.maneuver.name == "UNKNOWN") {
+                        stringResource(R.string.debug_maneuver_unknown_hint)
+                    } else {
+                        instruction.maneuver.name
+                    }
+                ElementRow(stringResource(R.string.debug_field_maneuver), maneuverValue)
+                ElementRow(
                     stringResource(R.string.debug_field_distance),
                     instruction.distanceMeters
                         ?.let { stringResource(R.string.debug_distance_meters, it) }
                         ?: stringResource(R.string.debug_no_distance),
                 )
-                Field(stringResource(R.string.debug_field_primary_text), instruction.primaryText)
-                Field(stringResource(R.string.debug_field_secondary_text), instruction.secondaryText)
+                ElementRow(
+                    stringResource(R.string.debug_field_primary_text),
+                    instruction.primaryText ?: emptyPlaceholder,
+                )
+                ElementRow(
+                    stringResource(R.string.debug_field_secondary_text),
+                    instruction.secondaryText ?: emptyPlaceholder,
+                )
+                ElementRow(
+                    stringResource(R.string.debug_field_eta),
+                    instruction.etaEpochSeconds
+                        ?.let { DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it * 1000)) }
+                        ?: emptyPlaceholder,
+                )
             }
             Field(stringResource(R.string.debug_field_matched_rule), event.matchedRuleId)
+
+            HorizontalDivider()
+            // Why this result: which rules were tried and how each one resolved.
+            Text(
+                text = stringResource(R.string.debug_trace_section),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (event.trace.isEmpty()) {
+                Text(stringResource(R.string.debug_trace_none), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                event.trace.forEach { entry ->
+                    ElementRow(
+                        entry.ruleId,
+                        stringResource(
+                            R.string.debug_trace_entry,
+                            entry.layer.name,
+                            entry.outcome.name,
+                            entry.message ?: "",
+                        ).trimEnd(' ', '·'),
+                    )
+                }
+            }
 
             HorizontalDivider()
             Text(
@@ -119,6 +161,16 @@ fun DebugDetailScreen(
 @Composable
 private fun Field(label: String, value: String?) {
     if (value.isNullOrEmpty()) return
+    Column {
+        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/** Like [Field] but always rendered — used for the per-element parse breakdown and the trace, where
+ *  showing an empty element is itself the information the user is looking for. */
+@Composable
+private fun ElementRow(label: String, value: String) {
     Column {
         Text(text = label, style = MaterialTheme.typography.labelMedium)
         Text(text = value, style = MaterialTheme.typography.bodyLarge)

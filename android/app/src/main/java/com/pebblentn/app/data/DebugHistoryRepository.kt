@@ -72,6 +72,9 @@ class DebugHistoryRepository(
         val instruction = entity.extractionJson?.let {
             runCatching { json.decodeFromString(NavigationInstruction.serializer(), it) }.getOrNull()
         }
+        val trace = entity.traceJson?.let {
+            runCatching { json.decodeFromString(ListSerializer(RuleTraceEntry.serializer()), it) }.getOrNull()
+        }.orEmpty()
         return DebugEvent(
             id = entity.id,
             packageName = entity.packageName,
@@ -82,6 +85,7 @@ class DebugHistoryRepository(
             matchedRuleId = entity.matchedRuleId,
             disposition = entity.disposition,
             instruction = instruction,
+            trace = trace,
         )
     }
 

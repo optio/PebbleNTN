@@ -93,6 +93,13 @@
     <string name="debug_notification_section">Notification</string>
     <string name="debug_distance_meters">%1$d m</string>
     <string name="debug_no_distance">none</string>
+    <string name="debug_field_eta">ETA</string>
+    <string name="debug_watch_elements">Parsed watchface elements</string>
+    <string name="debug_element_none">— (element empty)</string>
+    <string name="debug_maneuver_unknown_hint">UNKNOWN — the watch shows the “?” fallback glyph</string>
+    <string name="debug_trace_section">Rule evaluation trace</string>
+    <string name="debug_trace_none">No rules were evaluated.</string>
+    <string name="debug_trace_entry">%1$s · %2$s · %3$s</string>
     <string name="cd_back">Back</string>
 
     <!-- Content descriptions -->

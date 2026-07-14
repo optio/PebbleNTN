@@ -26,3 +26,6 @@ The repository SHALL include a CLI capable of inspecting exported JSON and read-
 
 ## REQ-DEBUG-009 — Community contribution
 The maintainer workflow SHALL support GitHub pull requests containing rules, fixtures, expected outputs and generated regression reports.
+
+## REQ-DEBUG-010 — Per-element parse breakdown
+The event detail SHALL present the normalized output broken down per watchface element — maneuver, distance, primary text, secondary text and ETA — with a key for each element, shown even when an element is empty. When the maneuver is UNKNOWN, the detail SHALL indicate that the watch renders the fallback glyph. The persisted rule-evaluation trace SHALL be displayed (rule id, layer and outcome per evaluated rule).
