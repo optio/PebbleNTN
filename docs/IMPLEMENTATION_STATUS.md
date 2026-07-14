@@ -289,3 +289,28 @@ settings menu, and the black-and-white path.
 
 **Not verified**: chalk (round) and emery (large) layouts, and the settings menu driven by a real
 button press — the emulator screenshots were taken with the menu pushed programmatically.
+
+## CI: CodeQL without GitHub code scanning (2026-07-14)
+
+The CodeQL workflow failed on every run:
+
+> Error: Code scanning is not enabled for this repository.
+
+`optio/PebbleNTN` is **private**, and uploading SARIF to GitHub code scanning requires code scanning
+to be enabled — which on a private repo needs GitHub Advanced Security. The analysis itself ran fine
+(81/120 Kotlin files); only the upload failed.
+
+Rather than delete static analysis from an app that reads notifications, `codeql.yml` now runs
+CodeQL without touching the code-scanning API: `upload: never`, SARIF published as a build artifact,
+and the job fails if CodeQL reports an **error-level** finding. `security-events: write` is no longer
+needed. Also moved `github/codeql-action` v3 → v4, which runs on Node 24 (v3 uses the deprecated
+Node 20).
+
+**Trade-off:** no alert history, no dedup, no PR annotations, and warning/note-level findings do not
+fail the build (they are in the artifact). To get those back, make the repo public or enable Advanced
+Security, then follow the checklist in the header of `.github/workflows/codeql.yml`.
+
+**Note:** the Node 20 deprecation warning also applies to `actions/checkout@v4`,
+`actions/setup-java@v4`, `actions/upload-artifact@v4` and `android-actions/setup-android@v3` in the
+other workflows. Those are warnings, not errors, today; the major bumps (checkout v5+, setup-java v5,
+upload-artifact v5+) are not made here because they cannot be verified locally.

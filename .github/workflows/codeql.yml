@@ -1,5 +1,20 @@
 name: codeql
 
+# CodeQL runs on every push/PR, but it does NOT upload to GitHub code scanning.
+#
+# Uploading requires code scanning to be enabled for the repository, which for a *private* repo
+# needs GitHub Advanced Security. Without it the upload step fails the whole job:
+#   "Error: Code scanning is not enabled for this repository."
+# The analysis itself is worth keeping (this app reads notifications), so the results are gated
+# here instead: the SARIF is published as a build artifact and the job fails if CodeQL reports an
+# error-level finding.
+#
+# To switch back to native code scanning — the better setup, with alert dedup, history and PR
+# annotations — make the repository public or enable Advanced Security on it, then:
+#   - remove the "output:" and "upload: never" inputs from the analyze step,
+#   - remove the "Fail on error-level findings" and artifact steps,
+#   - restore "security-events: write" under permissions.
+
 on:
   push:
     branches: [main]
@@ -15,7 +30,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -28,8 +42,9 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # v4 runs on Node 24; v3 runs on the deprecated Node 20.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
 
@@ -38,6 +53,38 @@ jobs:
         working-directory: android
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:java-kotlin"
+          output: sarif-results
+          upload: never
+
+      - name: Fail on error-level findings
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          sarifs=(sarif-results/*.sarif)
+          if [ ${#sarifs[@]} -eq 0 ]; then
+            echo "::error::CodeQL produced no SARIF file — the analysis did not run."
+            exit 1
+          fi
+          errors=0
+          for sarif in "${sarifs[@]}"; do
+            total=$(jq '[.runs[].results[]?] | length' "$sarif")
+            n=$(jq '[.runs[].results[]? | select(.level == "error")] | length' "$sarif")
+            echo "$sarif: $total finding(s), $n at error level."
+            jq -r '.runs[].results[]? | "\(.level)\t\(.ruleId)\t\(.locations[0].physicalLocation.artifactLocation.uri // "?"):\(.locations[0].physicalLocation.region.startLine // 0)"' "$sarif"
+            errors=$((errors + n))
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "::error::CodeQL reported $errors error-level finding(s); see the codeql-sarif artifact."
+            exit 1
+          fi
+
+      - name: Upload SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif
+          path: sarif-results/
+          retention-days: 14
