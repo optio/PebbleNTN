@@ -84,7 +84,11 @@ android {
 
     // Release signing from environment (CI supplies these via a protected environment). Never
     // committed; when absent (local dev), release builds are produced unsigned.
-    val releaseKeystore = System.getenv("KEYSTORE_PATH")
+    //
+    // `takeIf { isNotBlank() }` is load-bearing: an *empty* KEYSTORE_PATH is not null, and CI sets
+    // env vars to "" when a secret is missing. Without this, configuring the signing config fails
+    // the whole build with "path may not be null or empty string" — even for assembleDebug.
+    val releaseKeystore = System.getenv("KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
     signingConfigs {
         if (releaseKeystore != null) {
             create("release") {

@@ -134,21 +134,26 @@ jobs:
             echo "signed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build the APK
+      # Signed release build when the keystore secrets exist, debug build otherwise. KEYSTORE_PATH is
+      # only exported in the signed branch: an empty value is not the same as an unset one, and the
+      # build script keys off its presence.
+      - name: Build the signed release APK
+        if: steps.signing.outputs.signed == 'true'
         env:
-          KEYSTORE_PATH: ${{ steps.signing.outputs.signed == 'true' && format('{0}/upload.keystore', runner.temp) || '' }}
+          KEYSTORE_PATH: ${{ runner.temp }}/upload.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
-          if [ "$SIGNED" = "true" ]; then
-            ./gradlew :app:assembleRelease
-            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/pebble-ntn.apk"
-          else
-            ./gradlew :app:assembleDebug
-            cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/pebble-ntn.apk"
-          fi
+          ./gradlew :app:assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/pebble-ntn.apk"
+        working-directory: android
+
+      - name: Build the debug APK (no signing keystore configured)
+        if: steps.signing.outputs.signed != 'true'
+        run: |
+          ./gradlew :app:assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/pebble-ntn.apk"
         working-directory: android
 
       - name: Build the watchapp
