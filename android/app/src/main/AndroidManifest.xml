@@ -51,6 +51,16 @@
             </intent-filter>
         </service>
 
+        <!-- Receives AppMessages from the watchapp over PebbleKit Android 2. Exported so the Pebble
+             app can deliver to it; WatchListenerService filters by our watchapp UUID. -->
+        <service
+            android:name=".pebble.WatchListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="io.rebble.pebblekit2.RECEIVE_DATA_FROM_WATCH" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
