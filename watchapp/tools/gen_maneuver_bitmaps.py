@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Generate monochrome maneuver bitmaps (PNG) for the Pebble watchapp (REQ-WATCH-002).
+"""Generate monochrome maneuver bitmaps (PNG) for the Pebble watchapp (REQ-WATCH-002, REQ-WATCH-012).
 
 Pure stdlib (zlib + struct) so it runs anywhere. Glyphs are drawn large and heavy on purpose: on a
 144x168 watch, read at a glance while driving, thin strokes disappear. Arrows are one canonical up
 arrow rotated to the maneuver's angle; u-turn, roundabout, arrive and unknown are distinct glyphs.
 
+Three built-in glyph packs are produced from one set of shapes (REQ-WATCH-012):
+  - classic  — the filled shapes (written to images/*.png; the default pack).
+  - bold     — the filled shapes dilated, for heavier strokes (images/bold/*.png).
+  - outline  — the boundary band of each filled shape (images/outline/*.png).
+The unknown glyph is a question mark, matching the "?" fallback the watch renders for an
+unclassified maneuver.
+
 Run: python3 watchapp/tools/gen_maneuver_bitmaps.py
-Output: watchapp/resources/images/*.png
+Output: watchapp/resources/images/{,bold/,outline/}*.png
 """
 from __future__ import annotations
 
@@ -22,7 +29,7 @@ SIZE = 48
 CANON = 64.0
 CENTER = CANON / 2.0
 BLACK, WHITE = 0, 255
-OUT_DIR = Path(__file__).resolve().parent.parent / "resources" / "images"
+IMAGES_DIR = Path(__file__).resolve().parent.parent / "resources" / "images"
 
 Canvas = list[list[int]]
 
@@ -159,16 +166,68 @@ def arrive() -> Canvas:
     return rows
 
 
-def unknown() -> Canvas:
-    """Heavy hollow square: 'a maneuver we could not classify'."""
+def question() -> Canvas:
+    """A question mark: the watch's fallback for a maneuver it could not classify."""
     rows = blank()
-    fill_rect(rows, 8, 8, 56, 56)
-    for y in range(SIZE):  # punch the middle back out
-        for x in range(SIZE):
-            u, v = to_canon(x), to_canon(y)
-            if 17 <= u <= 47 and 17 <= v <= 47:
-                rows[y][x] = WHITE
+    # Hook: the upper ~3/4 of a thick ring (open at the lower-left).
+    fill(
+        rows,
+        lambda u, v: 8.0 <= math.hypot(u - CENTER, v - 22) <= 16.0
+        and (v <= 22 or u >= CENTER),
+    )
+    # Neck: from the bottom of the hook down to the centre.
+    fill_rect(rows, CENTER - 4, 30, CENTER + 4, 44)
+    # Dot.
+    fill_disc(rows, CENTER, 55, 5)
     return rows
+
+
+# --- Morphology: derive the bold and outline packs from the filled (classic) shapes -------------
+
+
+def _is_black(rows: Canvas, y: int, x: int) -> bool:
+    return 0 <= y < SIZE and 0 <= x < SIZE and rows[y][x] == BLACK
+
+
+def dilate(rows: Canvas, k: int) -> Canvas:
+    """Thicken: a pixel becomes black if any pixel within Chebyshev distance k is black."""
+    out = blank()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            hit = any(
+                _is_black(rows, y + dy, x + dx)
+                for dy in range(-k, k + 1)
+                for dx in range(-k, k + 1)
+            )
+            if hit:
+                out[y][x] = BLACK
+    return out
+
+
+def erode(rows: Canvas, k: int) -> Canvas:
+    """Shrink: a pixel stays black only if every pixel within Chebyshev distance k is black."""
+    out = blank()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            solid = all(
+                _is_black(rows, y + dy, x + dx)
+                for dy in range(-k, k + 1)
+                for dx in range(-k, k + 1)
+            )
+            if solid:
+                out[y][x] = BLACK
+    return out
+
+
+def outline_of(rows: Canvas, thickness: int = 4) -> Canvas:
+    """Keep the boundary band of a filled shape: filled minus its eroded interior."""
+    interior = erode(rows, thickness)
+    out = blank()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if rows[y][x] == BLACK and interior[y][x] != BLACK:
+                out[y][x] = BLACK
+    return out
 
 
 GLYPHS = {
@@ -183,15 +242,24 @@ GLYPHS = {
     "uturn_right": lambda: uturn(mirror=True),
     "roundabout": roundabout,
     "arrive": arrive,
-    "unknown": unknown,
+    "unknown": question,
+}
+
+# name -> canvas transform. classic is the shapes as drawn; bold/outline are derived.
+PACKS = {
+    "classic": lambda rows: rows,
+    "bold": lambda rows: dilate(rows, 1),
+    "outline": lambda rows: outline_of(rows, thickness=4),
 }
 
 
 def main() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for name, builder in GLYPHS.items():
-        write_png(OUT_DIR / f"{name}.png", builder())
-        print(f"wrote {name}.png ({SIZE}x{SIZE})")
+    for pack, transform in PACKS.items():
+        out_dir = IMAGES_DIR if pack == "classic" else IMAGES_DIR / pack
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for name, builder in GLYPHS.items():
+            write_png(out_dir / f"{name}.png", transform(builder()))
+        print(f"wrote pack '{pack}' ({len(GLYPHS)} glyphs) -> {out_dir}")
 
 
 if __name__ == "__main__":

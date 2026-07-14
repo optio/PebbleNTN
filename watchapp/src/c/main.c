@@ -47,29 +47,79 @@ static char s_message_buf[32];
 
 // --- Maneuver bitmaps -------------------------------------------------------------------------
 
-static uint32_t maneuver_resource_id(int maneuver) {
-  switch (maneuver) {
-    case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_STRAIGHT;
-    case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_SLIGHT_LEFT;
-    case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_LEFT;
-    case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_SHARP_LEFT;
-    case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_SLIGHT_RIGHT;
-    case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_RIGHT;
-    case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_SHARP_RIGHT;
-    case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_UTURN_LEFT;
-    case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_UTURN_RIGHT;
-    case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_ROUNDABOUT;
-    case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_ARRIVE;
-    default: return RESOURCE_ID_MANEUVER_UNKNOWN;
+// Resource id for a maneuver within the selected glyph pack (REQ-WATCH-012). The pack only chooses
+// which bundled bitmap is drawn; the maneuver code from the phone is unchanged.
+static uint32_t maneuver_resource_id(int maneuver, GlyphPack pack) {
+  switch (pack) {
+    case GLYPH_PACK_BOLD:
+      switch (maneuver) {
+        case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_BOLD_STRAIGHT;
+        case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_BOLD_SLIGHT_LEFT;
+        case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_BOLD_LEFT;
+        case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_BOLD_SHARP_LEFT;
+        case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_SLIGHT_RIGHT;
+        case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_RIGHT;
+        case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_SHARP_RIGHT;
+        case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_BOLD_UTURN_LEFT;
+        case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_UTURN_RIGHT;
+        case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_BOLD_ROUNDABOUT;
+        case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_BOLD_ARRIVE;
+        default: return RESOURCE_ID_MANEUVER_BOLD_UNKNOWN;
+      }
+    case GLYPH_PACK_OUTLINE:
+      switch (maneuver) {
+        case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_STRAIGHT;
+        case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_SLIGHT_LEFT;
+        case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_LEFT;
+        case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_SHARP_LEFT;
+        case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_SLIGHT_RIGHT;
+        case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_RIGHT;
+        case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_SHARP_RIGHT;
+        case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_UTURN_LEFT;
+        case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_UTURN_RIGHT;
+        case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_OUTLINE_ROUNDABOUT;
+        case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_OUTLINE_ARRIVE;
+        default: return RESOURCE_ID_MANEUVER_OUTLINE_UNKNOWN;
+      }
+    case GLYPH_PACK_CLASSIC:
+    default:
+      switch (maneuver) {
+        case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_STRAIGHT;
+        case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_SLIGHT_LEFT;
+        case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_LEFT;
+        case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_SHARP_LEFT;
+        case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_SLIGHT_RIGHT;
+        case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_RIGHT;
+        case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_SHARP_RIGHT;
+        case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_UTURN_LEFT;
+        case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_UTURN_RIGHT;
+        case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_ROUNDABOUT;
+        case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_ARRIVE;
+        default: return RESOURCE_ID_MANEUVER_UNKNOWN;
+      }
   }
 }
 
+// The maneuver bitmaps are cached; the cache belongs to one pack. When the user switches packs the
+// whole cache is dropped so the next draw loads the new pack's bitmaps.
+static GlyphPack s_cached_pack = GLYPH_PACK_CLASSIC;
+
 static GBitmap *maneuver_bitmap(int maneuver) {
+  const GlyphPack pack = settings_glyph_pack();
+  if (pack != s_cached_pack) {
+    for (int i = 0; i < 12; i++) {
+      if (s_maneuver_bitmaps[i] != NULL) {
+        gbitmap_destroy(s_maneuver_bitmaps[i]);
+        s_maneuver_bitmaps[i] = NULL;
+      }
+    }
+    s_cached_pack = pack;
+  }
   if (maneuver < 0 || maneuver > PBNTN_MANEUVER_ARRIVE) {
     maneuver = PBNTN_MANEUVER_UNKNOWN;
   }
   if (s_maneuver_bitmaps[maneuver] == NULL) {
-    s_maneuver_bitmaps[maneuver] = gbitmap_create_with_resource(maneuver_resource_id(maneuver));
+    s_maneuver_bitmaps[maneuver] = gbitmap_create_with_resource(maneuver_resource_id(maneuver, pack));
   }
   return s_maneuver_bitmaps[maneuver];
 }

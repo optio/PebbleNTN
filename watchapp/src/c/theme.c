@@ -3,10 +3,12 @@
 #define PERSIST_KEY_ACCENT 1
 #define PERSIST_KEY_UNITS 2
 #define PERSIST_KEY_INVERT 3
+#define PERSIST_KEY_GLYPH_PACK 4
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
 static UnitsId s_units = UNITS_METRIC;
+static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -121,9 +123,19 @@ const char *units_name(UnitsId id) {
   return (id == UNITS_IMPERIAL) ? "Miles / feet" : "Kilometres / metres";
 }
 
+const char *glyph_pack_name(GlyphPack id) {
+  switch (id) {
+    case GLYPH_PACK_BOLD: return "Bold";
+    case GLYPH_PACK_OUTLINE: return "Outline";
+    case GLYPH_PACK_CLASSIC:
+    default: return "Classic";
+  }
+}
+
 AccentId settings_accent(void) { return s_accent; }
 bool settings_inverted(void) { return s_inverted; }
 UnitsId settings_units(void) { return s_units; }
+GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
 
 void settings_set_accent(AccentId id) {
   s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
@@ -138,6 +150,11 @@ void settings_set_inverted(bool inverted) {
 void settings_set_units(UnitsId id) {
   s_units = (id < UNITS_COUNT) ? id : UNITS_METRIC;
   persist_write_int(PERSIST_KEY_UNITS, s_units);
+}
+
+void settings_set_glyph_pack(GlyphPack id) {
+  s_glyph_pack = (id < GLYPH_PACK_COUNT) ? id : GLYPH_PACK_CLASSIC;
+  persist_write_int(PERSIST_KEY_GLYPH_PACK, s_glyph_pack);
 }
 
 void settings_load(void) {
@@ -156,6 +173,12 @@ void settings_load(void) {
     const int stored = persist_read_int(PERSIST_KEY_UNITS);
     if (stored >= 0 && stored < UNITS_COUNT) {
       s_units = (UnitsId)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_GLYPH_PACK)) {
+    const int stored = persist_read_int(PERSIST_KEY_GLYPH_PACK);
+    if (stored >= 0 && stored < GLYPH_PACK_COUNT) {
+      s_glyph_pack = (GlyphPack)stored;
     }
   }
 }

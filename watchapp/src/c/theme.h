@@ -49,6 +49,15 @@ typedef enum {
   UNITS_COUNT = 2,
 } UnitsId;
 
+// Built-in maneuver glyph packs (REQ-WATCH-012). Purely a render choice: the phone always sends the
+// same maneuver code; the pack only selects which bundled bitmap the watch draws for it.
+typedef enum {
+  GLYPH_PACK_CLASSIC = 0,
+  GLYPH_PACK_BOLD = 1,
+  GLYPH_PACK_OUTLINE = 2,
+  GLYPH_PACK_COUNT = 3,
+} GlyphPack;
+
 typedef struct {
   GColor panel_bg;   // top panel: distance + maneuver
   GColor panel_fg;   // distance text and maneuver glyph (always legible over panel_bg)
@@ -63,12 +72,15 @@ Theme theme_current(void);
 
 const char *accent_name(AccentId id);
 const char *units_name(UnitsId id);
+const char *glyph_pack_name(GlyphPack id);
 
 // Persisted settings. Load once at startup; each setter saves.
 AccentId settings_accent(void);
 bool settings_inverted(void);
 UnitsId settings_units(void);
+GlyphPack settings_glyph_pack(void);
 void settings_set_accent(AccentId id);
 void settings_set_inverted(bool inverted);
 void settings_set_units(UnitsId id);
+void settings_set_glyph_pack(GlyphPack id);
 void settings_load(void);
