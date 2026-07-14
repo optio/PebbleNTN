@@ -290,27 +290,34 @@ settings menu, and the black-and-white path.
 **Not verified**: chalk (round) and emery (large) layouts, and the settings menu driven by a real
 button press — the emulator screenshots were taken with the menu pushed programmatically.
 
-## CI: CodeQL without GitHub code scanning (2026-07-14)
+## CI: CodeQL + Node 24 action bump (2026-07-14)
 
-The CodeQL workflow failed on every run:
+The CodeQL workflow failed on every run with *"Code scanning is not enabled for this repository"*.
+The analysis ran fine (81/120 Kotlin files); only the SARIF upload failed, because the repo was
+**private** and uploading to code scanning needs GitHub Advanced Security there.
 
-> Error: Code scanning is not enabled for this repository.
+**Resolved by making the repository public** (owner's decision): code scanning is free for public
+repositories, so `codeql.yml` uploads natively again (`security-events: write`, no SARIF-artifact
+workaround, no local error-level gate). The short-lived workaround — `upload: never` + artifact +
+jq gate — is gone; see git history if it is ever needed again.
 
-`optio/PebbleNTN` is **private**, and uploading SARIF to GitHub code scanning requires code scanning
-to be enabled — which on a private repo needs GitHub Advanced Security. The analysis itself ran fine
-(81/120 Kotlin files); only the upload failed.
+**Node 20 deprecation:** every action in every workflow was bumped to the newest major that runs on
+Node 24, verified by reading each action's `action.yml` (`runs.using`) rather than assuming:
 
-Rather than delete static analysis from an app that reads notifications, `codeql.yml` now runs
-CodeQL without touching the code-scanning API: `upload: never`, SARIF published as a build artifact,
-and the job fails if CodeQL reports an **error-level** finding. `security-events: write` is no longer
-needed. Also moved `github/codeql-action` v3 → v4, which runs on Node 24 (v3 uses the deprecated
-Node 20).
+| Action | Was | Now |
+|---|---|---|
+| `actions/checkout` | v4 (node20) | **v7** |
+| `actions/setup-java` | v4 (node20) | **v5** |
+| `actions/setup-python` | v5 (node20) | **v6** |
+| `actions/upload-artifact` | v4 (node20) | **v7** (note: v5 is still node20) |
+| `actions/cache` | v4 (node20) | **v6** |
+| `android-actions/setup-android` | v3 (node20) | **v4** |
+| `github/codeql-action` | v3 (node20) | **v4** |
 
-**Trade-off:** no alert history, no dedup, no PR annotations, and warning/note-level findings do not
-fail the build (they are in the artifact). To get those back, make the repo public or enable Advanced
-Security, then follow the checklist in the header of `.github/workflows/codeql.yml`.
+Release notes for the skipped majors were checked for breaking changes that affect us: none do
+(checkout v7 blocks fork checkout for `pull_request_target`, which we do not use; upload-artifact v7
+adds an opt-in `archive` input). All inputs in use (`name`, `path`, `key`) are unchanged. The new
+majors require Actions Runner ≥ 2.327.1, which GitHub-hosted runners satisfy.
 
-**Note:** the Node 20 deprecation warning also applies to `actions/checkout@v4`,
-`actions/setup-java@v4`, `actions/upload-artifact@v4` and `android-actions/setup-android@v3` in the
-other workflows. Those are warnings, not errors, today; the major bumps (checkout v5+, setup-java v5,
-upload-artifact v5+) are not made here because they cannot be verified locally.
+**Unverified:** these workflows cannot run locally — the bump is verified by manifest inspection and
+YAML parsing only. The first CI run after this push is the real check.
