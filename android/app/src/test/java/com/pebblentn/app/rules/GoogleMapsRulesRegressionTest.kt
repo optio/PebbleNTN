@@ -31,6 +31,8 @@ class GoogleMapsRulesRegressionTest {
         val distanceMeters: Int? = null,
         /** When set, the rule that must win — pins precedence, not just the maneuver. */
         val ruleId: String? = null,
+        /** The ETA the watch shows in its status strip, extracted from Google Maps' subText. */
+        val secondaryText: String? = null,
     )
 
     @Serializable
@@ -101,6 +103,9 @@ class GoogleMapsRulesRegressionTest {
             }
             fixture.expected.ruleId?.let { expected ->
                 assertEquals("fixture '${fixture.name}' matched rule", expected, result.matchedRuleId)
+            }
+            fixture.expected.secondaryText?.let { expected ->
+                assertEquals("fixture '${fixture.name}' ETA", expected, result.instruction.secondaryText)
             }
         }
     }

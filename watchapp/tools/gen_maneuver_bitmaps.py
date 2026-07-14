@@ -15,12 +15,21 @@ import struct
 import zlib
 from pathlib import Path
 
-SIZE = 64
-CENTER = SIZE / 2.0
+# Glyphs are designed in a 64x64 canonical space and rasterized at SIZE. SIZE is a third of a
+# 144px screen: the watchapp draws the bitmap at its natural size (graphics_draw_bitmap_in_rect
+# crops rather than scales), so the asset size *is* the on-screen size.
+SIZE = 48
+CANON = 64.0
+CENTER = CANON / 2.0
 BLACK, WHITE = 0, 255
 OUT_DIR = Path(__file__).resolve().parent.parent / "resources" / "images"
 
 Canvas = list[list[int]]
+
+
+def to_canon(pixel: int) -> float:
+    """Centre of pixel `pixel` expressed in the 64x64 design space."""
+    return (pixel + 0.5) * CANON / SIZE
 
 
 def blank() -> Canvas:
@@ -59,13 +68,13 @@ def in_up_arrow(u: float, v: float) -> bool:
 
 
 def rotated(predicate, angle_deg: float) -> Canvas:
-    """Rasterize `predicate(u, v)` rotated by angle_deg about the centre."""
+    """Rasterize `predicate(u, v)` — defined in the 64x64 design space — rotated by angle_deg."""
     theta = math.radians(-angle_deg)
     cos_t, sin_t = math.cos(theta), math.sin(theta)
     rows = blank()
     for y in range(SIZE):
         for x in range(SIZE):
-            dx, dy = x - CENTER, y - CENTER
+            dx, dy = to_canon(x) - CENTER, to_canon(y) - CENTER
             u = CENTER + dx * cos_t - dy * sin_t
             v = CENTER + dx * sin_t + dy * cos_t
             if predicate(u, v):
@@ -80,41 +89,40 @@ def arrow(angle_deg: float) -> Canvas:
 # --- Primitives ---------------------------------------------------------------------------------
 
 
-def fill_rect(rows: Canvas, x0: int, y0: int, x1: int, y1: int) -> None:
-    for y in range(max(0, y0), min(SIZE, y1)):
-        for x in range(max(0, x0), min(SIZE, x1)):
-            rows[y][x] = BLACK
+# All primitives take coordinates in the 64x64 design space; `fill` maps them onto the raster.
+def fill(rows: Canvas, predicate) -> None:
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if predicate(to_canon(x), to_canon(y)):
+                rows[y][x] = BLACK
+
+
+def fill_rect(rows: Canvas, x0: float, y0: float, x1: float, y1: float) -> None:
+    fill(rows, lambda u, v: x0 <= u <= x1 and y0 <= v <= y1)
 
 
 def fill_ring(rows: Canvas, cx: float, cy: float, radius: float, thickness: float,
-              v_max: float = SIZE, v_min: float = -1.0) -> None:
+              v_max: float = CANON, v_min: float = -1.0) -> None:
     inner = radius - thickness
-    for y in range(SIZE):
-        for x in range(SIZE):
-            if not (v_min <= y <= v_max):
-                continue
-            if inner <= math.hypot(x - cx, y - cy) <= radius:
-                rows[y][x] = BLACK
+    fill(rows, lambda u, v: v_min <= v <= v_max and inner <= math.hypot(u - cx, v - cy) <= radius)
 
 
 def fill_disc(rows: Canvas, cx: float, cy: float, radius: float) -> None:
-    for y in range(SIZE):
-        for x in range(SIZE):
-            if math.hypot(x - cx, y - cy) <= radius:
-                rows[y][x] = BLACK
+    fill(rows, lambda u, v: math.hypot(u - cx, v - cy) <= radius)
 
 
 def fill_triangle(rows: Canvas, apex_x: float, apex_y: float, base_y: float, half_width: float) -> None:
     """Triangle with its apex at the top or bottom, growing towards base_y."""
-    lo, hi = (apex_y, base_y) if base_y > apex_y else (base_y, apex_y)
+    lo, hi = min(apex_y, base_y), max(apex_y, base_y)
     span = abs(base_y - apex_y)
-    for y in range(int(lo), int(hi) + 1):
-        if not 0 <= y < SIZE:
-            continue
-        half = abs(y - apex_y) / span * half_width
-        for x in range(int(apex_x - half), int(apex_x + half) + 1):
-            if 0 <= x < SIZE:
-                rows[y][x] = BLACK
+
+    def inside(u: float, v: float) -> bool:
+        if not lo <= v <= hi:
+            return False
+        half = abs(v - apex_y) / span * half_width
+        return abs(u - apex_x) <= half
+
+    fill(rows, inside)
 
 
 # --- Distinct glyphs ----------------------------------------------------------------------------
@@ -125,8 +133,8 @@ def uturn(mirror: bool) -> Canvas:
     rows = blank()
     # Upper half of a thick ring: the bend.
     fill_ring(rows, cx=CENTER, cy=26, radius=20, thickness=9, v_max=26)
-    fill_rect(rows, int(CENTER + 11), 26, int(CENTER + 20), 56)   # right leg down to the bottom
-    fill_rect(rows, int(CENTER - 20), 26, int(CENTER - 11), 34)   # left leg, short: it ends in the head
+    fill_rect(rows, CENTER + 11, 26, CENTER + 20, 56)   # right leg down to the bottom
+    fill_rect(rows, CENTER - 20, 26, CENTER - 11, 34)   # left leg, short: it ends in the head
     fill_triangle(rows, apex_x=CENTER - 15.5, apex_y=61, base_y=34, half_width=17)  # head pointing down
     if mirror:
         rows = [list(reversed(row)) for row in rows]
@@ -137,8 +145,8 @@ def roundabout() -> Canvas:
     """A ring with an entry stub at the bottom and an exit arrow leaving upwards."""
     rows = blank()
     fill_ring(rows, cx=CENTER, cy=38, radius=19, thickness=8)
-    fill_rect(rows, int(CENTER - 6), 50, int(CENTER + 6), SIZE)   # entry from the bottom
-    fill_rect(rows, int(CENTER - 6), 14, int(CENTER + 6), 26)     # exit stub upwards
+    fill_rect(rows, CENTER - 6, 50, CENTER + 6, CANON)   # entry from the bottom
+    fill_rect(rows, CENTER - 6, 14, CENTER + 6, 26)     # exit stub upwards
     fill_triangle(rows, apex_x=CENTER, apex_y=2, base_y=18, half_width=16)  # exit arrow head
     return rows
 
@@ -155,9 +163,11 @@ def unknown() -> Canvas:
     """Heavy hollow square: 'a maneuver we could not classify'."""
     rows = blank()
     fill_rect(rows, 8, 8, 56, 56)
-    for y in range(17, 47):
-        for x in range(17, 47):
-            rows[y][x] = WHITE
+    for y in range(SIZE):  # punch the middle back out
+        for x in range(SIZE):
+            u, v = to_canon(x), to_canon(y)
+            if 17 <= u <= 47 and 17 <= v <= 47:
+                rows[y][x] = WHITE
     return rows
 
 

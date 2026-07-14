@@ -2,7 +2,9 @@
   "name": "pebblentn",
   "author": "PebbleNTN maintainers",
   "version": "0.0.1",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
   "dependencies": {},
   "pebble": {
@@ -25,18 +27,78 @@
     ],
     "resources": {
       "media": [
-        {"type": "bitmap", "name": "MANEUVER_STRAIGHT", "file": "images/straight.png"},
-        {"type": "bitmap", "name": "MANEUVER_SLIGHT_LEFT", "file": "images/slight_left.png"},
-        {"type": "bitmap", "name": "MANEUVER_LEFT", "file": "images/left.png"},
-        {"type": "bitmap", "name": "MANEUVER_SHARP_LEFT", "file": "images/sharp_left.png"},
-        {"type": "bitmap", "name": "MANEUVER_SLIGHT_RIGHT", "file": "images/slight_right.png"},
-        {"type": "bitmap", "name": "MANEUVER_RIGHT", "file": "images/right.png"},
-        {"type": "bitmap", "name": "MANEUVER_SHARP_RIGHT", "file": "images/sharp_right.png"},
-        {"type": "bitmap", "name": "MANEUVER_UTURN_LEFT", "file": "images/uturn_left.png"},
-        {"type": "bitmap", "name": "MANEUVER_UTURN_RIGHT", "file": "images/uturn_right.png"},
-        {"type": "bitmap", "name": "MANEUVER_ROUNDABOUT", "file": "images/roundabout.png"},
-        {"type": "bitmap", "name": "MANEUVER_ARRIVE", "file": "images/arrive.png"},
-        {"type": "bitmap", "name": "MANEUVER_UNKNOWN", "file": "images/unknown.png"}
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_STRAIGHT",
+          "file": "images/straight.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SLIGHT_LEFT",
+          "file": "images/slight_left.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_LEFT",
+          "file": "images/left.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SHARP_LEFT",
+          "file": "images/sharp_left.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SLIGHT_RIGHT",
+          "file": "images/slight_right.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_RIGHT",
+          "file": "images/right.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SHARP_RIGHT",
+          "file": "images/sharp_right.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_UTURN_LEFT",
+          "file": "images/uturn_left.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_UTURN_RIGHT",
+          "file": "images/uturn_right.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_ROUNDABOUT",
+          "file": "images/roundabout.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_ARRIVE",
+          "file": "images/arrive.png",
+          "memoryFormat": "1BitPalette"
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_UNKNOWN",
+          "file": "images/unknown.png",
+          "memoryFormat": "1BitPalette"
+        }
       ]
     }
   }

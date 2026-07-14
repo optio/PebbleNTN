@@ -3,7 +3,7 @@
   "fixtures": [
     {"name": "capture-head-toward", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
       "snapshot": {"title": "Head toward Example Street", "subText": "Arrive 23:51"},
-      "expected": {"maneuver": "STRAIGHT", "ruleId": "google-maps-continue-en"}},
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "google-maps-continue-en", "secondaryText": "23:51"}},
 
     {"name": "capture-head-east-on", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
       "snapshot": {"title": "Head east on Sample Avenue", "subText": "Arrive 23:41"},

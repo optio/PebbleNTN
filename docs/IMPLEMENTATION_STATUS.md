@@ -254,3 +254,38 @@ Fixes:
 
 Verified on the emulator: no crash, onboarding renders, process stays alive. The watch link itself
 remains unverifiable there (no Bluetooth stack) — still a hardware step.
+
+## M12 — watch appearance + on-watch settings (2026-07-14)
+
+Driven by user feedback on the first on-wrist run and by the Rebble reference screenshots.
+
+**Layout** (`watchapp/src/c/main.c`): the maneuver glyph and the distance now sit side by side in a
+coloured panel (glyph = 1/3 of the width), a status strip carries the watch clock and the ETA, and
+the road name gets the whole lower half. Both the distance and the road name pick the largest font
+that fits (`fit_font`) instead of truncating — "12.3 km" and long street names both fit.
+
+Two rendering bugs found and fixed on the emulator, neither of which any test would have caught:
+- `graphics_draw_bitmap_in_rect` **crops** (and tiles); it does not scale. A 64px glyph drawn into a
+  48px column was silently cut in half. Glyphs are now generated at 48px and drawn at their natural
+  size, centred in the column.
+- `gcolor_legible_over()` returns *black* over mid-brightness colours like Islamic green, which made
+  the arrow black-on-green. Replaced with a perceived-luminance test.
+
+**Themes** (`theme.c`): 16 accent colours + an invert flag, covering both target watches — Pebble
+Time 2 (64 colours) and Pebble 2 Duo (black and white, where the accent list collapses to
+Black/White so both polarities and their inverses stay reachable). Panel, strip and road area each
+carry their own background/foreground. The glyph is recoloured at runtime by rewriting the 1-bit
+palette (`memoryFormat: 1BitPalette` on every platform) — one asset serves every theme, and the
+same path works on black-and-white watches.
+
+**On-watch settings** (`settings_window.c`): SELECT opens a menu — accent colour, invert, distance
+units (metric/imperial). Persisted; no phone round-trip.
+
+**ETA** is now extracted by the bundled rules (`secondaryText` ← Google Maps' "Arrive 23:51"
+subText) and rendered in the strip. The protocol already carried SECONDARY_TEXT; nothing filled it.
+
+Verified on the basalt and diorite emulators (screenshots): all three navigation states, the
+settings menu, and the black-and-white path.
+
+**Not verified**: chalk (round) and emery (large) layouts, and the settings menu driven by a real
+button press — the emulator screenshots were taken with the menu pushed programmatically.

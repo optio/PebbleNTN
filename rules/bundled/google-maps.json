@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.07.2",
+  "rulesetVersion": "google-maps-en-2026.07.3",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -9,181 +9,490 @@
       "id": "google-maps-arrive-en",
       "enabled": true,
       "priority": 200,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "comment": "Title only, and never the bare word 'arrive'. Google Maps puts the ETA in subText ('Arrive 23:51') on EVERY navigation notification, so matching combinedText here classified every turn as ARRIVE (real capture, 2026-07-13).",
       "conditions": [
-        {"field": "title", "operator": "regex", "value": "(?i)\\b(arriving|arrived|destination)\\b"}
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)\\b(arriving|arrived|destination)\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "ARRIVE"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-roundabout-en",
       "enabled": true,
       "priority": 190,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\broundabout\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\broundabout\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "ROUNDABOUT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-uturn-en",
       "enabled": true,
       "priority": 180,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bu-?turn\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bu-?turn\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "UTURN_LEFT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-sharp-right-en",
       "enabled": true,
       "priority": 170,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bsharp\\s+right\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bsharp\\s+right\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "SHARP_RIGHT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-sharp-left-en",
       "enabled": true,
       "priority": 170,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bsharp\\s+left\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bsharp\\s+left\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "SHARP_LEFT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-slight-right-en",
       "enabled": true,
       "priority": 160,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bslight(ly)?\\s+right\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bslight(ly)?\\s+right\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "SLIGHT_RIGHT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-slight-left-en",
       "enabled": true,
       "priority": 160,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bslight(ly)?\\s+left\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bslight(ly)?\\s+left\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "SLIGHT_LEFT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-keep-right-en",
       "enabled": true,
       "priority": 120,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bkeep\\s+right\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bkeep\\s+right\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "SLIGHT_RIGHT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-keep-left-en",
       "enabled": true,
       "priority": 120,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bkeep\\s+left\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bkeep\\s+left\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "SLIGHT_LEFT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-turn-right-en",
       "enabled": true,
       "priority": 100,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bturn\\s+right\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+right\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "RIGHT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-turn-left-en",
       "enabled": true,
       "priority": 100,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\bturn\\s+left\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+left\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "LEFT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     },
     {
       "id": "google-maps-continue-en",
       "enabled": true,
       "priority": 50,
-      "packageNames": ["com.google.android.apps.maps"],
-      "locales": ["en"],
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
       "comment": "Covers the step Google Maps opens a route with: 'Head toward <road>' / 'Head east on <road>' (real capture, 2026-07-13).",
       "conditions": [
-        {"field": "combinedText", "operator": "regex", "value": "(?i)\\b(continue|head|go|proceed)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"}
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\b(continue|head|go|proceed)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"
+        }
       ],
       "output": {
-        "maneuver": {"type": "literal", "value": "STRAIGHT"},
-        "distanceMeters": {"type": "distance", "field": "combinedText"},
-        "primaryText": {"type": "firstNonEmpty", "fields": ["title", "text"]}
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
       }
     }
   ]
