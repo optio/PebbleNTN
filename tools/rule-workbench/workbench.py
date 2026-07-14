@@ -189,11 +189,13 @@ def eval_condition(cond: dict, snap: dict) -> bool:
 
 
 def parse_distance(text: str):
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(km|mi|ft|m)?\b", text, re.IGNORECASE)
+    # The unit is mandatory — see DistanceParser.kt. A bare number is usually the ETA hour, a road
+    # number or an exit number, not a distance.
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(km|mi|ft|m)\b", text, re.IGNORECASE)
     if not m:
         return None
     num = float(m.group(1).replace(",", "."))
-    unit = (m.group(2) or "").lower()
+    unit = m.group(2).lower()
     meters = {"km": num * 1000, "mi": num * 1609.344, "ft": num * 0.3048}.get(unit, num)
     return max(0, round(meters))
 
@@ -215,6 +217,17 @@ def run_extractor(ext: dict, snap: dict):
     if t == "distance":
         v = field_value(snap, ext["field"])
         return parse_distance(v) if v else None
+    if t == "regexCapture":
+        v = field_value(snap, ext["field"])
+        if not v:
+            return None
+        m = re.search(ext["pattern"], v)
+        if not m:
+            return None
+        try:
+            return m.group(ext.get("group", 1))
+        except (IndexError, re.error):
+            return None
     if t == "maneuverMap":
         v = field_value(snap, ext["field"])
         mapping = ext.get("mapping", {})
@@ -238,7 +251,27 @@ def evaluate(snap: dict, rules: list, locale: str):
                 "ruleId": rule["id"],
                 "maneuver": run_extractor(out.get("maneuver"), snap) or "UNKNOWN",
                 "distanceMeters": run_extractor(out.get("distanceMeters"), snap),
+                "primaryText": run_extractor(out.get("primaryText"), snap),
+                "secondaryText": run_extractor(out.get("secondaryText"), snap),
             }
+    return None
+
+
+def check_fixture(result: dict | None, expected: dict) -> str | None:
+    """Return None when the result matches `expected`, else a short reason.
+
+    Mirrors GoogleMapsRulesRegressionTest so the two engines are held to the same contract:
+    `matched: false` asserts that *nothing* matches (a notification carrying no maneuver, such as
+    "Starting navigation…", must not put an arrow on the watch), and `ruleId` pins which rule wins,
+    not merely the maneuver it produced.
+    """
+    if not expected.get("matched", True):
+        return None if result is None else f"expected no match, got {result['ruleId']}"
+    if result is None:
+        return "expected a match, got none"
+    for field in ("maneuver", "distanceMeters", "secondaryText", "ruleId"):
+        if field in expected and result.get(field) != expected[field]:
+            return f"{field}: expected {expected[field]!r}, got {result.get(field)!r}"
     return None
 
 
@@ -248,14 +281,12 @@ def run_fixtures(rules: list, fixtures: list) -> int:
         snap = dict(fx["snapshot"])
         snap["packageName"] = fx["packageName"]
         result = evaluate(snap, rules, fx.get("locale", "en"))
-        expected = fx["expected"]
-        ok = result is not None and result["maneuver"] == expected["maneuver"]
-        if ok and "distanceMeters" in expected:
-            ok = result["distanceMeters"] == expected["distanceMeters"]
-        status = "PASS" if ok else "FAIL"
-        if not ok:
+        reason = check_fixture(result, fx["expected"])
+        if reason is None:
+            print(f"  PASS  {fx['name']:32} -> {result}")
+        else:
             failures += 1
-        print(f"  {status}  {fx['name']:14} -> {result}")
+            print(f"  FAIL  {fx['name']:32} -> {reason}")
     total = len(fixtures)
     print(f"{total - failures}/{total} passed")
     return 1 if failures else 0

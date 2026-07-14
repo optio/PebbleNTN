@@ -204,7 +204,29 @@ python3 watchapp/tools/gen_maneuver_bitmaps.py
 
 ---
 
-## 5. One-shot everything
+## 5. Git hooks (recommended)
+
+```bash
+./scripts/install-git-hooks.sh     # once per clone
+```
+
+Points git at the tracked hooks in `.githooks/`. The pre-commit hook runs, cheapest first:
+
+1. **secret scan** — refuses keystores, `local.properties`, `.env`, and private keys / signing
+   passwords / API tokens in the staged diff;
+2. **spec-asset integrity** — protected files (`requirements/`, `schemas/`, `spec/`) must match
+   `MANIFEST.sha256.json`. Changing one is fine; you must update its hash in the same commit;
+3. **generated protocol** — `Protocol.kt` / `protocol.h` must match `protocol-definition.json`;
+4. **rules** — schema validation + the fixture regression, when `rules/` is touched;
+5. **syntax** — shell, YAML, Python, JSON;
+6. **Android unit tests + lint** — only when `android/` is touched (the slow step).
+
+```bash
+git commit --no-verify      # skip the hook
+PEBBLENTN_SKIP_GRADLE=1 …   # skip only the slow Android step
+```
+
+## 6. One-shot everything
 
 ```bash
 ./scripts/test-all.sh     # spec + protocol + rules validation, then Android unit tests + lint
@@ -223,7 +245,7 @@ Artifacts:
 
 ---
 
-## 6. CI
+## 7. CI
 
 GitHub Actions build and gate PRs: `android.yml` (unit tests, lint, APK), `watchapp.yml` (.pbw),
 `rules.yml` (schema/regression), `release.yml` (signed AAB, tag-triggered), `codeql.yml`.

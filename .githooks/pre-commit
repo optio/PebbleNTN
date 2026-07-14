@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# PebbleNTN pre-commit hook. Install with: ./scripts/install-git-hooks.sh
+#
+# Runs the checks that CI would reject you for, ordered cheapest-first so the common failures are
+# reported in under a second:
+#
+#   1. secrets / keystores / local paths        (AGENTS.md: never commit these)
+#   2. spec asset integrity                     (protected files vs MANIFEST.sha256.json)
+#   3. generated protocol constants up to date  (never hand-edited)
+#   4. rule schemas + rule regression           (AGENTS.md: rule changes need fixtures + tests)
+#   5. shell/YAML/Python syntax
+#   6. Android unit tests + lint                (only when android/ is touched; the slow one)
+#
+# Escape hatches:
+#   git commit --no-verify      skip the hook entirely
+#   PEBBLENTN_SKIP_GRADLE=1     skip step 6 only (the slow one)
+#
+# Steps 2-6 validate the working tree, not the staged snapshot; step 1 checks staged content.
+set -uo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+failed=0
+step() { printf '\033[1m==>\033[0m %s\n' "$1"; }
+fail() { printf '\033[31mFAIL\033[0m %s\n' "$1" >&2; failed=1; }
+pass() { printf '\033[32m ok \033[0m %s\n' "$1"; }
+
+staged() { git diff --cached --name-only --diff-filter=ACMR; }
+staged_matching() { staged | grep -E "$1" || true; }
+
+# --- 1. Secrets, keystores, machine-local paths -------------------------------------------------
+step "Secrets and local paths"
+secret_paths="$(staged_matching '(^|/)local\.properties$|\.(jks|keystore|p12|pem|key)$|(^|/)(secrets?|credentials)\.(json|ya?ml|properties)$|(^|/)\.env')"
+if [[ -n "$secret_paths" ]]; then
+  fail "refusing to commit secret/machine-local files:"
+  sed 's/^/       /' <<<"$secret_paths" >&2
+else
+  # Content scan of the staged diff. Keep the patterns narrow: a noisy hook gets bypassed.
+  leak="$(git diff --cached -U0 -- . ':(exclude).githooks/pre-commit' |
+    grep -nE '^\+' |
+    grep -viE '^\+\+\+' |
+    grep -nEi 'BEGIN [A-Z ]*PRIVATE KEY|(storePassword|keyPassword|keyAlias)[[:space:]]*=[[:space:]]*[^$[:space:]]|(api[_-]?key|auth[_-]?token|client[_-]?secret)["[:space:]]*[:=][[:space:]]*["'\''][^"'\'']{8,}' || true)"
+  if [[ -n "$leak" ]]; then
+    fail "possible secret in the staged diff:"
+    sed 's/^/       /' <<<"$leak" >&2
+  else
+    pass "no secrets, keystores or local paths staged"
+  fi
+fi
+
+# --- 2. Spec asset integrity --------------------------------------------------------------------
+# The manifest is the integrity record of the specification contract. Changing a protected file is
+# allowed, but the manifest must be updated in the same commit — deliberately, not silently.
+step "Spec asset integrity"
+if out="$(./scripts/validate-spec-assets.sh 2>&1)"; then
+  pass "${out##*$'\n'}"
+else
+  fail "protected spec assets changed without updating MANIFEST.sha256.json"
+  sed 's/^/       /' <<<"$out" >&2
+  echo "       If the change is intended, update the hash for those files in MANIFEST.sha256.json." >&2
+fi
+
+# --- 3. Generated protocol constants ------------------------------------------------------------
+step "Generated protocol constants"
+if out="$(./scripts/generate-protocol.sh --check 2>&1)"; then
+  pass "Protocol.kt / protocol.h match protocol-definition.json"
+else
+  fail "generated protocol files are stale — run ./scripts/generate-protocol.sh"
+  sed 's/^/       /' <<<"$out" >&2
+fi
+
+# --- 4. Rules: schemas + regression -------------------------------------------------------------
+if [[ -n "$(staged_matching '^(rules|schemas|tools/rule-workbench)/')" ]]; then
+  step "Rule schemas and regression"
+  if out="$(./scripts/validate-rules.sh 2>&1)"; then
+    pass "catalog + rulesets are schema-valid"
+  else
+    fail "rule schema validation"
+    sed 's/^/       /' <<<"$out" >&2
+  fi
+  if out="$(python3 tools/rule-workbench/workbench.py regression 2>&1)"; then
+    pass "$(tail -1 <<<"$out")"
+  else
+    fail "rule regression (fixtures vs bundled rules)"
+    sed 's/^/       /' <<<"$out" >&2
+  fi
+fi
+
+# --- 5. Syntax: shell, YAML, Python -------------------------------------------------------------
+step "Syntax"
+syntax_ok=1
+while read -r f; do
+  [[ -z "$f" || ! -f "$f" ]] && continue
+  bash -n "$f" 2>/dev/null || { fail "bash syntax: $f"; syntax_ok=0; }
+done < <(staged_matching '\.sh$|^\.githooks/')
+
+while read -r f; do
+  [[ -z "$f" || ! -f "$f" ]] && continue
+  python3 -c "import sys,yaml; yaml.safe_load(open(sys.argv[1]))" "$f" 2>/dev/null ||
+    { fail "YAML syntax: $f"; syntax_ok=0; }
+done < <(staged_matching '\.ya?ml$')
+
+while read -r f; do
+  [[ -z "$f" || ! -f "$f" ]] && continue
+  python3 -m py_compile "$f" 2>/dev/null || { fail "Python syntax: $f"; syntax_ok=0; }
+done < <(staged_matching '\.py$')
+
+while read -r f; do
+  [[ -z "$f" || ! -f "$f" ]] && continue
+  python3 -c "import sys,json; json.load(open(sys.argv[1]))" "$f" 2>/dev/null ||
+    { fail "JSON syntax: $f"; syntax_ok=0; }
+done < <(staged_matching '\.json$')
+
+[[ "$syntax_ok" -eq 1 ]] && pass "shell / YAML / Python / JSON parse"
+
+# --- 6. Android unit tests + lint (only when Android code changed) -------------------------------
+if [[ -n "$(staged_matching '^android/')" ]]; then
+  if [[ "${PEBBLENTN_SKIP_GRADLE:-0}" == "1" ]]; then
+    printf '\033[33mskip\033[0m Android tests + lint (PEBBLENTN_SKIP_GRADLE=1)\n'
+  elif ! command -v java >/dev/null 2>&1 && [[ -z "${JAVA_HOME:-}" ]]; then
+    printf '\033[33mskip\033[0m Android tests + lint (no JDK on PATH; see ./scripts/bootstrap.sh)\n'
+  else
+    step "Android unit tests + lint (slow; PEBBLENTN_SKIP_GRADLE=1 to skip)"
+    if out="$(./android/gradlew -p android :app:testDebugUnitTest :app:lintDebug 2>&1)"; then
+      pass "unit tests + lint"
+    else
+      fail "Android unit tests or lint"
+      grep -E '^e: |FAILED|> Task .* FAILED|Lint found' <<<"$out" | head -20 | sed 's/^/       /' >&2
+      echo "       Full output: ./android/gradlew -p android :app:testDebugUnitTest :app:lintDebug" >&2
+    fi
+  fi
+fi
+
+echo
+if [[ "$failed" -ne 0 ]]; then
+  printf '\033[31mpre-commit failed.\033[0m Fix the above, or bypass with: git commit --no-verify\n' >&2
+  exit 1
+fi
+printf '\033[32mpre-commit passed.\033[0m\n'

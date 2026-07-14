@@ -321,3 +321,36 @@ majors require Actions Runner ≥ 2.327.1, which GitHub-hosted runners satisfy.
 
 **Unverified:** these workflows cannot run locally — the bump is verified by manifest inspection and
 YAML parsing only. The first CI run after this push is the real check.
+
+## Post-push CI fixes + pre-commit hook (2026-07-14)
+
+The first CI run after the push failed on `rules / Validate spec asset integrity`. Two real problems
+came out of it, plus a third found while fixing them.
+
+**1. Spec-asset manifest not updated.** `requirements/REQ-ANDROID.md`, `requirements/REQ-WATCH.md`
+and `schemas/ruleset.schema.json` are integrity-protected by `MANIFEST.sha256.json`; adding
+REQ-ANDROID-011, REQ-WATCH-011 and the rule `comment` property changed them without updating their
+hashes. The mismatch is the guard working as designed. All three changes are pure additions (no
+existing spec text altered); the three hashes were updated deliberately, not by blanket-regenerating
+the manifest.
+
+**2. `DistanceParser` invented distances from the ETA.** The parser treated a unit-less number as
+metres and took the *first* number in the text. Rules extract distance from `combinedText`, which
+includes Google Maps' `subText` — "Arrive 23:41" — so **every step with no real distance reported
+"23 m" on the watch**. The unit is now mandatory: a bare number in a navigation notification is far
+more often the ETA hour, a road number ("A12") or an exit number than a distance. No distance beats a
+wrong one. This is the same failure mode as the ARRIVE bug and came from the same capture; it was
+only caught because the rule-workbench regression started asserting the full extraction result.
+
+**3. The Python rule-workbench had drifted from the Kotlin engine.** It ignored `expected.matched`
+(so a deliberate no-match fixture read as a failure), lacked the `regexCapture` extractor, and never
+emitted `primaryText`/`secondaryText`. It now mirrors `GoogleMapsRulesRegressionTest`, so both
+engines are held to the same contract — which is the entire point of keeping a second implementation.
+14/14 fixtures agree.
+
+**Pre-commit hook** (`.githooks/pre-commit`, `./scripts/install-git-hooks.sh`): secret scan →
+spec-asset integrity → generated-protocol check → rule schema + regression → shell/YAML/Python/JSON
+syntax → Android unit tests + lint (only when `android/` is touched). Cheapest first, so the common
+failures report in under a second. Verified against four deliberate breakages: an unsynced manifest
+(the failure above), a staged keystore/`local.properties`, a signing password in a diff, and a rule
+change that breaks the fixtures. `--no-verify` and `PEBBLENTN_SKIP_GRADLE=1` are the escape hatches.

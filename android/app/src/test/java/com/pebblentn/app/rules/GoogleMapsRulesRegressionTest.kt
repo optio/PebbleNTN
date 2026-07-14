@@ -116,6 +116,25 @@ class GoogleMapsRulesRegressionTest {
      * therefore classified every turn as ARRIVE (real capture, 2026-07-13). ARRIVE must come from
      * the title alone.
      */
+    /**
+     * The ETA's hour is not a distance. Rules extract distance from combinedText, which includes the
+     * subText "Arrive 23:41" — and the parser used to treat a unit-less number as metres, so every
+     * step with no real distance showed "23 m" on the watch (real capture, 2026-07-13).
+     */
+    @Test
+    fun etaHourIsNeverReadAsADistance() {
+        val snapshot = NotificationSnapshot(
+            packageName = "com.google.android.apps.maps",
+            notificationId = 1,
+            title = "Head east on Sample Avenue",
+            subText = "Arrive 23:41",
+        )
+        val result = engine.evaluate(snapshot, bundledRules, locale = "en", nowEpochSeconds = 0)
+        assertTrue("should match the continue rule", result.matched)
+        assertEquals("no distance may be invented from the ETA", null, result.instruction!!.distanceMeters)
+        assertEquals("the ETA itself is surfaced as secondary text", "23:41", result.instruction.secondaryText)
+    }
+
     @Test
     fun etaInSubTextNeverProducesArrive() {
         for (title in listOf("Head toward Example Street", "Turn left onto Sample Avenue", "At the roundabout, take the 2nd exit")) {

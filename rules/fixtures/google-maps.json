@@ -7,7 +7,8 @@
 
     {"name": "capture-head-east-on", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
       "snapshot": {"title": "Head east on Sample Avenue", "subText": "Arrive 23:41"},
-      "expected": {"maneuver": "STRAIGHT", "ruleId": "google-maps-continue-en"}},
+      "comment": "distanceMeters must be null: the only number here is the ETA hour. Treating a unit-less number as metres reported '23 m' on the watch.",
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "google-maps-continue-en", "distanceMeters": null, "secondaryText": "23:41"}},
 
     {"name": "capture-arriving", "source": "capture", "locale": "en", "packageName": "com.google.android.apps.maps",
       "snapshot": {"title": "Arriving", "text": "at Destination"},
