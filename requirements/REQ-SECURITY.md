@@ -7,7 +7,7 @@ Notification parsing SHALL occur locally.
 Notification content and diagnostics SHALL never be uploaded automatically.
 
 ## REQ-SEC-003 — Minimal snapshot
-The app SHALL serialize only the documented selected fields and SHALL exclude PendingIntents, actions, RemoteViews and arbitrary bundles.
+The app SHALL serialize only the documented selected text fields and SHALL exclude PendingIntents, actions, RemoteViews, notification icons and images (small icon, large icon, big-picture) and arbitrary bundles. Notification icons SHALL NOT be extracted or forwarded to the watch; maneuver graphics use bundled glyph packs on the watch instead (REQ-WATCH-012). This keeps the data-handling posture minimal ("no data collected") and avoids reaching into notification imagery.
 
 ## REQ-SEC-004 — Disclosure
 The app SHALL show a prominent notification-access disclosure before sending the user to system settings.

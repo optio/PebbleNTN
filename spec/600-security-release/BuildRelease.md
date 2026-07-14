@@ -43,6 +43,15 @@ Workflows:
 
 Pull requests cannot merge unless all required checks pass.
 
+## Distribution
+
+- **Android companion:** the GitHub Release APK (`pebble-ntn.apk`). For hands-off updates users add
+  the repository's releases to Obtainium, which tracks and installs each new release. The APK is
+  debug-signed until release keystore secrets are set.
+- **Watchapp:** the GitHub Release `.pbw` (`pebble-ntn.pbw`), installable through the Rebble / Pebble
+  mobile app or side-loaded with `pebble install --phone`, and intended for listing on the RePebble
+  appstore.
+
 ## Play Store
 
 - MIT license applies to source; privacy policy remains a separate product document.
