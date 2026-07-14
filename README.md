@@ -38,6 +38,41 @@ This repository specification is an implementation contract for an AI coding age
 - CI: GitHub Actions.
 - License: MIT.
 
+## Distribution
+
+PebbleNTN ships two artifacts on every successful push to `main`
+(`.github/workflows/release.yml`): the Android APK (`pebble-ntn.apk`) and the Pebble
+watchapp (`pebble-ntn.pbw`), attached to a GitHub Release with `SHA256SUMS.txt`.
+
+- **Android companion** — install `pebble-ntn.apk` from the GitHub Releases page. For
+  hands-off updates, add the repository's releases to **[Obtainium](https://github.com/ImranR98/Obtainium)**
+  (point it at this repo's GitHub releases); Obtainium then tracks and installs each new
+  release automatically. The APK is debug-signed until the release keystore secrets are
+  configured, so expect the unknown-sources prompt.
+- **Pebble watchapp** — install `pebble-ntn.pbw` from the same release through the
+  Pebble / **Rebble** mobile app, or side-load it with `pebble install --phone <IP>`. The
+  watchapp is also intended for listing on the **[RePebble appstore](https://apps.rebble.io/)**
+  so it can be discovered and updated like any other watchapp.
+
+Play Store distribution uses a separately signed AAB produced by the manually triggered
+`play-release.yml` workflow.
+
+## Watch glyphs, and why notification icons are not extracted
+
+The watch renders maneuvers from **built-in glyph packs** (Classic, Bold, Outline; selectable and
+previewable on the watch), recoloured to the watch theme. It deliberately does **not** extract the
+navigation app's own arrow icon from the notification and forward it. That choice is intentional:
+
+- **Privacy / minimal snapshot (REQ-SEC-003).** The app reads only the documented text fields of a
+  notification and never its icons, PendingIntents, actions or RemoteViews. Keeping icons out of the
+  pipeline preserves the "no data collected" posture and the audited minimal-snapshot guarantee.
+- **Store safety.** Notification-access apps are held to a high bar; not reaching into notification
+  imagery keeps the data-handling story simple and defensible.
+- **Cross-app compatibility.** Built-in glyphs render identically for every navigation app (Google
+  Maps, Waze, OsmAnd, …) and every language, instead of depending on each app's private icon format.
+
+An unclassified maneuver falls back to a clear "?" glyph rather than guessing.
+
 ## Read order for an AI coding agent
 
 1. `AGENTS.md`

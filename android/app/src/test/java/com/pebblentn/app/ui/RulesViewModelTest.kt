@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.UserRuleRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
+import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.rules.RulePreviewService
 import com.pebblentn.app.rules.RuleValidationResult
 import com.pebblentn.app.ui.rules.RulesViewModel
@@ -49,6 +50,7 @@ class RulesViewModelTest {
             userRuleRepository = userRepo,
             debugHistoryRepository = DebugHistoryRepository(db.debugEventDao()),
             previewService = RulePreviewService(),
+            catalog = NavigationAppCatalog(schemaVersion = 1, apps = emptyList()),
             officialRules = emptyList(),
         )
     }

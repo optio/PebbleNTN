@@ -189,14 +189,31 @@ def eval_condition(cond: dict, snap: dict) -> bool:
 
 
 def parse_distance(text: str):
-    # The unit is mandatory — see DistanceParser.kt. A bare number is usually the ETA hour, a road
-    # number or an exit number, not a distance.
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(km|mi|ft|m)\b", text, re.IGNORECASE)
+    # The unit is mandatory — see DistanceParser.kt (this must stay in lockstep with it). A bare
+    # number is usually the ETA hour, a road number or an exit number, not a distance. Abbreviated
+    # and spelled-out units are recognized; longer alternatives precede their prefixes.
+    m = re.search(
+        r"(\d+(?:[.,]\d+)?)\s*"
+        r"(kilometres|kilometers|kilometre|kilometer|km"
+        r"|miles|mile|mi|feet|foot|ft|yards|yard|yd"
+        r"|metres|meters|metre|meter|m)\b",
+        text,
+        re.IGNORECASE,
+    )
     if not m:
         return None
     num = float(m.group(1).replace(",", "."))
     unit = m.group(2).lower()
-    meters = {"km": num * 1000, "mi": num * 1609.344, "ft": num * 0.3048}.get(unit, num)
+    if unit in ("km", "kilometer", "kilometers", "kilometre", "kilometres"):
+        meters = num * 1000
+    elif unit in ("mi", "mile", "miles"):
+        meters = num * 1609.344
+    elif unit in ("ft", "foot", "feet"):
+        meters = num * 0.3048
+    elif unit in ("yd", "yard", "yards"):
+        meters = num * 0.9144
+    else:
+        meters = num
     return max(0, round(meters))
 
 
@@ -299,7 +316,7 @@ def cmd_test(args) -> int:
 
 
 def cmd_regression(args) -> int:
-    rules = load(str(REPO_ROOT / "rules" / "bundled" / "google-maps.json")).get("rules", [])
+    rules = load(str(REPO_ROOT / "rules" / "bundled" / "google-maps" / "en.json")).get("rules", [])
     fixtures = load(str(REPO_ROOT / "rules" / "fixtures" / "google-maps.json")).get("fixtures", [])
     print("Google Maps regression:")
     return run_fixtures(rules, fixtures)

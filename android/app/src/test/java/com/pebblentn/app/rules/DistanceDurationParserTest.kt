@@ -18,6 +18,21 @@ class DistanceDurationParserTest {
     fun parsesImperialUnits() {
         assertEquals(1609, DistanceParser.parseMeters("1 mi"))
         assertEquals(30, DistanceParser.parseMeters("100 ft"))
+        assertEquals(46, DistanceParser.parseMeters("50 yd"))
+    }
+
+    @Test
+    fun parsesSpelledOutUnits() {
+        assertEquals(800, DistanceParser.parseMeters("800 metres"))
+        assertEquals(800, DistanceParser.parseMeters("800 meters"))
+        assertEquals(1500, DistanceParser.parseMeters("1.5 kilometers"))
+        assertEquals(152, DistanceParser.parseMeters("500 feet"))
+        assertEquals(46, DistanceParser.parseMeters("50 yards"))
+        assertEquals(3219, DistanceParser.parseMeters("2 miles"))
+        // A spelled-out unit is never truncated to a shorter one ("metres" is not "m" + "etres").
+        assertEquals(200, DistanceParser.parseMeters("in 200 meters, turn left"))
+        // "min" must not be read as miles/metres — it is a duration, not a distance.
+        assertNull(DistanceParser.parseMeters("5 min to destination"))
     }
 
     @Test

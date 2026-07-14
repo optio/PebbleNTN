@@ -17,7 +17,9 @@ val syncRuleData = tasks.register<Sync>("syncRuleData") {
         into("catalog")
     }
     from(rootProject.file("../rules/bundled")) {
-        include("*.json")
+        // Recursive: bundled rulesets live under rules/bundled/<app>/<language>.json, and Sync
+        // preserves the subpath so they land at rules/bundled/<app>/<language>.json in assets.
+        include("**/*.json")
         into("rules/bundled")
     }
 }

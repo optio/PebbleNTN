@@ -62,7 +62,7 @@ default (post-v1, requires separate approval + embedded keys)**.
   - **Blocker (recorded):** `PebbleWatchTransport` and the end-to-end phone↔watch flow are verified
     by compilation only — no Pebble/emulator here; on-device testing is a release gate.
 - **M6 — Google Maps initial rules:** complete for English.
-  - `rules/bundled/google-maps.json` (12 rules: arrive, roundabout, u-turn, sharp/slight L+R,
+  - `rules/bundled/google-maps/en.json` (12 rules: arrive, roundabout, u-turn, sharp/slight L+R,
     keep L+R, turn L/R, continue) — schema-valid, packaged as an app asset, active at runtime.
   - Synthetic fixtures (`rules/fixtures/google-maps.json`, provenance in the fixtures README) +
     `GoogleMapsRulesRegressionTest` runs every fixture through the engine.

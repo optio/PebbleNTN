@@ -23,7 +23,7 @@ SCHEMA_PATH = REPO_ROOT / "schemas" / "ruleset.schema.json"
 # Directories/files that contain full rulesets to validate.
 RULESET_GLOBS = [
     "examples/example-ruleset.json",
-    "rules/bundled/*.json",
+    "rules/bundled/**/*.json",
 ]
 
 

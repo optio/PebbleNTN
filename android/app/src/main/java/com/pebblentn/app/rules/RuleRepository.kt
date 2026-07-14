@@ -25,17 +25,36 @@ class AssetRuleRepository(
 
     private fun loadBundled(): List<Rule> {
         val assets = context.assets
-        val files = runCatching { assets.list(BUNDLED_DIR)?.filter { it.endsWith(".json") } }
-            .getOrNull().orEmpty()
-        return files.flatMap { name ->
+        // Bundled rulesets are organized by app then language (rules/bundled/<app>/<language>.json),
+        // so the asset tree must be walked recursively — AssetManager.list() returns immediate
+        // children only. Every .json found is parsed and its rules flattened into one bundled layer.
+        val files = runCatching { listJsonAssetsRecursively(BUNDLED_DIR) }.getOrNull().orEmpty()
+        return files.flatMap { path ->
             runCatching {
-                val text = assets.open("$BUNDLED_DIR/$name").bufferedReader().use { it.readText() }
+                val text = assets.open(path).bufferedReader().use { it.readText() }
                 RulesetCodec.parse(text).rules
             }.getOrElse { error ->
-                onParseError(name, error)
+                onParseError(path, error)
                 emptyList()
             }
         }
+    }
+
+    /** Depth-first list of every `.json` asset path under [dir] (a directory has children; a file
+     *  lists as empty). Ordered for determinism so bundled precedence is stable across runs. */
+    private fun listJsonAssetsRecursively(dir: String): List<String> {
+        val children = context.assets.list(dir)?.sorted().orEmpty()
+        val results = mutableListOf<String>()
+        for (name in children) {
+            val path = "$dir/$name"
+            val grandChildren = context.assets.list(path)
+            if (grandChildren.isNullOrEmpty()) {
+                if (name.endsWith(".json")) results.add(path)
+            } else {
+                results.addAll(listJsonAssetsRecursively(path))
+            }
+        }
+        return results
     }
 
     private companion object {

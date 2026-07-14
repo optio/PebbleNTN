@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
                         userRuleRepository = container.userRuleRepository,
                         debugHistoryRepository = container.debugHistoryRepository,
                         previewService = container.rulePreviewService,
+                        catalog = container.catalog,
                         officialRules = container.bundledOfficialRules,
                     )
                 }
@@ -135,7 +136,7 @@ class MainActivity : ComponentActivity() {
             composable("rules") {
                 val userRules by rulesViewModel.userRules.collectAsState()
                 RulesScreen(
-                    officialRules = rulesViewModel.officialRules,
+                    officialGroups = rulesViewModel.officialGroups,
                     userRules = userRules,
                     onClone = { rulesViewModel.clone(it) },
                     onToggleUser = { id, enabled -> rulesViewModel.setEnabled(id, enabled) },

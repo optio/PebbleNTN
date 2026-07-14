@@ -2,14 +2,12 @@
   "AGENTS.md": "ac7442e27cc71a5dd06420221305e6a49ea6dfe8374f266c5ce27f8ece8d2f05",
   "CLAUDE.md": "11eafc2b803cf57e5353a1656120fb9b355866b241fc387e4b534092b0cea1c4",
   "LICENSE": "b5d96d82fa840a8b79f0e8c586fb345ba654bf9007bc5c99ededa9de60062408",
-  "PebbleNTN-Consolidated-Spec.md": "f73542d723d06d16f93466bd6329ec3ca74fd94d858a4a309c7826bbdcd10e52",
-  "README.md": "880d1bd6cd5916b7bdebfce58d093f63788a98b103bc0770be1c2fdea0be3a6b",
-  "SOURCES.md": "f20063f6b3a10712676281e384102637dbe920098c69364221982e56b9c25610",
+  "README.md": "7fea59e458f9f7d8d44ebf1a63433656a76893f27dc1ef54912aaebf16292c75",
   "examples/example-ruleset.json": "aa33de9eeaf9565c20b4c6b5885ad3a6ed6f43deab051151d12cb02f8911ec61",
   "examples/protocol-definition.json": "5b93ce8211752207d8ce7599fb065b17522bf51ae73a1aa89321086143303366",
   "requirements/REQ-ANDROID.md": "f1f56ff56b25b864de162ca4be3fe4e174035f8c7605e04bb6010095ab16df44",
   "requirements/REQ-DEBUG.md": "a4321b875aab9ce86a07e3098900ddcd49eacf06e598774cafadcbc6227b6e6f",
-  "requirements/REQ-RULES.md": "15a0f3189ed472cec7b84abd87845bdc8ea5b6cb69eacfa3471d4b8e0e7a1d9d",
+  "requirements/REQ-RULES.md": "f4ad08cfded5d99b06f418ee897b1d880e68660f7f3f8a2449af32f5a90bd679",
   "requirements/REQ-SECURITY.md": "5a686af612377355876307f9dfd8b98d983d91196761ee637cf3374c49f9ee5f",
   "requirements/REQ-WATCH.md": "0b42e4f5837783a03c24afeb104c13b2afde2a5bddcd93aa3cc186d4e94a292b",
   "schemas/ruleset.schema.json": "861e0b30057ef676fcd844fc18cc10bed74339041a5e5f9efe7bb8f4adef8045",
@@ -32,5 +30,7 @@
   "spec/600-security-release/SecurityPrivacy.md": "e80e6184a70fee443a75ea2120514c756bc3846e4f9eb96272ff1b6fa2bc1745",
   "spec/700-ai/CodingStandards.md": "f29935a4e832fd40ed852cae617ce149945b83794059f91f69aaad25b3126a69",
   "spec/700-ai/DefinitionOfDone.md": "a09d8e63f92bc65ba8c3e3e31a295cc06d9281375cb8c6f5a32b320601162d20",
-  "spec/800-roadmap/Milestones.md": "9e74b786f38aa22845de5696a3d18d1a57e27b89dcf8ce743c22741596c08901"
+  "spec/800-roadmap/Milestones.md": "9e74b786f38aa22845de5696a3d18d1a57e27b89dcf8ce743c22741596c08901",
+  "docs/SOURCES.md": "f20063f6b3a10712676281e384102637dbe920098c69364221982e56b9c25610",
+  "docs/PebbleNTN-Consolidated-Spec.md": "f73542d723d06d16f93466bd6329ec3ca74fd94d858a4a309c7826bbdcd10e52"
 }

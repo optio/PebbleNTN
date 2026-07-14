@@ -30,6 +30,10 @@
     {"name": "roundabout", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "At the roundabout, take the 2nd exit", "text": "400 m"}, "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 400}},
     {"name": "uturn", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Make a U-turn", "text": "150 m"}, "expected": {"maneuver": "UTURN_LEFT", "distanceMeters": 150}},
     {"name": "continue", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Continue straight", "text": "3.0 km"}, "expected": {"maneuver": "STRAIGHT", "distanceMeters": 3000}},
+    {"name": "imperial-feet", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn right", "text": "500 ft", "subText": "Arrive 12:05"}, "expected": {"maneuver": "RIGHT", "distanceMeters": 152}},
+    {"name": "imperial-yards", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Turn left", "text": "50 yd"}, "expected": {"maneuver": "LEFT", "distanceMeters": 46}},
+    {"name": "imperial-miles", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Slight right", "text": "0.3 mi"}, "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 483}},
+    {"name": "spelled-out-metres", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "Continue straight", "text": "800 metres"}, "expected": {"maneuver": "STRAIGHT", "distanceMeters": 800}},
     {"name": "arrive", "source": "synthetic", "locale": "en", "packageName": "com.google.android.apps.maps", "snapshot": {"title": "You have arrived at your destination", "text": "Now"}, "expected": {"maneuver": "ARRIVE"}}
   ]
 }

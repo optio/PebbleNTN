@@ -45,7 +45,7 @@ import com.pebblentn.app.rules.RulesetCodec
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RulesScreen(
-    officialRules: List<Rule>,
+    officialGroups: List<OfficialAppGroup>,
     userRules: List<UserRule>,
     onClone: (Rule) -> Unit,
     onToggleUser: (String, Boolean) -> Unit,
@@ -71,7 +71,7 @@ fun RulesScreen(
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.rules_tab_user)) })
             }
             when (selectedTab) {
-                0 -> OfficialList(officialRules, onClone)
+                0 -> OfficialList(officialGroups, onClone)
                 else -> UserList(userRules, onToggleUser, onEditUser, onDeleteUser)
             }
         }
@@ -79,30 +79,53 @@ fun RulesScreen(
 }
 
 @Composable
-private fun OfficialList(rules: List<Rule>, onClone: (Rule) -> Unit) {
-    if (rules.isEmpty()) {
+private fun OfficialList(groups: List<OfficialAppGroup>, onClone: (Rule) -> Unit) {
+    if (groups.isEmpty()) {
         EmptyState(stringResource(R.string.rules_official_empty))
         return
     }
     var viewing by remember { mutableStateOf<Rule?>(null) }
 
     LazyColumn {
-        items(rules, key = { it.id }) { rule ->
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { viewing = rule }
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(rule.id, style = MaterialTheme.typography.bodyLarge)
-                Text(rule.packageNames.joinToString(), style = MaterialTheme.typography.bodySmall)
-                Row {
-                    TextButton(onClick = { viewing = rule }) { Text(stringResource(R.string.rules_view)) }
-                    TextButton(onClick = { onClone(rule) }) { Text(stringResource(R.string.rules_clone)) }
+        groups.forEach { app ->
+            item(key = "app-${app.appId}") {
+                Text(
+                    app.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            app.languages.forEach { language ->
+                item(key = "lang-${app.appId}-${language.locale}") {
+                    Text(
+                        language.languageLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 24.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+                    )
+                }
+                items(language.rules, key = { it.id }) { rule ->
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { viewing = rule }
+                            .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(rule.id, style = MaterialTheme.typography.bodyLarge)
+                        Text(rule.packageNames.joinToString(), style = MaterialTheme.typography.bodySmall)
+                        Row {
+                            TextButton(onClick = { viewing = rule }) { Text(stringResource(R.string.rules_view)) }
+                            TextButton(onClick = { onClone(rule) }) { Text(stringResource(R.string.rules_clone)) }
+                        }
+                    }
+                    HorizontalDivider()
                 }
             }
-            HorizontalDivider()
         }
     }
 
