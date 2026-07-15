@@ -14,7 +14,8 @@ lifecycle = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2024.12.01"
 navigationCompose = "2.8.5"
-room = "2.6.1"
+room = "2.7.2"                      # KSP2-compatible Room; 2.6.1's processor hit the KSP2
+                                    # "unexpected jvm signature V" bug on suspend-Unit DAO methods
 kotlinxSerialization = "1.7.3"
 kotlinxCoroutines = "1.9.0"
 datastore = "1.1.1"
