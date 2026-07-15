@@ -38,3 +38,9 @@ Every official rule change SHALL include sanitized fixtures and expected normali
 
 ## REQ-RULE-013 — Google Maps first
 Google Maps is the first official rules target. Other catalog apps may remain capture-only until evidence-backed rules are merged.
+
+## REQ-RULE-014 — Distance units
+The distance extractor SHALL require an explicit unit and SHALL recognize both abbreviated (`m`, `km`, `ft`, `mi`, `yd`) and spelled-out (`metre(s)`/`meter(s)`, `kilometre(s)`/`kilometer(s)`, `foot`/`feet`, `mile(s)`, `yard(s)`) forms, with `.` or `,` as the decimal separator. The unit SHALL immediately follow the number so a road name containing a unit word does not match, and a bare number SHALL NOT be treated as a distance. The Kotlin and Python (`rule-workbench`) implementations SHALL stay in lockstep.
+
+## REQ-RULE-015 — Bundled ruleset layout
+Bundled official rulesets SHALL be organized per navigation app then per language as `rules/bundled/<app>/<language>.json`. The app SHALL discover every bundled ruleset recursively and MAY present them grouped by app then language. File layout SHALL NOT affect matching: rules are selected by their declared `packageNames` and `locales`, never by filename.

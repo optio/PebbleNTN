@@ -62,7 +62,7 @@ default (post-v1, requires separate approval + embedded keys)**.
   - **Blocker (recorded):** `PebbleWatchTransport` and the end-to-end phone↔watch flow are verified
     by compilation only — no Pebble/emulator here; on-device testing is a release gate.
 - **M6 — Google Maps initial rules:** complete for English.
-  - `rules/bundled/google-maps.json` (12 rules: arrive, roundabout, u-turn, sharp/slight L+R,
+  - `rules/bundled/google-maps/en.json` (12 rules: arrive, roundabout, u-turn, sharp/slight L+R,
     keep L+R, turn L/R, continue) — schema-valid, packaged as an app asset, active at runtime.
   - Synthetic fixtures (`rules/fixtures/google-maps.json`, provenance in the fixtures README) +
     `GoogleMapsRulesRegressionTest` runs every fixture through the engine.
@@ -380,3 +380,26 @@ release build automatically.
 
 **Unverified:** the release workflow cannot be run locally. The version script, the changelog
 generator and the YAML are verified here; the first release run is the real check.
+
+## Comparison-driven changes (2026-07-14) — konsumer/pebble-map-android review
+
+A review against `konsumer/pebble-map-android` (same concept: scrape nav notifications → Pebble)
+produced these changes. New behaviour is recorded as requirements (see `requirements/`).
+
+- **PebbleKit Android 2 migration (REQ-WATCH-003/004 transport).** Replaced the abandoned
+  `com.getpebble:pebblekit:4.0.1` with Rebble's maintained `io.rebble.pebblekit2:client:1.2.0`.
+  Outbound now uses `DefaultPebbleSender` (coroutine API); inbound arrives on a manifest-declared
+  `WatchListenerService` (`BasePebbleListenerService`) and is bridged to `PebbleWatchTransport.inbound`
+  via `WatchInboundBus`. This **retires the classic-PebbleKit Android 14 `registerReceiver` crash
+  workaround** documented above — the maintained library registers correctly, so the manual
+  `RECEIVER_EXPORTED` receiver is gone. `PebbleAppMessageMapper` now maps to
+  `PebbleDictionaryItem.Int32/Text` and reads any integer width back to `Int`.
+  **Unverified here:** no Android SDK / device in this environment — compilation and the phone↔watch
+  handshake are gated by CI (`android.yml`) and on-device testing. Version pinned to konsumer's
+  `1.2.0`; confirm the newest stable on the first green CI run.
+- **Glyph packs (REQ-WATCH-012)** and **per-element debug breakdown (REQ-DEBUG-010)**,
+  **per-app/language rules (REQ-RULE-015)** and **expanded distance units (REQ-RULE-014)** — see
+  those requirements and the commits.
+- **Icon forwarding deliberately NOT adopted.** konsumer forwards the notification's own arrow
+  bitmap (via RemoteViews inflation). We keep **REQ-SEC-003** (minimal snapshot, no icon extraction)
+  intact and instead ship built-in glyph packs; rationale in `README.md`.

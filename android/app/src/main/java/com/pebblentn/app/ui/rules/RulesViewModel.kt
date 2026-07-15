@@ -2,6 +2,7 @@ package com.pebblentn.app.ui.rules
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.data.RuleValidationStatus
 import com.pebblentn.app.data.UserRule
 import com.pebblentn.app.data.UserRuleRepository
@@ -19,13 +20,36 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** A group of official rules for one navigation app, split by language. */
+data class OfficialLanguageGroup(
+    /** Canonical locale key ("all" when the rules apply to every language). */
+    val locale: String,
+    /** User-facing label, e.g. "English" / "All languages". */
+    val languageLabel: String,
+    val rules: List<Rule>,
+)
+
+/** Official rules for one navigation app, grouped so the list reads app -> language -> rules. */
+data class OfficialAppGroup(
+    val appId: String,
+    val displayName: String,
+    val languages: List<OfficialLanguageGroup>,
+)
+
 /** Backs the Rules screen (official + user tabs) and the expert editor. */
 class RulesViewModel(
     private val userRuleRepository: UserRuleRepository,
     private val debugHistoryRepository: DebugHistoryRepository,
     private val previewService: RulePreviewService,
+    private val catalog: NavigationAppCatalog,
     val officialRules: List<Rule>,
 ) : ViewModel() {
+
+    /**
+     * Official rules grouped app -> language, so the screen shows a short, navigable tree instead of
+     * one flat list of every bundled rule. Computed once: the bundled set is immutable at runtime.
+     */
+    val officialGroups: List<OfficialAppGroup> = groupOfficialRules(officialRules, catalog)
 
     val userRules: StateFlow<List<UserRule>> = userRuleRepository.observeUserRules()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -77,5 +101,57 @@ class RulesViewModel(
               }
             }
         """.trimIndent()
+    }
+}
+
+/**
+ * Group official rules first by their navigation app (resolved through the catalog by package name),
+ * then by language. A rule with no `locales` applies to every language and lands under "All
+ * languages"; apps and languages are sorted for a stable, readable order.
+ */
+private fun groupOfficialRules(
+    rules: List<Rule>,
+    catalog: NavigationAppCatalog,
+): List<OfficialAppGroup> {
+    return rules
+        .groupBy { rule ->
+            val pkg = rule.packageNames.firstOrNull().orEmpty()
+            val entry = catalog.entryForPackage(pkg)
+            AppKey(entry?.appId ?: pkg.ifEmpty { "unknown" }, entry?.displayName ?: pkg.ifEmpty { "Unknown app" })
+        }
+        .toSortedMap(compareBy({ it.displayName }, { it.appId }))
+        .map { (appKey, appRules) ->
+            val languages = appRules
+                .groupBy { rule -> rule.locales.sorted().joinToString(",").ifEmpty { LOCALE_ALL } }
+                .toSortedMap()
+                .map { (localeKey, localeRules) ->
+                    OfficialLanguageGroup(
+                        locale = localeKey,
+                        languageLabel = languageLabel(localeKey),
+                        rules = localeRules.sortedWith(compareByDescending<Rule> { it.priority }.thenBy { it.id }),
+                    )
+                }
+            OfficialAppGroup(appKey.appId, appKey.displayName, languages)
+        }
+}
+
+private data class AppKey(val appId: String, val displayName: String)
+
+private const val LOCALE_ALL = "all"
+
+/** A short, human label for a locale key (comma-joined codes, or "all"). */
+private fun languageLabel(localeKey: String): String {
+    if (localeKey == LOCALE_ALL) return "All languages"
+    return localeKey.split(",").joinToString(", ") { code ->
+        when (code.lowercase()) {
+            "en" -> "English"
+            "de" -> "German"
+            "fr" -> "French"
+            "es" -> "Spanish"
+            "it" -> "Italian"
+            "nl" -> "Dutch"
+            "pt" -> "Portuguese"
+            else -> code.uppercase()
+        }
     }
 }

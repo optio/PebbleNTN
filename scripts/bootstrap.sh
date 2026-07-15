@@ -196,5 +196,5 @@ for item in "${missing_list[@]}"; do
 done
 
 echo
-echo "Re-run ./scripts/bootstrap.sh when you're done. Full guide: FOR-HUMAN.md"
+echo "Re-run ./scripts/bootstrap.sh when you're done. Full guide: docs/FOR-HUMAN.md"
 exit 1

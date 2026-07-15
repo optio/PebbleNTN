@@ -57,7 +57,7 @@ class GoogleMapsRulesRegressionTest {
             ?: error("resource not found: $path")
 
     private val bundledRules: LayeredRules by lazy {
-        LayeredRules(bundled = RulesetCodec.parse(resource("/rules/bundled/google-maps.json")).rules)
+        LayeredRules(bundled = RulesetCodec.parse(resource("/rules/bundled/google-maps/en.json")).rules)
     }
 
     private val fixtures: List<Fixture> by lazy {

@@ -31,6 +31,11 @@ The watch SHALL not vibrate on every distance update; maneuver-change vibration 
 Protocol incompatibility SHALL produce an explicit state rather than silent failure.
 
 ## REQ-WATCH-011 — Appearance settings
-The watchapp SHALL provide on-watch settings for accent colour, inverted display and distance units, applied immediately and persisted across launches. The colour list SHALL be reduced to the colours the watch can display: 16 accents on colour watches (e.g. Pebble Time 2), black/white on black-and-white watches (e.g. Pebble 2 Duo), so both polarities and their inverses remain reachable on every model.
+The watchapp SHALL provide on-watch settings for accent colour, inverted display, distance units and glyph pack, applied immediately and persisted across launches. The colour list SHALL be reduced to the colours the watch can display: 16 accents on colour watches (e.g. Pebble Time 2), black/white on black-and-white watches (e.g. Pebble 2 Duo), so both polarities and their inverses remain reachable on every model. Accent colour and glyph pack, each being a list rather than a toggle, SHALL each open their own sub-menu rather than sharing the top settings screen.
 
 **Acceptance:** Emulator verification on a colour platform (basalt) and a black-and-white platform (diorite).
+
+## REQ-WATCH-012 — Glyph packs
+The watchapp SHALL provide built-in maneuver glyph packs selectable on the watch, defaulting to the Classic pack. The glyph-pack menu SHALL let the user preview each pack on the watch before selecting it. Packs are a render-only choice: the phone SHALL continue to send only the maneuver code, and pack selection SHALL NOT change the protocol. An unclassified maneuver (UNKNOWN) SHALL render a question-mark fallback glyph.
+
+**Acceptance:** Emulator verification that switching packs re-renders the current maneuver, that the preview shows each pack, and that UNKNOWN renders the "?" glyph.
