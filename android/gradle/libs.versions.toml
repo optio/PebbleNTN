@@ -5,8 +5,10 @@
 [versions]
 # Gradle wrapper is pinned separately in gradle/wrapper/gradle-wrapper.properties (8.11.1).
 agp = "8.9.1"                       # supports compileSdk 36 (Android 16); requires Gradle 8.11.1+
-kotlin = "2.1.0"                    # bundles the Compose compiler plugin (org.jetbrains.kotlin.plugin.compose)
-ksp = "2.1.0-1.0.29"               # KSP must track the Kotlin version; used by Room
+kotlin = "2.3.20"                   # bundles the Compose compiler plugin; must be >= PebbleKit 2's
+                                    # metadata (built with Kotlin 2.3.x → kotlin-stdlib 2.3.20), or
+                                    # kspKotlin fails "incompatible metadata: binary 2.3.0, expected 2.1.0".
+ksp = "2.3.20"                      # KSP's unified scheme (>= 2.3.0) tracks Kotlin; used by Room
 coreKtx = "1.15.0"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
