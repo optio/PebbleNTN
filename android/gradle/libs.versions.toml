@@ -4,7 +4,7 @@
 # recorded in docs/IMPLEMENTATION_STATUS.md.
 [versions]
 # Gradle wrapper is pinned separately in gradle/wrapper/gradle-wrapper.properties (8.11.1).
-agp = "8.9.1"                       # supports compileSdk 36 (Android 16); requires Gradle 8.11.1+
+agp = "8.10.0"                      # compileSdk 36; min AGP for KSP 2.3.10; pairs with Gradle 8.11.1
 kotlin = "2.3.10"                   # bundles the Compose compiler plugin; must be >= PebbleKit 2's
                                     # metadata (built with Kotlin 2.3.x), or kspKotlin fails
                                     # "incompatible metadata: binary 2.3.0, expected 2.1.0".
