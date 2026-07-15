@@ -25,12 +25,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-
-    kotlinOptions {
-        jvmTarget = "21"
-    }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+}
+
+// Kotlin 2.3 removed the String-based kotlinOptions.jvmTarget; use the compilerOptions DSL.
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    }
 }

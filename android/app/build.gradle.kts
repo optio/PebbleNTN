@@ -124,10 +124,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlinOptions {
-        jvmTarget = "21"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -180,6 +176,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
+    // PebbleKit Android 2 — resolved from JitPack (see android/settings.gradle.kts). JitPack builds
+    // a version on first request, so a cold CI cache may need one retry while that build completes.
     implementation(libs.pebblekit)
 
     testImplementation(libs.junit)
@@ -193,4 +191,12 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.room.testing)
+}
+
+// Kotlin 2.3 removed the String-based kotlinOptions.jvmTarget; the JVM target now lives in the
+// top-level kotlin { compilerOptions { } } DSL.
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    }
 }
