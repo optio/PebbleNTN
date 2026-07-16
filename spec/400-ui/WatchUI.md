@@ -13,12 +13,23 @@
 
 ## Active layout
 
-- Large bitmap maneuver centered in upper region.
-- Large formatted distance.
-- Primary text: road or concise instruction.
-- Secondary line only when space permits.
-- Tiny phone/connection indicator.
-- No map.
+- A coloured **panel** across the top holds the maneuver arrow and the distance side by side. The
+  arrow occupies one top corner (top-right by default; the corner is a user setting, REQ-WATCH-011)
+  and the distance sits opposite it, with its unit stacked under the number. The panel is sized to
+  hug the arrow rather than a fixed fraction of the screen, so little vertical space is wasted.
+- A **status strip** below the panel carries the watch clock on the left and the arrival time (ETA,
+  with a small "ETA" label) on the right — the watch stays a watch while navigating. When the phone
+  has stopped updating, the clock is replaced by a STALE marker.
+- The lower area shows the **primary text** (road or concise instruction), auto-fit to the largest
+  font that fits rather than truncated.
+- No map. Distance and road text drive their own font size (no fixed truncation).
+
+### Screen-size adaptation (REQ-WATCH-013)
+
+The layout is detected at runtime from the screen width. The 144-wide models (aplite/basalt/diorite)
+and round chalk use the compact layout; Pebble Time 2 (emery, 200×228) uses larger strip fonts, a
+larger maneuver arrow (an emery-only bundled resource) and a proportionally taller panel. No user
+setting selects this — it is automatic.
 
 ## Distance formatting
 

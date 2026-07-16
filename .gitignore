@@ -17,3 +17,7 @@ watchapp/.lock-waf_*
 !android/app/debug.keystore
 secrets/
 captures-private/
+
+# Python bytecode caches
+__pycache__/
+*.pyc

@@ -1,6 +1,53 @@
 # Implementation Status
 
-_Last updated: 2026-07-15_
+_Last updated: 2026-07-16_
+
+## Watchapp UI refinement + spec reconciliation (2026-07-16)
+
+On-wrist follow-up after the Core Devices bring-up, driven by user feedback on a Pebble Time 2.
+
+**Watchapp** (`watchapp/src/c/main.c`, `theme.c`, `settings_window.c`, `tools/gen_maneuver_bitmaps.py`):
+- **Screen-size adaptation (REQ-WATCH-013, new).** Runtime detection (`bounds.size.w >= 200`): emery
+  (Pebble Time 2, 200×228) gets larger status-strip fonts, a larger 64px maneuver arrow bundled as an
+  emery-only resource (`resources/images/emery/`, wired via disjoint `targetPlatforms` in
+  `package.json`), and a panel sized to hug the arrow (80px) instead of a fixed 104px that wasted
+  ~20px above and below. The 144-wide models keep the compact layout; both are auto-selected.
+- **Arrow-corner setting (REQ-WATCH-011, extended).** New on-watch setting: which top corner holds
+  the arrow (top-right default), distance moves to the opposite corner. Persisted
+  (`PERSIST_KEY_ARROW_LEFT`); menu row in `settings_window.c`.
+- **Status-strip typography.** Clock and ETA at one size with an "ETA" label, vertically centred via
+  per-font top-trim; distance number + stacked unit centred on the arrow line.
+- Verified on the emery/basalt/diorite emulators; the panel-margin alignment measured pixel-exact
+  (arrow centre = panel centre). Emulator shut down after each run.
+
+**Android:** dashboard **version footer** (`BuildConfig.VERSION_NAME`) shipped in the same push.
+
+**Battery-safety review (no code change).** Traced every BLE-touching path: the pipeline is fully
+event-driven — no timer/alarm/WorkManager/wakelock/foreground service, the app holds no `BLUETOOTH`
+permission (all radio goes through the companion), `FreshnessChecked`/`onConnectionLost` are dead
+code (never dispatched). When no nav app is navigating, PebbleNTN initiates zero watch traffic. The
+only amplification is the REQ-WATCH-006 relaunch during *active* navigation (below).
+
+**Spec-driven reconciliation (this doc's companion commit).** Folded the above back into the contract:
+- REQ-WATCH-011 now lists the arrow-corner setting and its acceptance includes emery; new
+  REQ-WATCH-013 covers screen-size adaptation.
+- **REQ-WATCH-006 amended** to reconcile a real conflict: the transport's relaunch-on-
+  `FailedDifferentAppOpen` (added during bring-up) *does* re-launch the watchapp after the user
+  leaves it, which the old "launch once, never steal focus" wording forbade. The companion refuses
+  delivery unless our app is foreground, so the re-launch is the only way an update reaches the
+  watch; the requirement and `Pebble.md` → Launch policy now carve out that update-driven re-launch
+  (bounded to material state changes, never speculative/idle) instead of leaving the conflict
+  implicit in code.
+- `Pebble.md` gained the companion-limitation / synthesized-readiness and `companionApp`
+  authorization notes; `WatchUI.md` now describes the panel/strip/arrow-corner layout and the
+  large-screen adaptation.
+- Updated the three protected files' hashes in `MANIFEST.sha256.json`.
+
+> **Known stale artifact:** `docs/PebbleNTN-Consolidated-Spec.md` is a generated snapshot dated
+> 2026-07-12 and already predates REQ-WATCH-011/012, REQ-DEBUG-010, REQ-RULE-014/015 and
+> REQ-ANDROID-011. There is no regenerator script in the repo. It was left as the dated snapshot it
+> declares itself to be rather than hand-patched; it should be regenerated from the source specs in a
+> dedicated pass.
 
 ## On-device bring-up on the Core Devices Pebble app (2026-07-15)
 
