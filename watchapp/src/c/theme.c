@@ -4,11 +4,13 @@
 #define PERSIST_KEY_UNITS 2
 #define PERSIST_KEY_INVERT 3
 #define PERSIST_KEY_GLYPH_PACK 4
+#define PERSIST_KEY_ARROW_LEFT 5
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
 static UnitsId s_units = UNITS_METRIC;
 static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
+static bool s_arrow_left = false;
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -136,6 +138,7 @@ AccentId settings_accent(void) { return s_accent; }
 bool settings_inverted(void) { return s_inverted; }
 UnitsId settings_units(void) { return s_units; }
 GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
+bool settings_arrow_left(void) { return s_arrow_left; }
 
 void settings_set_accent(AccentId id) {
   s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
@@ -155,6 +158,11 @@ void settings_set_units(UnitsId id) {
 void settings_set_glyph_pack(GlyphPack id) {
   s_glyph_pack = (id < GLYPH_PACK_COUNT) ? id : GLYPH_PACK_CLASSIC;
   persist_write_int(PERSIST_KEY_GLYPH_PACK, s_glyph_pack);
+}
+
+void settings_set_arrow_left(bool arrow_left) {
+  s_arrow_left = arrow_left;
+  persist_write_bool(PERSIST_KEY_ARROW_LEFT, s_arrow_left);
 }
 
 void settings_load(void) {
@@ -180,5 +188,8 @@ void settings_load(void) {
     if (stored >= 0 && stored < GLYPH_PACK_COUNT) {
       s_glyph_pack = (GlyphPack)stored;
     }
+  }
+  if (persist_exists(PERSIST_KEY_ARROW_LEFT)) {
+    s_arrow_left = persist_read_bool(PERSIST_KEY_ARROW_LEFT);
   }
 }

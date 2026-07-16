@@ -22,6 +22,16 @@
     "watchapp": {
       "watchface": false
     },
+    "companionApp": {
+      "android": {
+        "url": "https://github.com/optio/PebbleNTN",
+        "apps": [
+          {
+            "package": "com.pebblentn.app"
+          }
+        ]
+      }
+    },
     "messageKeys": [
       "dummy"
     ],
@@ -31,217 +41,757 @@
           "type": "bitmap",
           "name": "MANEUVER_STRAIGHT",
           "file": "images/straight.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_STRAIGHT",
+          "file": "images/emery/straight.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_SLIGHT_LEFT",
           "file": "images/slight_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SLIGHT_LEFT",
+          "file": "images/emery/slight_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_LEFT",
           "file": "images/left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_LEFT",
+          "file": "images/emery/left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_SHARP_LEFT",
           "file": "images/sharp_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SHARP_LEFT",
+          "file": "images/emery/sharp_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_SLIGHT_RIGHT",
           "file": "images/slight_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SLIGHT_RIGHT",
+          "file": "images/emery/slight_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_RIGHT",
           "file": "images/right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_RIGHT",
+          "file": "images/emery/right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_SHARP_RIGHT",
           "file": "images/sharp_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_SHARP_RIGHT",
+          "file": "images/emery/sharp_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_UTURN_LEFT",
           "file": "images/uturn_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_UTURN_LEFT",
+          "file": "images/emery/uturn_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_UTURN_RIGHT",
           "file": "images/uturn_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_UTURN_RIGHT",
+          "file": "images/emery/uturn_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_ROUNDABOUT",
           "file": "images/roundabout.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_ROUNDABOUT",
+          "file": "images/emery/roundabout.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_ARRIVE",
           "file": "images/arrive.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_ARRIVE",
+          "file": "images/emery/arrive.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_UNKNOWN",
           "file": "images/unknown.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_UNKNOWN",
+          "file": "images/emery/unknown.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_STRAIGHT",
           "file": "images/bold/straight.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_STRAIGHT",
+          "file": "images/emery/bold/straight.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_SLIGHT_LEFT",
           "file": "images/bold/slight_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_SLIGHT_LEFT",
+          "file": "images/emery/bold/slight_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_LEFT",
           "file": "images/bold/left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_LEFT",
+          "file": "images/emery/bold/left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_SHARP_LEFT",
           "file": "images/bold/sharp_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_SHARP_LEFT",
+          "file": "images/emery/bold/sharp_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_SLIGHT_RIGHT",
           "file": "images/bold/slight_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_SLIGHT_RIGHT",
+          "file": "images/emery/bold/slight_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_RIGHT",
           "file": "images/bold/right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_RIGHT",
+          "file": "images/emery/bold/right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_SHARP_RIGHT",
           "file": "images/bold/sharp_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_SHARP_RIGHT",
+          "file": "images/emery/bold/sharp_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_UTURN_LEFT",
           "file": "images/bold/uturn_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_UTURN_LEFT",
+          "file": "images/emery/bold/uturn_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_UTURN_RIGHT",
           "file": "images/bold/uturn_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_UTURN_RIGHT",
+          "file": "images/emery/bold/uturn_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_ROUNDABOUT",
           "file": "images/bold/roundabout.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_ROUNDABOUT",
+          "file": "images/emery/bold/roundabout.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_ARRIVE",
           "file": "images/bold/arrive.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_ARRIVE",
+          "file": "images/emery/bold/arrive.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_BOLD_UNKNOWN",
           "file": "images/bold/unknown.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_UNKNOWN",
+          "file": "images/emery/bold/unknown.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_STRAIGHT",
           "file": "images/outline/straight.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_STRAIGHT",
+          "file": "images/emery/outline/straight.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_SLIGHT_LEFT",
           "file": "images/outline/slight_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_SLIGHT_LEFT",
+          "file": "images/emery/outline/slight_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_LEFT",
           "file": "images/outline/left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_LEFT",
+          "file": "images/emery/outline/left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_SHARP_LEFT",
           "file": "images/outline/sharp_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_SHARP_LEFT",
+          "file": "images/emery/outline/sharp_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_SLIGHT_RIGHT",
           "file": "images/outline/slight_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_SLIGHT_RIGHT",
+          "file": "images/emery/outline/slight_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_RIGHT",
           "file": "images/outline/right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_RIGHT",
+          "file": "images/emery/outline/right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_SHARP_RIGHT",
           "file": "images/outline/sharp_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_SHARP_RIGHT",
+          "file": "images/emery/outline/sharp_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_UTURN_LEFT",
           "file": "images/outline/uturn_left.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_UTURN_LEFT",
+          "file": "images/emery/outline/uturn_left.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_UTURN_RIGHT",
           "file": "images/outline/uturn_right.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_UTURN_RIGHT",
+          "file": "images/emery/outline/uturn_right.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_ROUNDABOUT",
           "file": "images/outline/roundabout.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_ROUNDABOUT",
+          "file": "images/emery/outline/roundabout.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_ARRIVE",
           "file": "images/outline/arrive.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_ARRIVE",
+          "file": "images/emery/outline/arrive.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "name": "MANEUVER_OUTLINE_UNKNOWN",
           "file": "images/outline/unknown.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_UNKNOWN",
+          "file": "images/emery/outline/unknown.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
         }
       ]
     }

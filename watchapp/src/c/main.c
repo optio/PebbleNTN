@@ -187,24 +187,30 @@ static GFont fit_font(const char *text, GRect box, GTextOverflowMode overflow,
 static void panel_update_proc(Layer *layer, GContext *ctx) {
   const Theme theme = theme_current();
   const GRect bounds = layer_get_bounds(layer);
+  const int16_t w = bounds.size.w;
+  const int16_t ph = bounds.size.h;
+  const bool large = w >= 200;
 
   graphics_context_set_fill_color(ctx, theme.panel_bg);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  // Maneuver glyph on the right, distance on the left — side by side, so the road name below gets
-  // the whole lower half of the screen. The glyph column is a third of the width; the distance gets
-  // the remaining two thirds, which is what lets "12.3" stay large.
-  //
-  // graphics_draw_bitmap_in_rect crops (and tiles) rather than scales, so the glyph must be drawn
-  // at its own size, centred in the column — anything else silently cuts the arrow in half.
-  const int16_t column = bounds.size.w / 3;
+  // The maneuver glyph takes a third of the width in one top corner; the distance fills the other
+  // two thirds (which is what lets "12.3" stay large). Which corner the arrow lives in is a user
+  // setting (REQ-WATCH-011); the distance always sits opposite it, hugging the outer edge.
+  const bool arrow_left = settings_arrow_left();
+  const int16_t column = w / 3;
+  const int16_t glyph_x = arrow_left ? 0 : (w - column);
+  const int16_t dist_x = arrow_left ? column : 0;
+  const int16_t dist_w = w - column;
+  const GTextAlignment dist_align = arrow_left ? GTextAlignmentRight : GTextAlignmentLeft;
+
+  // graphics_draw_bitmap_in_rect crops (and tiles) rather than scales, so the glyph is drawn at its
+  // own size, centred in its column — anything else silently cuts the arrow in half.
   GBitmap *bmp = maneuver_bitmap(s_maneuver);
   if (bmp != NULL) {
     const GSize glyph_size = gbitmap_get_bounds(bmp).size;
-    const GRect glyph_rect = GRect(
-        bounds.size.w - column + (column - glyph_size.w) / 2,
-        (bounds.size.h - glyph_size.h) / 2,
-        glyph_size.w, glyph_size.h);
+    const GRect glyph_rect = GRect(glyph_x + (column - glyph_size.w) / 2,
+                                   (ph - glyph_size.h) / 2, glyph_size.w, glyph_size.h);
     graphics_context_set_compositing_mode(ctx, prepare_glyph(bmp, theme));
     graphics_draw_bitmap_in_rect(ctx, bmp, glyph_rect);
     graphics_context_set_compositing_mode(ctx, GCompOpAssign);
@@ -223,45 +229,106 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
     FONT_KEY_GOTHIC_28_BOLD,
     FONT_KEY_GOTHIC_24_BOLD,
   };
-  const GRect value_box = GRect(4, 0, bounds.size.w - column - 8, bounds.size.h - 20);
-  GFont value_font = fit_font(value, value_box, GTextOverflowModeFill, kValueFonts, ARRAY_LENGTH(kValueFonts));
+  const GRect fit_box = GRect(dist_x + 6, 0, dist_w - 12, ph);
+  GFont value_font = fit_font(value, fit_box, GTextOverflowModeFill, kValueFonts, ARRAY_LENGTH(kValueFonts));
+  // Unit is bigger than before (was GOTHIC_18) and steps up again on the large display.
+  GFont unit_font = fonts_get_system_font(large ? FONT_KEY_GOTHIC_28_BOLD : FONT_KEY_GOTHIC_24_BOLD);
+
+  const int16_t value_h = graphics_text_layout_get_content_size(
+      value, value_font, fit_box, GTextOverflowModeFill, dist_align).h;
+  const int16_t unit_h = graphics_text_layout_get_content_size(
+      unit, unit_font, fit_box, GTextOverflowModeFill, dist_align).h;
+
+  // Stack the number and its unit as one block and centre it vertically so the number lines up with
+  // the arrow, with no wasted gap. Both fonts report a box taller than the visible glyphs (roughly a
+  // third is padding); subtracting that padding lets us butt the unit right under the number and
+  // centre the visible block rather than the padded boxes.
+  const int16_t num_pad = value_h / 3;
+  const int16_t unit_pad = unit_h / 3;
+  const int16_t num_visible = value_h - num_pad;
+  const int16_t unit_visible = unit_h - unit_pad;
+  // Centre the number+unit block, nudged so the number's own middle lands on the arrow line (the
+  // unit hangs below it, filling what used to be wasted space). +4 accounts for the number sitting a
+  // touch above the block centre.
+  const int16_t block_top = (ph - (num_visible + unit_visible)) / 2 + 4;
+  const int16_t value_y = block_top - num_pad / 2;
+  const int16_t unit_y = block_top + num_visible - unit_pad / 2;
 
   graphics_context_set_text_color(ctx, theme.panel_fg);
-  graphics_draw_text(ctx, value, value_font, value_box, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
-  graphics_draw_text(ctx, unit, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
-                     GRect(6, bounds.size.h - 24, bounds.size.w - column - 10, 22),
-                     GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, value, value_font, GRect(dist_x + 6, value_y, dist_w - 12, value_h),
+                     GTextOverflowModeFill, dist_align, NULL);
+  graphics_draw_text(ctx, unit, unit_font, GRect(dist_x + 6, unit_y, dist_w - 12, unit_h),
+                     GTextOverflowModeFill, dist_align, NULL);
 }
 
 // The strip carries the context the panel has no room for: the current time on the left (so the
 // watch stays a watch while navigating) and the arrival time on the right. A stale state — the
 // phone has stopped updating us — replaces the clock, because that is the one thing the driver
 // must not miss.
+// Width of `text` in `font`, for laying strip items out next to each other.
+static int16_t strip_text_width(const char *text, GFont font) {
+  return graphics_text_layout_get_content_size(
+             text, font, GRect(0, 0, 300, 40), GTextOverflowModeFill, GTextAlignmentLeft)
+      .w;
+}
+
+// Draw `text` vertically centred within a `strip_h`-tall strip, in the horizontal span [x, x+w].
+// Centring every item this way keeps the clock, the "ETA" label and the time on one line even
+// though they are different font sizes.
+//
+// Pebble reports a text box that is taller than the visible glyphs, with most of the slack *above*
+// the caps, so naive box-centring leaves the letters sitting low with a big gap on top. `top_trim`
+// pulls the glyphs back up so the middle of the letters lands on the middle of the strip; it scales
+// with the font because the slack grows with size.
+static void draw_strip_text(GContext *ctx, const char *text, GFont font, int16_t x, int16_t w,
+                            int16_t strip_h, GTextAlignment align, int16_t top_trim) {
+  const GRect box = GRect(x, 0, w, strip_h);
+  const GSize size = graphics_text_layout_get_content_size(text, font, box, GTextOverflowModeFill, align);
+  const int16_t y = (strip_h - size.h) / 2 - top_trim;
+  graphics_draw_text(ctx, text, font, GRect(x, y, w, size.h + top_trim),
+                     GTextOverflowModeFill, align, NULL);
+}
+
+// Per-font top trims (px) that pull the glyphs up onto the strip's centre line. Tuned in the
+// emulator; the slack above the caps grows with the font size.
 static void strip_update_proc(Layer *layer, GContext *ctx) {
   const Theme theme = theme_current();
   const GRect bounds = layer_get_bounds(layer);
+  const int16_t w = bounds.size.w;
+  const int16_t h = bounds.size.h;
 
   graphics_context_set_fill_color(ctx, theme.strip_bg);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
   graphics_context_set_text_color(ctx, theme.strip_fg);
 
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-  const GRect left = GRect(6, -3, bounds.size.w / 2, bounds.size.h);
-  const GRect right = GRect(bounds.size.w / 2, -3, bounds.size.w / 2 - 6, bounds.size.h);
+  // The clock and the arrival time are the same (large) size; the "ETA" label is smaller. Fixed
+  // sizes (not per-item auto-fit) keep the two HH:MM readouts from rendering at different sizes,
+  // which is what made them look misaligned. On Pebble Time 2 (emery) everything steps up a size.
+  const bool large = w >= 200;
+  const GFont clock_font = fonts_get_system_font(large ? FONT_KEY_GOTHIC_28_BOLD : FONT_KEY_GOTHIC_24_BOLD);
+  const GFont time_font = clock_font;
+  const GFont label_font = fonts_get_system_font(large ? FONT_KEY_GOTHIC_18_BOLD : FONT_KEY_GOTHIC_14_BOLD);
+  const int16_t hhmm_trim = large ? 6 : 5;   // pull the glyphs onto the strip's centre line
+  const int16_t label_trim = large ? 4 : 3;
 
+  // Left: clock, or STALE when the phone has stopped updating us.
+  char clock[8];
+  const char *left_text;
   if (s_flags & PBNTN_FLAG_STATE_IS_STALE_MASK) {
-    graphics_draw_text(ctx, "STALE", font, left, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+    left_text = "STALE";
   } else {
-    char clock[8];
     const time_t now = time(NULL);
     strftime(clock, sizeof(clock), clock_is_24h_style() ? "%H:%M" : "%I:%M", localtime(&now));
-    graphics_draw_text(ctx, clock, font, left, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+    left_text = clock;
   }
+  draw_strip_text(ctx, left_text, clock_font, 6, w / 2, h, GTextAlignmentLeft, hhmm_trim);
 
+  // Right: the arrival time, large and right-aligned, with a small "ETA" label just before it.
   if (s_secondary_buf[0] != '\0') {
-    char eta[SECONDARY_TEXT_MAX + 8];
-    snprintf(eta, sizeof(eta), "ETA %s", s_secondary_buf);
-    graphics_draw_text(ctx, eta, font, right, GTextOverflowModeFill, GTextAlignmentRight, NULL);
+    const int16_t time_w = strip_text_width(s_secondary_buf, time_font);
+    draw_strip_text(ctx, s_secondary_buf, time_font, w / 2, w / 2 - 6, h, GTextAlignmentRight, hhmm_trim);
+    const int16_t label_right = w - 6 - time_w - 4;  // 4px gap before the time
+    draw_strip_text(ctx, "ETA", label_font, 6, label_right - 6, h, GTextAlignmentRight, label_trim);
   }
 }
 
@@ -430,8 +497,15 @@ static void window_load(Window *window) {
   const int16_t w = bounds.size.w;
   const int16_t h = bounds.size.h;
 
-  const int16_t panel_h = PBL_IF_ROUND_ELSE(78, 70);
-  const int16_t strip_h = 22;
+  // Pebble Time 2 (emery, 200x228) has far more screen than the 144-wide models, so the maneuver
+  // panel and the clock strip both grow there.
+  // Panel height hugs the tallest element it holds — the maneuver arrow (64px on emery, 48px
+  // elsewhere) plus a little breathing room — rather than a fixed fraction of the screen. On the
+  // Pebble Time 2 the old 104px panel left ~20px of dead space above and below the arrow; sizing to
+  // the arrow trims that and hands the space to the road name below.
+  const bool large = w >= 200;
+  const int16_t panel_h = large ? 80 : PBL_IF_ROUND_ELSE(78, 70);
+  const int16_t strip_h = large ? 40 : 28;
 
   s_panel_layer = layer_create(GRect(0, 0, w, panel_h));
   layer_set_update_proc(s_panel_layer, panel_update_proc);

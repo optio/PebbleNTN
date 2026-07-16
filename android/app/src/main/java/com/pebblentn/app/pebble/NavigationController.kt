@@ -9,6 +9,7 @@ import com.pebblentn.app.core.ReducerState
 import com.pebblentn.app.core.WatchSettings
 import com.pebblentn.app.data.NavigationStateRepository
 import com.pebblentn.app.protocol.AppMessage
+import com.pebblentn.app.protocol.Protocol
 import com.pebblentn.app.protocol.ProtocolCodec
 import com.pebblentn.app.protocol.SendResult
 import com.pebblentn.app.protocol.WatchTransport
@@ -38,6 +39,7 @@ class NavigationController(
     private val clock: EpochClock = EpochClock.SYSTEM,
     private val maxSendAttempts: Int = 3,
     private val baseBackoffMillis: Long = 50,
+    private val readySettleMillis: Long = 1_500,
     private val stateStore: NavigationStateRepository? = null,
 ) {
     private val mutex = Mutex()
@@ -75,7 +77,9 @@ class NavigationController(
     suspend fun onConnectionLost() = dispatch(ReducerEvent.ConnectionLost)
 
     private suspend fun handleInbound(message: AppMessage) {
-        ProtocolCodec.decodeInbound(message, nowSeconds())?.let { dispatch(it) }
+        val event = ProtocolCodec.decodeInbound(message, nowSeconds())
+        Timber.i("Watch inbound message decoded to %s", event ?: "no-op")
+        event?.let { dispatch(it) }
     }
 
     private suspend fun dispatch(event: ReducerEvent) = mutex.withLock {
@@ -93,11 +97,37 @@ class NavigationController(
 
     private suspend fun runEffect(effect: ReducerEffect) {
         when (effect) {
-            ReducerEffect.LaunchWatchApp -> transport.launchApp()
-            is ReducerEffect.SendState ->
+            ReducerEffect.LaunchWatchApp -> {
+                Timber.i("Effect: launch watchapp")
+                transport.launchApp()
+                scheduleAutonomousReady()
+            }
+            is ReducerEffect.SendState -> {
+                Timber.i("Effect: send state %s to watch", effect.state)
                 sendWithRetry(ProtocolCodec.encodeState(effect.state, effect.flags, appVersion))
-            is ReducerEffect.SendCompatibilityError ->
+            }
+            is ReducerEffect.SendCompatibilityError -> {
+                Timber.i("Effect: send compatibility error %d", effect.errorCode)
                 transport.send(ProtocolCodec.encodeCompatibilityError(effect.errorCode))
+            }
+        }
+    }
+
+    /**
+     * The watch announces itself with WATCH_READY once it has opened AppMessage, and normally that
+     * handshake is what unblocks the first state send. But some companion apps — notably the Core
+     * Devices Pebble app — receive the watch's inbound messages yet do not forward them to
+     * third-party PebbleKit listeners, so WATCH_READY never reaches us and the watch would sit on
+     * "Connecting" forever (confirmed on-device: the companion logged our WATCH_READY packet but our
+     * listener service was never called). Since we have just launched our app on a connected watch,
+     * we synthesize readiness ourselves after a short settle delay that lets the watchapp finish
+     * opening its inbox. A genuine WATCH_READY, if it does arrive, is still handled and simply
+     * re-sends the current state.
+     */
+    private fun scheduleAutonomousReady() {
+        scope.launch {
+            delay(readySettleMillis)
+            dispatch(ReducerEvent.WatchReady(Protocol.MAJOR, Protocol.MINOR, nowSeconds()))
         }
     }
 

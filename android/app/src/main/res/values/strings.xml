@@ -25,6 +25,7 @@
 
     <string name="dashboard_open_debug">Debug history</string>
     <string name="dashboard_open_rules">Rules</string>
+    <string name="dashboard_version">Version %1$s</string>
 
     <!-- Rules -->
     <string name="rules_title">Rules</string>

@@ -3,6 +3,7 @@ package com.pebblentn.app.ui.dashboard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,7 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.pebblentn.app.BuildConfig
 import com.pebblentn.app.R
 import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
@@ -34,6 +37,7 @@ fun DashboardScreen(
     onAppEnabledChange: (Boolean) -> Unit = {},
     onOpenDebugHistory: () -> Unit = {},
     onOpenRules: () -> Unit = {},
+    appVersion: String = BuildConfig.VERSION_NAME,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
@@ -89,6 +93,16 @@ fun DashboardScreen(
             OutlinedButton(onClick = onOpenRules) {
                 Text(stringResource(R.string.dashboard_open_rules))
             }
+
+            // Push the version to the bottom of the screen.
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = stringResource(R.string.dashboard_version, appVersion),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

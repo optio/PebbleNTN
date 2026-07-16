@@ -148,6 +148,9 @@ class AppContainer(context: Context) {
             enabledAppRepository.refreshCache()
             userRuleRepository.refreshCache()
             ruleUpdateRepository.refreshCache()
+            // Log the watch link once so a logcat capture shows whether a PebbleKit 2 companion app
+            // is present and a watch is connected — the usual reason the watchapp stays "Connecting".
+            timber.log.Timber.i("Watch link at startup: %s", watchTransport.linkDiagnostics())
         }
     }
 

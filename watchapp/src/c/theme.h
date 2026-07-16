@@ -79,8 +79,12 @@ AccentId settings_accent(void);
 bool settings_inverted(void);
 UnitsId settings_units(void);
 GlyphPack settings_glyph_pack(void);
+// Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
+// default is the arrow on the right and the distance on the left.
+bool settings_arrow_left(void);
 void settings_set_accent(AccentId id);
 void settings_set_inverted(bool inverted);
 void settings_set_units(UnitsId id);
 void settings_set_glyph_pack(GlyphPack id);
+void settings_set_arrow_left(bool arrow_left);
 void settings_load(void);

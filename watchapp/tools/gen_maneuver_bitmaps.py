@@ -245,21 +245,32 @@ GLYPHS = {
     "unknown": question,
 }
 
-# name -> canvas transform. classic is the shapes as drawn; bold/outline are derived.
-PACKS = {
-    "classic": lambda rows: rows,
-    "bold": lambda rows: dilate(rows, 1),
-    "outline": lambda rows: outline_of(rows, thickness=4),
-}
+# Each output size: a subdirectory under resources/images and the pixel size to rasterize at. The
+# default 48px set (subdir "") serves the 144-wide models; the 64px set under images/emery/ is a
+# larger arrow for the Pebble Time 2 (emery, 200x228), wired up as an emery-only resource in
+# watchapp/package.json so the smaller models never carry it.
+SIZES = [("", 48), ("emery", 64)]
 
 
 def main() -> None:
-    for pack, transform in PACKS.items():
-        out_dir = IMAGES_DIR if pack == "classic" else IMAGES_DIR / pack
-        out_dir.mkdir(parents=True, exist_ok=True)
-        for name, builder in GLYPHS.items():
-            write_png(out_dir / f"{name}.png", transform(builder()))
-        print(f"wrote pack '{pack}' ({len(GLYPHS)} glyphs) -> {out_dir}")
+    global SIZE
+    for sub, size in SIZES:
+        SIZE = size
+        base = IMAGES_DIR if not sub else IMAGES_DIR / sub
+        # bold/outline are morphological; scale their radii with the raster so they read the same.
+        k = max(1, round(size / 48))
+        outline_thickness = max(3, round(4 * size / 48))
+        packs = {
+            "classic": lambda rows: rows,
+            "bold": lambda rows, k=k: dilate(rows, k),
+            "outline": lambda rows, t=outline_thickness: outline_of(rows, thickness=t),
+        }
+        for pack, transform in packs.items():
+            out_dir = base if pack == "classic" else base / pack
+            out_dir.mkdir(parents=True, exist_ok=True)
+            for name, builder in GLYPHS.items():
+                write_png(out_dir / f"{name}.png", transform(builder()))
+            print(f"wrote pack '{pack}' size {size}px -> {out_dir}")
 
 
 if __name__ == "__main__":

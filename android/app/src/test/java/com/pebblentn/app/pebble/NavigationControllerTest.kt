@@ -41,6 +41,28 @@ class NavigationControllerTest {
     }
 
     @Test
+    fun launchIsFollowedByAutonomousReadyWhenNoInboundHandshakeArrives() = runTest {
+        // Mimic a companion app (e.g. the Core Devices Pebble app) that never forwards the watch's
+        // WATCH_READY: no start(), no inbound READY. The controller must still send state on its own
+        // after the settle delay, so the watch does not sit on "Connecting" forever.
+        val transport = FakeWatchTransport()
+        val controller = controller(transport, backgroundScope)
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        runCurrent()
+        assertEquals(1, transport.launchCount)
+        assertTrue("nothing sent before the settle delay", transport.sent.isEmpty())
+
+        testScheduler.advanceTimeBy(1_600) // pass the ~1.5s settle window
+        runCurrent()
+
+        assertTrue(
+            "state is sent autonomously after launch, without an inbound READY",
+            events(transport).contains(Protocol.Events.NAVIGATION_UPDATE),
+        )
+    }
+
+    @Test
     fun watchReadySendsCurrentState() = runTest {
         val transport = FakeWatchTransport()
         val controller = controller(transport, backgroundScope)

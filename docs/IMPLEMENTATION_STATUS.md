@@ -1,6 +1,31 @@
 # Implementation Status
 
-_Last updated: 2026-07-12_
+_Last updated: 2026-07-15_
+
+## On-device bring-up on the Core Devices Pebble app (2026-07-15)
+
+End-to-end phone→watch delivery verified live on a Samsung SM-S916B + Pebble (Core Devices
+`coredevices.coreapp` companion, PebbleKit Android 2). Three root causes found and fixed; the watch
+now shows live maneuvers (`send ok -> Success`).
+
+1. **Companion never forwards the watch's `WATCH_READY`** to third-party PebbleKit listeners (its own
+   protocol runner logged our inbound packet, but our listener service was never called). Fix:
+   `NavigationController` synthesizes readiness after launch (`scheduleAutonomousReady`), and
+   `WatchListenerService.onAppOpened` (a lifecycle callback the companion *does* forward) triggers a
+   state re-send.
+2. **`send()` reported success even when nothing was transmitted.** Fix: `PebbleWatchTransport.send`
+   inspects the per-watch `TransmissionResult`; empty/failed ⇒ `FAILED` (+ logging). Added
+   `linkDiagnostics()` startup line (selected companion, connected watches).
+3. **Root cause of the stuck "Connecting": `FailedDifferentAppOpen` on every send** — the watchapp
+   was missing the `companionApp` declaration in `watchapp/package.json`, so the companion had no
+   registered association between our UUID and `com.pebblentn.app` and refused to route messages to
+   it (persisted through relaunch/library-install). Fix: added `companionApp.android.apps = [{package:
+   com.pebblentn.app}]`; the watchapp must be reinstalled through the Core Devices app so the new
+   metadata registers. Diagnosed against the working `konsumer/pebble-map-android` reference.
+   `send()` also relaunches + waits ~900 ms + retries once on `FailedDifferentAppOpen` to bridge each
+   session's foreground-transition window.
+
+Also added a **Version footer** to the dashboard (`BuildConfig.VERSION_NAME`). 185+ JVM tests green.
 
 ## Current milestone
 

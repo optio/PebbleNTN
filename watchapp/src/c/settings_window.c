@@ -162,9 +162,10 @@ static void push_pack_window(void) {
 
 #define ROW_COLOUR 0
 #define ROW_GLYPH 1
-#define ROW_INVERT 2
-#define ROW_UNITS 3
-#define MAIN_ROW_COUNT 4
+#define ROW_ARROW 2
+#define ROW_INVERT 3
+#define ROW_UNITS 4
+#define MAIN_ROW_COUNT 5
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -185,6 +186,11 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_GLYPH:
       menu_cell_basic_draw(ctx, cell, "Glyph pack", glyph_pack_name(settings_glyph_pack()), NULL);
       break;
+    case ROW_ARROW:
+      menu_cell_basic_draw(ctx, cell, "Arrow side",
+                           settings_arrow_left() ? "Left (distance right)" : "Right (distance left)",
+                           NULL);
+      break;
     case ROW_INVERT:
       menu_cell_basic_draw(ctx, cell, "Invert",
                            settings_inverted() ? "Light on dark" : "Dark on light", NULL);
@@ -202,6 +208,11 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
       break;
     case ROW_GLYPH:
       push_pack_window();
+      break;
+    case ROW_ARROW:
+      settings_set_arrow_left(!settings_arrow_left());
+      menu_layer_reload_data(s_menu);
+      notify_change();
       break;
     case ROW_INVERT:
       settings_set_inverted(!settings_inverted());
