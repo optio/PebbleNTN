@@ -1,6 +1,39 @@
 # Implementation Status
 
-_Last updated: 2026-07-16_
+_Last updated: 2026-07-19_
+
+## Emulator screenshot capture (2026-07-19)
+
+**Milestone:** none — tooling/documentation task, no product code changed.
+
+New `watchapp/tools/capture_screenshots.py` drives the Pebble emulator to produce the reference
+screenshot set in `screenshots/` (see `screenshots/README.md` for the index). Per platform it wipes
+the emulator to known setting defaults, installs the `.pbw`, injects a navigation update over
+AppMessage (`pebble send-app-message`), then walks the on-watch settings menu with `pebble
+emu-button` presses to reach each appearance configuration before grabbing `pebble screenshot`.
+Setting state is tracked in the script so the button path to each configuration is computed rather
+than hardcoded; the emulator clock is pinned to 12:35 per grab so the shots are reproducible.
+
+**Commands executed:**
+
+```bash
+./scripts/build-watchapp.sh
+python3 watchapp/tools/capture_screenshots.py basalt chalk emery
+```
+
+**Output:** 60 PNGs — 20 configurations × basalt (144×168), chalk (180×180), emery (200×228).
+15 navigation-screen configurations (accent colours, invert, arrow/distance swap, glyph packs,
+imperial units) and 5 settings screens. Colour correction left enabled, so the images match what a
+real display shows rather than the raw `GColor` values.
+
+**Defects surfaced by the capture (not yet fixed, no requirement filed):**
+- **Chalk (round) layout clipping.** The rectangular layout is applied nearly as-is on chalk: the
+  distance text and maneuver arrow are clipped at the top corners, the road name is cut off at the
+  left edge, and settings menu rows run past the bezel. REQ-WATCH-013 adapts by width (`>= 200`)
+  only, so chalk falls into the 144-wide branch despite being 180 wide and round. Needs round-
+  specific insets.
+- **Glyph-pack menu previews overlap their labels** in `settings_window.c` (`pack_row`): the preview
+  bitmap is drawn over the "Classic"/"Bold"/"Outline" text rather than beside it.
 
 ## Watchapp UI refinement + spec reconciliation (2026-07-16)
 
