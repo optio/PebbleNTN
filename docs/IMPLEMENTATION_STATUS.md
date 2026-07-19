@@ -48,9 +48,19 @@ the 144-wide branch despite being round.
 - Non-round platforms take the `#else` branches and are byte-identical: verified by re-capturing
   basalt and emery after the change and diffing the PNGs against the pre-change set.
 
-**Remaining known defect (not fixed, no requirement filed):** glyph-pack menu previews overlap their
-labels in `settings_window.c` (`pack_row`) — the preview bitmap is drawn over the "Classic" / "Bold"
-/ "Outline" text rather than beside it. Affects all platforms.
+**Defect surfaced and fixed: glyph-pack menu previews overlapped their labels (REQ-WATCH-012).**
+`pack_row` passed a pack preview to `menu_cell_basic_draw` as the cell icon, but a preview is a real
+maneuver glyph (48px, 64px on emery), not a menu-sized icon — it overran the icon slot and drew the
+arrow straight over the pack name on every platform.
+
+- The row is now laid out by hand: the glyph gets its own column, the name and its "Selected" marker
+  are stacked beside it, and `pack_cell_height` grows the cell to fit the glyph.
+- The glyph is recoloured through its 1-bit palette to the row's foreground (the same trick the
+  navigation screen uses), so it reads correctly highlighted and not, on colour and on
+  black-and-white watches. Foreground comes from `menu_cell_layer_is_highlighted()` — the SDK
+  explicitly warns against `menu_layer_is_index_selected()` for this.
+- Round keeps the SDK's focused/unfocused cell heights, whose unfocused rows (~32px) are far too
+  short for the glyph; there the preview is drawn on the focused row only and the group is centred.
 
 ## Watchapp UI refinement + spec reconciliation (2026-07-16)
 

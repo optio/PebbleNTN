@@ -118,11 +118,97 @@ static void pack_header(GContext *ctx, const Layer *cell, uint16_t section, void
   draw_menu_header(ctx, cell, "Glyph pack");
 }
 
+// Height of `text` in `font`, for stacking the pack name and its "Selected" marker.
+static int16_t text_size(const char *text, GFont font, bool want_width) {
+  const GSize size = graphics_text_layout_get_content_size(
+      text, font, GRect(0, 0, 200, 60), GTextOverflowModeFill, GTextAlignmentLeft);
+  return want_width ? size.w : size.h;
+}
+
+// A pack preview is a real maneuver glyph (48px, 64px on emery), not a menu-sized icon, so it does
+// not fit the icon slot menu_cell_basic_draw reserves — passing it there drew the arrow straight
+// over the pack name. The row is laid out by hand instead: the glyph gets its own column and the
+// name (plus "Selected") is stacked beside it, with the cell grown to fit (see pack_cell_height).
 static void pack_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
   const GlyphPack pack = (GlyphPack)index->row;
   const bool active = (pack == settings_glyph_pack());
+  const GRect bounds = layer_get_bounds(cell);
+  const bool highlighted = menu_cell_layer_is_highlighted(cell);
+  const GColor fg = highlighted ? GColorWhite : GColorBlack;
   GBitmap *preview = (index->row < GLYPH_PACK_COUNT) ? s_pack_preview[index->row] : NULL;
-  menu_cell_basic_draw(ctx, cell, glyph_pack_name(pack), active ? "Selected" : NULL, preview);
+
+#ifdef PBL_ROUND
+  // Unfocused rows on a round display are only ~32px tall — far too short for the glyph — so there
+  // the preview belongs to the focused row alone.
+  if (!highlighted) {
+    preview = NULL;
+  }
+#endif
+
+  const char *title = glyph_pack_name(pack);
+  const char *subtitle = active ? "Selected" : NULL;
+  GFont title_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+  GFont sub_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+
+  const GSize glyph = (preview != NULL) ? gbitmap_get_bounds(preview).size : GSizeZero;
+  const int16_t gap = (preview != NULL) ? 6 : 0;
+  const int16_t title_w = text_size(title, title_font, true);
+  const int16_t sub_w = (subtitle != NULL) ? text_size(subtitle, sub_font, true) : 0;
+  const int16_t text_w = (title_w > sub_w) ? title_w : sub_w;
+
+  // Left-aligned on a rectangular watch; centred as one group on a round one.
+  int16_t x = PBL_IF_ROUND_ELSE((bounds.size.w - (glyph.w + gap + text_w)) / 2, 4);
+  if (x < 2) {
+    x = 2;
+  }
+
+  if (preview != NULL) {
+    // Same palette trick as the navigation screen: recolour the 1-bit glyph to the row's foreground
+    // and let the row background show through, so it works highlighted and not, on colour and on
+    // black-and-white watches.
+    GColor *palette = gbitmap_get_palette(preview);
+    GCompOp op = GCompOpAssign;
+    if (palette != NULL && gbitmap_get_format(preview) == GBitmapFormat1BitPalette) {
+      palette[0] = fg;
+      palette[1] = GColorClear;
+      op = GCompOpSet;
+    }
+    graphics_context_set_compositing_mode(ctx, op);
+    graphics_draw_bitmap_in_rect(ctx, preview,
+                                 GRect(x, (bounds.size.h - glyph.h) / 2, glyph.w, glyph.h));
+    graphics_context_set_compositing_mode(ctx, GCompOpAssign);
+    x += glyph.w + gap;
+  }
+
+  const int16_t title_h = text_size(title, title_font, false);
+  const int16_t sub_h = (subtitle != NULL) ? text_size(subtitle, sub_font, false) : 0;
+  // Both fonts report a box taller than the visible glyphs; overlap them slightly so the marker sits
+  // under the name rather than a full line below it.
+  const int16_t block_h = title_h + (subtitle != NULL ? sub_h - 6 : 0);
+  const int16_t y = (bounds.size.h - block_h) / 2;
+
+  graphics_context_set_text_color(ctx, fg);
+  graphics_draw_text(ctx, title, title_font, GRect(x, y, text_w + 2, title_h),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+  if (subtitle != NULL) {
+    graphics_draw_text(ctx, subtitle, sub_font, GRect(x, y + title_h - 6, text_w + 2, sub_h),
+                       GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+  }
+}
+
+// Rows have to be tall enough for a full-size maneuver glyph. Round displays keep the SDK's
+// focused/unfocused heights instead, since their unfocused rows are deliberately compressed.
+static int16_t pack_cell_height(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+#ifdef PBL_ROUND
+  const MenuIndex selected = menu_layer_get_selected_index(m);
+  return (menu_index_compare(&selected, index) == 0)
+             ? MENU_CELL_ROUND_FOCUSED_TALL_CELL_HEIGHT
+             : MENU_CELL_ROUND_UNFOCUSED_TALL_CELL_HEIGHT;
+#else
+  GBitmap *preview = (index->row < GLYPH_PACK_COUNT) ? s_pack_preview[index->row] : NULL;
+  const int16_t needed = ((preview != NULL) ? gbitmap_get_bounds(preview).size.h : 0) + 8;
+  return (needed > 44) ? needed : 44;
+#endif
 }
 
 static void pack_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
@@ -140,6 +226,7 @@ static void pack_load(Window *window) {
   menu_layer_set_callbacks(s_pack_menu, NULL, (MenuLayerCallbacks){
     .get_num_sections = one_section,
     .get_num_rows = pack_num_rows,
+    .get_cell_height = pack_cell_height,
     .get_header_height = header_height,
     .draw_header = pack_header,
     .draw_row = pack_row,

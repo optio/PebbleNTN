@@ -54,8 +54,9 @@ test differs between them.
   held to one line. The first version of these screenshots exposed that the
   rectangular layout was being applied as-is on chalk and losing its edges;
   see `docs/IMPLEMENTATION_STATUS.md` (2026-07-19).
-- **Known issue visible in `settings-glyph-pack-list` on every platform:** the
-  arrow preview icons overlap the row labels ("Classic" / "Selected" are drawn
-  under the glyph). Not yet fixed.
+- In `settings-glyph-pack-list` each pack is previewed with a full-size
+  maneuver glyph in its own column, so the packs can be compared on the watch.
+  On the round display only the focused row carries a preview — the SDK's
+  unfocused round rows are too short to hold one.
 - The bottom row of a round menu is partially cut by the bezel. That is how
   stock Pebble round menus scroll, not a layout bug.
