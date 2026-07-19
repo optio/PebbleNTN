@@ -62,6 +62,17 @@ arrow straight over the pack name on every platform.
 - Round keeps the SDK's focused/unfocused cell heights, whose unfocused rows (~32px) are far too
   short for the glyph; there the preview is drawn on the focused row only and the group is centred.
 
+**Appstore assets tracked (`watchapp/store/`).** Two different provenances, worth keeping straight:
+
+- `icon-{80,144}.png` and `splash-{144x168,180x180,200x228}.png` are **generated** by
+  `watchapp/tools/gen_store_icon.py` (pure stdlib, deterministic — re-running it reproduces the
+  committed bytes exactly, verified). Regenerate rather than editing them by hand.
+- `screenshot-{144x168,180x180,200x228}.png` are **emulator captures** of the navigation screen, and
+  therefore go stale whenever the watch layout changes. The versions found untracked predated the
+  round-display fix above and still showed the clipped chalk layout; they have been refreshed from
+  `screenshots/main-default-green-arrow-right-<size>.png`. Refresh them from that set (produced by
+  `capture_screenshots.py`) after any layout change, so the store never advertises a fixed bug.
+
 ## Watchapp UI refinement + spec reconciliation (2026-07-16)
 
 On-wrist follow-up after the Core Devices bring-up, driven by user feedback on a Pebble Time 2.
