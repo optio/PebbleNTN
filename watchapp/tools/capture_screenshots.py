@@ -12,6 +12,7 @@ Usage: python3 tools/capture_screenshots.py [platform ...]
 """
 
 import collections
+import datetime
 import struct
 import subprocess
 import sys
@@ -42,18 +43,33 @@ PACK = {"classic": 0, "bold": 1, "outline": 2}
 # Settings menu row indices (settings_window.c).
 ROW_COLOUR, ROW_GLYPH, ROW_ARROW, ROW_INVERT, ROW_UNITS, ROW_ETA = range(6)
 
-# The navigation state injected before every screenshot (protocol.h keys).
-NAV_MESSAGE = [
-    "--int", "0=1", "3=6", "4=450", "10=0",
-    "--string", "5=Rue de la Loi", "6=14:35",
-]
-
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.
 CLOCK = "12:35:00"
+
+# Minutes until arrival, used to render the time-to-arrival mode as a stable "IN 0:25".
+ETA_MINUTES = 25
+
+
+def nav_message():
+    """The navigation state injected before every screenshot (protocol.h keys).
+
+    The arrival epoch is anchored to the same wall clock the emulator is pinned
+    to, so the time-to-arrival countdown renders the same value every run. It
+    has to be computed rather than hardcoded because pinning the clock to
+    CLOCK sets that time on *today's* date.
+    """
+    pinned = datetime.datetime.combine(
+        datetime.date.today(), datetime.time.fromisoformat(CLOCK))
+    eta_epoch = int(pinned.timestamp()) + ETA_MINUTES * 60
+    return [
+        "--int", "0=1", "3=6", "4=450", "10=0", f"7={eta_epoch}",
+        "--string", "5=Rue de la Loi", "6=14:35",
+    ]
 
 DEFAULTS = {
     "accent": "green", "pack": "classic",
     "arrow_left": False, "inverted": False, "imperial": False,
+    "eta_duration": False,
 }
 
 # name -> settings overrides applied on top of DEFAULTS.
@@ -74,6 +90,7 @@ MAIN_SHOTS = [
     ("main-glyph-pack-bold-green", {"pack": "bold"}),
     ("main-glyph-pack-outline-green", {"pack": "outline"}),
     ("main-imperial-units-green", {"imperial": True}),
+    ("main-eta-time-to-arrival", {"eta_duration": True}),
 ]
 
 
@@ -196,7 +213,8 @@ def apply_settings(platform, state, target):
     # The remaining rows toggle in place.
     for key, menu_row in (("arrow_left", ROW_ARROW),
                           ("inverted", ROW_INVERT),
-                          ("imperial", ROW_UNITS)):
+                          ("imperial", ROW_UNITS),
+                          ("eta_duration", ROW_ETA)):
         if key in changes:
             row = move_to_row(platform, row, menu_row)
             click(platform, "select")
@@ -209,9 +227,9 @@ def capture_settings_screens(platform):
     """Screenshot the settings menu and both of its sub-windows."""
     click(platform, "select")
     shot(platform, "settings-menu")
-    click(platform, "down", 4)
+    click(platform, "down", ROW_ETA)
     shot(platform, "settings-menu-scrolled")
-    click(platform, "up", 4)
+    click(platform, "up", ROW_ETA)
 
     click(platform, "select")
     shot(platform, "settings-accent-colour-list")
@@ -228,7 +246,7 @@ def capture_settings_screens(platform):
 
 
 def send_nav_update(platform):
-    pebble(platform, "send-app-message", *NAV_MESSAGE)
+    pebble(platform, "send-app-message", *nav_message())
     time.sleep(0.5)
 
 

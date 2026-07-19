@@ -1,6 +1,6 @@
 # Implementation Status
 
-_Last updated: 2026-07-19_
+_Last updated: 2026-07-20_
 
 ## ETA display mode: arrival time vs. time to arrival (2026-07-19)
 
@@ -29,13 +29,34 @@ settings (glyph pack, accent, units). The strip already redraws every minute (`t
 - `capture_screenshots.py`: row-index tuple extended to include `ROW_ETA` so it stays in sync with
   `settings_window.c`.
 
-**Blocker:** the `pebble` CLI/SDK is not installed in this environment, so `./scripts/build-watchapp.sh`
-and emulator screenshot verification could not be run here. The change is isolated to the watch C and
-compiles against the same SDK APIs already used in these files (`persist_*`, `time`, `snprintf`,
-`draw_strip_text`). Emulator acceptance for REQ-WATCH-014 to be run where the SDK is available.
+**Blocker cleared (2026-07-20).** The above was recorded on a host without the Pebble SDK. On an
+SDK-equipped host the watchapp builds clean and REQ-WATCH-014's acceptance criteria were verified on
+the basalt emulator, driving the setting with `pebble emu-button` and pinning the clock with
+`pebble emu-set-time`:
 
-**Next atomic task:** on an SDK-equipped host, run `./scripts/build-watchapp.sh`, then verify the ETA
-toggle and countdown in the emulator and refresh the screenshot set.
+- Toggling the setting switches the strip between `ETA 14:35` and an `IN` countdown.
+- The countdown tracks the clock: with the arrival epoch 25 min ahead, advancing the emulator clock
+  by 0 / 5 / 10 / 25 min rendered `IN 0:25`, `IN 0:20`, `IN 0:15`, `IN 0:00` — and the clamp holds
+  the readout at `0:00` rather than going negative once arrival is reached.
+- A navigation update carrying no arrival epoch falls back to the arrival-time string (`ETA 14:35`)
+  instead of blanking the strip.
+
+Note for future emulator work: `pebble emu-set-time` intermittently does not apply, which first made
+the countdown look stuck at `IN 0:00` when the watch was in fact still on real wall-clock time. It is
+the same flake `capture_screenshots.py` repairs; re-pin and confirm the rendered clock before reading
+anything from a screenshot.
+
+**Screenshot coverage.** `capture_screenshots.py` gained the `ROW_ETA` row index in the same commit
+but never used it, so the set had no shot of the new mode. The script now models `eta_duration` as a
+setting, injects an arrival epoch anchored to the pinned clock (so the countdown renders a stable
+`IN 0:25`), adds `main-eta-time-to-arrival-*`, and scrolls the settings-menu shot far enough to show
+the new row. Determinism re-verified by two consecutive basalt runs producing identical bytes.
+
+**Spec manifest fixed.** The commit changed two protected assets (`requirements/REQ-WATCH.md`,
+`spec/400-ui/WatchUI.md`) without syncing `MANIFEST.sha256.json`, so `./scripts/test-all.sh` failed
+at its first step on a clean tree. Both diffs were reviewed as legitimate before the hashes were
+re-recorded. REQ-WATCH-014 also said "pack selection SHALL NOT change the protocol", copy-pasted from
+REQ-WATCH-012 (there are no packs in this requirement); corrected to "mode selection".
 
 ## Emulator screenshot capture (2026-07-19)
 
@@ -56,9 +77,9 @@ than hardcoded; the emulator clock is pinned to 12:35 per grab so the shots are 
 python3 watchapp/tools/capture_screenshots.py basalt chalk emery
 ```
 
-**Output:** 60 PNGs — 20 configurations × basalt (144×168), chalk (180×180), emery (200×228).
-15 navigation-screen configurations (accent colours, invert, arrow/distance swap, glyph packs,
-imperial units) and 5 settings screens. Colour correction left enabled, so the images match what a
+**Output:** 63 PNGs — 21 configurations × basalt (144×168), chalk (180×180), emery (200×228).
+16 navigation-screen configurations (accent colours, invert, arrow/distance swap, glyph packs,
+imperial units, ETA display mode) and 5 settings screens. Colour correction left enabled, so the images match what a
 real display shows rather than the raw `GColor` values.
 
 **Defect surfaced and fixed: chalk (round) layout clipping (REQ-WATCH-013, extended).**

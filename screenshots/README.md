@@ -20,8 +20,8 @@ Each screenshot exists in three sizes, named `<description>-<width>x<height>.png
 ## Navigation screen
 
 All navigation shots render the same injected state — a right turn in 450 m on
-"Rue de la Loi", ETA 14:35, clock pinned to 12:35 — so only the setting under
-test differs between them.
+"Rue de la Loi", arriving at 14:35 (25 minutes out), clock pinned to 12:35 — so
+only the setting under test differs between them.
 
 | File | Configuration |
 | ---- | ------------- |
@@ -32,13 +32,14 @@ test differs between them.
 | `main-swapped-arrow-left-inverted-red` | Swapped **and** inverted |
 | `main-glyph-pack-bold-green` / `-outline-green` | Glyph pack (classic is the default shot) |
 | `main-imperial-units-green` | Imperial units (450 m renders as 0.2 mi) |
+| `main-eta-time-to-arrival` | ETA display mode: countdown (`IN 0:25`) instead of arrival time (`ETA 14:35`) |
 
 ## Settings screens
 
 | File | Screen |
 | ---- | ------ |
 | `settings-menu` | Top-level settings menu (SELECT from the navigation screen) |
-| `settings-menu-scrolled` | Same menu scrolled to Invert / Distance units |
+| `settings-menu-scrolled` | Same menu scrolled to Invert / Distance units / ETA display |
 | `settings-accent-colour-list` | Accent-colour sub-window, top of the list |
 | `settings-accent-colour-list-scrolled` | Accent-colour sub-window, scrolled |
 | `settings-glyph-pack-list` | Glyph-pack sub-window, with per-pack arrow previews |
