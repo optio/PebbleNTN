@@ -40,7 +40,7 @@ ACCENT = {
 PACK = {"classic": 0, "bold": 1, "outline": 2}
 
 # Settings menu row indices (settings_window.c).
-ROW_COLOUR, ROW_GLYPH, ROW_ARROW, ROW_INVERT, ROW_UNITS = range(5)
+ROW_COLOUR, ROW_GLYPH, ROW_ARROW, ROW_INVERT, ROW_UNITS, ROW_ETA = range(6)
 
 # The navigation state injected before every screenshot (protocol.h keys).
 NAV_MESSAGE = [
