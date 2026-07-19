@@ -2,6 +2,41 @@
 
 _Last updated: 2026-07-19_
 
+## ETA display mode: arrival time vs. time to arrival (2026-07-19)
+
+**Milestone:** post-M12 watch appearance enhancement (REQ-WATCH-014). Android build unaffected —
+watch render-only change; protocol unchanged.
+
+**Requirement implemented:** REQ-WATCH-014 — a new on-watch setting picks how the status strip
+renders the arrival estimate. It defaults to the original **arrival time** ("ETA 14:35") and adds a
+**time to arrival** mode ("IN 0:25") that counts down the remaining minutes until arrival.
+
+**Design.** The phone already sends the absolute arrival time as `etaEpochSeconds`
+(`PBNTN_KEY_ETA_EPOCH_SECONDS`, protocol key 7) alongside the pre-formatted arrival-time string; the
+watch previously decoded only the string. The countdown is therefore computed entirely on the watch
+from that epoch, so no protocol or Android change is needed — consistent with the existing render-only
+settings (glyph pack, accent, units). The strip already redraws every minute (`tick_handler` on
+`MINUTE_UNIT`), so the countdown updates live at no extra power cost (REQ-WATCH-008).
+
+- `theme.{h,c}`: added `EtaMode` (`ARRIVAL` default / `DURATION`), persisted under new
+  `PERSIST_KEY_ETA_MODE` (6), with `settings_eta_mode` / `settings_set_eta_mode` / `eta_mode_name`,
+  mirroring the other persisted appearance settings.
+- `main.c`: decode `PBNTN_KEY_ETA_EPOCH_SECONDS` into `s_eta_epoch` (0 = phone sent none). New
+  `format_eta_readout` builds the strip's right-hand value+label: `DURATION` mode shows
+  `H:MM` (rounded up to the next whole minute, clamped at `0:00`) with an "IN" label, falling back to
+  the arrival-time string with an "ETA" label when no epoch was sent.
+- `settings_window.c`: new "ETA display" row toggles the mode in place (like Invert/Units).
+- `capture_screenshots.py`: row-index tuple extended to include `ROW_ETA` so it stays in sync with
+  `settings_window.c`.
+
+**Blocker:** the `pebble` CLI/SDK is not installed in this environment, so `./scripts/build-watchapp.sh`
+and emulator screenshot verification could not be run here. The change is isolated to the watch C and
+compiles against the same SDK APIs already used in these files (`persist_*`, `time`, `snprintf`,
+`draw_strip_text`). Emulator acceptance for REQ-WATCH-014 to be run where the SDK is available.
+
+**Next atomic task:** on an SDK-equipped host, run `./scripts/build-watchapp.sh`, then verify the ETA
+toggle and countdown in the emulator and refresh the screenshot set.
+
 ## Emulator screenshot capture (2026-07-19)
 
 **Milestone:** none — tooling/documentation task, no product code changed.

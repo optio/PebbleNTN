@@ -49,6 +49,17 @@ typedef enum {
   UNITS_COUNT = 2,
 } UnitsId;
 
+// How the status strip renders the arrival estimate (REQ-WATCH-014). Purely a render choice: the
+// phone always sends both the arrival-time string and the arrival epoch; this only picks which the
+// watch shows. ARRIVAL is the default and matches the original behaviour (the clock time of arrival,
+// e.g. "17:45"); DURATION shows the remaining time until arrival (e.g. "0:25"), recomputed on the
+// watch each minute.
+typedef enum {
+  ETA_MODE_ARRIVAL = 0,
+  ETA_MODE_DURATION = 1,
+  ETA_MODE_COUNT = 2,
+} EtaMode;
+
 // Built-in maneuver glyph packs (REQ-WATCH-012). Purely a render choice: the phone always sends the
 // same maneuver code; the pack only selects which bundled bitmap the watch draws for it.
 typedef enum {
@@ -73,12 +84,14 @@ Theme theme_current(void);
 const char *accent_name(AccentId id);
 const char *units_name(UnitsId id);
 const char *glyph_pack_name(GlyphPack id);
+const char *eta_mode_name(EtaMode id);
 
 // Persisted settings. Load once at startup; each setter saves.
 AccentId settings_accent(void);
 bool settings_inverted(void);
 UnitsId settings_units(void);
 GlyphPack settings_glyph_pack(void);
+EtaMode settings_eta_mode(void);
 // Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
 // default is the arrow on the right and the distance on the left.
 bool settings_arrow_left(void);
@@ -87,4 +100,5 @@ void settings_set_inverted(bool inverted);
 void settings_set_units(UnitsId id);
 void settings_set_glyph_pack(GlyphPack id);
 void settings_set_arrow_left(bool arrow_left);
+void settings_set_eta_mode(EtaMode id);
 void settings_load(void);

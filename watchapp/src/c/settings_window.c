@@ -2,8 +2,9 @@
 // from the navigation window, dismissed with BACK. Changes apply immediately and persist.
 //
 // The top menu is a short list of categories. Accent colour (a long list) and the glyph pack each
-// open their own sub-window ("door"); invert and units toggle in place. The glyph-pack door shows a
-// sample arrow drawn in each pack, so the packs can be previewed on the watch before choosing one.
+// open their own sub-window ("door"); invert, units and ETA display toggle in place. The glyph-pack
+// door shows a sample arrow drawn in each pack, so the packs can be previewed on the watch before
+// choosing one.
 
 #include "settings_window.h"
 
@@ -265,7 +266,8 @@ static void push_pack_window(void) {
 #define ROW_ARROW 2
 #define ROW_INVERT 3
 #define ROW_UNITS 4
-#define MAIN_ROW_COUNT 5
+#define ROW_ETA 5
+#define MAIN_ROW_COUNT 6
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -295,8 +297,11 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
       menu_cell_basic_draw(ctx, cell, "Invert",
                            settings_inverted() ? "Light on dark" : "Dark on light", NULL);
       break;
-    default:
+    case ROW_UNITS:
       menu_cell_basic_draw(ctx, cell, "Distance units", units_name(settings_units()), NULL);
+      break;
+    default:
+      menu_cell_basic_draw(ctx, cell, "ETA display", eta_mode_name(settings_eta_mode()), NULL);
       break;
   }
 }
@@ -319,8 +324,13 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
       menu_layer_reload_data(s_menu);
       notify_change();
       break;
-    default:
+    case ROW_UNITS:
       settings_set_units((UnitsId)((settings_units() + 1) % UNITS_COUNT));
+      menu_layer_reload_data(s_menu);
+      notify_change();
+      break;
+    default:
+      settings_set_eta_mode((EtaMode)((settings_eta_mode() + 1) % ETA_MODE_COUNT));
       menu_layer_reload_data(s_menu);
       notify_change();
       break;

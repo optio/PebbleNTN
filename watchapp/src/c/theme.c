@@ -5,12 +5,14 @@
 #define PERSIST_KEY_INVERT 3
 #define PERSIST_KEY_GLYPH_PACK 4
 #define PERSIST_KEY_ARROW_LEFT 5
+#define PERSIST_KEY_ETA_MODE 6
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
 static UnitsId s_units = UNITS_METRIC;
 static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
 static bool s_arrow_left = false;
+static EtaMode s_eta_mode = ETA_MODE_ARRIVAL;
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -125,6 +127,10 @@ const char *units_name(UnitsId id) {
   return (id == UNITS_IMPERIAL) ? "Miles / feet" : "Kilometres / metres";
 }
 
+const char *eta_mode_name(EtaMode id) {
+  return (id == ETA_MODE_DURATION) ? "Time to arrival" : "Arrival time";
+}
+
 const char *glyph_pack_name(GlyphPack id) {
   switch (id) {
     case GLYPH_PACK_BOLD: return "Bold";
@@ -139,6 +145,7 @@ bool settings_inverted(void) { return s_inverted; }
 UnitsId settings_units(void) { return s_units; }
 GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
 bool settings_arrow_left(void) { return s_arrow_left; }
+EtaMode settings_eta_mode(void) { return s_eta_mode; }
 
 void settings_set_accent(AccentId id) {
   s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
@@ -163,6 +170,11 @@ void settings_set_glyph_pack(GlyphPack id) {
 void settings_set_arrow_left(bool arrow_left) {
   s_arrow_left = arrow_left;
   persist_write_bool(PERSIST_KEY_ARROW_LEFT, s_arrow_left);
+}
+
+void settings_set_eta_mode(EtaMode id) {
+  s_eta_mode = (id < ETA_MODE_COUNT) ? id : ETA_MODE_ARRIVAL;
+  persist_write_int(PERSIST_KEY_ETA_MODE, s_eta_mode);
 }
 
 void settings_load(void) {
@@ -191,5 +203,11 @@ void settings_load(void) {
   }
   if (persist_exists(PERSIST_KEY_ARROW_LEFT)) {
     s_arrow_left = persist_read_bool(PERSIST_KEY_ARROW_LEFT);
+  }
+  if (persist_exists(PERSIST_KEY_ETA_MODE)) {
+    const int stored = persist_read_int(PERSIST_KEY_ETA_MODE);
+    if (stored >= 0 && stored < ETA_MODE_COUNT) {
+      s_eta_mode = (EtaMode)stored;
+    }
   }
 }

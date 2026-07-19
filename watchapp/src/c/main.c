@@ -6,7 +6,7 @@
 //   - show explicit connection/stale/no-navigation/compatibility states;
 //   - vibrate on maneuver change and enable backlight when the phone requests it;
 //   - return to the watchface on navigation stop when commanded;
-//   - offer on-watch appearance settings (theme, units) via SELECT.
+//   - offer on-watch appearance settings (theme, units, ETA display) via SELECT.
 //
 // Layout: the maneuver arrow and the distance sit side by side in a coloured panel, so the road
 // name gets the whole lower half and rarely has to be truncated; its font shrinks to fit.
@@ -40,6 +40,9 @@ static int32_t s_distance_meters = -1;
 static int32_t s_flags = 0;
 static int s_last_maneuver = -1;
 static bool s_showing_message = true;
+// Arrival time as a Unix epoch second, or 0 when the phone did not send one. Used to render a live
+// "time to arrival" countdown when that ETA display mode is selected (REQ-WATCH-014).
+static int32_t s_eta_epoch = 0;
 
 static char s_primary_buf[PRIMARY_TEXT_MAX + 1];
 static char s_secondary_buf[SECONDARY_TEXT_MAX + 1];
@@ -345,6 +348,33 @@ static void draw_strip_text(GContext *ctx, const char *text, GFont font, int16_t
                      GTextOverflowModeFill, align, NULL);
 }
 
+// Build the strip's right-hand arrival readout for the current display mode (REQ-WATCH-014). Writes
+// the value into `out`, points `*label` at its small leading tag, and returns false when there is
+// nothing to show. ARRIVAL mode (the default) shows the phone's arrival-time string as "ETA 17:45";
+// DURATION mode shows the time left until arrival as "IN 0:25", computed from the arrival epoch and
+// recomputed each minute by the strip's redraw. DURATION falls back to the arrival-time string when
+// the phone sent no arrival epoch (a rule that extracts no ETA), so the strip is never left blank.
+static bool format_eta_readout(char *out, size_t out_len, const char **label) {
+  if (settings_eta_mode() == ETA_MODE_DURATION && s_eta_epoch > 0) {
+    int32_t remaining = s_eta_epoch - (int32_t)time(NULL);
+    if (remaining < 0) {
+      remaining = 0;
+    }
+    // Round up to the next whole minute so "0:00" appears only once arrival is actually reached,
+    // never while a fraction of the final minute is still left.
+    const int32_t total_min = (remaining + 59) / 60;
+    snprintf(out, out_len, "%d:%02d", (int)(total_min / 60), (int)(total_min % 60));
+    *label = "IN";
+    return true;
+  }
+  if (s_secondary_buf[0] != '\0') {
+    snprintf(out, out_len, "%s", s_secondary_buf);
+    *label = "ETA";
+    return true;
+  }
+  return false;
+}
+
 // Per-font top trims (px) that pull the glyphs up onto the strip's centre line. Tuned in the
 // emulator; the slack above the caps grows with the font size.
 static void strip_update_proc(Layer *layer, GContext *ctx) {
@@ -388,12 +418,15 @@ static void strip_update_proc(Layer *layer, GContext *ctx) {
   }
   draw_strip_text(ctx, left_text, clock_font, pad, w / 2, h, GTextAlignmentLeft, hhmm_trim);
 
-  // Right: the arrival time, large and right-aligned, with a small "ETA" label just before it.
-  if (s_secondary_buf[0] != '\0') {
-    const int16_t time_w = strip_text_width(s_secondary_buf, time_font);
-    draw_strip_text(ctx, s_secondary_buf, time_font, w / 2, w / 2 - pad, h, GTextAlignmentRight, hhmm_trim);
+  // Right: the arrival estimate, large and right-aligned, with a small label just before it. Whether
+  // this is the arrival time ("ETA 17:45") or the remaining duration ("IN 0:25") is a user setting.
+  char eta_text[SECONDARY_TEXT_MAX + 1];
+  const char *eta_label = "ETA";
+  if (format_eta_readout(eta_text, sizeof(eta_text), &eta_label)) {
+    const int16_t time_w = strip_text_width(eta_text, time_font);
+    draw_strip_text(ctx, eta_text, time_font, w / 2, w / 2 - pad, h, GTextAlignmentRight, hhmm_trim);
     const int16_t label_right = w - pad - time_w - 4;  // 4px gap before the time
-    draw_strip_text(ctx, "ETA", label_font, pad, label_right - pad, h, GTextAlignmentRight, label_trim);
+    draw_strip_text(ctx, eta_label, label_font, pad, label_right - pad, h, GTextAlignmentRight, label_trim);
   }
 }
 
@@ -473,10 +506,13 @@ static void render_navigation(DictionaryIterator *iter) {
   Tuple *distance_t = dict_find(iter, PBNTN_KEY_DISTANCE_METERS);
   Tuple *primary_t = dict_find(iter, PBNTN_KEY_PRIMARY_TEXT);
   Tuple *secondary_t = dict_find(iter, PBNTN_KEY_SECONDARY_TEXT);
+  Tuple *eta_epoch_t = dict_find(iter, PBNTN_KEY_ETA_EPOCH_SECONDS);
   Tuple *flags_t = dict_find(iter, PBNTN_KEY_FLAGS);
 
   s_maneuver = maneuver_t ? maneuver_t->value->int32 : PBNTN_MANEUVER_UNKNOWN;
   s_distance_meters = distance_t ? distance_t->value->int32 : -1;
+  // The phone omits the ETA epoch when a rule extracts no arrival time; 0 means "unknown".
+  s_eta_epoch = eta_epoch_t ? eta_epoch_t->value->int32 : 0;
   s_flags = flags_t ? flags_t->value->int32 : 0;
 
   if (primary_t && primary_t->length > 0) {
