@@ -48,10 +48,14 @@ test differs between them.
 - Colours look muted compared with the raw `GColor` values because the emulator
   applies the same display colour-correction a real Pebble does. This is what
   the watch actually shows; captured with correction left on deliberately.
-- **Known issue visible in the `180x180` (chalk) shots:** the round display
-  clips the layout. The distance and the maneuver arrow are cut off at the top
-  corners, the road name is clipped at the left edge, and the settings menu
-  rows run past the bezel. The rectangular layout is applied largely as-is on
-  chalk; the round platform needs its own insets.
-- **Also visible in `settings-glyph-pack-list`:** the arrow preview icons
-  overlap the row labels ("Classic" / "Selected" are drawn under the glyph).
+- The `180x180` (chalk) layout differs from the rectangular one by design: the
+  round bezel clips the corners, so the arrow/distance band sits lower in the
+  panel, everything is inset to the circle, and the road name is centred and
+  held to one line. The first version of these screenshots exposed that the
+  rectangular layout was being applied as-is on chalk and losing its edges;
+  see `docs/IMPLEMENTATION_STATUS.md` (2026-07-19).
+- **Known issue visible in `settings-glyph-pack-list` on every platform:** the
+  arrow preview icons overlap the row labels ("Classic" / "Selected" are drawn
+  under the glyph). Not yet fixed.
+- The bottom row of a round menu is partially cut by the bezel. That is how
+  stock Pebble round menus scroll, not a layout bug.

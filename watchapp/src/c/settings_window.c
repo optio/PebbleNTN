@@ -19,6 +19,19 @@ static void notify_change(void) {
   }
 }
 
+// menu_cell_basic_header_draw left-aligns the title, which runs straight into the bezel on a round
+// display. Centring it keeps the whole title on screen; rectangular watches keep the stock look.
+static void draw_menu_header(GContext *ctx, const Layer *cell, const char *title) {
+#ifdef PBL_ROUND
+  const GRect bounds = layer_get_bounds(cell);
+  graphics_context_set_text_color(ctx, GColorBlack);
+  graphics_draw_text(ctx, title, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), bounds,
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+#else
+  menu_cell_basic_header_draw(ctx, cell, title);
+#endif
+}
+
 static uint16_t one_section(struct MenuLayer *m, void *ctx) { return 1; }
 
 static int16_t header_height(struct MenuLayer *m, uint16_t section, void *ctx) {
@@ -35,7 +48,7 @@ static uint16_t colour_num_rows(struct MenuLayer *m, uint16_t section, void *ctx
 }
 
 static void colour_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
-  menu_cell_basic_header_draw(ctx, cell, "Accent colour");
+  draw_menu_header(ctx, cell, "Accent colour");
 }
 
 static void colour_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
@@ -102,7 +115,7 @@ static uint16_t pack_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) 
 }
 
 static void pack_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
-  menu_cell_basic_header_draw(ctx, cell, "Glyph pack");
+  draw_menu_header(ctx, cell, "Glyph pack");
 }
 
 static void pack_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
@@ -175,7 +188,7 @@ static uint16_t main_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) 
 }
 
 static void main_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
-  menu_cell_basic_header_draw(ctx, cell, "Settings");
+  draw_menu_header(ctx, cell, "Settings");
 }
 
 static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {

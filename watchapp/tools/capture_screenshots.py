@@ -11,9 +11,12 @@ emulator and the script tracks the resulting state to compute button paths.
 Usage: python3 tools/capture_screenshots.py [platform ...]
 """
 
+import collections
+import struct
 import subprocess
 import sys
 import time
+import zlib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -101,14 +104,59 @@ def shot(platform, name):
     size = PLATFORMS[platform]
     path = OUT_DIR / f"{name}-{size}.png"
     # Pin the clock before every grab so the status strip reads the same in
-    # every screenshot instead of drifting with the capture run.
+    # every screenshot instead of drifting with the capture run. The strip only
+    # repaints on the resulting MINUTE_UNIT tick, so give that tick time to land
+    # — grabbing too early captures the previous wall-clock time.
     try:
-        pebble(platform, "emu-set-time", CLOCK, retries=0)
-    except Exception:
-        pass  # cosmetic only
-    time.sleep(0.4)  # let the redraw land before grabbing the framebuffer
+        pebble(platform, "emu-set-time", CLOCK)
+    except Exception as exc:
+        print(f"  WARNING: clock not pinned for {name}: {exc}")
+    time.sleep(1.5)  # let the tick + redraw land before grabbing the framebuffer
     pebble(platform, "screenshot", "--no-open", str(path))
     print(f"  {path.name}")
+    return path
+
+
+# Region of the status strip holding the clock, as (x0, x1, y0, y1) per platform.
+# Derived from the panel/strip heights in main.c window_load().
+CLOCK_REGION = {
+    "basalt": (4, 60, 70, 98),
+    "chalk": (8, 70, 92, 120),
+    "emery": (6, 90, 80, 120),
+}
+
+
+def _decode_png(path):
+    """Minimal RGBA PNG reader — avoids a Pillow dependency for a few pixels."""
+    data = path.read_bytes()
+    idat, width, height, i = b"", 0, 0, 8
+    while i < len(data):
+        length = struct.unpack(">I", data[i:i + 4])[0]
+        chunk = data[i + 4:i + 8]
+        if chunk == b"IHDR":
+            width, height = struct.unpack(">II", data[i + 8:i + 16])
+        elif chunk == b"IDAT":
+            idat += data[i + 8:i + 8 + length]
+        i += 12 + length
+    raw = zlib.decompress(idat)
+    stride = width * 4
+    # Screenshots come back unfiltered (filter byte 0 per row), so drop it and slice.
+    return width, height, [raw[1 + y * (stride + 1):1 + y * (stride + 1) + stride]
+                           for y in range(height)]
+
+
+def clock_mask(path, platform):
+    """Foreground/background shape of the rendered clock, ignoring theme colours.
+
+    The emulator occasionally renders the pinned time in a different timezone,
+    an hour off, so screenshots taken in one run can disagree. Comparing the
+    glyph shape (rather than the pixels) detects that across accent colours.
+    """
+    x0, x1, y0, y1 = CLOCK_REGION[platform]
+    _, _, rows = _decode_png(path)
+    pixels = [rows[y][x * 4:x * 4 + 3] for y in range(y0, y1) for x in range(x0, x1)]
+    background = collections.Counter(pixels).most_common(1)[0][0]
+    return bytes(0 if p == background else 1 for p in pixels)
 
 
 def move_to_row(platform, current, target):
@@ -198,13 +246,38 @@ def capture_platform(platform):
     send_nav_update(platform)
 
     state = dict(DEFAULTS)
+    masks = {}
     for name, overrides in MAIN_SHOTS:
         target = dict(DEFAULTS)
         target.update(overrides)
         apply_settings(platform, state, target)
-        shot(platform, name)
+        masks[name] = clock_mask(shot(platform, name), platform)
 
+    repair_clock_outliers(platform, state, masks)
     subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
+
+
+def repair_clock_outliers(platform, state, masks):
+    """Re-take any screenshot whose clock disagrees with the rest of the run.
+
+    The emulator sometimes renders the pinned time an hour off (see clock_mask),
+    which would leave the published set showing two different clocks. The
+    majority rendering wins; the stragglers are re-captured.
+    """
+    majority, _ = collections.Counter(masks.values()).most_common(1)[0]
+    outliers = [name for name, mask in masks.items() if mask != majority]
+    if not outliers:
+        return
+    print(f"  repairing {len(outliers)} screenshot(s) with a mismatched clock")
+    for name in outliers:
+        target = dict(DEFAULTS)
+        target.update(dict(MAIN_SHOTS)[name])
+        for _ in range(3):
+            apply_settings(platform, state, target)
+            if clock_mask(shot(platform, name), platform) == majority:
+                break
+        else:
+            print(f"  WARNING: {name} still shows a different clock")
 
 
 def main():

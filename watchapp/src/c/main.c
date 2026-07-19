@@ -140,6 +140,39 @@ static GCompOp prepare_glyph(GBitmap *bmp, Theme theme) {
   return gcolor_equal(theme.panel_bg, GColorBlack) ? GCompOpAssignInverted : GCompOpAssign;
 }
 
+// --- Round-display geometry --------------------------------------------------------------------
+
+static int16_t s_screen_h;  // set in window_load; needed to reason about the round bezel
+
+#ifdef PBL_ROUND
+// Horizontal inset that keeps every row of the band [top, bottom) inside the round display, plus
+// `margin` px of breathing room. Rows are chords of the circle, so the narrowest row in the band is
+// whichever end sits further from the vertical centre; insetting to that keeps the whole band clear
+// of the bezel. `top`/`bottom` are screen coordinates, not layer-relative ones.
+//
+// Without this the rectangular layout is drawn as-is on chalk and the bezel eats the corners: the
+// distance, the maneuver arrow and the road name all lose their outer edges.
+static int16_t round_inset(int16_t top, int16_t bottom, int16_t margin) {
+  const int32_t r = s_screen_h / 2;
+  const int32_t dy_top = r - top;
+  const int32_t dy_bottom = bottom - r;
+  const int32_t dy = (dy_top > dy_bottom) ? dy_top : dy_bottom;
+  if (dy <= 0) {
+    return margin;
+  }
+  if (dy >= r) {
+    return (int16_t)r;
+  }
+  // half_width = sqrt(r^2 - dy^2), by integer search — this runs once per layer redraw.
+  const int32_t target = r * r - dy * dy;
+  int32_t half = 0;
+  while ((half + 1) * (half + 1) <= target) {
+    half++;
+  }
+  return (int16_t)(r - half + margin);
+}
+#endif
+
 // --- Formatting -------------------------------------------------------------------------------
 
 // Split the distance into a big number and a small unit, as on the reference layout ("0.3" + "mi").
@@ -194,23 +227,46 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, theme.panel_bg);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  // The maneuver glyph takes a third of the width in one top corner; the distance fills the other
-  // two thirds (which is what lets "12.3" stay large). Which corner the arrow lives in is a user
-  // setting (REQ-WATCH-011); the distance always sits opposite it, hugging the outer edge.
+  GBitmap *bmp = maneuver_bitmap(s_maneuver);
+
+  // The arrow and the distance share one horizontal band. On a rectangular watch that band is the
+  // whole panel. On a round one the panel's top corners are outside the bezel, so the band is
+  // pushed to the bottom of the panel — where the display is at its widest — and inset to the
+  // circle. `content_*` is in layer coordinates; `band_*` is the same band on screen.
+#ifdef PBL_ROUND
+  const int16_t content_h = (bmp != NULL) ? gbitmap_get_bounds(bmp).size.h : 48;
+  const int16_t content_y = ph - content_h - 6;
+  const int16_t inset = round_inset(content_y, content_y + content_h, 4);
+#else
+  const int16_t content_h = ph;
+  const int16_t content_y = 0;
+  const int16_t inset = 0;
+#endif
+
+  // The maneuver glyph takes a third of the width in one corner of the band; the distance fills the
+  // other two thirds (which is what lets "12.3" stay large). Which corner the arrow lives in is a
+  // user setting (REQ-WATCH-011); the distance always sits opposite it, hugging the outer edge.
   const bool arrow_left = settings_arrow_left();
-  const int16_t column = w / 3;
-  const int16_t glyph_x = arrow_left ? 0 : (w - column);
-  const int16_t dist_x = arrow_left ? column : 0;
-  const int16_t dist_w = w - column;
+  const int16_t cw = w - 2 * inset;
+  const int16_t column = cw / 3;
+  const int16_t glyph_x = inset + (arrow_left ? 0 : (cw - column));
+  const int16_t dist_x = inset + (arrow_left ? column : 0);
+  const int16_t dist_w = cw - column;
   const GTextAlignment dist_align = arrow_left ? GTextAlignmentRight : GTextAlignmentLeft;
 
   // graphics_draw_bitmap_in_rect crops (and tiles) rather than scales, so the glyph is drawn at its
   // own size, centred in its column — anything else silently cuts the arrow in half.
-  GBitmap *bmp = maneuver_bitmap(s_maneuver);
   if (bmp != NULL) {
     const GSize glyph_size = gbitmap_get_bounds(bmp).size;
-    const GRect glyph_rect = GRect(glyph_x + (column - glyph_size.w) / 2,
-                                   (ph - glyph_size.h) / 2, glyph_size.w, glyph_size.h);
+    // A glyph wider than its column would spill past the inset (and, on round, into the bezel).
+    int16_t gx = glyph_x + (column - glyph_size.w) / 2;
+    if (gx < inset) {
+      gx = inset;
+    } else if (gx + glyph_size.w > w - inset) {
+      gx = w - inset - glyph_size.w;
+    }
+    const GRect glyph_rect = GRect(gx, content_y + (content_h - glyph_size.h) / 2,
+                                   glyph_size.w, glyph_size.h);
     graphics_context_set_compositing_mode(ctx, prepare_glyph(bmp, theme));
     graphics_draw_bitmap_in_rect(ctx, bmp, glyph_rect);
     graphics_context_set_compositing_mode(ctx, GCompOpAssign);
@@ -229,7 +285,7 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
     FONT_KEY_GOTHIC_28_BOLD,
     FONT_KEY_GOTHIC_24_BOLD,
   };
-  const GRect fit_box = GRect(dist_x + 6, 0, dist_w - 12, ph);
+  const GRect fit_box = GRect(dist_x + 6, content_y, dist_w - 12, content_h);
   GFont value_font = fit_font(value, fit_box, GTextOverflowModeFill, kValueFonts, ARRAY_LENGTH(kValueFonts));
   // Unit is bigger than before (was GOTHIC_18) and steps up again on the large display.
   GFont unit_font = fonts_get_system_font(large ? FONT_KEY_GOTHIC_28_BOLD : FONT_KEY_GOTHIC_24_BOLD);
@@ -250,7 +306,7 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   // Centre the number+unit block, nudged so the number's own middle lands on the arrow line (the
   // unit hangs below it, filling what used to be wasted space). +4 accounts for the number sitting a
   // touch above the block centre.
-  const int16_t block_top = (ph - (num_visible + unit_visible)) / 2 + 4;
+  const int16_t block_top = content_y + (content_h - (num_visible + unit_visible)) / 2 + 4;
   const int16_t value_y = block_top - num_pad / 2;
   const int16_t unit_y = block_top + num_visible - unit_pad / 2;
 
@@ -311,6 +367,15 @@ static void strip_update_proc(Layer *layer, GContext *ctx) {
   const int16_t hhmm_trim = large ? 6 : 5;   // pull the glyphs onto the strip's centre line
   const int16_t label_trim = large ? 4 : 3;
 
+  // The strip straddles the widest part of a round display, so it needs only a small inset — but
+  // its lower corners still fall outside the bezel without one.
+#ifdef PBL_ROUND
+  const GRect frame = layer_get_frame(layer);
+  const int16_t pad = round_inset(frame.origin.y, frame.origin.y + h, 4);
+#else
+  const int16_t pad = 6;
+#endif
+
   // Left: clock, or STALE when the phone has stopped updating us.
   char clock[8];
   const char *left_text;
@@ -321,14 +386,14 @@ static void strip_update_proc(Layer *layer, GContext *ctx) {
     strftime(clock, sizeof(clock), clock_is_24h_style() ? "%H:%M" : "%I:%M", localtime(&now));
     left_text = clock;
   }
-  draw_strip_text(ctx, left_text, clock_font, 6, w / 2, h, GTextAlignmentLeft, hhmm_trim);
+  draw_strip_text(ctx, left_text, clock_font, pad, w / 2, h, GTextAlignmentLeft, hhmm_trim);
 
   // Right: the arrival time, large and right-aligned, with a small "ETA" label just before it.
   if (s_secondary_buf[0] != '\0') {
     const int16_t time_w = strip_text_width(s_secondary_buf, time_font);
-    draw_strip_text(ctx, s_secondary_buf, time_font, w / 2, w / 2 - 6, h, GTextAlignmentRight, hhmm_trim);
-    const int16_t label_right = w - 6 - time_w - 4;  // 4px gap before the time
-    draw_strip_text(ctx, "ETA", label_font, 6, label_right - 6, h, GTextAlignmentRight, label_trim);
+    draw_strip_text(ctx, s_secondary_buf, time_font, w / 2, w / 2 - pad, h, GTextAlignmentRight, hhmm_trim);
+    const int16_t label_right = w - pad - time_w - 4;  // 4px gap before the time
+    draw_strip_text(ctx, "ETA", label_font, pad, label_right - pad, h, GTextAlignmentRight, label_trim);
   }
 }
 
@@ -348,11 +413,23 @@ static void road_update_proc(Layer *layer, GContext *ctx) {
     FONT_KEY_GOTHIC_18_BOLD,
     FONT_KEY_GOTHIC_14,
   };
+  // On a round display the road area is the bottom cap of the circle: it narrows fast, so only its
+  // first line is usable. Inset to that line, centre the text, and cap the box height so fit_font
+  // picks a size that stays on one line instead of wrapping into the bezel.
+#ifdef PBL_ROUND
+  const GRect frame = layer_get_frame(layer);
+  const int16_t line_h = 30;
+  const int16_t road_inset = round_inset(frame.origin.y, frame.origin.y + line_h, 4);
+  const GRect box = GRect(road_inset, 2, bounds.size.w - 2 * road_inset, line_h);
+  const GTextAlignment align = GTextAlignmentCenter;
+#else
   const GRect box = GRect(4, 0, bounds.size.w - 8, bounds.size.h);
+  const GTextAlignment align = GTextAlignmentLeft;
+#endif
   GFont font = fit_font(s_primary_buf, box, GTextOverflowModeWordWrap, kRoadFonts, ARRAY_LENGTH(kRoadFonts));
 
   graphics_context_set_text_color(ctx, theme.road_fg);
-  graphics_draw_text(ctx, s_primary_buf, font, box, GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, s_primary_buf, font, box, GTextOverflowModeWordWrap, align, NULL);
 }
 
 static void message_update_proc(Layer *layer, GContext *ctx) {
@@ -504,8 +581,12 @@ static void window_load(Window *window) {
   // Pebble Time 2 the old 104px panel left ~20px of dead space above and below the arrow; sizing to
   // the arrow trims that and hands the space to the road name below.
   const bool large = w >= 200;
-  const int16_t panel_h = large ? 80 : PBL_IF_ROUND_ELSE(78, 70);
+  // Round watches get a taller panel: its arrow/distance band has to sit low enough to clear the
+  // bezel (see panel_update_proc), so the panel needs the extra height above that band.
+  const int16_t panel_h = large ? 80 : PBL_IF_ROUND_ELSE(92, 70);
   const int16_t strip_h = large ? 40 : 28;
+
+  s_screen_h = h;
 
   s_panel_layer = layer_create(GRect(0, 0, w, panel_h));
   layer_set_update_proc(s_panel_layer, panel_update_proc);

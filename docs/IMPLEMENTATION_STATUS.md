@@ -26,14 +26,31 @@ python3 watchapp/tools/capture_screenshots.py basalt chalk emery
 imperial units) and 5 settings screens. Colour correction left enabled, so the images match what a
 real display shows rather than the raw `GColor` values.
 
-**Defects surfaced by the capture (not yet fixed, no requirement filed):**
-- **Chalk (round) layout clipping.** The rectangular layout is applied nearly as-is on chalk: the
-  distance text and maneuver arrow are clipped at the top corners, the road name is cut off at the
-  left edge, and settings menu rows run past the bezel. REQ-WATCH-013 adapts by width (`>= 200`)
-  only, so chalk falls into the 144-wide branch despite being 180 wide and round. Needs round-
-  specific insets.
-- **Glyph-pack menu previews overlap their labels** in `settings_window.c` (`pack_row`): the preview
-  bitmap is drawn over the "Classic"/"Bold"/"Outline" text rather than beside it.
+**Defect surfaced and fixed: chalk (round) layout clipping (REQ-WATCH-013, extended).**
+The capture showed the rectangular layout being applied nearly as-is on chalk — the distance text
+and maneuver arrow clipped at the top corners, the road name cut off at the left edge, the settings
+header running past the bezel. REQ-WATCH-013 adapted by width (`>= 200`) only, so chalk fell into
+the 144-wide branch despite being round.
+
+- **`round_inset(top, bottom, margin)`** (new, `main.c`, `PBL_ROUND` only) returns the horizontal
+  inset that keeps every row of a band inside the circle: rows are chords, so the narrowest row in
+  the band is whichever end is further from the vertical centre. Insets are derived from the
+  geometry rather than hardcoded, so they stay correct if the layout bands move.
+- **Panel** now places the arrow/distance band at the *bottom* of the panel on round (where the
+  display is widest) instead of centring it, and insets it to the circle. Panel height on chalk
+  78 → 92 to make room. The glyph is additionally clamped inside the content area, since a glyph
+  wider than its third-of-the-width column would otherwise spill past the inset.
+- **Strip and road name** inset to their own bands; the road name is centred and its box capped to
+  one line on round, so `fit_font` picks a size that stays out of the bottom cap of the circle.
+- **Settings headers** are centre-drawn on round (`draw_menu_header`); `menu_cell_basic_header_draw`
+  is left-aligned and ran into the bezel. Note that `menu_layer_set_center_focused` is *already* the
+  SDK default on `PBL_ROUND`, so no call is needed — the row layout was never the problem.
+- Non-round platforms take the `#else` branches and are byte-identical: verified by re-capturing
+  basalt and emery after the change and diffing the PNGs against the pre-change set.
+
+**Remaining known defect (not fixed, no requirement filed):** glyph-pack menu previews overlap their
+labels in `settings_window.c` (`pack_row`) — the preview bitmap is drawn over the "Classic" / "Bold"
+/ "Outline" text rather than beside it. Affects all platforms.
 
 ## Watchapp UI refinement + spec reconciliation (2026-07-16)
 
