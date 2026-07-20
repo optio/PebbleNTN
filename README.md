@@ -4,6 +4,7 @@
 [![Watchapp Build](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml)
 [![Release Build](https://github.com/optio/PebbleNTN/actions/workflows/release.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/release.yml)
 [![CodeQL](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml)
+![GitHub License](https://img.shields.io/github/license/optio/PebbleNTN)
 [![Release](https://img.shields.io/github/v/release/optio/PebbleNTN.svg?style=flat\&color=2CB44C)](https://github.com/optio/PebbleNTN/releases/latest)
 [![GitHub Downloads](https://img.shields.io/github/downloads/optio/PebbleNTN/total?color=2CB44C)](https://github.com/optio/PebbleNTN/releases)
 
