@@ -13,6 +13,9 @@ echo "==> Generated protocol constants up to date"
 echo "==> Version sync (VERSION vs gradle/package.json/main.c)"
 "$REPO_ROOT/scripts/version.sh" --check
 
+echo "==> Watchapp C unit tests"
+"$REPO_ROOT/scripts/test-watchapp-unit.sh"
+
 echo "==> Rule schema validation"
 "$REPO_ROOT/scripts/validate-rules.sh"
 

@@ -21,8 +21,11 @@
   the right — the watch stays a watch while navigating. The arrival estimate has two display modes
   (REQ-WATCH-014), selectable on the watch and defaulting to arrival time: **arrival time** shows the
   clock time of arrival with a small "ETA" label (e.g. "ETA 14:35"), while **time to arrival** shows
-  the remaining duration with an "IN" label (e.g. "IN 0:25"), computed on the watch from the arrival
-  epoch and recounted each minute. When the phone has stopped updating, the clock is replaced by a
+  the remaining duration with an "IN" label (e.g. "IN 0:25"), computed on the watch and recounted
+  each minute — from the arrival epoch when the phone sent one, otherwise by comparing the
+  arrival-time string against the watch's own clock (wrapping over midnight), which is what lets the
+  countdown work with rulesets that extract no epoch. An arrival string that is not a clock time
+  falls back to the "ETA" display. When the phone has stopped updating, the clock is replaced by a
   STALE marker.
 - The lower area shows the **primary text** (road or concise instruction), auto-fit to the largest
   font that fits rather than truncated.

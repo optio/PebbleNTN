@@ -53,17 +53,22 @@ ETA_MINUTES = 25
 def nav_message():
     """The navigation state injected before every screenshot (protocol.h keys).
 
-    The arrival epoch is anchored to the same wall clock the emulator is pinned
-    to, so the time-to-arrival countdown renders the same value every run. It
-    has to be computed rather than hardcoded because pinning the clock to
-    CLOCK sets that time on *today's* date.
+    The arrival epoch and the arrival-time string are both derived from one
+    instant — the pinned clock plus ETA_MINUTES — so they cannot contradict each
+    other. That matters because the two ETA display modes render from different
+    sources: arrival-time mode shows the string, time-to-arrival mode counts down
+    to the epoch. Hardcoding the string alongside a computed epoch produced a set
+    that claimed "ETA 14:35" and "IN 0:25" at the same 12:35 clock.
+
+    They are computed rather than hardcoded because pinning the clock to CLOCK
+    sets that time on *today's* date.
     """
     pinned = datetime.datetime.combine(
         datetime.date.today(), datetime.time.fromisoformat(CLOCK))
-    eta_epoch = int(pinned.timestamp()) + ETA_MINUTES * 60
+    arrival = pinned + datetime.timedelta(minutes=ETA_MINUTES)
     return [
-        "--int", "0=1", "3=6", "4=450", "10=0", f"7={eta_epoch}",
-        "--string", "5=Rue de la Loi", "6=14:35",
+        "--int", "0=1", "3=6", "4=450", "10=0", f"7={int(arrival.timestamp())}",
+        "--string", "5=Rue de la Loi", f"6={arrival.strftime('%H:%M')}",
     ]
 
 DEFAULTS = {

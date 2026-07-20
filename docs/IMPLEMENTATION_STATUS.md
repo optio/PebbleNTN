@@ -2,6 +2,55 @@
 
 _Last updated: 2026-07-20_
 
+## Time-to-arrival derived from the arrival string (2026-07-20)
+
+**Milestone:** none — completes REQ-WATCH-014, which was implemented but unreachable in practice.
+
+**Why.** The countdown was computed only from `etaEpochSeconds`, which is an *optional* rule output.
+The rule engine supports it (`RuleEngine.kt`, including a duration path), but the only bundled
+ruleset — `rules/bundled/google-maps/en.json` — extracts just
+`maneuver / distanceMeters / primaryText / secondaryText`. So the phone never sent the epoch, the
+watch's `s_eta_epoch` stayed 0, and time-to-arrival mode *always* took the fallback branch and
+rendered exactly what arrival-time mode renders. The setting worked, but did nothing.
+
+**Fix (watch-side, render-only).** The watch already receives the arrival-time string and knows the
+current time, so the countdown is now derived from those when no epoch is sent. Deriving it on the
+watch rather than adding a phone-side extractor means it also works with **every existing phone
+build**, including v0.0.4 — no phone update, no protocol change, no ruleset change.
+
+- New `watchapp/src/c/eta_text.{h,c}`: `eta_parse_clock_minutes()` and `eta_minutes_until()`. Pure,
+  no Pebble dependencies, so they compile and are unit-tested on the host.
+- `format_eta_readout` in `main.c` now resolves in three tiers: exact epoch → parsed arrival string →
+  arrival string shown under "ETA". The epoch path is unchanged.
+- This reads only the normalized field the phone chose to send, not notification text, so
+  REQ-WATCH-001 is unaffected. Noted explicitly in the requirement.
+
+**New test infrastructure.** `scripts/test-watchapp-unit.sh` compiles `watchapp/tests/test_*.c`
+against `watchapp/src/c/<unit>.c` with the host compiler and runs them; wired into
+`scripts/test-all.sh`. The watchapp was previously only verifiable in the emulator, so pure logic now
+has a fast automated home. Building with `-Wall -Wextra -Werror` on the host immediately caught a
+missing `<stddef.h>` that `pebble.h` had been masking.
+
+**A bug the tests caught before it shipped.** The first parser scanned character by character, so
+`"25:00"` matched the `"5:00"` inside it and reported an arrival that was never written. The scan now
+consumes each digit run as a unit and rejects an out-of-range candidate outright instead of
+re-scanning inside it.
+
+**Verified.** 25 host assertions pass. On the basalt emulator, with the epoch omitted exactly as the
+bundled ruleset produces: arrival 14:35 renders `IN 2:00` at 12:35, `IN 1:35` at 13:00, `IN 0:00` at
+14:35, and `IN 14:45` at 23:50 (wrapping past midnight); the 12-hour string `2:35 PM` renders
+`IN 2:00`; and a non-time string (`Turn right`) falls back to the "ETA" display.
+
+**Screenshot fixture corrected.** The capture script hardcoded the arrival string as "14:35" while
+computing the epoch as the pinned clock + 25 min (13:00), so the set asserted both "ETA 14:35" and
+"IN 0:25" at a 12:35 clock — contradictory, and mine from the earlier ETA-coverage change. Both are
+now derived from one instant in `nav_message()`, so they cannot drift; the nav shots read
+"ETA 13:00" / "IN 0:25".
+
+**Known cosmetic issue, pre-existing and not addressed:** when the arrival-time string is long and
+not a clock time, it is drawn truncated in the strip's estimate slot and crowds the small label. The
+strip assumes that field is short; only its length matters, so this predates this change.
+
 ## ETA display mode: arrival time vs. time to arrival (2026-07-19)
 
 **Milestone:** post-M12 watch appearance enhancement (REQ-WATCH-014). Android build unaffected —

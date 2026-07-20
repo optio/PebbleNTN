@@ -16,6 +16,7 @@
 
 #include <pebble.h>
 
+#include "eta_text.h"
 #include "generated/protocol.h"
 #include "settings_window.h"
 #include "theme.h"
@@ -355,17 +356,32 @@ static void draw_strip_text(GContext *ctx, const char *text, GFont font, int16_t
 // recomputed each minute by the strip's redraw. DURATION falls back to the arrival-time string when
 // the phone sent no arrival epoch (a rule that extracts no ETA), so the strip is never left blank.
 static bool format_eta_readout(char *out, size_t out_len, const char **label) {
-  if (settings_eta_mode() == ETA_MODE_DURATION && s_eta_epoch > 0) {
-    int32_t remaining = s_eta_epoch - (int32_t)time(NULL);
-    if (remaining < 0) {
-      remaining = 0;
+  if (settings_eta_mode() == ETA_MODE_DURATION) {
+    int32_t total_min = -1;
+    if (s_eta_epoch > 0) {
+      int32_t remaining = s_eta_epoch - (int32_t)time(NULL);
+      if (remaining < 0) {
+        remaining = 0;
+      }
+      // Round up to the next whole minute so "0:00" appears only once arrival is actually reached,
+      // never while a fraction of the final minute is still left.
+      total_min = (remaining + 59) / 60;
+    } else {
+      // No epoch — the bundled ruleset extracts none, so this is the common case. Derive the
+      // countdown from the arrival-time string the phone always sends for display, by comparing it
+      // against the watch's own clock (both are wall-clock time in the phone's timezone).
+      const int target = eta_parse_clock_minutes(s_secondary_buf);
+      if (target >= 0) {
+        const time_t now = time(NULL);
+        const struct tm *local = localtime(&now);
+        total_min = eta_minutes_until(target, local->tm_hour * 60 + local->tm_min);
+      }
     }
-    // Round up to the next whole minute so "0:00" appears only once arrival is actually reached,
-    // never while a fraction of the final minute is still left.
-    const int32_t total_min = (remaining + 59) / 60;
-    snprintf(out, out_len, "%d:%02d", (int)(total_min / 60), (int)(total_min % 60));
-    *label = "IN";
-    return true;
+    if (total_min >= 0) {
+      snprintf(out, out_len, "%d:%02d", (int)(total_min / 60), (int)(total_min % 60));
+      *label = "IN";
+      return true;
+    }
   }
   if (s_secondary_buf[0] != '\0') {
     snprintf(out, out_len, "%s", s_secondary_buf);
