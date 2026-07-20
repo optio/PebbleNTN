@@ -1,6 +1,11 @@
 # PebbleNTN — Engineering Specification
 
-[![Android Build](https://github.com/optio/PebbleNTN/actions/workflows/android.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/android.yml) [![Watchapp Build](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml) [![Release Build](https://github.com/optio/PebbleNTN/actions/workflows/release.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/release.yml) [![CodeQL](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml) [!Release](https://img.shields.io/github/v/release/optio/PebbleNTN.svg?style=flat&color=2CB44C) ![GitHub Downloads](https://img.shields.io/github/downloads/optio/PebbleNTN/total?color=2CB44C)
+[![Android Build](https://github.com/optio/PebbleNTN/actions/workflows/android.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/android.yml)
+[![Watchapp Build](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml)
+[![Release Build](https://github.com/optio/PebbleNTN/actions/workflows/release.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/release.yml)
+[![CodeQL](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/optio/PebbleNTN.svg?style=flat\&color=2CB44C)](https://github.com/optio/PebbleNTN/releases/latest)
+[![GitHub Downloads](https://img.shields.io/github/downloads/optio/PebbleNTN/total?color=2CB44C)](https://github.com/optio/PebbleNTN/releases)
 
 
 **PebbleNTN** means **Pebble Notification To Navigation**.
