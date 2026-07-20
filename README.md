@@ -1,5 +1,7 @@
 # PebbleNTN — Engineering Specification
 
+[![Android Build](https://github.com/optio/PebbleNTN/actions/workflows/android.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/android.yml) [![Watchapp Build](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/watchapp.yml) [![Release Build](https://github.com/optio/PebbleNTN/actions/workflows/release.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/release.yml) [![CodeQL](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml)
+
 **PebbleNTN** means **Pebble Notification To Navigation**.
 
 This repository specification is an implementation contract for an AI coding agent, principally Claude Code or Codex. It defines an Android companion application that reads selected navigation-app notifications, translates them with declarative rules, and sends normalized turn instructions to a Pebble watchapp.
