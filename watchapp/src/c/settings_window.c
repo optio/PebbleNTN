@@ -263,15 +263,15 @@ static void push_pack_window(void) {
 
 // ===== Top-level settings menu ==================================================================
 
-#define ROW_COLOUR 0
-#define ROW_GLYPH 1
-#define ROW_ARROW 2
-#define ROW_INVERT 3
-#define ROW_UNITS 4
+#define ROW_BACKLIGHT 0
+#define ROW_VIBE 1
+#define ROW_VIBE_INTENSITY 2
+#define ROW_COLOUR 3
+#define ROW_INVERT 4
 #define ROW_ETA 5
-#define ROW_BACKLIGHT 6
-#define ROW_VIBE 7
-#define ROW_VIBE_INTENSITY 8
+#define ROW_ARROW 6
+#define ROW_GLYPH 7
+#define ROW_UNITS 8
 #define MAIN_ROW_COUNT 9
 
 static Window *s_window;
