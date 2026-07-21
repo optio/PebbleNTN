@@ -49,6 +49,34 @@ Initial release may be metric-only if explicitly shown in settings and protocol 
 
 Vibrate only when maneuver identity changes or an explicit threshold event is sent. Do not vibrate on every distance update.
 
+An on-watch setting (REQ-WATCH-016) lets the user choose to vibrate when a new instruction is parsed,
+with a **pattern** (Off — the default — / Single / Double / Triple / Long) and a **strength**
+(Light / Medium — the default — / Strong). Strength is realised as pulse length because the SDK
+exposes no vibration amplitude control. It fires only on genuinely new information (a changed maneuver
+or primary text), never on a resend as the distance counts down, and — when set to a non-Off pattern —
+supersedes the phone's simple maneuver-change pulse. Changing either row in the settings menu plays
+the selected buzz as a preview.
+
+## Backlight
+
+An on-watch setting (REQ-WATCH-015) can keep the backlight lit while the watchapp is the foreground
+app. It defaults to **Watch default** (no additional backlight; the watch's own automatic behaviour
+is untouched) and offers three intensity levels. Because the SDK exposes no backlight brightness
+control, the levels are expressed as how long the light is held after activity: **Low** and **Medium**
+light it briefly and for longer respectively after each navigation update, and **High** keeps it
+steady-on for the whole session. A non-default level overrides the watch's automatic control and the
+phone's per-update light request; switching back to Watch default (or leaving the app) releases
+control back to the watch.
+
+Each level is labelled with what it does — "Low - 3s on update", "Medium - 10s on update", "High -
+until app closes" — so the menu explains itself without a manual.
+
+On watches with a colour backlight LED (`PBL_RGB_BACKLIGHT`; Pebble Time 2) the backlight also has a
+**colour**, defaulting to the user's own. There the Backlight row opens a sub-window holding
+**Duration** and **Colour**, and Colour opens a tint list of its own — the same "door" pattern the
+accent colour and glyph pack use. On every other watch the tint cannot be changed, so no colour row
+is shown and Backlight keeps cycling the duration in place.
+
 ## Stale data
 
 If state age exceeds configured threshold, retain the instruction but visibly mark it stale. Never advance a maneuver locally based only on elapsed time.

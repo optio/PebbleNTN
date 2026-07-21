@@ -69,6 +69,62 @@ typedef enum {
   GLYPH_PACK_COUNT = 3,
 } GlyphPack;
 
+// How aggressively the watchapp keeps the backlight lit while it is the foreground app
+// (REQ-WATCH-015). The Pebble SDK exposes no backlight *brightness* control to apps (only on/off via
+// light_enable), so "intensity" is expressed as how much of the time the light is engaged, which is
+// the honest proxy the hardware allows: OFF leaves the watch's own automatic behaviour untouched;
+// the three levels turn the backlight on around navigation activity, from a brief assist (LOW) up to
+// steady-on for the whole session (HIGH). OFF is the default — no additional backlight.
+typedef enum {
+  BACKLIGHT_OFF = 0,     // default: watch's own light settings, no forcing
+  BACKLIGHT_LOW = 1,     // ~3 s after each update
+  BACKLIGHT_MEDIUM = 2,  // ~10 s after each update
+  BACKLIGHT_HIGH = 3,    // steady-on until the app closes
+  BACKLIGHT_COUNT = 4,
+} BacklightMode;
+
+// Backlight tint, offered only on RGB-backlight hardware (PBL_RGB_BACKLIGHT — Pebble Time 2 /
+// emery). DEFAULT keeps the user's own backlight colour; every other entry tints the LED while the
+// watchapp is foregrounded. The system resets the tint automatically on app exit or when a
+// notification preempts the app, so no teardown is needed. On non-RGB hardware the tint calls are
+// SDK no-ops and the menu does not offer the setting at all.
+typedef enum {
+  BACKLIGHT_COLOR_DEFAULT = 0,  // default: the user's own backlight colour
+  BACKLIGHT_COLOR_WHITE = 1,
+  BACKLIGHT_COLOR_WARM = 2,     // warm white — easier on night vision than pure white
+  BACKLIGHT_COLOR_RED = 3,
+  BACKLIGHT_COLOR_ORANGE = 4,
+  BACKLIGHT_COLOR_YELLOW = 5,
+  BACKLIGHT_COLOR_GREEN = 6,
+  BACKLIGHT_COLOR_CYAN = 7,
+  BACKLIGHT_COLOR_BLUE = 8,
+  BACKLIGHT_COLOR_PURPLE = 9,
+  BACKLIGHT_COLOR_PINK = 10,
+  BACKLIGHT_COLOR_COUNT = 11,
+} BacklightColorId;
+
+// Shape of the vibration played when a new navigation instruction is parsed (REQ-WATCH-016). OFF is
+// the default (no watch-initiated vibration; the phone's maneuver-change request still applies). The
+// other patterns differ in how many pulses are played.
+typedef enum {
+  VIBE_PATTERN_OFF = 0,     // default: no watch-initiated vibration
+  VIBE_PATTERN_SINGLE = 1,  // one pulse
+  VIBE_PATTERN_DOUBLE = 2,  // two pulses
+  VIBE_PATTERN_TRIPLE = 3,  // three pulses
+  VIBE_PATTERN_LONG = 4,    // one sustained pulse
+  VIBE_PATTERN_COUNT = 5,
+} VibePatternId;
+
+// Vibration intensity (REQ-WATCH-016). The Pebble SDK exposes no vibration *amplitude* control, so
+// intensity is expressed as pulse length: a longer buzz reads as stronger. This is the honest proxy
+// the hardware allows and is genuinely different per level.
+typedef enum {
+  VIBE_INTENSITY_LIGHT = 0,
+  VIBE_INTENSITY_MEDIUM = 1,
+  VIBE_INTENSITY_STRONG = 2,
+  VIBE_INTENSITY_COUNT = 3,
+} VibeIntensity;
+
 typedef struct {
   GColor panel_bg;   // top panel: distance + maneuver
   GColor panel_fg;   // distance text and maneuver glyph (always legible over panel_bg)
@@ -85,6 +141,12 @@ const char *accent_name(AccentId id);
 const char *units_name(UnitsId id);
 const char *glyph_pack_name(GlyphPack id);
 const char *eta_mode_name(EtaMode id);
+// Menu label for a backlight level. The label spells out what the level actually does ("3s after
+// update", "Until app closes") rather than a bare Low/Medium/High, which says nothing on its own.
+const char *backlight_mode_name(BacklightMode id);
+const char *backlight_color_name(BacklightColorId id);
+const char *vibe_pattern_name(VibePatternId id);
+const char *vibe_intensity_name(VibeIntensity id);
 
 // Persisted settings. Load once at startup; each setter saves.
 AccentId settings_accent(void);
@@ -92,6 +154,10 @@ bool settings_inverted(void);
 UnitsId settings_units(void);
 GlyphPack settings_glyph_pack(void);
 EtaMode settings_eta_mode(void);
+BacklightMode settings_backlight(void);
+BacklightColorId settings_backlight_color(void);
+VibePatternId settings_vibe_pattern(void);
+VibeIntensity settings_vibe_intensity(void);
 // Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
 // default is the arrow on the right and the distance on the left.
 bool settings_arrow_left(void);
@@ -101,4 +167,23 @@ void settings_set_units(UnitsId id);
 void settings_set_glyph_pack(GlyphPack id);
 void settings_set_arrow_left(bool arrow_left);
 void settings_set_eta_mode(EtaMode id);
+void settings_set_backlight(BacklightMode id);
+void settings_set_backlight_color(BacklightColorId id);
+void settings_set_vibe_pattern(VibePatternId id);
+void settings_set_vibe_intensity(VibeIntensity id);
 void settings_load(void);
+
+// Play the vibration selected for a newly parsed instruction, built from the current pattern and
+// intensity settings (REQ-WATCH-016). No-op when the pattern is OFF. Shared by the navigation path
+// (fired on new info) and the settings menu (fired as a preview when the user changes either row).
+void settings_vibe_play(void);
+
+// How long (ms) the backlight is held lit after activity for the current backlight mode; 0 means
+// keep it on with no timeout (steady-on) and BACKLIGHT_OFF also returns 0 (no forcing).
+uint32_t settings_backlight_hold_ms(void);
+
+// Push the selected tint to the backlight LED (REQ-WATCH-015). Called whenever the app engages the
+// light and when the colour setting changes. BACKLIGHT_COLOR_DEFAULT restores the user's own colour
+// via light_set_system_color(). A no-op in effect on watches without an RGB backlight, where the
+// SDK's tint calls compile to nothing.
+void settings_apply_backlight_color(void);

@@ -40,8 +40,17 @@ ACCENT = {
 # theme.h GlyphPack row indices.
 PACK = {"classic": 0, "bold": 1, "outline": 2}
 
-# Settings menu row indices (settings_window.c).
-ROW_COLOUR, ROW_GLYPH, ROW_ARROW, ROW_INVERT, ROW_UNITS, ROW_ETA = range(6)
+# Settings menu row indices (settings_window.c) — keep this order in sync with the #defines there.
+ROW_BACKLIGHT = 0
+ROW_VIBE = 1
+ROW_VIBE_INTENSITY = 2
+ROW_COLOUR = 3
+ROW_INVERT = 4
+ROW_ETA = 5
+ROW_ARROW = 6
+ROW_GLYPH = 7
+ROW_UNITS = 8
+LAST_MAIN_ROW = ROW_UNITS
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.
 CLOCK = "12:35:00"
@@ -232,18 +241,20 @@ def capture_settings_screens(platform):
     """Screenshot the settings menu and both of its sub-windows."""
     click(platform, "select")
     shot(platform, "settings-menu")
-    click(platform, "down", ROW_ETA)
+    click(platform, "down", LAST_MAIN_ROW)
     shot(platform, "settings-menu-scrolled")
-    click(platform, "up", ROW_ETA)
+    click(platform, "up", LAST_MAIN_ROW)
+    row = 0
 
-    click(platform, "select")
+    row = move_to_row(platform, row, ROW_COLOUR)
+    click(platform, "select")               # open the colour door
     shot(platform, "settings-accent-colour-list")
     click(platform, "down", 8)
     shot(platform, "settings-accent-colour-list-scrolled")
     click(platform, "back")
 
-    click(platform, "down")
-    click(platform, "select")
+    row = move_to_row(platform, row, ROW_GLYPH)
+    click(platform, "select")               # open the glyph door
     shot(platform, "settings-glyph-pack-list")
     click(platform, "back")
 

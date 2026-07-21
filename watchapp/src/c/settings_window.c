@@ -1,10 +1,13 @@
-// On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012): appearance + units. Opened with SELECT
-// from the navigation window, dismissed with BACK. Changes apply immediately and persist.
+// On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012, REQ-WATCH-015, REQ-WATCH-016): appearance,
+// units, backlight and vibration. Opened with SELECT from the navigation window, dismissed with
+// BACK. Changes apply immediately and persist.
 //
 // The top menu is a short list of categories. Accent colour (a long list) and the glyph pack each
-// open their own sub-window ("door"); invert, units and ETA display toggle in place. The glyph-pack
-// door shows a sample arrow drawn in each pack, so the packs can be previewed on the watch before
-// choosing one.
+// open their own sub-window ("door"); invert, units, ETA display and the two vibration rows toggle
+// in place. Backlight toggles in place too, except on RGB-backlight hardware, where it opens a door
+// holding both the duration and the tint. The glyph-pack door shows a sample arrow drawn in each
+// pack, so the packs can be previewed on the watch before choosing one; changing either vibration
+// row plays the newly selected buzz so it can be felt before leaving the menu.
 
 #include "settings_window.h"
 
@@ -259,15 +262,162 @@ static void push_pack_window(void) {
   window_stack_push(s_pack_window, true);
 }
 
+// ===== Backlight sub-windows (RGB hardware only) ================================================
+//
+// On a watch with an RGB backlight (PBL_RGB_BACKLIGHT — Pebble Time 2) the backlight has two
+// independent choices, duration and tint, so the top-level Backlight row opens its own door holding
+// both instead of cycling one value in place. The tint list is long enough to warrant a second door
+// of its own, mirroring the accent-colour list. On every other watch the tint cannot be changed at
+// all, so neither door exists and the Backlight row keeps cycling the duration in place.
+#ifdef PBL_RGB_BACKLIGHT
+
+static Window *s_backlight_colour_window;
+static MenuLayer *s_backlight_colour_menu;
+
+static uint16_t backlight_colour_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
+  return BACKLIGHT_COLOR_COUNT;
+}
+
+static void backlight_colour_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
+  draw_menu_header(ctx, cell, "Backlight colour");
+}
+
+static void backlight_colour_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
+  const BacklightColorId id = (BacklightColorId)index->row;
+  const bool active = (id == settings_backlight_color());
+  menu_cell_basic_draw(ctx, cell, backlight_color_name(id), active ? "Selected" : NULL, NULL);
+}
+
+static void backlight_colour_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  settings_set_backlight_color((BacklightColorId)index->row);
+  menu_layer_reload_data(s_backlight_colour_menu);
+  notify_change();  // re-engages the light so the new tint is visible immediately
+}
+
+static void backlight_colour_load(Window *window) {
+  Layer *root = window_get_root_layer(window);
+  s_backlight_colour_menu = menu_layer_create(layer_get_bounds(root));
+  menu_layer_set_callbacks(s_backlight_colour_menu, NULL, (MenuLayerCallbacks){
+    .get_num_sections = one_section,
+    .get_num_rows = backlight_colour_num_rows,
+    .get_header_height = header_height,
+    .draw_header = backlight_colour_header,
+    .draw_row = backlight_colour_row,
+    .select_click = backlight_colour_select,
+  });
+  menu_layer_set_click_config_onto_window(s_backlight_colour_menu, window);
+  layer_add_child(root, menu_layer_get_layer(s_backlight_colour_menu));
+}
+
+static void backlight_colour_unload(Window *window) {
+  menu_layer_destroy(s_backlight_colour_menu);
+  s_backlight_colour_menu = NULL;
+  window_destroy(s_backlight_colour_window);
+  s_backlight_colour_window = NULL;
+}
+
+static void push_backlight_colour_window(void) {
+  s_backlight_colour_window = window_create();
+  window_set_window_handlers(s_backlight_colour_window, (WindowHandlers){
+    .load = backlight_colour_load,
+    .unload = backlight_colour_unload,
+  });
+  window_stack_push(s_backlight_colour_window, true);
+}
+
+#define BL_ROW_DURATION 0
+#define BL_ROW_COLOUR 1
+#define BL_ROW_COUNT 2
+
+static Window *s_backlight_window;
+static MenuLayer *s_backlight_menu;
+
+static uint16_t backlight_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
+  return BL_ROW_COUNT;
+}
+
+static void backlight_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
+  draw_menu_header(ctx, cell, "Backlight");
+}
+
+static void backlight_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
+  switch (index->row) {
+    case BL_ROW_DURATION:
+      menu_cell_basic_draw(ctx, cell, "Duration", backlight_mode_name(settings_backlight()), NULL);
+      break;
+    default:
+      menu_cell_basic_draw(ctx, cell, "Colour", backlight_color_name(settings_backlight_color()),
+                           NULL);
+      break;
+  }
+}
+
+static void backlight_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  switch (index->row) {
+    case BL_ROW_DURATION:
+      settings_set_backlight((BacklightMode)((settings_backlight() + 1) % BACKLIGHT_COUNT));
+      menu_layer_reload_data(s_backlight_menu);
+      notify_change();
+      break;
+    default:
+      push_backlight_colour_window();
+      break;
+  }
+}
+
+// Returning from the colour door: refresh the Colour row's subtitle.
+static void backlight_appear(Window *window) {
+  if (s_backlight_menu != NULL) {
+    menu_layer_reload_data(s_backlight_menu);
+  }
+}
+
+static void backlight_load(Window *window) {
+  Layer *root = window_get_root_layer(window);
+  s_backlight_menu = menu_layer_create(layer_get_bounds(root));
+  menu_layer_set_callbacks(s_backlight_menu, NULL, (MenuLayerCallbacks){
+    .get_num_sections = one_section,
+    .get_num_rows = backlight_num_rows,
+    .get_header_height = header_height,
+    .draw_header = backlight_header,
+    .draw_row = backlight_row,
+    .select_click = backlight_select,
+  });
+  menu_layer_set_click_config_onto_window(s_backlight_menu, window);
+  layer_add_child(root, menu_layer_get_layer(s_backlight_menu));
+}
+
+static void backlight_unload(Window *window) {
+  menu_layer_destroy(s_backlight_menu);
+  s_backlight_menu = NULL;
+  window_destroy(s_backlight_window);
+  s_backlight_window = NULL;
+}
+
+static void push_backlight_window(void) {
+  s_backlight_window = window_create();
+  window_set_window_handlers(s_backlight_window, (WindowHandlers){
+    .load = backlight_load,
+    .unload = backlight_unload,
+    .appear = backlight_appear,
+  });
+  window_stack_push(s_backlight_window, true);
+}
+
+#endif  // PBL_RGB_BACKLIGHT
+
 // ===== Top-level settings menu ==================================================================
 
-#define ROW_COLOUR 0
-#define ROW_GLYPH 1
-#define ROW_ARROW 2
-#define ROW_INVERT 3
-#define ROW_UNITS 4
+#define ROW_BACKLIGHT 0
+#define ROW_VIBE 1
+#define ROW_VIBE_INTENSITY 2
+#define ROW_COLOUR 3
+#define ROW_INVERT 4
 #define ROW_ETA 5
-#define MAIN_ROW_COUNT 6
+#define ROW_ARROW 6
+#define ROW_GLYPH 7
+#define ROW_UNITS 8
+#define MAIN_ROW_COUNT 9
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -300,8 +450,19 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_UNITS:
       menu_cell_basic_draw(ctx, cell, "Distance units", units_name(settings_units()), NULL);
       break;
-    default:
+    case ROW_ETA:
       menu_cell_basic_draw(ctx, cell, "ETA display", eta_mode_name(settings_eta_mode()), NULL);
+      break;
+    case ROW_BACKLIGHT:
+      menu_cell_basic_draw(ctx, cell, "Backlight", backlight_mode_name(settings_backlight()), NULL);
+      break;
+    case ROW_VIBE:
+      menu_cell_basic_draw(ctx, cell, "Vibrate on update", vibe_pattern_name(settings_vibe_pattern()),
+                           NULL);
+      break;
+    default:
+      menu_cell_basic_draw(ctx, cell, "Vibration strength",
+                           vibe_intensity_name(settings_vibe_intensity()), NULL);
       break;
   }
 }
@@ -329,9 +490,33 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
       menu_layer_reload_data(s_menu);
       notify_change();
       break;
-    default:
+    case ROW_ETA:
       settings_set_eta_mode((EtaMode)((settings_eta_mode() + 1) % ETA_MODE_COUNT));
       menu_layer_reload_data(s_menu);
+      notify_change();
+      break;
+    case ROW_BACKLIGHT:
+      // RGB hardware has a tint to pick as well, so the row opens a door; otherwise duration is the
+      // only choice and cycles in place.
+#ifdef PBL_RGB_BACKLIGHT
+      push_backlight_window();
+#else
+      settings_set_backlight((BacklightMode)((settings_backlight() + 1) % BACKLIGHT_COUNT));
+      menu_layer_reload_data(s_menu);
+      notify_change();
+#endif
+      break;
+    case ROW_VIBE:
+      settings_set_vibe_pattern((VibePatternId)((settings_vibe_pattern() + 1) % VIBE_PATTERN_COUNT));
+      menu_layer_reload_data(s_menu);
+      settings_vibe_play();  // preview the newly selected pattern (no-op when Off)
+      notify_change();
+      break;
+    default:
+      settings_set_vibe_intensity(
+          (VibeIntensity)((settings_vibe_intensity() + 1) % VIBE_INTENSITY_COUNT));
+      menu_layer_reload_data(s_menu);
+      settings_vibe_play();  // preview the newly selected intensity (no-op when pattern is Off)
       notify_change();
       break;
   }

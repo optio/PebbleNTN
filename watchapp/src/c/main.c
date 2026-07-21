@@ -5,8 +5,10 @@
 //   - render the current normalized navigation state (maneuver bitmap, distance, ETA, road text);
 //   - show explicit connection/stale/no-navigation/compatibility states;
 //   - vibrate on maneuver change and enable backlight when the phone requests it;
+//   - keep the backlight lit and buzz on new instructions per the user's on-watch settings
+//     (REQ-WATCH-015, REQ-WATCH-016);
 //   - return to the watchface on navigation stop when commanded;
-//   - offer on-watch appearance settings (theme, units, ETA display) via SELECT.
+//   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT.
 //
 // Layout: the maneuver arrow and the distance sit side by side in a coloured panel, so the road
 // name gets the whole lower half and rarely has to be truncated; its font shrinks to fit.
@@ -517,6 +519,58 @@ static void show_message(const char *message) {
   redraw_all();
 }
 
+// --- Backlight (REQ-WATCH-015) ----------------------------------------------------------------
+//
+// A watch-side setting can keep the backlight lit while the app is active. The Pebble SDK has no
+// backlight brightness control for apps, so the three "intensity" levels are expressed as how long
+// the light is held after activity: LOW/MEDIUM light it for a few seconds around each update, HIGH
+// keeps it steady-on. BACKLIGHT_OFF (the default) never forces the light, leaving the watch's own
+// automatic behaviour untouched. `light_enable(true)` overrides automatic control; `light_enable
+// (false)` hands it back, so we only release the light when we were the ones holding it.
+static AppTimer *s_backlight_timer;
+static bool s_backlight_forced;
+
+static void backlight_release(void) {
+  if (s_backlight_timer != NULL) {
+    app_timer_cancel(s_backlight_timer);
+    s_backlight_timer = NULL;
+  }
+  if (s_backlight_forced) {
+    light_enable(false);
+    s_backlight_forced = false;
+  }
+}
+
+static void backlight_timeout(void *data) {
+  s_backlight_timer = NULL;
+  if (s_backlight_forced) {
+    light_enable(false);
+    s_backlight_forced = false;
+  }
+}
+
+// Re-apply the current backlight setting. Called when the app becomes active, on each navigation
+// update (to refresh the timed hold), and when the setting changes.
+static void apply_backlight(void) {
+  if (s_backlight_timer != NULL) {
+    app_timer_cancel(s_backlight_timer);
+    s_backlight_timer = NULL;
+  }
+  if (settings_backlight() == BACKLIGHT_OFF) {
+    backlight_release();
+    return;
+  }
+  // Tint first, then light: the LED picks up the colour as it comes on rather than flashing the
+  // previous colour for a frame. A no-op on watches without an RGB backlight.
+  settings_apply_backlight_color();
+  light_enable(true);
+  s_backlight_forced = true;
+  const uint32_t hold = settings_backlight_hold_ms();
+  if (hold > 0) {
+    s_backlight_timer = app_timer_register(hold, backlight_timeout, NULL);
+  }
+}
+
 static void render_navigation(DictionaryIterator *iter) {
   Tuple *maneuver_t = dict_find(iter, PBNTN_KEY_MANEUVER);
   Tuple *distance_t = dict_find(iter, PBNTN_KEY_DISTANCE_METERS);
@@ -530,6 +584,12 @@ static void render_navigation(DictionaryIterator *iter) {
   // The phone omits the ETA epoch when a rule extracts no arrival time; 0 means "unknown".
   s_eta_epoch = eta_epoch_t ? eta_epoch_t->value->int32 : 0;
   s_flags = flags_t ? flags_t->value->int32 : 0;
+
+  // Remember the previous primary text so "new info" can be told apart from a plain resend of the
+  // same instruction (Google Maps resends the current step as the distance counts down).
+  char prev_primary[PRIMARY_TEXT_MAX + 1];
+  strncpy(prev_primary, s_primary_buf, sizeof(prev_primary));
+  prev_primary[PRIMARY_TEXT_MAX] = '\0';
 
   if (primary_t && primary_t->length > 0) {
     strncpy(s_primary_buf, primary_t->value->cstring, PRIMARY_TEXT_MAX);
@@ -547,11 +607,31 @@ static void render_navigation(DictionaryIterator *iter) {
   set_message_mode(false);
   redraw_all();
 
-  // Vibrate only on a maneuver change, and only when requested (REQ-WATCH-009).
-  if ((s_flags & PBNTN_FLAG_VIBRATE_ON_MANEUVER_CHANGE_MASK) && s_maneuver != s_last_maneuver) {
+  // "New info" is a changed instruction, not a resend of the same one while the distance ticks
+  // down: a different maneuver, or a different primary (road/instruction) text. This is what the
+  // maneuver-change gate and the watch-side vibration both key off of, so neither buzzes on every
+  // distance update (REQ-WATCH-009).
+  const bool maneuver_changed = (s_maneuver != s_last_maneuver);
+  const bool primary_changed = (strncmp(prev_primary, s_primary_buf, sizeof(prev_primary)) != 0);
+  const bool new_info = maneuver_changed || primary_changed;
+
+  // Vibration (REQ-WATCH-016): when the user has chosen a watch-side pattern, it fires on new info
+  // with the selected pattern/intensity and supersedes the phone's simple request. Otherwise the
+  // original behaviour stands — a short pulse on a maneuver change, only when the phone asks.
+  if (settings_vibe_pattern() != VIBE_PATTERN_OFF) {
+    if (new_info) {
+      settings_vibe_play();
+    }
+  } else if ((s_flags & PBNTN_FLAG_VIBRATE_ON_MANEUVER_CHANGE_MASK) && maneuver_changed) {
     vibes_short_pulse();
   }
-  if (s_flags & PBNTN_FLAG_ACTIVATE_BACKLIGHT_MASK) {
+
+  // Backlight (REQ-WATCH-015): the watch-side setting, when on, keeps the light lit around activity
+  // and supersedes the phone's per-update interaction-light request. When it is off, honour the
+  // phone's request exactly as before.
+  if (settings_backlight() != BACKLIGHT_OFF) {
+    apply_backlight();
+  } else if (s_flags & PBNTN_FLAG_ACTIVATE_BACKLIGHT_MASK) {
     light_enable_interaction();
   }
   s_last_maneuver = s_maneuver;
@@ -610,6 +690,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 static void on_settings_changed(void) {
   window_set_background_color(s_window, theme_current().road_bg);
   redraw_all();
+  // The backlight setting may have changed while in the menu — apply it now (turning the light on,
+  // or releasing it back to the watch's automatic control if the user switched it off).
+  apply_backlight();
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -658,6 +741,10 @@ static void window_load(Window *window) {
 
   window_set_background_color(window, theme_current().road_bg);
   show_message("Connecting");
+
+  // Engage the backlight as soon as the app is on screen so a HIGH setting is lit for the whole
+  // session, not only once navigation updates start arriving.
+  apply_backlight();
 }
 
 static void window_unload(Window *window) {
@@ -693,6 +780,7 @@ static void init(void) {
 }
 
 static void deinit(void) {
+  backlight_release();  // don't leave the light forced on after the app exits
   tick_timer_service_unsubscribe();
   for (unsigned i = 0; i < ARRAY_LENGTH(s_maneuver_bitmaps); i++) {
     if (s_maneuver_bitmaps[i]) {
