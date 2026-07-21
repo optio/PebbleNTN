@@ -27,6 +27,8 @@ The watchapp SHALL avoid polling, continuous animation and unnecessary redraws.
 ## REQ-WATCH-009 — Vibration
 The watch SHALL not vibrate on every distance update; maneuver-change vibration is configurable.
 
+See REQ-WATCH-016 for the on-watch vibration setting (pattern and strength) layered on top of this.
+
 ## REQ-WATCH-010 — Compatibility
 Protocol incompatibility SHALL produce an explicit state rather than silent failure.
 
@@ -55,3 +57,13 @@ The countdown SHALL be derived in this order:
 The string is a normalized field the phone chose to send, not notification text, so deriving from it does not weaken REQ-WATCH-001. When neither source yields a time — the mode is time-to-arrival, no epoch was sent, and the arrival-time string is absent or is not a clock time — the watch SHALL fall back to displaying the arrival-time string under the "ETA" label rather than leaving the strip blank.
 
 **Acceptance:** Emulator verification that the setting toggles the strip between "ETA 14:35" and an "IN H:MM" countdown, that the countdown updates as the clock advances, that it is derived from the arrival-time string when no epoch is sent (including 12-hour strings such as "2:35 PM" and arrivals across midnight), and that a non-time arrival string falls back to the arrival-time display. Host unit tests cover the string parsing and the midnight wrap.
+
+## REQ-WATCH-015 — Backlight setting
+The watchapp SHALL provide an on-watch setting that keeps the backlight lit while the watchapp is the foreground app, applied immediately and persisted across launches. It SHALL default to **Watch default** — no additional backlight, leaving the watch's own automatic light behaviour untouched — and offer three further intensity levels. Because the Pebble SDK exposes no backlight *brightness* control to apps (only on/off via `light_enable`), the three levels SHALL express intensity as how long the light is held engaged around navigation activity: **Low** and **Medium** light the backlight for a short and a longer period respectively after each navigation update, and **High** keeps it steady-on for the whole session. The setting SHALL override the watch's automatic control only while a non-default level is selected, and SHALL release control back to the watch (`light_enable(false)`) when switched back to Watch default or when the app exits. While a non-default level is selected it supersedes the phone's per-update backlight request (REQ-WATCH is otherwise unchanged when the setting is at its default). This is a watch-side render/behaviour choice: it SHALL NOT change the protocol.
+
+**Acceptance:** Emulator verification that Watch default leaves the light unforced, that High keeps the backlight on for the whole session, that Low/Medium light it around updates and release it after their hold, and that switching back to Watch default releases the light.
+
+## REQ-WATCH-016 — Vibration setting
+The watchapp SHALL provide on-watch settings that vibrate the watch when a new navigation instruction is parsed, applied immediately and persisted across launches: a **pattern** row and a **strength** row. The pattern row SHALL default to **Off** (no watch-initiated vibration) and offer Single, Double, Triple and Long patterns, differing in the number/shape of pulses. The strength row SHALL offer Light, Medium (default) and Strong; because the Pebble SDK exposes no vibration *amplitude* control, strength SHALL be expressed as pulse length (a longer buzz reads as stronger), realised with a custom vibration pattern. Vibration SHALL fire only on genuinely new information — a changed maneuver or changed primary text — never on a plain resend of the same instruction as the distance counts down (REQ-WATCH-009). When the pattern is a non-Off value it supersedes the phone's simple maneuver-change pulse; when it is Off, the original maneuver-change vibration (gated by the phone's request) stands. Changing either row in the menu SHALL play the newly selected buzz as a preview. This is a watch-side behaviour choice: it SHALL NOT change the protocol.
+
+**Acceptance:** Emulator verification that Off preserves the original maneuver-change pulse, that each pattern plays its number of pulses on a new instruction, that Light/Medium/Strong produce progressively longer buzzes, that a resend of the same instruction does not vibrate, and that changing a row previews the buzz.

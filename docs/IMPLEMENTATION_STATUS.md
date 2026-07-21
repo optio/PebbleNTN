@@ -1,6 +1,64 @@
 # Implementation Status
 
-_Last updated: 2026-07-20_
+_Last updated: 2026-07-21_
+
+## On-watch backlight and vibration settings (2026-07-21)
+
+**Milestone:** post-M12 watch appearance/behaviour enhancement (new REQ-WATCH-015, REQ-WATCH-016).
+Android build unaffected — watch-side only, protocol unchanged.
+
+**Requirements implemented.**
+
+- **REQ-WATCH-015 — Backlight setting.** New on-watch setting keeps the backlight lit while the
+  watchapp is the foreground app. Defaults to **Watch default** (no additional backlight; the watch's
+  own automatic behaviour is untouched) and adds three levels. The Pebble SDK gives apps no backlight
+  *brightness* control (only on/off via `light_enable`), so the three "intensity" levels are the
+  honest proxy the hardware allows — how long the light is held after activity: **Low** = ~3 s boost
+  around each update, **Medium** = ~10 s, **High** = steady-on for the whole session. Implemented with
+  `light_enable(true)` plus an `AppTimer` for the timed levels; the app only ever calls
+  `light_enable(false)` to release control when it was the one holding it (`s_backlight_forced`), so
+  switching back to Watch default (or exiting) hands automatic control back to the watch cleanly.
+- **REQ-WATCH-016 — Vibration setting.** Two new rows: a **pattern** (Off default / Single / Double /
+  Triple / Long) and a **strength** (Light / Medium default / Strong). The SDK gives apps no vibration
+  *amplitude* control, so strength is realised as pulse length via `vibes_enqueue_custom_pattern` — a
+  longer buzz reads as stronger, and each level is genuinely distinct (100 / 220 / 400 ms). It fires
+  only on genuinely new information (a changed maneuver **or** changed primary text), never on a plain
+  resend as the distance ticks down, honouring REQ-WATCH-009. A non-Off pattern supersedes the phone's
+  simple maneuver-change pulse; Off preserves the original behaviour. Changing either row previews the
+  buzz so it can be felt in the menu.
+
+**Design.** Both are watch-side settings in the existing `theme.{h,c}` store, mirroring the accent /
+glyph / ETA settings exactly: new enums, `settings_*` getters/setters, `*_name` label functions, and
+persisted values under new keys (`PERSIST_KEY_BACKLIGHT` 7, `PERSIST_KEY_VIBE_PATTERN` 8,
+`PERSIST_KEY_VIBE_INTENSITY` 9). `settings_vibe_play()` and `settings_backlight_hold_ms()` live in
+`theme.c` so the navigation path (`main.c`) and the settings preview (`settings_window.c`) share one
+implementation. `settings_window.c` gains three toggle-in-place rows; `main.c` gains the backlight
+`AppTimer` machinery and the new-info vibration gate. No protocol or Android change — consistent with
+the other render/behaviour settings.
+
+**Commands executed.**
+
+```bash
+./scripts/test-watchapp-unit.sh          # host C units — PASS (unchanged units still green)
+gcc -std=c11 -fsyntax-only -Werror theme.c  # syntax-checked new logic against a minimal stub — clean
+./scripts/validate-spec-assets.sh        # PASS (manifest hashes resynced)
+./scripts/version.sh --check             # Version OK: 0.0.10
+```
+
+**Manifest.** REQ-WATCH.md and WatchUI.md are integrity-protected; their hashes were resynced after
+the additions. Also resynced **README.md**, whose stored hash was already stale on the base branch —
+automated `[skip ci] Readme update` commits (badge/download counters) had drifted its content after
+the last manifest-touching commit without resyncing, so `validate-spec-assets.sh` was already red
+before this change. README content was not modified here; only its recorded hash was corrected.
+
+**Verification blocker (recorded, consistent with all prior watch work).** No Pebble SDK / emulator is
+available in this environment, so the full `.pbw` build and on-emulator acceptance for REQ-WATCH-015/
+016 are gated to CI (`watchapp.yml`) and on-device testing. The new logic is verified here by review
+and by a host `-Werror` syntax check of the settings store; `capture_screenshots.py` row indices were
+updated to stay in sync with the new menu so the screenshot set regenerates correctly once an SDK host
+runs it.
+
+## Time-to-arrival derived from the arrival string (2026-07-20)
 
 ## Time-to-arrival derived from the arrival string (2026-07-20)
 

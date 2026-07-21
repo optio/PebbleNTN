@@ -69,6 +69,42 @@ typedef enum {
   GLYPH_PACK_COUNT = 3,
 } GlyphPack;
 
+// How aggressively the watchapp keeps the backlight lit while it is the foreground app
+// (REQ-WATCH-015). The Pebble SDK exposes no backlight *brightness* control to apps (only on/off via
+// light_enable), so "intensity" is expressed as how much of the time the light is engaged, which is
+// the honest proxy the hardware allows: OFF leaves the watch's own automatic behaviour untouched;
+// the three levels turn the backlight on around navigation activity, from a brief assist (LOW) up to
+// steady-on for the whole session (HIGH). OFF is the default — no additional backlight.
+typedef enum {
+  BACKLIGHT_OFF = 0,     // default: watch's own light settings, no forcing
+  BACKLIGHT_LOW = 1,     // brief boost on each update
+  BACKLIGHT_MEDIUM = 2,  // longer hold on each update
+  BACKLIGHT_HIGH = 3,    // steady-on while the app is active
+  BACKLIGHT_COUNT = 4,
+} BacklightMode;
+
+// Shape of the vibration played when a new navigation instruction is parsed (REQ-WATCH-016). OFF is
+// the default (no watch-initiated vibration; the phone's maneuver-change request still applies). The
+// other patterns differ in how many pulses are played.
+typedef enum {
+  VIBE_PATTERN_OFF = 0,     // default: no watch-initiated vibration
+  VIBE_PATTERN_SINGLE = 1,  // one pulse
+  VIBE_PATTERN_DOUBLE = 2,  // two pulses
+  VIBE_PATTERN_TRIPLE = 3,  // three pulses
+  VIBE_PATTERN_LONG = 4,    // one sustained pulse
+  VIBE_PATTERN_COUNT = 5,
+} VibePatternId;
+
+// Vibration intensity (REQ-WATCH-016). The Pebble SDK exposes no vibration *amplitude* control, so
+// intensity is expressed as pulse length: a longer buzz reads as stronger. This is the honest proxy
+// the hardware allows and is genuinely different per level.
+typedef enum {
+  VIBE_INTENSITY_LIGHT = 0,
+  VIBE_INTENSITY_MEDIUM = 1,
+  VIBE_INTENSITY_STRONG = 2,
+  VIBE_INTENSITY_COUNT = 3,
+} VibeIntensity;
+
 typedef struct {
   GColor panel_bg;   // top panel: distance + maneuver
   GColor panel_fg;   // distance text and maneuver glyph (always legible over panel_bg)
@@ -85,6 +121,9 @@ const char *accent_name(AccentId id);
 const char *units_name(UnitsId id);
 const char *glyph_pack_name(GlyphPack id);
 const char *eta_mode_name(EtaMode id);
+const char *backlight_mode_name(BacklightMode id);
+const char *vibe_pattern_name(VibePatternId id);
+const char *vibe_intensity_name(VibeIntensity id);
 
 // Persisted settings. Load once at startup; each setter saves.
 AccentId settings_accent(void);
@@ -92,6 +131,9 @@ bool settings_inverted(void);
 UnitsId settings_units(void);
 GlyphPack settings_glyph_pack(void);
 EtaMode settings_eta_mode(void);
+BacklightMode settings_backlight(void);
+VibePatternId settings_vibe_pattern(void);
+VibeIntensity settings_vibe_intensity(void);
 // Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
 // default is the arrow on the right and the distance on the left.
 bool settings_arrow_left(void);
@@ -101,4 +143,16 @@ void settings_set_units(UnitsId id);
 void settings_set_glyph_pack(GlyphPack id);
 void settings_set_arrow_left(bool arrow_left);
 void settings_set_eta_mode(EtaMode id);
+void settings_set_backlight(BacklightMode id);
+void settings_set_vibe_pattern(VibePatternId id);
+void settings_set_vibe_intensity(VibeIntensity id);
 void settings_load(void);
+
+// Play the vibration selected for a newly parsed instruction, built from the current pattern and
+// intensity settings (REQ-WATCH-016). No-op when the pattern is OFF. Shared by the navigation path
+// (fired on new info) and the settings menu (fired as a preview when the user changes either row).
+void settings_vibe_play(void);
+
+// How long (ms) the backlight is held lit after activity for the current backlight mode; 0 means
+// keep it on with no timeout (steady-on) and BACKLIGHT_OFF also returns 0 (no forcing).
+uint32_t settings_backlight_hold_ms(void);

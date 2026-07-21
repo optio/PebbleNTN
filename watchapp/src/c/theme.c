@@ -6,6 +6,9 @@
 #define PERSIST_KEY_GLYPH_PACK 4
 #define PERSIST_KEY_ARROW_LEFT 5
 #define PERSIST_KEY_ETA_MODE 6
+#define PERSIST_KEY_BACKLIGHT 7
+#define PERSIST_KEY_VIBE_PATTERN 8
+#define PERSIST_KEY_VIBE_INTENSITY 9
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
@@ -13,6 +16,9 @@ static UnitsId s_units = UNITS_METRIC;
 static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
 static bool s_arrow_left = false;
 static EtaMode s_eta_mode = ETA_MODE_ARRIVAL;
+static BacklightMode s_backlight = BACKLIGHT_OFF;
+static VibePatternId s_vibe_pattern = VIBE_PATTERN_OFF;
+static VibeIntensity s_vibe_intensity = VIBE_INTENSITY_MEDIUM;
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -140,12 +146,45 @@ const char *glyph_pack_name(GlyphPack id) {
   }
 }
 
+const char *backlight_mode_name(BacklightMode id) {
+  switch (id) {
+    case BACKLIGHT_LOW: return "Low";
+    case BACKLIGHT_MEDIUM: return "Medium";
+    case BACKLIGHT_HIGH: return "High";
+    case BACKLIGHT_OFF:
+    default: return "Watch default";
+  }
+}
+
+const char *vibe_pattern_name(VibePatternId id) {
+  switch (id) {
+    case VIBE_PATTERN_SINGLE: return "Single";
+    case VIBE_PATTERN_DOUBLE: return "Double";
+    case VIBE_PATTERN_TRIPLE: return "Triple";
+    case VIBE_PATTERN_LONG: return "Long";
+    case VIBE_PATTERN_OFF:
+    default: return "Off";
+  }
+}
+
+const char *vibe_intensity_name(VibeIntensity id) {
+  switch (id) {
+    case VIBE_INTENSITY_LIGHT: return "Light";
+    case VIBE_INTENSITY_STRONG: return "Strong";
+    case VIBE_INTENSITY_MEDIUM:
+    default: return "Medium";
+  }
+}
+
 AccentId settings_accent(void) { return s_accent; }
 bool settings_inverted(void) { return s_inverted; }
 UnitsId settings_units(void) { return s_units; }
 GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
 bool settings_arrow_left(void) { return s_arrow_left; }
 EtaMode settings_eta_mode(void) { return s_eta_mode; }
+BacklightMode settings_backlight(void) { return s_backlight; }
+VibePatternId settings_vibe_pattern(void) { return s_vibe_pattern; }
+VibeIntensity settings_vibe_intensity(void) { return s_vibe_intensity; }
 
 void settings_set_accent(AccentId id) {
   s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
@@ -175,6 +214,76 @@ void settings_set_arrow_left(bool arrow_left) {
 void settings_set_eta_mode(EtaMode id) {
   s_eta_mode = (id < ETA_MODE_COUNT) ? id : ETA_MODE_ARRIVAL;
   persist_write_int(PERSIST_KEY_ETA_MODE, s_eta_mode);
+}
+
+void settings_set_backlight(BacklightMode id) {
+  s_backlight = (id < BACKLIGHT_COUNT) ? id : BACKLIGHT_OFF;
+  persist_write_int(PERSIST_KEY_BACKLIGHT, s_backlight);
+}
+
+void settings_set_vibe_pattern(VibePatternId id) {
+  s_vibe_pattern = (id < VIBE_PATTERN_COUNT) ? id : VIBE_PATTERN_OFF;
+  persist_write_int(PERSIST_KEY_VIBE_PATTERN, s_vibe_pattern);
+}
+
+void settings_set_vibe_intensity(VibeIntensity id) {
+  s_vibe_intensity = (id < VIBE_INTENSITY_COUNT) ? id : VIBE_INTENSITY_MEDIUM;
+  persist_write_int(PERSIST_KEY_VIBE_INTENSITY, s_vibe_intensity);
+}
+
+uint32_t settings_backlight_hold_ms(void) {
+  switch (s_backlight) {
+    case BACKLIGHT_LOW: return 3000;     // brief assist around each update
+    case BACKLIGHT_MEDIUM: return 10000; // longer hold
+    case BACKLIGHT_HIGH: return 0;       // 0 => steady-on, no timeout
+    case BACKLIGHT_OFF:
+    default: return 0;                   // not forced at all (caller checks the mode)
+  }
+}
+
+// A pulse length (ms) per intensity. The motor's amplitude is not app-controllable, so a longer
+// buzz is what reads as "stronger" — this is the honest, genuinely distinct proxy per level.
+static uint32_t vibe_pulse_ms(VibeIntensity intensity) {
+  switch (intensity) {
+    case VIBE_INTENSITY_LIGHT: return 100;
+    case VIBE_INTENSITY_STRONG: return 400;
+    case VIBE_INTENSITY_MEDIUM:
+    default: return 220;
+  }
+}
+
+void settings_vibe_play(void) {
+  if (s_vibe_pattern == VIBE_PATTERN_OFF) {
+    return;
+  }
+  const uint32_t pulse = vibe_pulse_ms(s_vibe_intensity);
+  const uint32_t gap = 140;
+  // Alternating on/off segments starting with a pulse; TRIPLE needs the most (pulse,gap,pulse,gap,
+  // pulse) = 5. Static so the buffer outlives the enqueue call.
+  static uint32_t segments[5];
+  uint32_t count = 0;
+  switch (s_vibe_pattern) {
+    case VIBE_PATTERN_DOUBLE:
+      segments[0] = pulse; segments[1] = gap; segments[2] = pulse;
+      count = 3;
+      break;
+    case VIBE_PATTERN_TRIPLE:
+      segments[0] = pulse; segments[1] = gap; segments[2] = pulse;
+      segments[3] = gap;   segments[4] = pulse;
+      count = 5;
+      break;
+    case VIBE_PATTERN_LONG:
+      segments[0] = pulse * 2;  // one sustained buzz
+      count = 1;
+      break;
+    case VIBE_PATTERN_SINGLE:
+    default:
+      segments[0] = pulse;
+      count = 1;
+      break;
+  }
+  VibePattern pattern = { .durations = segments, .num_segments = count };
+  vibes_enqueue_custom_pattern(pattern);
 }
 
 void settings_load(void) {
@@ -208,6 +317,24 @@ void settings_load(void) {
     const int stored = persist_read_int(PERSIST_KEY_ETA_MODE);
     if (stored >= 0 && stored < ETA_MODE_COUNT) {
       s_eta_mode = (EtaMode)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_BACKLIGHT)) {
+    const int stored = persist_read_int(PERSIST_KEY_BACKLIGHT);
+    if (stored >= 0 && stored < BACKLIGHT_COUNT) {
+      s_backlight = (BacklightMode)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_VIBE_PATTERN)) {
+    const int stored = persist_read_int(PERSIST_KEY_VIBE_PATTERN);
+    if (stored >= 0 && stored < VIBE_PATTERN_COUNT) {
+      s_vibe_pattern = (VibePatternId)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_VIBE_INTENSITY)) {
+    const int stored = persist_read_int(PERSIST_KEY_VIBE_INTENSITY);
+    if (stored >= 0 && stored < VIBE_INTENSITY_COUNT) {
+      s_vibe_intensity = (VibeIntensity)stored;
     }
   }
 }

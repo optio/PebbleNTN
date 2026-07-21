@@ -1,10 +1,12 @@
-// On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012): appearance + units. Opened with SELECT
-// from the navigation window, dismissed with BACK. Changes apply immediately and persist.
+// On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012, REQ-WATCH-015, REQ-WATCH-016): appearance,
+// units, backlight and vibration. Opened with SELECT from the navigation window, dismissed with
+// BACK. Changes apply immediately and persist.
 //
 // The top menu is a short list of categories. Accent colour (a long list) and the glyph pack each
-// open their own sub-window ("door"); invert, units and ETA display toggle in place. The glyph-pack
-// door shows a sample arrow drawn in each pack, so the packs can be previewed on the watch before
-// choosing one.
+// open their own sub-window ("door"); invert, units, ETA display, backlight and the two vibration
+// rows toggle in place. The glyph-pack door shows a sample arrow drawn in each pack, so the packs
+// can be previewed on the watch before choosing one; changing either vibration row plays the newly
+// selected buzz so it can be felt before leaving the menu.
 
 #include "settings_window.h"
 
@@ -267,7 +269,10 @@ static void push_pack_window(void) {
 #define ROW_INVERT 3
 #define ROW_UNITS 4
 #define ROW_ETA 5
-#define MAIN_ROW_COUNT 6
+#define ROW_BACKLIGHT 6
+#define ROW_VIBE 7
+#define ROW_VIBE_INTENSITY 8
+#define MAIN_ROW_COUNT 9
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -300,8 +305,19 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_UNITS:
       menu_cell_basic_draw(ctx, cell, "Distance units", units_name(settings_units()), NULL);
       break;
-    default:
+    case ROW_ETA:
       menu_cell_basic_draw(ctx, cell, "ETA display", eta_mode_name(settings_eta_mode()), NULL);
+      break;
+    case ROW_BACKLIGHT:
+      menu_cell_basic_draw(ctx, cell, "Backlight", backlight_mode_name(settings_backlight()), NULL);
+      break;
+    case ROW_VIBE:
+      menu_cell_basic_draw(ctx, cell, "Vibrate on update", vibe_pattern_name(settings_vibe_pattern()),
+                           NULL);
+      break;
+    default:
+      menu_cell_basic_draw(ctx, cell, "Vibration strength",
+                           vibe_intensity_name(settings_vibe_intensity()), NULL);
       break;
   }
 }
@@ -329,9 +345,27 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
       menu_layer_reload_data(s_menu);
       notify_change();
       break;
-    default:
+    case ROW_ETA:
       settings_set_eta_mode((EtaMode)((settings_eta_mode() + 1) % ETA_MODE_COUNT));
       menu_layer_reload_data(s_menu);
+      notify_change();
+      break;
+    case ROW_BACKLIGHT:
+      settings_set_backlight((BacklightMode)((settings_backlight() + 1) % BACKLIGHT_COUNT));
+      menu_layer_reload_data(s_menu);
+      notify_change();
+      break;
+    case ROW_VIBE:
+      settings_set_vibe_pattern((VibePatternId)((settings_vibe_pattern() + 1) % VIBE_PATTERN_COUNT));
+      menu_layer_reload_data(s_menu);
+      settings_vibe_play();  // preview the newly selected pattern (no-op when Off)
+      notify_change();
+      break;
+    default:
+      settings_set_vibe_intensity(
+          (VibeIntensity)((settings_vibe_intensity() + 1) % VIBE_INTENSITY_COUNT));
+      menu_layer_reload_data(s_menu);
+      settings_vibe_play();  // preview the newly selected intensity (no-op when pattern is Off)
       notify_change();
       break;
   }
