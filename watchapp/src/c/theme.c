@@ -9,6 +9,7 @@
 #define PERSIST_KEY_BACKLIGHT 7
 #define PERSIST_KEY_VIBE_PATTERN 8
 #define PERSIST_KEY_VIBE_INTENSITY 9
+#define PERSIST_KEY_BACKLIGHT_COLOR 10
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
@@ -17,6 +18,7 @@ static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
 static bool s_arrow_left = false;
 static EtaMode s_eta_mode = ETA_MODE_ARRIVAL;
 static BacklightMode s_backlight = BACKLIGHT_OFF;
+static BacklightColorId s_backlight_color = BACKLIGHT_COLOR_DEFAULT;
 static VibePatternId s_vibe_pattern = VIBE_PATTERN_OFF;
 static VibeIntensity s_vibe_intensity = VIBE_INTENSITY_MEDIUM;
 
@@ -146,15 +148,74 @@ const char *glyph_pack_name(GlyphPack id) {
   }
 }
 
+// The level names say what the level does, not just how strong it is: "Low" alone tells the user
+// nothing, whereas "Low - 3s on update" is the whole setting in one line.
 const char *backlight_mode_name(BacklightMode id) {
   switch (id) {
-    case BACKLIGHT_LOW: return "Low";
-    case BACKLIGHT_MEDIUM: return "Medium";
-    case BACKLIGHT_HIGH: return "High";
+    case BACKLIGHT_LOW: return "Low - 3s on update";
+    case BACKLIGHT_MEDIUM: return "Medium - 10s on update";
+    case BACKLIGHT_HIGH: return "High - until app closes";
     case BACKLIGHT_OFF:
     default: return "Watch default";
   }
 }
+
+const char *backlight_color_name(BacklightColorId id) {
+  switch (id) {
+    case BACKLIGHT_COLOR_WHITE: return "White";
+    case BACKLIGHT_COLOR_WARM: return "Warm white";
+    case BACKLIGHT_COLOR_RED: return "Red";
+    case BACKLIGHT_COLOR_ORANGE: return "Orange";
+    case BACKLIGHT_COLOR_YELLOW: return "Yellow";
+    case BACKLIGHT_COLOR_GREEN: return "Green";
+    case BACKLIGHT_COLOR_CYAN: return "Cyan";
+    case BACKLIGHT_COLOR_BLUE: return "Blue";
+    case BACKLIGHT_COLOR_PURPLE: return "Purple";
+    case BACKLIGHT_COLOR_PINK: return "Pink";
+    case BACKLIGHT_COLOR_DEFAULT:
+    default: return "Watch default";
+  }
+}
+
+// The tint helpers exist only where the hardware does. On other watches the SDK's light_set_color*
+// entry points are argument-discarding no-op macros, so an unguarded call would leave this table
+// unreferenced and the call site evaluating to a bare `0` — two compiler warnings for code that
+// cannot do anything.
+#ifdef PBL_RGB_BACKLIGHT
+
+// Packed 0x00RRGGBB tints. light_set_color_rgb888() is used rather than light_set_color() because
+// GColor carries only 2 bits per channel, which is too coarse for a warm white to read as anything
+// other than yellow on the LED.
+static uint32_t backlight_color_rgb(BacklightColorId id) {
+  switch (id) {
+    case BACKLIGHT_COLOR_WHITE: return 0xFFFFFF;
+    case BACKLIGHT_COLOR_WARM: return 0xFFB86B;
+    case BACKLIGHT_COLOR_RED: return 0xFF0000;
+    case BACKLIGHT_COLOR_ORANGE: return 0xFF7000;
+    case BACKLIGHT_COLOR_YELLOW: return 0xFFFF00;
+    case BACKLIGHT_COLOR_GREEN: return 0x00FF00;
+    case BACKLIGHT_COLOR_CYAN: return 0x00FFFF;
+    case BACKLIGHT_COLOR_BLUE: return 0x0060FF;
+    case BACKLIGHT_COLOR_PURPLE: return 0x9000FF;
+    case BACKLIGHT_COLOR_PINK: return 0xFF00A0;
+    case BACKLIGHT_COLOR_DEFAULT:
+    default: return 0xFFFFFF;  // unused: DEFAULT is handled by light_set_system_color()
+  }
+}
+
+void settings_apply_backlight_color(void) {
+  if (s_backlight_color == BACKLIGHT_COLOR_DEFAULT) {
+    light_set_system_color();
+  } else {
+    light_set_color_rgb888(backlight_color_rgb(s_backlight_color));
+  }
+}
+
+#else  // !PBL_RGB_BACKLIGHT
+
+void settings_apply_backlight_color(void) {}
+
+#endif
 
 const char *vibe_pattern_name(VibePatternId id) {
   switch (id) {
@@ -183,6 +244,7 @@ GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
 bool settings_arrow_left(void) { return s_arrow_left; }
 EtaMode settings_eta_mode(void) { return s_eta_mode; }
 BacklightMode settings_backlight(void) { return s_backlight; }
+BacklightColorId settings_backlight_color(void) { return s_backlight_color; }
 VibePatternId settings_vibe_pattern(void) { return s_vibe_pattern; }
 VibeIntensity settings_vibe_intensity(void) { return s_vibe_intensity; }
 
@@ -219,6 +281,12 @@ void settings_set_eta_mode(EtaMode id) {
 void settings_set_backlight(BacklightMode id) {
   s_backlight = (id < BACKLIGHT_COUNT) ? id : BACKLIGHT_OFF;
   persist_write_int(PERSIST_KEY_BACKLIGHT, s_backlight);
+}
+
+void settings_set_backlight_color(BacklightColorId id) {
+  s_backlight_color = (id < BACKLIGHT_COLOR_COUNT) ? id : BACKLIGHT_COLOR_DEFAULT;
+  persist_write_int(PERSIST_KEY_BACKLIGHT_COLOR, s_backlight_color);
+  settings_apply_backlight_color();  // apply live so the choice is visible while the light is on
 }
 
 void settings_set_vibe_pattern(VibePatternId id) {
@@ -323,6 +391,12 @@ void settings_load(void) {
     const int stored = persist_read_int(PERSIST_KEY_BACKLIGHT);
     if (stored >= 0 && stored < BACKLIGHT_COUNT) {
       s_backlight = (BacklightMode)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_BACKLIGHT_COLOR)) {
+    const int stored = persist_read_int(PERSIST_KEY_BACKLIGHT_COLOR);
+    if (stored >= 0 && stored < BACKLIGHT_COLOR_COUNT) {
+      s_backlight_color = (BacklightColorId)stored;
     }
   }
   if (persist_exists(PERSIST_KEY_VIBE_PATTERN)) {

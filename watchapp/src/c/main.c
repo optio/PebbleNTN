@@ -560,6 +560,9 @@ static void apply_backlight(void) {
     backlight_release();
     return;
   }
+  // Tint first, then light: the LED picks up the colour as it comes on rather than flashing the
+  // previous colour for a frame. A no-op on watches without an RGB backlight.
+  settings_apply_backlight_color();
   light_enable(true);
   s_backlight_forced = true;
   const uint32_t hold = settings_backlight_hold_ms();

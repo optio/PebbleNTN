@@ -51,14 +51,60 @@ automated `[skip ci] Readme update` commits (badge/download counters) had drifte
 the last manifest-touching commit without resyncing, so `validate-spec-assets.sh` was already red
 before this change. README content was not modified here; only its recorded hash was corrected.
 
-**Verification blocker (recorded, consistent with all prior watch work).** No Pebble SDK / emulator is
-available in this environment, so the full `.pbw` build and on-emulator acceptance for REQ-WATCH-015/
-016 are gated to CI (`watchapp.yml`) and on-device testing. The new logic is verified here by review
-and by a host `-Werror` syntax check of the settings store; `capture_screenshots.py` row indices were
-updated to stay in sync with the new menu so the screenshot set regenerates correctly once an SDK host
-runs it.
+**Verification.** The originating session had no Pebble SDK, so the `.pbw` build and emulator
+acceptance were deferred; both have since been run on an SDK host before merge:
 
-## Time-to-arrival derived from the arrival string (2026-07-20)
+```bash
+./scripts/build-watchapp.sh   # all five platforms link clean, no warnings
+./scripts/test-all.sh         # spec assets, protocol, version, C units, rules, Android test+lint
+```
+
+On the basalt emulator: the three new rows render with the right defaults (Watch default / Off /
+Medium) in the right order, every row cycles through its full value list and wraps, all nine
+top-level rows stay reachable, the values survive an app relaunch (including an upgrade over an
+install that predates keys 7–10), and navigation rendering is unaffected. Note that the emulator's
+framebuffer cannot show the backlight or the vibration motor, so the *actuation* of REQ-WATCH-015/016
+— light actually lit, motor actually buzzing — remains a hardware-only check; what the emulator
+verifies is the settings state machine driving them.
+
+`capture_screenshots.py` row indices were updated to stay in sync with the new menu.
+
+## Backlight colour on RGB hardware (2026-07-21)
+
+**Milestone:** extends REQ-WATCH-015 in the same change set, before merge.
+
+**Requirement.** Pebble Time 2 has a colour backlight LED, exposed by the SDK as `light_set_color()`,
+`light_set_color_rgb888()` and `light_set_system_color()` and identified at compile time by
+`PBL_RGB_BACKLIGHT` (per `pebble_sdk_platform.py`, defined for **emery** only). REQ-WATCH-015 now also
+covers a backlight **colour** on that hardware, defaulting to the user's own.
+
+**Design.**
+
+- `theme.{h,c}` gain `BacklightColorId` (Watch default + 10 tints), persisted under
+  `PERSIST_KEY_BACKLIGHT_COLOR` 10, and `settings_apply_backlight_color()`. Tints are pushed with
+  `light_set_color_rgb888()` rather than `light_set_color()`: `GColor` carries only 2 bits per
+  channel, too coarse for "warm white" to read as anything but yellow.
+- `main.c` applies the tint immediately before `light_enable(true)`, so the LED comes up in the
+  chosen colour instead of flashing the previous one. No teardown — the system resets the tint on app
+  exit or notification preempt.
+- `settings_window.c` branches on `PBL_RGB_BACKLIGHT`. With RGB the Backlight row opens a door
+  holding **Duration** (cycles in place) and **Colour** (opens a tint list), reusing the accent
+  colour door's structure. Without RGB, neither door is compiled and the row cycles duration in place
+  exactly as before, so nothing is offered that the hardware cannot do.
+- The tint helpers are themselves inside `#ifdef PBL_RGB_BACKLIGHT`. The SDK's no-op stubs are
+  argument-discarding macros, so calling them unguarded left the colour table unreferenced and the
+  call site evaluating to a bare `0` — two warnings per non-RGB platform for code that cannot act.
+
+**Level labels.** `backlight_mode_name()` now returns "Low - 3s on update", "Medium - 10s on update"
+and "High - until app closes" instead of bare Low/Medium/High, so the menu states what each level
+does. Verified on the emulator that the longest label fits without truncation on basalt (144 px), the
+narrowest screen the app targets.
+
+**Verification.** Emulator-checked on both hardware paths: on **emery** the Backlight row opens the
+Duration + Colour door, Duration cycles and wraps, the colour list marks the active tint with
+"Selected", picking one updates the Colour subtitle, and both values survive a relaunch; on
+**basalt** the row still cycles duration in place with no colour offered. The LED tint itself is not
+visible in the emulator framebuffer and remains a hardware-only check.
 
 ## Time-to-arrival derived from the arrival string (2026-07-20)
 

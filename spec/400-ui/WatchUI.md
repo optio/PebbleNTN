@@ -68,6 +68,15 @@ steady-on for the whole session. A non-default level overrides the watch's autom
 phone's per-update light request; switching back to Watch default (or leaving the app) releases
 control back to the watch.
 
+Each level is labelled with what it does — "Low - 3s on update", "Medium - 10s on update", "High -
+until app closes" — so the menu explains itself without a manual.
+
+On watches with a colour backlight LED (`PBL_RGB_BACKLIGHT`; Pebble Time 2) the backlight also has a
+**colour**, defaulting to the user's own. There the Backlight row opens a sub-window holding
+**Duration** and **Colour**, and Colour opens a tint list of its own — the same "door" pattern the
+accent colour and glyph pack use. On every other watch the tint cannot be changed, so no colour row
+is shown and Backlight keeps cycling the duration in place.
+
 ## Stale data
 
 If state age exceeds configured threshold, retain the instruction but visibly mark it stale. Never advance a maneuver locally based only on elapsed time.
