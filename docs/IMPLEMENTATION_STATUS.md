@@ -1,6 +1,52 @@
 # Implementation Status
 
-_Last updated: 2026-07-21_
+_Last updated: 2026-07-25_
+
+## Companion-app connection hint (2026-07-25)
+
+**Milestone:** post-M12 watch-side enhancement (new REQ-WATCH-017). Protocol and Android unchanged.
+
+**Problem.** When the watchapp launches and nothing answers, it sat on "Connecting" forever, with no
+clue that the reason is usually a missing Android companion app.
+
+**Feasibility finding.** A watchapp cannot detect whether a specific Android companion app is
+installed. The SDK's `connection_service_peek_pebble_app_connection()` reports only whether the
+*Pebble mobile app* is connected, and `connection_service_peek_pebblekit_connection()` on Android
+just mirrors that (PebbleKit messages route through the Pebble app), so neither can single out the
+PebbleNTN app. The only reliable "companion app is alive" signal is receiving an AppMessage in reply
+to WATCH_READY — and the Android side always answers it, sending NO_ACTIVE_NAVIGATION when idle
+(`NavigationSessionReducer.onWatchReady` → `sendCurrent`), even synthesizing readiness on connect if
+the Pebble app swallows the handshake (`NavigationController.scheduleAutonomousReady`). So detection
+is impossible; a handshake timeout is the correct trigger.
+
+**Design (`main.c`).** A 5-second watchdog runs from launch. "Connecting" now shows a seconds
+countdown (`MSG_CONNECTING`). The first inbox message sets `s_heard_from_phone` and retires the
+watchdog for good, so a real state can never be overwritten. On timeout the hint branches on
+`connection_service_peek_pebble_app_connection()`: connected → an install QR (`MSG_QR`); not
+connected → "Open the Pebble app". Subscribing to the connection service restarts the watchdog when
+the Pebble app reconnects, so a watch that was out of range gets a fresh chance. The QR is drawn on a
+forced-white field (its quiet zone must be white regardless of an inverted theme) and, on a round
+display, centred without a caption so nothing lands under the bezel.
+
+**QR asset.** The encoded URL (the GitHub releases page) is fixed, so the QR is a committed static
+resource, not built in CI. `tools/gen_connect_qr.py` generates it once with `pyqrcode` (a pure-Python
+encoder, located via the uv cache when not installed) at version 3 / EC-L (29×29) — the smallest that
+holds the 43-byte URL, keeping the modules large. It bakes no quiet zone (the watch draws the white
+field), rendered at 4 px/module → 116×116, matching gen_maneuver_bitmaps' grayscale PNG writer.
+Declared as `CONNECT_QR` (`1BitPalette`) in `package.json`.
+
+**Message rendering.** The plain-message renderer now fits its font (24 → 18 → 14) and centres
+vertically, so status lines longer than "Connecting" cannot clip. The disconnected message is kept
+concise ("Open the Pebble app") because this SDK's `graphics_text_layout_get_content_size` under-wraps
+relative to the draw, which clips very long strings even with the fit — verified on the emulator.
+
+**Verification.** Full `./scripts/build-watchapp.sh` links all five platforms warning-free. On the
+basalt/chalk/emery emulators: the countdown shows and decrements; a nav update during the countdown
+cancels the watchdog and no hint follows; with the Pebble app connected but no reply the install QR
+appears after 5 s (caption on rect, centred bare on round chalk); a message after the hint replaces
+it; and the "Open the Pebble app" text renders un-clipped (checked with a throwaway build that forced
+the branch, since disconnecting emulator BT also severs the tool's control channel). The QR's actual
+scannability is an on-device check — the committed PNG is a real, library-generated code.
 
 ## On-watch backlight and vibration settings (2026-07-21)
 

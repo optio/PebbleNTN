@@ -3,7 +3,8 @@
 // Responsibilities (spec/200-architecture/Pebble.md, REQ-WATCH-001..011):
 //   - open AppMessage and send WATCH_READY with protocol + app version;
 //   - render the current normalized navigation state (maneuver bitmap, distance, ETA, road text);
-//   - show explicit connection/stale/no-navigation/compatibility states;
+//   - show explicit connection/stale/no-navigation/compatibility states, and after a handshake
+//     timeout an install-the-companion-app QR hint (REQ-WATCH-017);
 //   - vibrate on maneuver change and enable backlight when the phone requests it;
 //   - keep the backlight lit and buzz on new instructions per the user's on-watch settings
 //     (REQ-WATCH-015, REQ-WATCH-016);
@@ -36,6 +37,28 @@ static Layer *s_road_layer;    // road name
 static Layer *s_message_layer; // connecting / no navigation / arrived
 
 static GBitmap *s_maneuver_bitmaps[12];
+
+// The full-screen message layer shows one of three things (REQ-WATCH-017): a plain centred line
+// (Connecting / No navigation / Arrived / errors), the connect countdown, or the install-the-app QR
+// hint. One enum drives message_update_proc so the layer stays a single layer.
+typedef enum {
+  MSG_PLAIN = 0,   // s_message_buf centred, themed colours
+  MSG_CONNECTING,  // "Connecting" plus the s_connect_left countdown
+  MSG_QR,          // "Install the app" caption plus the QR bitmap, always on white
+} MsgKind;
+static MsgKind s_msg_kind = MSG_PLAIN;
+
+// Connection handshake watchdog (REQ-WATCH-017). The watch cannot ask the phone whether the
+// PebbleNTN companion app is installed — the SDK only reports whether the *Pebble mobile app* is
+// connected, and on Android PebbleKit connectivity just mirrors that. So the one reliable "the
+// companion app is alive" signal is hearing any AppMessage back after we send WATCH_READY. If none
+// arrives within CONNECT_TIMEOUT_S seconds, we surface a hint: an install QR when the Pebble app is
+// connected (companion app is the likely missing piece) or "open the Pebble app" when it is not.
+#define CONNECT_TIMEOUT_S 5
+static AppTimer *s_connect_timer;
+static int s_connect_left;         // seconds remaining on the countdown, CONNECT_TIMEOUT_S..0
+static bool s_heard_from_phone;    // set on the first inbox message; stops the watchdog for good
+static GBitmap *s_qr_bitmap;
 
 // Current normalized state, as sent by the phone.
 static int s_maneuver = PBNTN_MANEUVER_UNKNOWN;
@@ -483,15 +506,88 @@ static void road_update_proc(Layer *layer, GContext *ctx) {
   graphics_draw_text(ctx, s_primary_buf, font, box, GTextOverflowModeWordWrap, align, NULL);
 }
 
+// The QR hint is always drawn on white with black text, whatever the theme: the code's quiet zone
+// has to be white for a phone camera to read it, so an inverted (light-on-dark) theme cannot apply
+// here. The full-screen white fill is itself the code's quiet zone, so no separate border is drawn.
+static void draw_qr_hint(GContext *ctx, const GRect bounds) {
+  const int16_t w = bounds.size.w;
+  const int16_t h = bounds.size.h;
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  graphics_context_set_text_color(ctx, GColorBlack);
+
+  GSize qr = GSize(116, 116);
+  if (s_qr_bitmap != NULL) {
+    qr = gbitmap_get_bounds(s_qr_bitmap).size;
+  }
+  const int16_t qr_x = (w - qr.w) / 2;
+
+  // On a round display the caption would sit under the bezel, so the code is simply centred and the
+  // caption dropped; on a rectangular one the caption sits above the code.
+#ifdef PBL_ROUND
+  const int16_t qr_y = (h - qr.h) / 2;
+#else
+  const GFont caption_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  const int16_t caption_h = 22;
+  const int16_t gap = 4;
+  const int16_t top = (h - (caption_h + gap + qr.h)) / 2;
+  graphics_draw_text(ctx, "Install the app", caption_font, GRect(2, top, w - 4, caption_h),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+  const int16_t qr_y = top + caption_h + gap;
+#endif
+
+  if (s_qr_bitmap != NULL) {
+    graphics_draw_bitmap_in_rect(ctx, s_qr_bitmap, GRect(qr_x, qr_y, qr.w, qr.h));
+  }
+}
+
 static void message_update_proc(Layer *layer, GContext *ctx) {
-  const Theme theme = theme_current();
   const GRect bounds = layer_get_bounds(layer);
 
+  if (s_msg_kind == MSG_QR) {
+    draw_qr_hint(ctx, bounds);
+    return;
+  }
+
+  const Theme theme = theme_current();
   graphics_context_set_fill_color(ctx, theme.road_bg);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
   graphics_context_set_text_color(ctx, theme.road_fg);
-  graphics_draw_text(ctx, s_message_buf, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
-                     GRect(4, bounds.size.h / 2 - 30, bounds.size.w - 8, 60),
+
+  if (s_msg_kind == MSG_CONNECTING) {
+    // "Connecting" with the seconds-remaining count beneath it: the connection normally lands within
+    // a second, so the countdown only becomes visible when something is wrong.
+    graphics_draw_text(ctx, "Connecting", fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
+                       GRect(4, bounds.size.h / 2 - 34, bounds.size.w - 8, 34),
+                       GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    char count[4];
+    snprintf(count, sizeof(count), "%d", s_connect_left);
+    graphics_draw_text(ctx, count, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
+                       GRect(4, bounds.size.h / 2 + 2, bounds.size.w - 8, 30),
+                       GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    return;
+  }
+
+  // Fit the font to the text and centre it vertically, so a message longer than "Connecting"
+  // ("Open the Pebble app") shrinks and wraps instead of clipping. The candidates start at 24 rather
+  // than 28 because at 28 a whole word can be wider than the screen, which word-wrap cannot break and
+  // so clips. Measuring and drawing share ONE box so the wrap that fit_font approves is the wrap drawn.
+  static const char *const kMsgFonts[] = {
+    FONT_KEY_GOTHIC_24_BOLD,
+    FONT_KEY_GOTHIC_18_BOLD,
+    FONT_KEY_GOTHIC_14,
+  };
+  const GRect fit_box = GRect(6, 0, bounds.size.w - 12, bounds.size.h);
+  GFont font = fit_font(s_message_buf, fit_box, GTextOverflowModeWordWrap, kMsgFonts,
+                        ARRAY_LENGTH(kMsgFonts));
+  const GSize sz = graphics_text_layout_get_content_size(s_message_buf, font, fit_box,
+                                                         GTextOverflowModeWordWrap, GTextAlignmentCenter);
+  int16_t y = (bounds.size.h - sz.h) / 2;
+  if (y < 0) {
+    y = 0;
+  }
+  graphics_draw_text(ctx, s_message_buf, font,
+                     GRect(fit_box.origin.x, y, fit_box.size.w, bounds.size.h - y),
                      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
 }
 
@@ -514,9 +610,72 @@ static void redraw_all(void) {
 // Connecting / no navigation / arrived / incompatible: one large centred line, no maneuver icon
 // (an icon here would be read as a maneuver).
 static void show_message(const char *message) {
+  s_msg_kind = MSG_PLAIN;
   snprintf(s_message_buf, sizeof(s_message_buf), "%s", message);
   set_message_mode(true);
   redraw_all();
+}
+
+// --- Connection handshake watchdog (REQ-WATCH-017) --------------------------------------------
+
+static void connect_stop(void) {
+  if (s_connect_timer != NULL) {
+    app_timer_cancel(s_connect_timer);
+    s_connect_timer = NULL;
+  }
+}
+
+// The countdown expired without a reply. Which hint to show depends on whether the phone's Pebble
+// app is even connected: if it is, the missing piece is most likely the PebbleNTN companion app, so
+// point the user at the install QR; if it is not, the code could not be scanned-to-fixed anyway —
+// the user needs to bring the Pebble app up first.
+static void show_connection_hint(void) {
+  if (connection_service_peek_pebble_app_connection()) {
+    s_msg_kind = MSG_QR;
+    set_message_mode(true);
+    redraw_all();
+  } else {
+    show_message("Open the Pebble app");
+  }
+}
+
+static void connect_tick(void *data) {
+  s_connect_timer = NULL;
+  if (s_heard_from_phone) {
+    return;  // a message landed between ticks; nothing left to do
+  }
+  if (s_connect_left > 0) {
+    s_connect_left--;
+  }
+  if (s_connect_left <= 0) {
+    show_connection_hint();
+    return;
+  }
+  redraw_all();  // repaint the countdown number
+  s_connect_timer = app_timer_register(1000, connect_tick, NULL);
+}
+
+// Begin (or restart) the countdown from CONNECT_TIMEOUT_S. Called at launch and again whenever the
+// Pebble app (re)connects, so a watch that was out of range gets a fresh chance to hear back before
+// any hint is shown.
+static void connect_start(void) {
+  if (s_heard_from_phone) {
+    return;
+  }
+  connect_stop();
+  s_connect_left = CONNECT_TIMEOUT_S;
+  s_msg_kind = MSG_CONNECTING;
+  set_message_mode(true);
+  redraw_all();
+  s_connect_timer = app_timer_register(1000, connect_tick, NULL);
+}
+
+static void app_connection_handler(bool connected) {
+  // A fresh Pebble-app connection is a new opportunity to hear from the companion app; rerun the
+  // watchdog so a transient disconnect does not strand the user on a stale hint.
+  if (connected && !s_heard_from_phone) {
+    connect_start();
+  }
 }
 
 // --- Backlight (REQ-WATCH-015) ----------------------------------------------------------------
@@ -666,6 +825,10 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (!event_t) {
     return;
   }
+  // Any message at all means the companion app is alive: retire the connection watchdog for good so
+  // it can never overwrite a real state with a "connecting"/install hint (REQ-WATCH-017).
+  s_heard_from_phone = true;
+  connect_stop();
   switch (event_t->value->int32) {
     case PBNTN_EVENT_NAVIGATION_UPDATE:
       render_navigation(iter);
@@ -740,7 +903,9 @@ static void window_load(Window *window) {
   layer_add_child(root, s_message_layer);
 
   window_set_background_color(window, theme_current().road_bg);
-  show_message("Connecting");
+  // Show "Connecting" with the handshake countdown; if the phone has already answered by the time
+  // the window loads, the inbox handler will have set s_heard_from_phone and connect_start no-ops.
+  connect_start();
 
   // Engage the backlight as soon as the app is on screen so a HIGH setting is lit for the whole
   // session, not only once navigation updates start arriving.
@@ -775,13 +940,26 @@ static void init(void) {
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 
+  // Preload the install-hint QR (REQ-WATCH-017) so it is ready if the handshake times out.
+  s_qr_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CONNECT_QR);
+
+  // Learn about Pebble-app (dis)connections so the watchdog can restart when the phone comes back.
+  connection_service_subscribe((ConnectionHandlers){
+    .pebble_app_connection_handler = app_connection_handler,
+  });
+
   // Handshake: tell the phone we are ready and our protocol/app version (REQ-WATCH-003).
   send_ready();
 }
 
 static void deinit(void) {
   backlight_release();  // don't leave the light forced on after the app exits
+  connect_stop();
+  connection_service_unsubscribe();
   tick_timer_service_unsubscribe();
+  if (s_qr_bitmap != NULL) {
+    gbitmap_destroy(s_qr_bitmap);
+  }
   for (unsigned i = 0; i < ARRAY_LENGTH(s_maneuver_bitmaps); i++) {
     if (s_maneuver_bitmaps[i]) {
       gbitmap_destroy(s_maneuver_bitmaps[i]);

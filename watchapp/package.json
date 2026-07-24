@@ -792,6 +792,12 @@
           "targetPlatforms": [
             "emery"
           ]
+        },
+        {
+          "type": "bitmap",
+          "name": "CONNECT_QR",
+          "file": "images/connect_qr.png",
+          "memoryFormat": "1BitPalette"
         }
       ]
     }
