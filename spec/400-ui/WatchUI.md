@@ -8,6 +8,7 @@
 - Arriving
 - Navigation finished
 - Phone disconnected
+- Companion app not responding (install hint, REQ-WATCH-017)
 - Stale instruction
 - Protocol incompatible
 
@@ -76,6 +77,22 @@ On watches with a colour backlight LED (`PBL_RGB_BACKLIGHT`; Pebble Time 2) the 
 **Duration** and **Colour**, and Colour opens a tint list of its own — the same "door" pattern the
 accent colour and glyph pack use. On every other watch the tint cannot be changed, so no colour row
 is shown and Backlight keeps cycling the duration in place.
+
+## Connection hint
+
+On launch the watch shows "Connecting" with a countdown of the seconds left before it gives up
+waiting for the phone (REQ-WATCH-017); a healthy handshake lands within a second or two, so the
+countdown is normally barely seen. The watch cannot ask the phone whether the PebbleNTN companion
+app is installed — the SDK only exposes whether the *Pebble mobile app* is connected — so the tell
+for a missing companion app is simply that nothing answers the WATCH_READY handshake.
+
+If nothing answers within five seconds, the watch shows a hint. When the Pebble mobile app is
+connected (so the missing piece is most likely the companion app) it shows an **install QR** that
+links to the GitHub releases page holding the APK; the QR is drawn on a white field whatever the
+theme, so its quiet zone stays scannable, and on a round display it is centred without a caption. When
+the Pebble app is not connected it instead says **"Open the Pebble app"**, since the install QR cannot
+help until the phone link is up. The hint is replaced the moment any real state arrives, and the wait
+restarts if the Pebble app reconnects.
 
 ## Stale data
 
