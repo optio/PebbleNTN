@@ -106,6 +106,7 @@ class MainActivity : ComponentActivity() {
                     onAppEnabledChange = container::setAppEnabled,
                     onOpenDebugHistory = { navController.navigate("debug") },
                     onOpenRules = { navController.navigate("rules") },
+                    onRefreshApp = { container.notificationListenerRefresher.refresh() },
                 )
             }
             composable("debug") {

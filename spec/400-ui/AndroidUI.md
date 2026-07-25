@@ -25,7 +25,8 @@ Material 3 with subtle Pebble styling:
 - current navigation state;
 - last eligible notification timestamp;
 - active ruleset version;
-- shortcuts to debug history and rules.
+- shortcuts to debug history and rules;
+- a "Refresh app" recovery action that reconnects the notification listener (REQ-ANDROID-012), with an explanation of when to use it (navigation running on the phone but not reaching the watch) and a confirmation that it ran.
 
 ### Navigation Apps
 - catalog apps grouped as installed/uninstalled;
