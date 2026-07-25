@@ -2,6 +2,26 @@
 
 _Last updated: 2026-07-25_
 
+## Fuller, larger idle message (2026-07-25)
+
+The idle state now reads "No navigation detected. If navigating, open PebbleNTN on your phone."
+instead of "No navigation" — it also nudges the user to foreground the companion app, since a watch
+that hears nothing looks the same whether nothing is navigating or the app just isn't running. Shown
+at the same large font family as "Connecting". Three fixes made this land correctly:
+
+- `s_message_buf` was **32 bytes**; longer strings (and, it turns out, the earlier "Open the Pebble
+  app on your phone" attempt) overflowed it, so `snprintf` truncated mid-word. That truncation — not
+  any text-layout clipping — was the "…your pho" artifact seen while building the connection hint.
+  The buffer is now **96 bytes**. (The disconnected hint stays "Open the Pebble app" by choice; it
+  reads better short.)
+- With the buffer fixed, the plain-message renderer's font candidates start at 28 again (matching
+  "Connecting"). `fit_font` picks the largest whose widest word still fits the width, so a short line
+  stays 28 while this longer one steps down and wraps.
+- The fit box reserves a ~20px vertical margin, so `fit_font` steps down before the text reaches the
+  top/bottom edges: without it a long message packs edge-to-edge and reads as cramped. The idle line
+  now renders at 18px on basalt with breathing room, larger on emery/chalk — verified on all three
+  emulators with no truncation.
+
 ## Companion-app connection hint (2026-07-25)
 
 **Milestone:** post-M12 watch-side enhancement (new REQ-WATCH-017). Protocol and Android unchanged.
@@ -35,10 +55,8 @@ holds the 43-byte URL, keeping the modules large. It bakes no quiet zone (the wa
 field), rendered at 4 px/module → 116×116, matching gen_maneuver_bitmaps' grayscale PNG writer.
 Declared as `CONNECT_QR` (`1BitPalette`) in `package.json`.
 
-**Message rendering.** The plain-message renderer now fits its font (24 → 18 → 14) and centres
-vertically, so status lines longer than "Connecting" cannot clip. The disconnected message is kept
-concise ("Open the Pebble app") because this SDK's `graphics_text_layout_get_content_size` under-wraps
-relative to the draw, which clips very long strings even with the fit — verified on the emulator.
+**Message rendering.** The plain-message renderer fits its font (28 → 24 → 18 → 14) and centres
+vertically, so a short line stays as large as "Connecting" while a long one steps down and wraps.
 
 **Verification.** Full `./scripts/build-watchapp.sh` links all five platforms warning-free. On the
 basalt/chalk/emery emulators: the countdown shows and decrements; a nav update during the countdown

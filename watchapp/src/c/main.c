@@ -72,7 +72,7 @@ static int32_t s_eta_epoch = 0;
 
 static char s_primary_buf[PRIMARY_TEXT_MAX + 1];
 static char s_secondary_buf[SECONDARY_TEXT_MAX + 1];
-static char s_message_buf[32];
+static char s_message_buf[96];
 
 // --- Maneuver bitmaps -------------------------------------------------------------------------
 
@@ -568,16 +568,20 @@ static void message_update_proc(Layer *layer, GContext *ctx) {
     return;
   }
 
-  // Fit the font to the text and centre it vertically, so a message longer than "Connecting"
-  // ("Open the Pebble app") shrinks and wraps instead of clipping. The candidates start at 24 rather
-  // than 28 because at 28 a whole word can be wider than the screen, which word-wrap cannot break and
-  // so clips. Measuring and drawing share ONE box so the wrap that fit_font approves is the wrap drawn.
+  // Fit the font to the text and centre it vertically: a short line ("Arrived") gets the same large
+  // 28px as "Connecting", while a longer one ("No ongoing navigation on phone detected") steps down
+  // to the largest size whose widest word still fits the screen and wraps across several lines.
+  // fit_font rejects a size whose content is wider than the box, so a word too wide to wrap forces
+  // the step-down; measuring and drawing share ONE box so the wrap fit_font approves is the wrap drawn.
   static const char *const kMsgFonts[] = {
+    FONT_KEY_GOTHIC_28_BOLD,
     FONT_KEY_GOTHIC_24_BOLD,
     FONT_KEY_GOTHIC_18_BOLD,
     FONT_KEY_GOTHIC_14,
   };
-  const GRect fit_box = GRect(6, 0, bounds.size.w - 12, bounds.size.h);
+  // Reserve a vertical margin so fit_font steps down before the text reaches the top/bottom edges:
+  // a long line packed edge-to-edge is technically "fitting" but reads as cramped.
+  const GRect fit_box = GRect(6, 0, bounds.size.w - 12, bounds.size.h - 20);
   GFont font = fit_font(s_message_buf, fit_box, GTextOverflowModeWordWrap, kMsgFonts,
                         ARRAY_LENGTH(kMsgFonts));
   const GSize sz = graphics_text_layout_get_content_size(s_message_buf, font, fit_box,
@@ -838,7 +842,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
       break;
     case PBNTN_EVENT_NO_ACTIVE_NAVIGATION:
       s_last_maneuver = -1;
-      show_message("No navigation");
+      show_message("No navigation detected. If navigating, open PebbleNTN on your phone.");
       break;
     case PBNTN_EVENT_PHONE_COMPATIBILITY_ERROR:
       show_message("Update phone app");
