@@ -1,6 +1,33 @@
 # Implementation Status
 
-_Last updated: 2026-07-25_
+_Last updated: 2026-07-26_
+
+## Expanded navigation-app catalog (2026-07-26)
+
+**Milestone:** data change to `rules/catalog/navigation-apps.json` (REQ-ANDROID-004/005). No code
+change; the catalog is the single source of truth, staged into app assets by Gradle.
+
+Added 13 common navigation apps so the companion app detects them and captures their notifications
+(enabled by default on first discovery, per REQ-ANDROID-004). All are **capture-only**
+(`hasOfficialRules: false`): they are detected and their notifications captured for rule authoring,
+but turn-by-turn watch output still requires official parsing rules authored from real captured
+fixtures (REQ-ANDROID-005; AGENTS rule 14 forbids rules without fixtures). Google Maps remains the
+only app with official rules.
+
+Identifiers added (verified against the Play Store / F-Droid): CoMaps (`app.comaps.google`,
+`app.comaps.fdroid`), Maps.me (`com.mapswithme.maps.pro`), Mapy.com (`cz.seznam.mapy`), Amap/Gaode
+(`com.autonavi.minimap`), Sygic (`com.sygic.aura`), Yandex Navigator (`ru.yandex.yandexnavi`), Yandex
+Maps (`ru.yandex.yandexmaps`), Petal Maps (`com.huawei.maps.app`), Magic Earth
+(`com.generalmagic.magicearth`), TomTom GO Navigation (`com.tomtom.gplay.navapp`), TomTom AmiGO
+(`com.tomtom.speedcams.android.map`), 2GIS (`ru.dublgis.dgismobile`), Baidu Maps
+(`com.baidu.BaiduMap`). Waze, OsmAnd, Organic Maps and HERE WeGo were already present.
+
+**Verification.** `validate-rules.sh` passes (19 apps); `NavigationAppCatalogTest` gains a case that
+locks every new package→appId mapping and asserts capture-only; `test lint assembleDebug` green; the
+merged debug-APK asset contains all 19 apps. Captured notifications from these apps appear in Debug
+History, which is where a maintainer collects the fixtures needed to author each app's rules.
+
+
 
 ## "Refresh app" — notification-listener recovery (2026-07-25)
 

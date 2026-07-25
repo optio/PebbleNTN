@@ -37,6 +37,40 @@ class NavigationAppCatalogTest {
     }
 
     @Test
+    fun commonNavigationAppsAreDetectedAndCaptureOnly() {
+        val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
+        // Package name -> expected catalog appId. Locks the identifiers so a typo or an accidental
+        // removal fails loudly. All are capture-only until official parsing rules are authored.
+        val expected = mapOf(
+            "com.waze" to "waze",
+            "net.osmand" to "osmand",
+            "net.osmand.plus" to "osmand",
+            "app.organicmaps" to "organic-maps",
+            "app.comaps.google" to "comaps",
+            "app.comaps.fdroid" to "comaps",
+            "com.mapswithme.maps.pro" to "maps-me",
+            "cz.seznam.mapy" to "mapy-com",
+            "com.autonavi.minimap" to "amap",
+            "com.here.app.maps" to "here-wego",
+            "com.sygic.aura" to "sygic",
+            "ru.yandex.yandexnavi" to "yandex-navigator",
+            "ru.yandex.yandexmaps" to "yandex-maps",
+            "com.huawei.maps.app" to "petal-maps",
+            "com.generalmagic.magicearth" to "magic-earth",
+            "com.tomtom.gplay.navapp" to "tomtom-go",
+            "com.tomtom.speedcams.android.map" to "tomtom-amigo",
+            "ru.dublgis.dgismobile" to "two-gis",
+            "com.baidu.BaiduMap" to "baidu-maps",
+        )
+        for ((pkg, appId) in expected) {
+            val entry = catalog.entryForPackage(pkg)
+            assertNotNull("expected catalog entry for $pkg", entry)
+            assertEquals("wrong app for $pkg", appId, entry!!.appId)
+            assertTrue("$appId should be capture-only until rules exist", entry.captureOnly)
+        }
+    }
+
+    @Test
     fun installedCatalogAppsDefaultToEnabled() {
         val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
         assertTrue(catalog.apps.all { it.defaultEnabled })
