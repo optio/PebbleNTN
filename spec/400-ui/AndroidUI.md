@@ -27,7 +27,9 @@ Material 3 with subtle Pebble styling:
 - active ruleset version;
 - shortcuts to debug history and rules;
 - a "Refresh app" recovery action that reconnects the notification listener (REQ-ANDROID-012), with an explanation of when to use it (navigation running on the phone but not reaching the watch) and a confirmation that it ran;
-- when captures exist that no rule matched, a prompt to contribute those diagnostics (REQ-DEBUG-011), stating no personal data is shared and leading to the share-to-help screen.
+- when captures exist that no rule matched, a prompt to contribute those diagnostics (REQ-DEBUG-011), stating no personal data is shared and leading to the share-to-help screen;
+- a "Check for updates" control (always available), an opt-in "check weekly" toggle that is off by default, and, when a newer release exists, an update prompt with the available/installed versions, a download-latest action, and uninstall/reinstall guidance (REQ-ANDROID-013);
+- the dashboard scrolls, so its cards and controls remain reachable as they accumulate.
 
 ### Share to help add support
 - reached from the dashboard prompt when unmatched captures exist;

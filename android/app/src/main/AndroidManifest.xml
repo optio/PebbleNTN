@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Targeted package visibility (Android 11+): only the bundled navigation-app packages, so we
-         can detect which are installed without QUERY_ALL_PACKAGES. -->
+    <!-- Sole use of the network: the app-update check against the GitHub Releases API
+         (REQ-ANDROID-013) — on an explicit "Check for updates" tap, or a weekly check the user has
+         opted into. INTERNET is a normal install-time permission (no runtime prompt exists), so the
+         opt-in setting, not the permission, gates automatic access. No user data is ever sent. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Targeted package visibility (Android 11+): the bundled navigation-app packages, so we can
+         detect which are installed without QUERY_ALL_PACKAGES. This list MUST stay in sync with the
+         package names in rules/catalog/navigation-apps.json — an app missing here is invisible to
+         getPackageInfo and so never discovered/enabled. -->
     <queries>
         <package android:name="com.google.android.apps.maps" />
         <package android:name="com.waze" />
         <package android:name="net.osmand" />
         <package android:name="net.osmand.plus" />
         <package android:name="app.organicmaps" />
+        <package android:name="app.comaps.google" />
+        <package android:name="app.comaps.fdroid" />
+        <package android:name="com.mapswithme.maps.pro" />
+        <package android:name="cz.seznam.mapy" />
+        <package android:name="com.autonavi.minimap" />
         <package android:name="com.here.app.maps" />
+        <package android:name="com.sygic.aura" />
+        <package android:name="ru.yandex.yandexnavi" />
+        <package android:name="ru.yandex.yandexmaps" />
+        <package android:name="com.huawei.maps.app" />
+        <package android:name="com.generalmagic.magicearth" />
+        <package android:name="com.tomtom.gplay.navapp" />
+        <package android:name="com.tomtom.speedcams.android.map" />
+        <package android:name="ru.dublgis.dgismobile" />
+        <package android:name="com.baidu.BaiduMap" />
     </queries>
 
     <application

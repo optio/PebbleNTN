@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -18,6 +21,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,6 +52,12 @@ fun DashboardScreen(
     onRefreshApp: () -> Unit = {},
     unmatchedCaptureCount: Int = 0,
     onShareDiagnostics: () -> Unit = {},
+    updateAvailable: Boolean = false,
+    latestVersion: String? = null,
+    onDownloadUpdate: () -> Unit = {},
+    onCheckForUpdate: () -> Unit = {},
+    autoCheckUpdates: Boolean = false,
+    onAutoCheckUpdatesChange: (Boolean) -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
     modifier: Modifier = Modifier,
 ) {
@@ -62,6 +72,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -104,6 +115,39 @@ fun DashboardScreen(
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
+
+            // A newer app version is available on GitHub (REQ-ANDROID-013): prompt to update, with a
+            // fallback for the case where installing over the top fails (unsigned/side-loaded APK).
+            if (updateAvailable) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.dashboard_update_title),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.dashboard_update_body,
+                                latestVersion ?: "",
+                                appVersion,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(onClick = onDownloadUpdate) {
+                            Text(stringResource(R.string.dashboard_update_download))
+                        }
+                    }
+                }
+            }
 
             // When notifications were captured from apps we can't turn into directions yet, invite
             // the user to share those (redacted) logs so support can be added (REQ-DEBUG-011).
@@ -158,8 +202,32 @@ fun DashboardScreen(
                 Text(stringResource(R.string.dashboard_refresh_app))
             }
 
-            // Push the version to the bottom of the screen.
-            Spacer(modifier = Modifier.weight(1f))
+            // Footer: update controls + version. (The column scrolls, so no weight spacer.)
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.dashboard_auto_update),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.dashboard_auto_update_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = autoCheckUpdates, onCheckedChange = onAutoCheckUpdatesChange)
+            }
+            TextButton(
+                onClick = onCheckForUpdate,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Text(stringResource(R.string.dashboard_check_update))
+            }
             Text(
                 text = stringResource(R.string.dashboard_version, appVersion),
                 style = MaterialTheme.typography.bodySmall,

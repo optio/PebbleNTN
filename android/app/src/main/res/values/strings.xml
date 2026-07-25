@@ -6,7 +6,7 @@
     <string name="onboarding_title">Welcome to PebbleNTN</string>
     <string name="onboarding_intro">PebbleNTN turns navigation-app notifications into turn-by-turn instructions on your Pebble watch.</string>
     <!-- Exact prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
-    <string name="onboarding_disclosure">PebbleNTN reads notifications from navigation apps you enable, extracts upcoming turn information, and sends it to your Pebble watch. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them.</string>
+    <string name="onboarding_disclosure">PebbleNTN reads notifications from navigation apps you enable, extracts upcoming turn information, and sends it to your Pebble watch. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. The app connects to the network only to check GitHub for a newer app version — when you tap Check for updates, or, if you turn on weekly checks, about once a week — and this sends no personal data.</string>
     <string name="onboarding_open_settings">Grant notification access</string>
     <string name="onboarding_privacy_note">You can disable any app or revoke access at any time in system settings.</string>
 
@@ -29,6 +29,19 @@
     <string name="dashboard_refresh_app_explanation">If navigation is running on your phone but your watch isn\'t picking it up, tap this to reconnect notification access.</string>
     <string name="dashboard_refresh_app_done">Reconnecting notification access…</string>
     <string name="dashboard_version">Version %1$s</string>
+
+    <!-- App update check (REQ-ANDROID-013). -->
+    <string name="dashboard_update_title">Update available</string>
+    <string name="dashboard_update_body">PebbleNTN %1$s is available — you have %2$s. Tap below to download the latest APK from GitHub. If it won\'t install over the current app, uninstall PebbleNTN first, then install the downloaded version.</string>
+    <string name="dashboard_update_download">Download latest version</string>
+    <string name="dashboard_check_update">Check for updates</string>
+    <string name="dashboard_auto_update">Check for updates weekly</string>
+    <string name="dashboard_auto_update_hint">When on, PebbleNTN checks GitHub about once a week. Off by default; nothing is sent.</string>
+    <string name="update_check_available">An update is available.</string>
+    <string name="update_check_up_to_date">PebbleNTN is up to date.</string>
+    <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
+    <!-- Where the "Download latest version" button sends the user. -->
+    <string name="update_releases_url" translatable="false">https://github.com/optio/PebbleNTN/releases/latest</string>
 
     <!-- Rules -->
     <string name="rules_title">Rules</string>

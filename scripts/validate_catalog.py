@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -47,8 +48,46 @@ def main() -> int:
     if failed:
         print("Catalog validation FAILED.", file=sys.stderr)
         return 1
+
+    if not check_manifest_queries():
+        return 1
+
     print("Catalog validation OK.")
     return 0
+
+
+# The bundled catalog and the Android manifest's <queries> must agree: on Android 11+ a package that
+# is not declared in <queries> is invisible to getPackageInfo, so a catalog app missing there is
+# never discovered as installed and its notifications are silently dropped.
+MANIFEST_PATH = REPO_ROOT / "android" / "app" / "src" / "main" / "AndroidManifest.xml"
+# Our own debug fixture publisher is visible via shared signing, so it does not need a <queries> row.
+QUERIES_EXEMPT = {"com.pebblentn.fixturepublisher"}
+
+
+def check_manifest_queries() -> bool:
+    catalog_path = REPO_ROOT / "rules" / "catalog" / "navigation-apps.json"
+    if not MANIFEST_PATH.exists() or not catalog_path.exists():
+        return True  # Android app not present in this checkout; nothing to cross-check.
+
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    catalog_packages = {
+        pkg
+        for app in catalog.get("apps", [])
+        for pkg in app.get("packageNames", [])
+    } - QUERIES_EXEMPT
+
+    manifest = MANIFEST_PATH.read_text(encoding="utf-8")
+    declared = set(re.findall(r'<package\s+android:name="([^"]+)"', manifest))
+
+    missing = sorted(catalog_packages - declared)
+    if missing:
+        print("Catalog validation FAILED: packages missing from AndroidManifest <queries>:", file=sys.stderr)
+        for pkg in missing:
+            print(f"  MISSING  {pkg}", file=sys.stderr)
+        print("  Add each to android/app/src/main/AndroidManifest.xml so it is detectable.", file=sys.stderr)
+        return False
+    print(f"OK       AndroidManifest <queries> covers all {len(catalog_packages)} catalog packages.")
+    return True
 
 
 if __name__ == "__main__":

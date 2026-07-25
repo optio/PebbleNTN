@@ -105,6 +105,8 @@ class MainActivity : ComponentActivity() {
         val appEnabled by container.appEnabledRepository.enabled.collectAsState()
         val unmatchedCount by container.debugHistoryRepository.observeUnmatchedCount()
             .collectAsState(initial = 0)
+        val updateState by container.updateCheckRepository.state.collectAsState()
+        val autoCheckUpdates by container.updateCheckRepository.autoCheckEnabled.collectAsState()
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
@@ -118,6 +120,12 @@ class MainActivity : ComponentActivity() {
                     onRefreshApp = { container.notificationListenerRefresher.refresh() },
                     unmatchedCaptureCount = unmatchedCount,
                     onShareDiagnostics = { navController.navigate("share-diagnostics") },
+                    updateAvailable = updateState.updateAvailable,
+                    latestVersion = updateState.latestVersion,
+                    onDownloadUpdate = { openUrl(getString(R.string.update_releases_url)) },
+                    onCheckForUpdate = ::checkForUpdate,
+                    autoCheckUpdates = autoCheckUpdates,
+                    onAutoCheckUpdatesChange = ::setAutoCheckUpdates,
                 )
             }
             composable("share-diagnostics") {
@@ -210,6 +218,32 @@ class MainActivity : ComponentActivity() {
 
     private fun openNotificationListenerSettings() {
         startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    }
+
+    /** Open an external URL (the GitHub releases page) in the browser. */
+    private fun openUrl(url: String) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+    }
+
+    /**
+     * Toggle the opt-in weekly update check. Turning it on does an immediate check so the user sees a
+     * result right away (and that first network call is their explicit action).
+     */
+    private fun setAutoCheckUpdates(enabled: Boolean) {
+        container.updateCheckRepository.setAutoCheckEnabled(enabled)
+        if (enabled) checkForUpdate()
+    }
+
+    /** Manual "Check for updates": force a check now and report the outcome (REQ-ANDROID-013). */
+    private fun checkForUpdate() {
+        lifecycleScope.launch {
+            val messageRes = when (container.updateCheckRepository.checkForUpdate(force = true)) {
+                com.pebblentn.app.update.UpdateCheckOutcome.UPDATE_AVAILABLE -> R.string.update_check_available
+                com.pebblentn.app.update.UpdateCheckOutcome.UP_TO_DATE -> R.string.update_check_up_to_date
+                else -> R.string.update_check_failed
+            }
+            android.widget.Toast.makeText(this@MainActivity, messageRes, android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** Build the export payload off the main thread, then open the Sharesheet (never auto-sends). */

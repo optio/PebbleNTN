@@ -2,6 +2,51 @@
 
 _Last updated: 2026-07-26_
 
+## In-app update check + <queries> fix (2026-07-26)
+
+**Milestone:** Android enhancement (new REQ-ANDROID-013) plus a correctness fix to the catalog work.
+
+**Update check (REQ-ANDROID-013).** The app now detects a newer version of itself:
+- `AppVersions` — pure dotted-version comparison (tolerant of a leading `v`, differing lengths,
+  pre-release suffixes; junk never reads as newer).
+- `ReleaseFetcher` / `GitHubReleaseFetcher` — reads `tag_name` from
+  `api.github.com/repos/optio/PebbleNTN/releases/latest` via `HttpURLConnection` (no new dependency).
+  This is the app's **first and only network call**: an unauthenticated GET that sends no user or
+  notification data. Best-effort — any failure returns null.
+- `UpdateCheckRepository` — checks at most once a week (self-throttling via a persisted last-check
+  time) and on demand; persists the last-known latest version so the prompt survives restarts;
+  exposes `StateFlow<UpdateState>` and an `autoCheckEnabled` `StateFlow`.
+- **Opt-in automatic check.** `INTERNET` is a normal install-time permission — Android grants it
+  silently and there is no runtime prompt to defer, so a setting (not a permission request) gates
+  automatic network use. The weekly auto-check is **off by default**; `AppContainer.start()` fires it
+  only when the toggle is on, so with it off the app makes no network connection on its own. The
+  manual "Check for updates" button always works (an explicit tap = consent for that one check), and
+  turning the toggle on runs an immediate check.
+- Wiring: the dashboard shows an update card (available vs installed version, a Download-latest button
+  opening the releases page, and uninstall/reinstall guidance), a "Check weekly" toggle, and a "Check
+  for updates" control that reports its outcome via a Toast.
+- Added `android.permission.INTERNET`, and a transparency line to the onboarding disclosure. No upload
+  occurs, so REQ-SEC-002 still holds.
+- The dashboard `Column` is now scrollable — with the accumulating cards it otherwise clipped the
+  footer controls off-screen.
+
+**`<queries>` fix.** The previous catalog expansion added 13 apps to the catalog but not to the
+manifest `<queries>`. On Android 11+, `InstalledAppsProvider` uses `getPackageInfo`, which is subject
+to package visibility, so those apps were invisible → never discovered as installed → never enabled →
+their notifications dropped. (The share-to-help emulator test only worked because the debug fixture
+publisher shares our signing key, which grants visibility.) All catalog packages are now declared in
+`<queries>`, and `validate_catalog.py` gained a cross-check that fails if the manifest and catalog
+drift apart (verified: 20 packages covered).
+
+**Verification.** `test lint assembleDebug` and full `test-all.sh` green. New unit tests:
+`AppVersionsTest` (comparison edge cases) and `UpdateCheckRepositoryTest` (weekly throttle, force,
+update detection, failure retention, persistence, auto-check default off). Emulator (api34, real
+network): with auto-check off (default) a fresh launch made **no** GitHub call and showed no card;
+turning on the "Check weekly" toggle triggered an immediate check that saw v0.0.13 vs the installed
+0.0.12 and showed the update card; the download button opened the releases page; the manual "Check
+for updates" reported "An update is available" via Toast. The dashboard scrolls so all controls stay
+reachable.
+
 ## Share unmatched captures to help add support (2026-07-26)
 
 **Milestone:** Android enhancement (new REQ-DEBUG-011). Watch and protocol unchanged. Builds on the
