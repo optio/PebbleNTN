@@ -25,6 +25,9 @@
 
     <string name="dashboard_open_debug">Debug history</string>
     <string name="dashboard_open_rules">Rules</string>
+    <string name="dashboard_refresh_app">Refresh app</string>
+    <string name="dashboard_refresh_app_explanation">If navigation is running on your phone but your watch isn\'t picking it up, tap this to reconnect notification access.</string>
+    <string name="dashboard_refresh_app_done">Reconnecting notification access…</string>
     <string name="dashboard_version">Version %1$s</string>
 
     <!-- Rules -->

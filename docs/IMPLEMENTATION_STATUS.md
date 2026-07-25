@@ -2,6 +2,34 @@
 
 _Last updated: 2026-07-25_
 
+## "Refresh app" — notification-listener recovery (2026-07-25)
+
+**Milestone:** Android-side enhancement (new REQ-ANDROID-012). Watch and protocol unchanged.
+
+**Problem.** Android sometimes leaves a `NotificationListenerService` nominally connected but stops
+delivering `onNotificationPosted`, so navigation running on the phone never reaches the watch. The
+user's remedy was to force-stop and relaunch the app, which makes the platform rebind the listener.
+
+**Design.** A "Refresh app" action on the dashboard does that rebind on demand, no restart. The logic
+sits behind a `NotificationListenerRefresher` `fun interface` (mirroring `NotificationAccess`), with
+`SystemNotificationListenerRefresher` doing two things, weakest-to-strongest: `requestRebind`
+(the supported API-24+ call) and toggling the listener component off/on via `PackageManager` with
+`DONT_KILL_APP` — the programmatic equivalent of the force-stop, which forces a fresh bind even when
+the binding is wedged, while keeping our process and the visible UI alive. The access grant lives in a
+separate secure setting keyed by component name, so it survives the toggle. On success the platform
+re-fires `onListenerConnected`, re-delivering the current notifications.
+
+- `di/AppContainer.kt` exposes `notificationListenerRefresher`; `ui/MainActivity.kt` wires the
+  dashboard `onRefreshApp` to it.
+- `ui/dashboard/DashboardScreen.kt` adds the button, an explanation ("If navigation is running on
+  your phone but your watch isn't picking it up…"), and a Snackbar confirmation. Strings are Android
+  resources.
+
+**Verification.** `./android/gradlew -p android test lint assembleDebug` green. New Robolectric test
+`NotificationListenerRefresherTest` proves the refresh leaves the listener component enabled,
+including recovery from a previously-disabled component. On-device visual confirmation of the button
+is pending an Android emulator run (the change is a standard Compose addition with a working preview).
+
 ## Fuller, larger idle message (2026-07-25)
 
 The idle state now reads "No navigation detected. If navigating, open PebbleNTN on your phone."

@@ -26,7 +26,9 @@ import com.pebblentn.app.rules.RuleEngine
 import com.pebblentn.app.rules.RulePreviewService
 import com.pebblentn.app.update.RuleUpdateRepository
 import com.pebblentn.app.system.NotificationAccess
+import com.pebblentn.app.system.NotificationListenerRefresher
 import com.pebblentn.app.system.SystemNotificationAccess
+import com.pebblentn.app.system.SystemNotificationListenerRefresher
 import kotlinx.coroutines.CoroutineScope
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +65,10 @@ class AppContainer(context: Context) {
     val lastEligibleNotificationStore = LastEligibleNotificationStore()
 
     val notificationAccess: NotificationAccess = SystemNotificationAccess(appContext)
+
+    /** Rebinds the notification listener when it silently stops delivering posts (REQ-ANDROID-012). */
+    val notificationListenerRefresher: NotificationListenerRefresher =
+        SystemNotificationListenerRefresher(appContext)
 
     private val ruleEngine = RuleEngine()
 
