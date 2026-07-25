@@ -87,6 +87,25 @@ class DebugHistoryRepositoryTest {
     }
 
     @Test
+    fun unmatchedCountCountsOnlyCapturesWithNoMatchingRule() = runTest {
+        // Two captures with no rule match...
+        repo.recordPosted(event("com.waze", at = 1))
+        repo.recordPosted(event("net.osmand", at = 2))
+        // ...and one that a rule matched (an instruction was produced), which must NOT be counted.
+        repo.recordPosted(
+            event("com.google.android.apps.maps", at = 3),
+            evaluation = com.pebblentn.app.rules.RuleEvaluation(
+                instruction = com.pebblentn.app.core.NavigationInstruction(),
+                matchedRuleId = "r",
+                matchedLayer = null,
+                trace = emptyList(),
+            ),
+        )
+
+        assertEquals(2, repo.observeUnmatchedCount().first())
+    }
+
+    @Test
     fun deleteByIdAndDeleteAll() = runTest {
         val id = repo.recordPosted(event("com.waze", at = 1))
         repo.recordPosted(event("com.waze", at = 2))

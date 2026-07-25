@@ -2,6 +2,41 @@
 
 _Last updated: 2026-07-26_
 
+## Share unmatched captures to help add support (2026-07-26)
+
+**Milestone:** Android enhancement (new REQ-DEBUG-011). Watch and protocol unchanged. Builds on the
+existing redacted export (`ExportBuilder` PRIVACY_SAFE, `Redactor`, `DiagnosticShareManager`).
+
+**Problem.** Adding support for a new app needs real captured notifications, but nothing invited the
+user to contribute the captures the app already had for apps without rules.
+
+**Design.**
+- **Detection.** `DebugEventDao.observeCountByDisposition` + `DebugHistoryRepository.observeUnmatchedCount()`
+  give a live count of `CAPTURED_UNMATCHED` events (captures no rule matched).
+- **Nudge.** The dashboard shows a prompt card when that count > 0, stating no personal data is
+  shared, leading to a review screen.
+- **Review.** `ShareDiagnosticsScreen` explains what's shared and shows the exact PRIVACY_SAFE
+  (redacted) payload — road names/destinations → ▮, only maneuver keywords/digits/units and the
+  package name remain — so the user can verify before sending. Preview is capped for display; the
+  attachment carries all included events.
+- **Email + 10 MB cap.** `DiagnosticExporter.buildCapped(mode, maxBytes)` keeps only the newest
+  events that fit (events are newest-first; binary search over the count), reporting how many
+  survived. `DiagnosticShareManager.shareViaEmail` writes the redacted file, then opens an email app
+  via `ACTION_SEND` + a `mailto:` selector with the recipient (`share_logs_recipient` — a resource
+  the maintainer fills in later), subject and body prefilled and the JSON attached; falls back to the
+  generic chooser if no email app is present. Nothing is sent automatically.
+
+**Verification.** `test lint assembleDebug` and full `test-all.sh` green. New unit tests:
+`buildCappedKeepsNewestEventsUnderTheByteCap` (fits the cap, drops oldest, keeps newest, still
+redacted) and `unmatchedCountCountsOnlyCapturesWithNoMatchingRule` (excludes matched events).
+Emulator (api34): posted an unmatched capture via the fixture publisher → the dashboard nudge
+appeared with the count → the review screen showed the redacted dataset (2 KB, 3 events) → "Share via
+email" wrote `pebblentn-diagnostics-safe.json` and opened the email flow with it attached. Note: on
+the AOSP emulator the `mailto:` selector surfaced the system share sheet (Gmail present) rather than
+jumping straight into the mail app; on a device with a default mail app it targets email directly —
+consistent with the "where the platform allows" wording. The recipient address is an empty
+placeholder until provided.
+
 ## Expanded navigation-app catalog (2026-07-26)
 
 **Milestone:** data change to `rules/catalog/navigation-apps.json` (REQ-ANDROID-004/005). No code

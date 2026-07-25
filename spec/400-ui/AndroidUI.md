@@ -26,7 +26,14 @@ Material 3 with subtle Pebble styling:
 - last eligible notification timestamp;
 - active ruleset version;
 - shortcuts to debug history and rules;
-- a "Refresh app" recovery action that reconnects the notification listener (REQ-ANDROID-012), with an explanation of when to use it (navigation running on the phone but not reaching the watch) and a confirmation that it ran.
+- a "Refresh app" recovery action that reconnects the notification listener (REQ-ANDROID-012), with an explanation of when to use it (navigation running on the phone but not reaching the watch) and a confirmation that it ran;
+- when captures exist that no rule matched, a prompt to contribute those diagnostics (REQ-DEBUG-011), stating no personal data is shared and leading to the share-to-help screen.
+
+### Share to help add support
+- reached from the dashboard prompt when unmatched captures exist;
+- explains that no personal data is shared and that nothing is sent automatically;
+- shows the exact privacy-safe (redacted) dataset for review before sharing;
+- shares by opening the user's email app with the redacted diagnostics attached and recipient/subject prefilled where the platform allows, truncated to the newest 10 MB if larger.
 
 ### Navigation Apps
 - catalog apps grouped as installed/uninstalled;

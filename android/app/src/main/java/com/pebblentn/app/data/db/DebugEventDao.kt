@@ -40,6 +40,10 @@ interface DebugEventDao {
     @Query("SELECT COUNT(*) FROM notification_debug_event")
     suspend fun count(): Int
 
+    /** Live count of events with a given disposition; drives the "help us add support" nudge. */
+    @Query("SELECT COUNT(*) FROM notification_debug_event WHERE disposition = :disposition")
+    fun observeCountByDisposition(disposition: String): Flow<Int>
+
     @Query("DELETE FROM notification_debug_event WHERE id = :id")
     suspend fun deleteById(id: Long)
 

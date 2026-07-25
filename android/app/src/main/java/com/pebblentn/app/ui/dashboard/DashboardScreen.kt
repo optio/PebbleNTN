@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +46,8 @@ fun DashboardScreen(
     onOpenDebugHistory: () -> Unit = {},
     onOpenRules: () -> Unit = {},
     onRefreshApp: () -> Unit = {},
+    unmatchedCaptureCount: Int = 0,
+    onShareDiagnostics: () -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
     modifier: Modifier = Modifier,
 ) {
@@ -99,6 +104,36 @@ fun DashboardScreen(
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
+
+            // When notifications were captured from apps we can't turn into directions yet, invite
+            // the user to share those (redacted) logs so support can be added (REQ-DEBUG-011).
+            if (unmatchedCaptureCount > 0) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.dashboard_share_nudge_title),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.dashboard_share_nudge_body, unmatchedCaptureCount),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(onClick = onShareDiagnostics) {
+                            Text(stringResource(R.string.dashboard_share_nudge_action))
+                        }
+                    }
+                }
+            }
+
             OutlinedButton(onClick = onOpenDebugHistory) {
                 Text(stringResource(R.string.dashboard_open_debug))
             }

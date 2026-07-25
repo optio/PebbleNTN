@@ -33,6 +33,8 @@ import com.pebblentn.app.ui.onboarding.OnboardingViewModel
 import com.pebblentn.app.ui.rules.RuleEditorScreen
 import com.pebblentn.app.ui.rules.RulesScreen
 import com.pebblentn.app.ui.rules.RulesViewModel
+import com.pebblentn.app.ui.share.ShareDiagnosticsScreen
+import com.pebblentn.app.ui.share.ShareDiagnosticsViewModel
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
 
 /**
@@ -51,6 +53,11 @@ class MainActivity : ComponentActivity() {
     private val debugViewModel: DebugHistoryViewModel by lazy {
         val repo = container.debugHistoryRepository
         ViewModelProvider(this, viewModelFactory { initializer { DebugHistoryViewModel(repo) } })[DebugHistoryViewModel::class.java]
+    }
+
+    private val shareDiagnosticsViewModel: ShareDiagnosticsViewModel by lazy {
+        val exporter = container.diagnosticExporter
+        ViewModelProvider(this, viewModelFactory { initializer { ShareDiagnosticsViewModel(exporter) } })[ShareDiagnosticsViewModel::class.java]
     }
 
     private val rulesViewModel: RulesViewModel by lazy {
@@ -96,6 +103,8 @@ class MainActivity : ComponentActivity() {
         val lastEligible by container.lastEligibleNotificationStore.lastEligibleAtMillis.collectAsState()
         val events by debugViewModel.events.collectAsState()
         val appEnabled by container.appEnabledRepository.enabled.collectAsState()
+        val unmatchedCount by container.debugHistoryRepository.observeUnmatchedCount()
+            .collectAsState(initial = 0)
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
@@ -107,6 +116,16 @@ class MainActivity : ComponentActivity() {
                     onOpenDebugHistory = { navController.navigate("debug") },
                     onOpenRules = { navController.navigate("rules") },
                     onRefreshApp = { container.notificationListenerRefresher.refresh() },
+                    unmatchedCaptureCount = unmatchedCount,
+                    onShareDiagnostics = { navController.navigate("share-diagnostics") },
+                )
+            }
+            composable("share-diagnostics") {
+                val shareState by shareDiagnosticsViewModel.state.collectAsState()
+                ShareDiagnosticsScreen(
+                    state = shareState,
+                    onBack = { navController.popBackStack() },
+                    onShareEmail = ::shareCaptureLogsByEmail,
                 )
             }
             composable("debug") {
@@ -199,5 +218,20 @@ class MainActivity : ComponentActivity() {
             val json = container.diagnosticExporter.build(mode)
             container.diagnosticShareManager.share(json, mode)
         }
+    }
+
+    /**
+     * Share the reviewed, 10 MB-capped capture logs by email, with the recipient and subject
+     * prefilled (REQ-DEBUG-008). The user still presses send in their mail app — nothing is
+     * transmitted automatically.
+     */
+    private fun shareCaptureLogsByEmail() {
+        val json = shareDiagnosticsViewModel.payloadJson() ?: return
+        container.diagnosticShareManager.shareViaEmail(
+            json = json,
+            recipient = getString(R.string.share_logs_recipient),
+            subject = getString(R.string.share_logs_subject),
+            body = getString(R.string.share_logs_body),
+        )
     }
 }
