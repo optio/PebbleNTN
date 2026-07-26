@@ -21,7 +21,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -115,6 +114,15 @@ fun DashboardScreen(
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
+
+            // Manual update check, kept near the top so it is visible on launch (the weekly auto-check
+            // is opt-in and off by default, so this is how most users check — REQ-ANDROID-013).
+            OutlinedButton(
+                onClick = onCheckForUpdate,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.dashboard_check_update))
+            }
 
             // A newer app version is available on GitHub (REQ-ANDROID-013): prompt to update, with a
             // fallback for the case where installing over the top fails (unsigned/side-loaded APK).
@@ -221,12 +229,6 @@ fun DashboardScreen(
                     )
                 }
                 Switch(checked = autoCheckUpdates, onCheckedChange = onAutoCheckUpdatesChange)
-            }
-            TextButton(
-                onClick = onCheckForUpdate,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text(stringResource(R.string.dashboard_check_update))
             }
             Text(
                 text = stringResource(R.string.dashboard_version, appVersion),

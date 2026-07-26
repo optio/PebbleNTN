@@ -22,9 +22,10 @@ _Last updated: 2026-07-26_
   only when the toggle is on, so with it off the app makes no network connection on its own. The
   manual "Check for updates" button always works (an explicit tap = consent for that one check), and
   turning the toggle on runs an immediate check.
-- Wiring: the dashboard shows an update card (available vs installed version, a Download-latest button
-  opening the releases page, and uninstall/reinstall guidance), a "Check weekly" toggle, and a "Check
-  for updates" control that reports its outcome via a Toast.
+- Wiring: the dashboard shows a "Check for updates" button near the top (visible on launch — the main
+  way to check since auto-check is off by default), the update card when one is available (versions, a
+  Download-latest button to the releases page, uninstall/reinstall guidance), and a "Check weekly"
+  toggle in the footer. The manual check reports its outcome via a Toast.
 - Added `android.permission.INTERNET`, and a transparency line to the onboarding disclosure. No upload
   occurs, so REQ-SEC-002 still holds.
 - The dashboard `Column` is now scrollable — with the accumulating cards it otherwise clipped the
