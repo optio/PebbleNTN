@@ -77,8 +77,8 @@ android {
         minSdk = 31
         // Target SDK baseline 35; release automation verifies the Play-required target at release time.
         targetSdk = 35
-        versionCode = 13
-        versionName = "0.0.13"
+        versionCode = 14
+        versionName = "0.0.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
