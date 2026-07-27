@@ -33,6 +33,8 @@ import com.pebblentn.app.ui.onboarding.OnboardingViewModel
 import com.pebblentn.app.ui.rules.RuleEditorScreen
 import com.pebblentn.app.ui.rules.RulesScreen
 import com.pebblentn.app.ui.rules.RulesViewModel
+import com.pebblentn.app.ui.share.ShareDiagnosticsScreen
+import com.pebblentn.app.ui.share.ShareDiagnosticsViewModel
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
 
 /**
@@ -51,6 +53,11 @@ class MainActivity : ComponentActivity() {
     private val debugViewModel: DebugHistoryViewModel by lazy {
         val repo = container.debugHistoryRepository
         ViewModelProvider(this, viewModelFactory { initializer { DebugHistoryViewModel(repo) } })[DebugHistoryViewModel::class.java]
+    }
+
+    private val shareDiagnosticsViewModel: ShareDiagnosticsViewModel by lazy {
+        val exporter = container.diagnosticExporter
+        ViewModelProvider(this, viewModelFactory { initializer { ShareDiagnosticsViewModel(exporter) } })[ShareDiagnosticsViewModel::class.java]
     }
 
     private val rulesViewModel: RulesViewModel by lazy {
@@ -96,6 +103,10 @@ class MainActivity : ComponentActivity() {
         val lastEligible by container.lastEligibleNotificationStore.lastEligibleAtMillis.collectAsState()
         val events by debugViewModel.events.collectAsState()
         val appEnabled by container.appEnabledRepository.enabled.collectAsState()
+        val unmatchedCount by container.debugHistoryRepository.observeUnmatchedCount()
+            .collectAsState(initial = 0)
+        val updateState by container.updateCheckRepository.state.collectAsState()
+        val autoCheckUpdates by container.updateCheckRepository.autoCheckEnabled.collectAsState()
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
@@ -107,6 +118,22 @@ class MainActivity : ComponentActivity() {
                     onOpenDebugHistory = { navController.navigate("debug") },
                     onOpenRules = { navController.navigate("rules") },
                     onRefreshApp = { container.notificationListenerRefresher.refresh() },
+                    unmatchedCaptureCount = unmatchedCount,
+                    onShareDiagnostics = { navController.navigate("share-diagnostics") },
+                    updateAvailable = updateState.updateAvailable,
+                    latestVersion = updateState.latestVersion,
+                    onDownloadUpdate = { openUrl(getString(R.string.update_releases_url)) },
+                    onCheckForUpdate = ::checkForUpdate,
+                    autoCheckUpdates = autoCheckUpdates,
+                    onAutoCheckUpdatesChange = ::setAutoCheckUpdates,
+                )
+            }
+            composable("share-diagnostics") {
+                val shareState by shareDiagnosticsViewModel.state.collectAsState()
+                ShareDiagnosticsScreen(
+                    state = shareState,
+                    onBack = { navController.popBackStack() },
+                    onShareEmail = ::shareCaptureLogsByEmail,
                 )
             }
             composable("debug") {
@@ -193,11 +220,52 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
     }
 
+    /** Open an external URL (the GitHub releases page) in the browser. */
+    private fun openUrl(url: String) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+    }
+
+    /**
+     * Toggle the opt-in weekly update check. Turning it on does an immediate check so the user sees a
+     * result right away (and that first network call is their explicit action).
+     */
+    private fun setAutoCheckUpdates(enabled: Boolean) {
+        container.updateCheckRepository.setAutoCheckEnabled(enabled)
+        if (enabled) checkForUpdate()
+    }
+
+    /** Manual "Check for updates": force a check now and report the outcome (REQ-ANDROID-013). */
+    private fun checkForUpdate() {
+        lifecycleScope.launch {
+            val messageRes = when (container.updateCheckRepository.checkForUpdate(force = true)) {
+                com.pebblentn.app.update.UpdateCheckOutcome.UPDATE_AVAILABLE -> R.string.update_check_available
+                com.pebblentn.app.update.UpdateCheckOutcome.UP_TO_DATE -> R.string.update_check_up_to_date
+                else -> R.string.update_check_failed
+            }
+            android.widget.Toast.makeText(this@MainActivity, messageRes, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     /** Build the export payload off the main thread, then open the Sharesheet (never auto-sends). */
     private fun exportDiagnostics(mode: com.pebblentn.app.export.ExportMode) {
         lifecycleScope.launch {
             val json = container.diagnosticExporter.build(mode)
             container.diagnosticShareManager.share(json, mode)
         }
+    }
+
+    /**
+     * Share the reviewed, 10 MB-capped capture logs by email, with the recipient and subject
+     * prefilled (REQ-DEBUG-008). The user still presses send in their mail app — nothing is
+     * transmitted automatically.
+     */
+    private fun shareCaptureLogsByEmail() {
+        val json = shareDiagnosticsViewModel.payloadJson() ?: return
+        container.diagnosticShareManager.shareViaEmail(
+            json = json,
+            recipient = getString(R.string.share_logs_recipient),
+            subject = getString(R.string.share_logs_subject),
+            body = getString(R.string.share_logs_body),
+        )
     }
 }

@@ -14,6 +14,7 @@ import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleOutput
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -26,6 +27,7 @@ class DiagnosticExporterTest {
 
     private lateinit var db: PebbleNtnDatabase
     private lateinit var exporter: DiagnosticExporter
+    private lateinit var debugHistory: DebugHistoryRepository
 
     @Before
     fun setUp() = runTest {
@@ -34,7 +36,7 @@ class DiagnosticExporterTest {
             PebbleNtnDatabase::class.java,
         ).allowMainThreadQueries().build()
 
-        val debugHistory = DebugHistoryRepository(db.debugEventDao())
+        debugHistory = DebugHistoryRepository(db.debugEventDao())
         val userRules = UserRuleRepository(db.userRuleDao())
         debugHistory.recordPosted(
             PostedNotification(
@@ -75,5 +77,43 @@ class DiagnosticExporterTest {
     fun fullIncludesRaw() = runTest {
         val out = exporter.build(ExportMode.FULL)
         assertTrue(out.contains("Elm Street"))
+    }
+
+    @Test
+    fun buildCappedKeepsNewestEventsUnderTheByteCap() = runTest {
+        // Add many events with large, distinctive notificationIds (kept through redaction) and
+        // increasing receivedAt so the highest id is the newest.
+        for (i in 1..60) {
+            debugHistory.recordPosted(
+                PostedNotification(
+                    snapshot = NotificationSnapshot(
+                        packageName = "com.waze",
+                        notificationId = 500_000 + i,
+                        title = "Turn right",
+                        text = "onto Some Street $i",
+                    ),
+                    notificationKey = "k$i",
+                    tag = null,
+                    receivedAtMillis = 100L + i,
+                ),
+            )
+        }
+
+        val full = exporter.buildCapped(ExportMode.PRIVACY_SAFE, Int.MAX_VALUE)
+        assertFalse("uncapped export is not truncated", full.truncated)
+        assertTrue(full.includedEvents > 1)
+
+        val cap = full.sizeBytes / 2
+        val capped = exporter.buildCapped(ExportMode.PRIVACY_SAFE, cap)
+
+        assertTrue("payload must fit the byte cap", capped.sizeBytes <= cap)
+        assertTrue("some events must be dropped to fit", capped.truncated)
+        assertTrue(capped.includedEvents in 1 until full.includedEvents)
+        assertEquals(full.totalEvents, capped.totalEvents)
+        // Newest survives, oldest is dropped: keeping is newest-first.
+        assertTrue("newest event kept", capped.json.contains("500060"))
+        assertFalse("oldest event dropped", capped.json.contains("500001"))
+        // Redaction still applies to whatever survives.
+        assertFalse(capped.json.contains("Some Street"))
     }
 }

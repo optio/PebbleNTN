@@ -43,10 +43,141 @@
       "defaultEnabled": true
     },
     {
+      "appId": "comaps",
+      "displayName": "CoMaps",
+      "packageNames": [
+        "app.comaps.google",
+        "app.comaps.fdroid"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "maps-me",
+      "displayName": "Maps.me",
+      "packageNames": [
+        "com.mapswithme.maps.pro"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "mapy-com",
+      "displayName": "Mapy.com",
+      "packageNames": [
+        "cz.seznam.mapy"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "amap",
+      "displayName": "Amap (Gaode)",
+      "packageNames": [
+        "com.autonavi.minimap"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
       "appId": "here-wego",
       "displayName": "HERE WeGo",
       "packageNames": [
         "com.here.app.maps"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "sygic",
+      "displayName": "Sygic GPS Navigation",
+      "packageNames": [
+        "com.sygic.aura"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "yandex-navigator",
+      "displayName": "Yandex Navigator",
+      "packageNames": [
+        "ru.yandex.yandexnavi"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "yandex-maps",
+      "displayName": "Yandex Maps",
+      "packageNames": [
+        "ru.yandex.yandexmaps"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "petal-maps",
+      "displayName": "Petal Maps",
+      "packageNames": [
+        "com.huawei.maps.app"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "magic-earth",
+      "displayName": "Magic Earth",
+      "packageNames": [
+        "com.generalmagic.magicearth"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "tomtom-go",
+      "displayName": "TomTom GO Navigation",
+      "packageNames": [
+        "com.tomtom.gplay.navapp"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "tomtom-amigo",
+      "displayName": "TomTom AmiGO",
+      "packageNames": [
+        "com.tomtom.speedcams.android.map"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "two-gis",
+      "displayName": "2GIS",
+      "packageNames": [
+        "ru.dublgis.dgismobile"
+      ],
+      "hasOfficialRules": false,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
+      "appId": "baidu-maps",
+      "displayName": "Baidu Maps",
+      "packageNames": [
+        "com.baidu.BaiduMap"
       ],
       "hasOfficialRules": false,
       "captureAvailable": true,

@@ -1,6 +1,114 @@
 # Implementation Status
 
-_Last updated: 2026-07-25_
+_Last updated: 2026-07-26_
+
+## In-app update check + <queries> fix (2026-07-26)
+
+**Milestone:** Android enhancement (new REQ-ANDROID-013) plus a correctness fix to the catalog work.
+
+**Update check (REQ-ANDROID-013).** The app now detects a newer version of itself:
+- `AppVersions` — pure dotted-version comparison (tolerant of a leading `v`, differing lengths,
+  pre-release suffixes; junk never reads as newer).
+- `ReleaseFetcher` / `GitHubReleaseFetcher` — reads `tag_name` from
+  `api.github.com/repos/optio/PebbleNTN/releases/latest` via `HttpURLConnection` (no new dependency).
+  This is the app's **first and only network call**: an unauthenticated GET that sends no user or
+  notification data. Best-effort — any failure returns null.
+- `UpdateCheckRepository` — checks at most once a week (self-throttling via a persisted last-check
+  time) and on demand; persists the last-known latest version so the prompt survives restarts;
+  exposes `StateFlow<UpdateState>` and an `autoCheckEnabled` `StateFlow`.
+- **Opt-in automatic check.** `INTERNET` is a normal install-time permission — Android grants it
+  silently and there is no runtime prompt to defer, so a setting (not a permission request) gates
+  automatic network use. The weekly auto-check is **off by default**; `AppContainer.start()` fires it
+  only when the toggle is on, so with it off the app makes no network connection on its own. The
+  manual "Check for updates" button always works (an explicit tap = consent for that one check), and
+  turning the toggle on runs an immediate check.
+- Wiring: the dashboard shows a "Check for updates" button near the top (visible on launch — the main
+  way to check since auto-check is off by default), the update card when one is available (versions, a
+  Download-latest button to the releases page, uninstall/reinstall guidance), and a "Check weekly"
+  toggle in the footer. The manual check reports its outcome via a Toast.
+- Added `android.permission.INTERNET`, and a transparency line to the onboarding disclosure. No upload
+  occurs, so REQ-SEC-002 still holds.
+- The dashboard `Column` is now scrollable — with the accumulating cards it otherwise clipped the
+  footer controls off-screen.
+
+**`<queries>` fix.** The previous catalog expansion added 13 apps to the catalog but not to the
+manifest `<queries>`. On Android 11+, `InstalledAppsProvider` uses `getPackageInfo`, which is subject
+to package visibility, so those apps were invisible → never discovered as installed → never enabled →
+their notifications dropped. (The share-to-help emulator test only worked because the debug fixture
+publisher shares our signing key, which grants visibility.) All catalog packages are now declared in
+`<queries>`, and `validate_catalog.py` gained a cross-check that fails if the manifest and catalog
+drift apart (verified: 20 packages covered).
+
+**Verification.** `test lint assembleDebug` and full `test-all.sh` green. New unit tests:
+`AppVersionsTest` (comparison edge cases) and `UpdateCheckRepositoryTest` (weekly throttle, force,
+update detection, failure retention, persistence, auto-check default off). Emulator (api34, real
+network): with auto-check off (default) a fresh launch made **no** GitHub call and showed no card;
+turning on the "Check weekly" toggle triggered an immediate check that saw v0.0.13 vs the installed
+0.0.12 and showed the update card; the download button opened the releases page; the manual "Check
+for updates" reported "An update is available" via Toast. The dashboard scrolls so all controls stay
+reachable.
+
+## Share unmatched captures to help add support (2026-07-26)
+
+**Milestone:** Android enhancement (new REQ-DEBUG-011). Watch and protocol unchanged. Builds on the
+existing redacted export (`ExportBuilder` PRIVACY_SAFE, `Redactor`, `DiagnosticShareManager`).
+
+**Problem.** Adding support for a new app needs real captured notifications, but nothing invited the
+user to contribute the captures the app already had for apps without rules.
+
+**Design.**
+- **Detection.** `DebugEventDao.observeCountByDisposition` + `DebugHistoryRepository.observeUnmatchedCount()`
+  give a live count of `CAPTURED_UNMATCHED` events (captures no rule matched).
+- **Nudge.** The dashboard shows a prompt card when that count > 0, stating no personal data is
+  shared, leading to a review screen.
+- **Review.** `ShareDiagnosticsScreen` explains what's shared and shows the exact PRIVACY_SAFE
+  (redacted) payload — road names/destinations → ▮, only maneuver keywords/digits/units and the
+  package name remain — so the user can verify before sending. Preview is capped for display; the
+  attachment carries all included events.
+- **Email + 10 MB cap.** `DiagnosticExporter.buildCapped(mode, maxBytes)` keeps only the newest
+  events that fit (events are newest-first; binary search over the count), reporting how many
+  survived. `DiagnosticShareManager.shareViaEmail` writes the redacted file, then opens an email app
+  via `ACTION_SEND` + a `mailto:` selector with the recipient (`share_logs_recipient` — a resource
+  the maintainer fills in later), subject and body prefilled and the JSON attached; falls back to the
+  generic chooser if no email app is present. Nothing is sent automatically.
+
+**Verification.** `test lint assembleDebug` and full `test-all.sh` green. New unit tests:
+`buildCappedKeepsNewestEventsUnderTheByteCap` (fits the cap, drops oldest, keeps newest, still
+redacted) and `unmatchedCountCountsOnlyCapturesWithNoMatchingRule` (excludes matched events).
+Emulator (api34): posted an unmatched capture via the fixture publisher → the dashboard nudge
+appeared with the count → the review screen showed the redacted dataset (2 KB, 3 events) → "Share via
+email" wrote `pebblentn-diagnostics-safe.json` and opened the email flow with it attached. Note: on
+the AOSP emulator the `mailto:` selector surfaced the system share sheet (Gmail present) rather than
+jumping straight into the mail app; on a device with a default mail app it targets email directly —
+consistent with the "where the platform allows" wording. The recipient address is an empty
+placeholder until provided.
+
+## Expanded navigation-app catalog (2026-07-26)
+
+**Milestone:** data change to `rules/catalog/navigation-apps.json` (REQ-ANDROID-004/005). No code
+change; the catalog is the single source of truth, staged into app assets by Gradle.
+
+Added 13 common navigation apps so the companion app detects them and captures their notifications
+(enabled by default on first discovery, per REQ-ANDROID-004). All are **capture-only**
+(`hasOfficialRules: false`): they are detected and their notifications captured for rule authoring,
+but turn-by-turn watch output still requires official parsing rules authored from real captured
+fixtures (REQ-ANDROID-005; AGENTS rule 14 forbids rules without fixtures). Google Maps remains the
+only app with official rules.
+
+Identifiers added (verified against the Play Store / F-Droid): CoMaps (`app.comaps.google`,
+`app.comaps.fdroid`), Maps.me (`com.mapswithme.maps.pro`), Mapy.com (`cz.seznam.mapy`), Amap/Gaode
+(`com.autonavi.minimap`), Sygic (`com.sygic.aura`), Yandex Navigator (`ru.yandex.yandexnavi`), Yandex
+Maps (`ru.yandex.yandexmaps`), Petal Maps (`com.huawei.maps.app`), Magic Earth
+(`com.generalmagic.magicearth`), TomTom GO Navigation (`com.tomtom.gplay.navapp`), TomTom AmiGO
+(`com.tomtom.speedcams.android.map`), 2GIS (`ru.dublgis.dgismobile`), Baidu Maps
+(`com.baidu.BaiduMap`). Waze, OsmAnd, Organic Maps and HERE WeGo were already present.
+
+**Verification.** `validate-rules.sh` passes (19 apps); `NavigationAppCatalogTest` gains a case that
+locks every new package→appId mapping and asserts capture-only; `test lint assembleDebug` green; the
+merged debug-APK asset contains all 19 apps. Captured notifications from these apps appear in Debug
+History, which is where a maintainer collects the fixtures needed to author each app's rules.
+
+
 
 ## "Refresh app" — notification-listener recovery (2026-07-25)
 

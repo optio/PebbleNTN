@@ -61,6 +61,14 @@ class DebugHistoryRepository(
 
     suspend fun count(): Int = dao.count()
 
+    /**
+     * Live count of captured notifications that no rule matched (apps without rules yet, or new
+     * notification shapes). Drives the dashboard nudge to share diagnostics that would help add
+     * support for those apps.
+     */
+    fun observeUnmatchedCount(): Flow<Int> =
+        dao.observeCountByDisposition(DebugDisposition.CAPTURED_UNMATCHED)
+
     suspend fun deleteById(id: Long) = dao.deleteById(id)
 
     suspend fun deleteAll() = dao.deleteAll()

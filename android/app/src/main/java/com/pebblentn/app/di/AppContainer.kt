@@ -29,6 +29,7 @@ import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.NotificationListenerRefresher
 import com.pebblentn.app.system.SystemNotificationAccess
 import com.pebblentn.app.system.SystemNotificationListenerRefresher
+import com.pebblentn.app.update.UpdateCheckRepository
 import kotlinx.coroutines.CoroutineScope
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,12 @@ class AppContainer(context: Context) {
     /** Rebinds the notification listener when it silently stops delivering posts (REQ-ANDROID-012). */
     val notificationListenerRefresher: NotificationListenerRefresher =
         SystemNotificationListenerRefresher(appContext)
+
+    /** Weekly (or on-demand) check for a newer app version on GitHub (REQ-ANDROID-013). */
+    val updateCheckRepository = UpdateCheckRepository(
+        appContext,
+        currentVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
+    )
 
     private val ruleEngine = RuleEngine()
 
@@ -157,6 +164,11 @@ class AppContainer(context: Context) {
             // Log the watch link once so a logcat capture shows whether a PebbleKit 2 companion app
             // is present and a watch is connected — the usual reason the watchapp stays "Connecting".
             timber.log.Timber.i("Watch link at startup: %s", watchTransport.linkDiagnostics())
+            // Weekly, self-throttling app-update check (REQ-ANDROID-013) — only if the user opted in,
+            // so the app makes no network connection on its own by default.
+            if (updateCheckRepository.autoCheckEnabled.value) {
+                updateCheckRepository.checkForUpdate(force = false)
+            }
         }
     }
 
