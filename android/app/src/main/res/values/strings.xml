@@ -90,10 +90,15 @@
     <!-- Share-to-help flow (REQ-DEBUG-011). The recipient is filled in by the maintainer; leaving it
          empty just means the user types the address in their mail app. -->
     <string name="dashboard_share_nudge_title">Help add app support</string>
-    <string name="dashboard_share_nudge_body">PebbleNTN captured navigation notifications from apps it can\'t turn into watch directions yet (%1$d so far). Sharing these logs — with no personal data — helps add support.</string>
+    <string name="dashboard_share_nudge_body">PebbleNTN captured navigation notifications from apps it can\'t turn into watch directions yet (%1$d so far). Sharing these logs helps add support.</string>
     <string name="dashboard_share_nudge_action">Review &amp; share</string>
     <string name="share_diag_title">Help add app support</string>
-    <string name="share_diag_explainer">Sharing these capture logs helps us add turn-by-turn support for more navigation apps.\n\nNo personal data is shared: road names, destinations and any other free text are removed and shown as ▮. Only the structure — maneuver words, numbers and units — and the app’s package name remain. Nothing is sent automatically; you review it below and send it from your own email app.</string>
+    <string name="share_diag_explainer">Sharing these capture logs helps us add turn-by-turn support for more navigation apps. Choose what to include, review it below, and send it from your own email app — nothing is sent automatically.</string>
+    <string name="share_diag_mode_label">What to include</string>
+    <string name="share_diag_mode_redacted">Redacted (road names removed)</string>
+    <string name="share_diag_mode_full">Include street names</string>
+    <string name="share_diag_mode_redacted_hint">Road names, destinations and other free text are removed (shown as ▮). Only maneuver words, numbers and units remain.</string>
+    <string name="share_diag_mode_full_hint">Keeps the full notification text, including street names, destinations and route context. More valuable: it lets us add missing translations for turn and direction words in your language.</string>
     <string name="share_diag_summary">%1$d events · %2$s</string>
     <string name="share_diag_truncated">Older events were left out to keep the attachment under 10 MB (newest %1$d of %2$d included).</string>
     <string name="share_diag_preview_label">Data to be shared (review)</string>

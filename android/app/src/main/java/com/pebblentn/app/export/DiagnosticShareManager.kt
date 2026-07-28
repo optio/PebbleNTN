@@ -42,12 +42,12 @@ class DiagnosticShareManager(private val context: Context) {
      * generic Sharesheet so the user is never stuck. Nothing is sent automatically — the user still
      * reviews and presses send in their mail app.
      */
-    fun shareViaEmail(json: String, recipient: String, subject: String, body: String) {
+    fun shareViaEmail(json: String, mode: ExportMode, recipient: String, subject: String, body: String) {
         val dir = File(context.cacheDir, EXPORT_DIR).apply {
             deleteRecursively()
             mkdirs()
         }
-        val file = File(dir, fileName(ExportMode.PRIVACY_SAFE))
+        val file = File(dir, fileName(mode))
         file.writeText(json)
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 

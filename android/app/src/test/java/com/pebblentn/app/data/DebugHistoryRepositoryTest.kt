@@ -106,6 +106,20 @@ class DebugHistoryRepositoryTest {
     }
 
     @Test
+    fun nonManeuverCapturesAreNotCountedAsUnmatched() = runTest {
+        // Two real turn instructions (default title "Turn right")...
+        repo.recordPosted(event("com.google.android.apps.maps", at = 1))
+        repo.recordPosted(event("com.google.android.apps.maps", at = 2))
+        // ...and two road-name updates that carry no maneuver — the noise that floods real logs.
+        repo.recordPosted(event("com.google.android.apps.maps", at = 3, title = "A184"))
+        repo.recordPosted(event("com.google.android.apps.maps", at = 4, title = "High Street"))
+
+        assertEquals(2, repo.observeUnmatchedCount().first())
+        val dispositions = repo.observeRecent().first().map { it.disposition }.toSet()
+        assertTrue(dispositions.contains(DebugDisposition.CAPTURED_NON_MANEUVER))
+    }
+
+    @Test
     fun deleteByIdAndDeleteAll() = runTest {
         val id = repo.recordPosted(event("com.waze", at = 1))
         repo.recordPosted(event("com.waze", at = 2))

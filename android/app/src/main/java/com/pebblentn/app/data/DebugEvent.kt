@@ -10,7 +10,15 @@ enum class DebugEventType { POSTED, REMOVED }
 /** Disposition of a captured event. */
 object DebugDisposition {
     const val MATCHED = "MATCHED"
+
+    /** No rule matched, but the notification looks like a maneuver — a real gap worth contributing. */
     const val CAPTURED_UNMATCHED = "CAPTURED_UNMATCHED"
+
+    /**
+     * No rule matched and the notification does not look like a turn instruction (a road-name update,
+     * driving-mode card, …). Retained for debugging but not counted toward the "share to help" prompt.
+     */
+    const val CAPTURED_NON_MANEUVER = "CAPTURED_NON_MANEUVER"
 }
 
 /** Privacy classification of a stored event's content. */

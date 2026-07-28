@@ -4,6 +4,7 @@ import com.pebblentn.app.core.Hashing
 import com.pebblentn.app.data.db.DebugEventDao
 import com.pebblentn.app.data.db.NotificationDebugEventEntity
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.notification.ManeuverHeuristic
 import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.notification.PostedNotification
 import com.pebblentn.app.rules.RuleEvaluation
@@ -47,11 +48,22 @@ class DebugHistoryRepository(
             traceJson = evaluation?.let {
                 json.encodeToString(ListSerializer(RuleTraceEntry.serializer()), it.trace)
             },
-            disposition = if (evaluation?.matched == true) DebugDisposition.MATCHED else DebugDisposition.CAPTURED_UNMATCHED,
+            disposition = dispositionFor(evaluation, snapshot),
             transportStatus = null,
             privacyClassification = PrivacyClassification.RAW,
         )
         return dao.insertAndTrim(entity, retentionLimit)
+    }
+
+    /**
+     * A matched event is MATCHED; an unmatched one is a real gap (CAPTURED_UNMATCHED) only if it
+     * looks like a maneuver, otherwise it is a non-maneuver update (CAPTURED_NON_MANEUVER) that is
+     * kept for debugging but excluded from the "share to help" count.
+     */
+    private fun dispositionFor(evaluation: RuleEvaluation?, snapshot: NotificationSnapshot): String = when {
+        evaluation?.matched == true -> DebugDisposition.MATCHED
+        ManeuverHeuristic.looksLikeManeuver(snapshot.combinedText) -> DebugDisposition.CAPTURED_UNMATCHED
+        else -> DebugDisposition.CAPTURED_NON_MANEUVER
     }
 
     fun observeRecent(limit: Int = DEFAULT_PAGE): Flow<List<DebugEvent>> =

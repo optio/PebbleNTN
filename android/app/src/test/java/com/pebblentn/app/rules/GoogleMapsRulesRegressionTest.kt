@@ -56,8 +56,15 @@ class GoogleMapsRulesRegressionTest {
         javaClass.getResourceAsStream(path)?.bufferedReader()?.use { it.readText() }
             ?: error("resource not found: $path")
 
+    /** Every bundled Google Maps locale; the engine filters by each fixture's locale. */
+    private val locales = listOf("en", "it", "fr", "es", "de", "nl")
+
     private val bundledRules: LayeredRules by lazy {
-        LayeredRules(bundled = RulesetCodec.parse(resource("/rules/bundled/google-maps/en.json")).rules)
+        LayeredRules(
+            bundled = locales.flatMap { lang ->
+                RulesetCodec.parse(resource("/rules/bundled/google-maps/$lang.json")).rules
+            },
+        )
     }
 
     private val fixtures: List<Fixture> by lazy {
