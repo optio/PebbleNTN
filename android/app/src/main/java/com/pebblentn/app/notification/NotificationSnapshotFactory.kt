@@ -21,6 +21,8 @@ object NotificationSnapshotFactory {
     ): NotificationSnapshot {
         val extras = notification.extras
         fun str(key: String): String? = extras?.getCharSequence(key)?.toString()?.takeIf { it.isNotEmpty() }
+        // Documented numeric progress, only when actually present (getInt returns 0 for a missing key).
+        fun int(key: String): Int? = if (extras?.containsKey(key) == true) extras.getInt(key) else null
 
         return NotificationSnapshot(
             packageName = packageName,
@@ -36,6 +38,8 @@ object NotificationSnapshotFactory {
             bigText = str(Notification.EXTRA_BIG_TEXT),
             summaryText = str(Notification.EXTRA_SUMMARY_TEXT),
             infoText = str(Notification.EXTRA_INFO_TEXT),
+            progress = int(Notification.EXTRA_PROGRESS),
+            progressMax = int(Notification.EXTRA_PROGRESS_MAX),
         )
     }
 }

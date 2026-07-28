@@ -2,6 +2,31 @@
 
 _Last updated: 2026-07-28_
 
+## Nudge-noise filter + ProgressStyle progress capture (2026-07-29)
+
+Prompted by a maintainer's own log: 64 of 65 captured Google Maps notifications were non-maneuver
+updates (road names/numbers like "A184", driving-mode cards) that correctly don't match but flooded
+the "share to help" count; the one real turn-by-turn notification (ProgressStyle + ETA) matched fine.
+
+**Nudge-noise filter.** `ManeuverHeuristic.looksLikeManeuver(text)` — true if the text has an ETA
+clock (`HH:MM`, present on real turn-by-turn notifications, absent on road-name updates; language- and
+app-independent) or a maneuver keyword in a supported language. `DebugHistoryRepository` now records
+an unmatched capture as `CAPTURED_UNMATCHED` (a real gap → counted for the prompt) only when it looks
+like a maneuver, else `CAPTURED_NON_MANEUVER` (kept for debugging, not counted). Net effect: the
+maintainer's log now nudges 0 (nothing to fix), while a genuine unsupported-language capture (Fabio's
+Italian, ETA present) still surfaces. Unit-tested (`ManeuverHeuristicTest`, repository test).
+
+**ProgressStyle progress capture (investigative).** The Android 16 `ProgressStyle` navigation
+notification carries the next-maneuver distance in a custom view we deliberately don't read
+(REQ-SEC-003), so it isn't in any readable text field — confirmed from the log (title + ETA only, no
+distance). Its structured progress (`getProgress`/`getProgressMax`) is a whole-trip tracker, not the
+distance-to-turn. To turn that from guess to data, the snapshot now captures the documented numeric
+`EXTRA_PROGRESS`/`EXTRA_PROGRESS_MAX` when present — non-content, non-personal integers, kept OUT of
+`combinedText` (no false distance) and not yet used for extraction. REQ-SEC-003 updated to permit
+these documented numbers. A full log during navigation will now reveal whether the progress counts
+down per maneuver (usable) or up over the trip (a dead end for maneuver distance). No fabricated
+extractor was shipped.
+
 ## Share-to-help: choose redacted vs full (2026-07-28)
 
 The dashboard nudge no longer claims "with no personal data" (the flow now offers a full option too).

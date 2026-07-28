@@ -76,6 +76,24 @@ class NotificationSnapshotFactoryTest {
     }
 
     @Test
+    fun capturesDocumentedProgressWhenPresentAndNullOtherwise() {
+        val withProgress = notification {
+            putCharSequence(Notification.EXTRA_TITLE, "Head toward Main St")
+            putInt(Notification.EXTRA_PROGRESS, 1200)
+            putInt(Notification.EXTRA_PROGRESS_MAX, 5000)
+        }
+        val snap = NotificationSnapshotFactory.create("com.google.android.apps.maps", 1, 0L, withProgress)
+        assertEquals(1200, snap.progress)
+        assertEquals(5000, snap.progressMax)
+        // Progress is a whole-trip tracker, not a maneuver distance: it must stay out of combinedText.
+        assertFalse(snap.combinedText.contains("1200"))
+
+        val without = notification { putCharSequence(Notification.EXTRA_TITLE, "Turn right") }
+        val snap2 = NotificationSnapshotFactory.create("com.google.android.apps.maps", 1, 0L, without)
+        assertNull("absent progress key must not become 0", snap2.progress)
+    }
+
+    @Test
     fun missingFieldsAreNull() {
         val n = notification { putCharSequence(Notification.EXTRA_TITLE, "Only title") }
         val snap = NotificationSnapshotFactory.create("com.waze", 1, 0L, n)

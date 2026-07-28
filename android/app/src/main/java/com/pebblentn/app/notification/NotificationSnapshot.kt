@@ -24,6 +24,15 @@ data class NotificationSnapshot(
     val bigText: String? = null,
     val summaryText: String? = null,
     val infoText: String? = null,
+    /**
+     * The notification's documented numeric progress, when present (`EXTRA_PROGRESS` /
+     * `EXTRA_PROGRESS_MAX`). Captured for diagnosis of the Android 16 `ProgressStyle` navigation
+     * notification, whose maneuver distance is not in any readable text field. These are non-content,
+     * non-personal integers (a whole-trip tracker position), so they carry no destination or identity
+     * (REQ-SEC-003). They are NOT part of [combinedText] and are not used for distance extraction.
+     */
+    val progress: Int? = null,
+    val progressMax: Int? = null,
 ) {
     /**
      * Text fields joined for rule matching. Rules reference `combinedText` (see the bundled
