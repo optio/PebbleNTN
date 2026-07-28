@@ -25,6 +25,11 @@ data class ExportMetadata(
     val exportedAt: String,
     val appVersion: String,
     val androidRelease: String,
+    /**
+     * The device UI language tag (e.g. "it-IT"). Google Maps localizes its notifications, so this
+     * tells a maintainer which language's rules a shared log can improve (spec/300-data/ExportFormat).
+     */
+    val locale: String = "und",
 )
 
 /**
@@ -72,8 +77,15 @@ class ExportBuilder(
         appVersion: String,
         androidRelease: String,
         exportedAt: String,
+        locale: String = "und",
     ): String {
-        val metadata = ExportMetadata(mode = mode.name, exportedAt = exportedAt, appVersion = appVersion, androidRelease = androidRelease)
+        val metadata = ExportMetadata(
+            mode = mode.name,
+            exportedAt = exportedAt,
+            appVersion = appVersion,
+            androidRelease = androidRelease,
+            locale = locale,
+        )
         val bundle = when (mode) {
             ExportMode.RULES_ONLY -> ExportBundle(metadata, userRules = userRules)
             ExportMode.PRIVACY_SAFE -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = true) })

@@ -316,7 +316,10 @@ def cmd_test(args) -> int:
 
 
 def cmd_regression(args) -> int:
-    rules = load(str(REPO_ROOT / "rules" / "bundled" / "google-maps" / "en.json")).get("rules", [])
+    # Load every localized ruleset (en, it, fr, …); the engine filters by each fixture's locale.
+    rules = []
+    for path in sorted((REPO_ROOT / "rules" / "bundled" / "google-maps").glob("*.json")):
+        rules.extend(load(str(path)).get("rules", []))
     fixtures = load(str(REPO_ROOT / "rules" / "fixtures" / "google-maps.json")).get("fixtures", [])
     print("Google Maps regression:")
     return run_fixtures(rules, fixtures)
