@@ -2,6 +2,18 @@
 
 _Last updated: 2026-07-28_
 
+## Share-to-help: choose redacted vs full (2026-07-28)
+
+The dashboard nudge no longer claims "with no personal data" (the flow now offers a full option too).
+On "Review & share", `ShareDiagnosticsScreen` presents a choice (REQ-DEBUG-011): **Redacted** (default,
+privacy-safe) or **Include street names** (full/raw), the latter carrying the privacy explanation and
+a note that it is more valuable — it lets maintainers add missing direction/turn-word translations
+for the user's language. `ShareDiagnosticsViewModel` gains a selectable mode and rebuilds the capped
+preview per mode; `shareViaEmail` takes the mode so the attachment is named safe/full accordingly.
+The screen scrolls (fixed-height preview) so the added selector doesn't squeeze it. Verified on the
+api34 emulator: nudge text updated, the selector switches the payload (preview shows PRIVACY_SAFE vs
+FULL), and a full-mode share writes `pebblentn-diagnostics-full.json`.
+
 ## Localized Google Maps rules + multilingual redaction (2026-07-28)
 
 **Trigger:** a shared privacy-safe log from an Italian user (Fabio Pelagatti) whose Google Maps

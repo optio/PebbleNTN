@@ -134,6 +134,7 @@ class MainActivity : ComponentActivity() {
                     state = shareState,
                     onBack = { navController.popBackStack() },
                     onShareEmail = ::shareCaptureLogsByEmail,
+                    onModeChange = shareDiagnosticsViewModel::setMode,
                 )
             }
             composable("debug") {
@@ -263,6 +264,7 @@ class MainActivity : ComponentActivity() {
         val json = shareDiagnosticsViewModel.payloadJson() ?: return
         container.diagnosticShareManager.shareViaEmail(
             json = json,
+            mode = shareDiagnosticsViewModel.currentMode(),
             recipient = getString(R.string.share_logs_recipient),
             subject = getString(R.string.share_logs_subject),
             body = getString(R.string.share_logs_body),

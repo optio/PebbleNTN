@@ -27,15 +27,15 @@ Material 3 with subtle Pebble styling:
 - active ruleset version;
 - shortcuts to debug history and rules;
 - a "Refresh app" recovery action that reconnects the notification listener (REQ-ANDROID-012), with an explanation of when to use it (navigation running on the phone but not reaching the watch) and a confirmation that it ran;
-- when captures exist that no rule matched, a prompt to contribute those diagnostics (REQ-DEBUG-011), stating no personal data is shared and leading to the share-to-help screen;
+- when captures exist that no rule matched, a prompt to contribute those diagnostics (REQ-DEBUG-011), leading to the share-to-help screen;
 - a "Check for updates" control (always available), an opt-in "check weekly" toggle that is off by default, and, when a newer release exists, an update prompt with the available/installed versions, a download-latest action, and uninstall/reinstall guidance (REQ-ANDROID-013);
 - the dashboard scrolls, so its cards and controls remain reachable as they accumulate.
 
 ### Share to help add support
 - reached from the dashboard prompt when unmatched captures exist;
-- explains that no personal data is shared and that nothing is sent automatically;
-- shows the exact privacy-safe (redacted) dataset for review before sharing;
-- shares by opening the user's email app with the redacted diagnostics attached and recipient/subject prefilled where the platform allows, truncated to the newest 10 MB if larger.
+- lets the user choose what to share: the redacted (privacy-safe) dataset, the default, or the full dataset that keeps street names — the latter presented with the privacy explanation and a note that it is more valuable for adding missing direction/turn-word translations;
+- shows the exact chosen dataset for review before sharing; nothing is sent automatically;
+- shares by opening the user's email app with the chosen diagnostics attached and recipient/subject prefilled where the platform allows, truncated to the newest 10 MB if larger.
 
 ### Navigation Apps
 - catalog apps grouped as installed/uninstalled;
