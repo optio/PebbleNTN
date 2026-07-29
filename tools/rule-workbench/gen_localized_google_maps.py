@@ -15,6 +15,14 @@ Design notes:
   vs "rechts aanhouden"). If one misfires it degrades to a plain turn — still the right side.
 - ARRIVE matches the TITLE only. Google Maps puts the ETA in subText on every notification, often
   with a localized "arrive" word, so matching combinedText would classify every turn as ARRIVE.
+- ARRIVE sits at the BOTTOM of the ladder (40), unlike hand-authored en.json where it is on top.
+  The localized arrive patterns are prefix stems (see below) matched against a title that also
+  carries the destination road name, so they fire on ordinary road names: "Links abbiegen auf
+  Zielstattstraße" (Munich), "Tournez à gauche sur Rue de l'Arrivée" (Paris). Tightening the stem
+  cannot fix this — "Arrivée" is a well-formed inflection of the French stem — so instead a title
+  carrying an explicit maneuver resolves as that maneuver, and only titles with no maneuver word at
+  all fall through to ARRIVE. Real arrival phrasings ("Ziel erreicht", "Sei arrivato a
+  destinazione") carry no maneuver word, so they still reach it.
 - The ETA (secondaryText) is captured as the last clock time in subText, language-independently.
 
 These are authored from documented Google Maps phrasings and MUST be validated against real captures
@@ -27,7 +35,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO_ROOT / "rules" / "bundled" / "google-maps"
 PACKAGE = "com.google.android.apps.maps"
-RULESET_DATE = "2026.07.4"
+RULESET_DATE = "2026.07.5"
 
 # Per language: the regex fragments. `turn_*` are full "to the side" phrases; `right`/`left` are the
 # bare direction tokens used by the sharp/slight/keep refinements; the rest are keyword alternations.
@@ -139,11 +147,8 @@ def rule(rid, priority, field, value, maneuver, with_distance=True, comment=None
 
 
 def build(lang: str, k: dict) -> dict:
+    # Listed in evaluation (descending priority) order.
     rules = [
-        rule(f"google-maps-arrive-{lang}", 200, "title", rf"(?i)\b(?:{k['arrive']})", "ARRIVE",
-             with_distance=False,
-             comment="Title only: the ETA in subText often carries the localized 'arrive' word, so "
-                     "matching combinedText would classify every turn as ARRIVE."),
         rule(f"google-maps-roundabout-{lang}", 190, "combinedText", rf"(?i)\b(?:{k['roundabout']})\b", "ROUNDABOUT"),
         rule(f"google-maps-uturn-{lang}", 180, "combinedText", rf"(?i)\b(?:{k['uturn']})\b", "UTURN_LEFT"),
         rule(f"google-maps-sharp-right-{lang}", 170, "combinedText", both(k["sharp"], k["right"]), "SHARP_RIGHT"),
@@ -155,6 +160,14 @@ def build(lang: str, k: dict) -> dict:
         rule(f"google-maps-turn-right-{lang}", 100, "combinedText", rf"(?i){k['turn_right']}", "RIGHT"),
         rule(f"google-maps-turn-left-{lang}", 100, "combinedText", rf"(?i){k['turn_left']}", "LEFT"),
         rule(f"google-maps-continue-{lang}", 50, "combinedText", rf"(?i)\b(?:{k['straight']})\b", "STRAIGHT"),
+        rule(f"google-maps-arrive-{lang}", 40, "title", rf"(?i)\b(?:{k['arrive']})", "ARRIVE",
+             with_distance=False,
+             comment="Title only: the ETA in subText often carries the localized 'arrive' word, so "
+                     "matching combinedText would classify every turn as ARRIVE. Lowest priority: "
+                     "the pattern is a prefix stem and the title also carries the destination road "
+                     "name, so it fires on road names such as Zielstattstraße or Rue de l'Arrivée. "
+                     "A title with an explicit maneuver must resolve as that maneuver; only a title "
+                     "with no maneuver word falls through to ARRIVE."),
     ]
     return {
         "schemaVersion": 1,
