@@ -1,48 +1,10 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-de-2026.07.4",
+  "rulesetVersion": "google-maps-de-2026.07.5",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-28T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
-    {
-      "id": "google-maps-arrive-de",
-      "enabled": true,
-      "priority": 200,
-      "packageNames": [
-        "com.google.android.apps.maps"
-      ],
-      "locales": [
-        "de"
-      ],
-      "comment": "Title only: the ETA in subText often carries the localized 'arrive' word, so matching combinedText would classify every turn as ARRIVE.",
-      "conditions": [
-        {
-          "field": "title",
-          "operator": "regex",
-          "value": "(?i)\\b(?:ziel|angekommen|erreicht)"
-        }
-      ],
-      "output": {
-        "maneuver": {
-          "type": "literal",
-          "value": "ARRIVE"
-        },
-        "primaryText": {
-          "type": "firstNonEmpty",
-          "fields": [
-            "title",
-            "text"
-          ]
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
-        }
-      }
-    },
     {
       "id": "google-maps-roundabout-de",
       "enabled": true,
@@ -478,6 +440,44 @@
         "distanceMeters": {
           "type": "distance",
           "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-arrive-de",
+      "enabled": true,
+      "priority": 40,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Title only: the ETA in subText often carries the localized 'arrive' word, so matching combinedText would classify every turn as ARRIVE. Lowest priority: the pattern is a prefix stem and the title also carries the destination road name, so it fires on road names such as Zielstattstraße or Rue de l'Arrivée. A title with an explicit maneuver must resolve as that maneuver; only a title with no maneuver word falls through to ARRIVE.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)\\b(?:ziel|angekommen|erreicht)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
         },
         "primaryText": {
           "type": "firstNonEmpty",

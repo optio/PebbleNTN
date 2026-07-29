@@ -31,6 +31,20 @@ a matching bug:
    `capture-starting-navigation` asserts this): mapping it to a maneuver would put a false arrow on
    the watch.
 
+## Why localized ARRIVE sits at the bottom of the ladder (2026-07-29)
+
+The localized rulesets match ARRIVE with a *prefix stem* (`arriv`, `ziel`, `llega`, …) so that
+inflections are covered, against the `title` — which also carries the destination road name. At the
+top of the priority ladder that classified any road whose name begins with the stem as ARRIVE:
+`Links abbiegen auf Zielstattstraße` (Munich) and `Tournez à gauche sur Rue de l'Arrivée` (Paris
+15e) both showed the arrival glyph mid-route. A tighter stem cannot fix it — `Arrivée` *is* a
+well-formed inflection — so ARRIVE was demoted to priority 40, below every maneuver rule. A title
+carrying an explicit maneuver now resolves as that maneuver; only a title with no maneuver word
+falls through to ARRIVE, which is what real arrival phrasings look like. The
+`*-arrive-stem-in-road-name` fixtures and `localizedArriveRanksBelowEveryManeuverRule` pin this.
+English is unaffected: `en.json` matches whole words (`arriving|arrived|destination`) and keeps
+ARRIVE on top.
+
 ## Known gaps
 
 - Non-English locales — the bundle now ships Italian, French, Spanish, German and Dutch Google Maps
