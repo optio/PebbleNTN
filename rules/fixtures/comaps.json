@@ -1,0 +1,34 @@
+{
+  "note": "CoMaps (Organic Maps fork). Fixtures with source=capture are derived from a real CoMaps capture on Android 16 (2026-07-30, app.comaps.google). The FIELD STRUCTURE is real: the notification title is the distance-to-next-turn ('92 m') and the text is the road ('Kroonstraat'); the turn DIRECTION is only a graphical arrow icon, never text — so the expected maneuver is UNKNOWN by design. The street name is preserved from the real capture (a public street, not personal). Synthetic fixtures exercise units, the F-Droid package variant, and non-navigation notifications that must not match.",
+  "fixtures": [
+    {"name": "capture-92m-kroonstraat", "source": "capture", "locale": "nl", "packageName": "app.comaps.google",
+      "snapshot": {"title": "92 m", "text": "Kroonstraat"},
+      "comment": "The exact real capture that motivated this ruleset. Maneuver is UNKNOWN: the sharp-left arrow is icon-only.",
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 92, "ruleId": "comaps-navigation-step"}},
+
+    {"name": "km-distance", "source": "synthetic", "locale": "nl", "packageName": "app.comaps.google",
+      "snapshot": {"title": "1.2 km", "text": "Ringlaan"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 1200, "ruleId": "comaps-navigation-step"}},
+
+    {"name": "leading-distance-no-street", "source": "synthetic", "locale": "en", "packageName": "app.comaps.google",
+      "snapshot": {"title": "500 m"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 500, "ruleId": "comaps-navigation-step"}},
+
+    {"name": "fdroid-package-variant", "source": "synthetic", "locale": "en", "packageName": "app.comaps.fdroid",
+      "snapshot": {"title": "300 m", "text": "Main Street"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 300, "ruleId": "comaps-navigation-step"}},
+
+    {"name": "imperial-miles", "source": "synthetic", "locale": "en", "packageName": "app.comaps.google",
+      "snapshot": {"title": "0.2 mi", "text": "Highway 9"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 322, "ruleId": "comaps-navigation-step"}},
+
+    {"name": "non-navigation-download", "source": "synthetic", "locale": "en", "packageName": "app.comaps.google",
+      "snapshot": {"title": "Downloading maps", "text": "Netherlands"},
+      "comment": "A non-navigation CoMaps notification (title is not a bare distance) must not put an arrow on the watch.",
+      "expected": {"matched": false}},
+
+    {"name": "non-navigation-rerouting", "source": "synthetic", "locale": "en", "packageName": "app.comaps.google",
+      "snapshot": {"title": "Rerouting…", "text": "Kroonstraat"},
+      "expected": {"matched": false}}
+  ]
+}

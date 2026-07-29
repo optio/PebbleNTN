@@ -1,6 +1,43 @@
 # Implementation Status
 
-_Last updated: 2026-07-28_
+_Last updated: 2026-07-30_
+
+## CoMaps support: distance + street ruleset; arrow spike (2026-07-30)
+
+**Requirement being implemented.** A maintainer report ("tried CoMaps but it doesn't detect the
+movement") with a real capture: 65 identical events, `app.comaps.google`, all `CAPTURED_NON_MANEUVER`,
+`title="92 m"`, `text="Kroonstraat"`, everything else null. Two causes: (1) no CoMaps ruleset existed
+(only `google-maps/`), so nothing matched → no watch output; (2) CoMaps (an Organic Maps fork) never
+puts the turn direction in text — it's a graphical arrow only.
+
+**Shipped: `rules/bundled/comaps/any.json`** (locale-agnostic, one rule `comaps-navigation-step`,
+packages `app.comaps.google` + `app.comaps.fdroid`). Gated on a leading distance in the `title`
+(number + unit), it extracts `distanceMeters` from the title and the road from `text`, and emits
+`maneuver = UNKNOWN` **on purpose** — the watch shows distance + road with its neutral UNKNOWN glyph
+rather than a fabricated arrow (matched instructions forward regardless of maneuver;
+`debug_maneuver_unknown_hint` already exists). Auto-loaded by `AssetRuleRepository` (recursive asset
+walk). Fixtures `rules/fixtures/comaps.json` (7, incl. the real capture + non-navigation negatives);
+regression `ComapsRulesRegressionTest` (JVM, authoritative) and the workbench subset engine (now runs
+google-maps **and** comaps). Side effect resolved: these captures now match (disposition MATCHED), so
+they no longer sit as `CAPTURED_NON_MANEUVER` — no `ManeuverHeuristic` change needed.
+
+**Arrow spike — verdict: icon-name mapping infeasible.** Read Organic Maps `NavigationService.java`
+(CoMaps' upstream): title = `distToTurn`, text = `nextStreet`, `setSmallIcon(ic_splash)` (static),
+and the turn arrow is `carDirection.getTurnRes(exitNum)` rendered to a **Bitmap** via
+`Graphics.drawableToBitmap` and set with `setLargeIcon(Bitmap)`. A NotificationListener therefore reads
+the large icon back as `Icon` `TYPE_BITMAP` — pixels only, **no resource id/name to map**; the only
+resource-backed icon is the turn-agnostic splash. Real arrows would require **image template-matching**
+the large-icon bitmap against OM/CoMaps' turn-glyph set — feasible but a separate milestone (tint
+varies; roundabouts composite the exit number into the bitmap). Not built now; distance+street with the
+neutral marker is the honest shippable state. Same structure almost certainly covers Organic Maps
+(`app.organicmaps`) — deferred until a real OM capture confirms it.
+
+**Verification.** `./scripts/validate-rules.sh` OK (schema); workbench regression 54/54 + 7/7; JVM
+`ComapsRulesRegressionTest` + `GoogleMapsRulesRegressionTest` BUILD SUCCESSFUL. Not yet exercised
+end-to-end on the emulator (rule pipeline is the same proven path as Google Maps).
+
+**Next atomic task.** Await maintainer's call on whether to scope arrow template-matching as a
+milestone; optionally add `app.organicmaps` to the ruleset once an OM capture is in hand.
 
 ## Nudge-noise filter + ProgressStyle progress capture (2026-07-29)
 
