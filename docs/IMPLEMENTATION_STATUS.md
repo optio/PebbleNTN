@@ -36,8 +36,15 @@ neutral marker is the honest shippable state. Same structure almost certainly co
 `ComapsRulesRegressionTest` + `GoogleMapsRulesRegressionTest` BUILD SUCCESSFUL. Not yet exercised
 end-to-end on the emulator (rule pipeline is the same proven path as Google Maps).
 
+**Organic Maps added (2026-07-30).** `rules/bundled/organic-maps/any.json` (rule
+`organic-maps-navigation-step`, package `app.organicmaps`) mirrors the CoMaps rule — justified by
+reading OM's `NavigationService.java` directly (CoMaps is a fork of it; identical notification
+construction). Fixtures `rules/fixtures/organic-maps.json` are synthetic (no real OM capture yet, to be
+re-pinned as `source=capture` later); `OrganicMapsRulesRegressionTest` (JVM) + workbench regression
+(now google-maps + comaps + organic-maps). Schema OK; 54/54 + 7/7 + 5/5; JVM green.
+
 **Next atomic task.** Await maintainer's call on whether to scope arrow template-matching as a
-milestone; optionally add `app.organicmaps` to the ruleset once an OM capture is in hand.
+milestone; re-pin the OM fixtures against a real Organic Maps capture when available.
 
 ## Nudge-noise filter + ProgressStyle progress capture (2026-07-29)
 

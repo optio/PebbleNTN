@@ -1,0 +1,24 @@
+{
+  "note": "Organic Maps (app.organicmaps). Fixtures are synthetic, authored from the OM NavigationService source, which builds the identical notification to its CoMaps fork: the title is the distance-to-next-turn and the text is the road; the turn DIRECTION is only a graphical arrow icon (setLargeIcon Bitmap), never text — so the expected maneuver is UNKNOWN by design. To be re-pinned as source=capture once a real Organic Maps capture is in hand.",
+  "fixtures": [
+    {"name": "distance-and-street", "source": "synthetic", "locale": "en", "packageName": "app.organicmaps",
+      "snapshot": {"title": "92 m", "text": "Kroonstraat"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 92, "ruleId": "organic-maps-navigation-step"}},
+
+    {"name": "km-distance", "source": "synthetic", "locale": "en", "packageName": "app.organicmaps",
+      "snapshot": {"title": "1.2 km", "text": "Ringlaan"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 1200, "ruleId": "organic-maps-navigation-step"}},
+
+    {"name": "leading-distance-no-street", "source": "synthetic", "locale": "en", "packageName": "app.organicmaps",
+      "snapshot": {"title": "500 m"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 500, "ruleId": "organic-maps-navigation-step"}},
+
+    {"name": "imperial-feet", "source": "synthetic", "locale": "en", "packageName": "app.organicmaps",
+      "snapshot": {"title": "300 ft", "text": "Main Street"},
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 91, "ruleId": "organic-maps-navigation-step"}},
+
+    {"name": "non-navigation-download", "source": "synthetic", "locale": "en", "packageName": "app.organicmaps",
+      "snapshot": {"title": "Downloading maps", "text": "Netherlands"},
+      "expected": {"matched": false}}
+  ]
+}

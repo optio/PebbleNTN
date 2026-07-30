@@ -329,7 +329,7 @@ def _regression_for(app: str) -> int:
 def cmd_regression(args) -> int:
     # Each bundled app with fixtures; a failure in any app fails the whole run.
     failed = 0
-    for app in ("google-maps", "comaps"):
+    for app in ("google-maps", "comaps", "organic-maps"):
         failed |= _regression_for(app)
     return failed
 
