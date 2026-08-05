@@ -142,14 +142,26 @@ jobs:
         id: signing
         env:
           KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
-            echo "signed=true" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "$KEYSTORE_BASE64" ]; then
             echo "No signing keystore configured; the APK will be a debug-signed build."
             echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          ks="$RUNNER_TEMP/upload.keystore"
+          # Tolerate line-wrapped base64 (e.g. `base64` without `-w0`) by stripping whitespace.
+          if ! printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$ks" 2>/dev/null; then
+            echo "::error::UPLOAD_KEYSTORE_BASE64 is not valid base64. Recreate it with 'base64 -w0 <keystore>' (macOS: 'base64 -i <keystore> | tr -d \"\\n\"') and paste the ENTIRE output as the secret."
+            exit 1
+          fi
+          # Fail early with an actionable message if the keystore/alias/password don't line up.
+          if ! keytool -list -keystore "$ks" -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "::error::Keystore decoded but keytool could not open alias '$KEY_ALIAS' with KEYSTORE_PASSWORD. Check the KEY_ALIAS and KEYSTORE_PASSWORD secrets match the keystore."
+            exit 1
+          fi
+          echo "signed=true" >> "$GITHUB_OUTPUT"
 
       # Signed release build when the keystore secrets exist, debug build otherwise. KEYSTORE_PATH is
       # only exported in the signed branch: an empty value is not the same as an unset one, and the
@@ -187,6 +199,7 @@ jobs:
       # it is captured automatically on every signed release instead of being read out by hand.
       - name: Signing certificate SHA-256 (F-Droid AllowedAPKSigningKeys)
         if: steps.signing.outputs.signed == 'true'
+        continue-on-error: true # informational only; never fail a release over it
         run: |
           apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           sha=$("$apksigner" verify --print-certs pebble-ntn.apk \
