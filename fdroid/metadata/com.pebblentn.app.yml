@@ -17,6 +17,11 @@ Builds:
     versionCode: 19
     commit: v0.0.19
     subdir: android/app
+    # The Pebble watchapp's package.json is app metadata with no npm dependencies and is not part of
+    # the Android build (subdir android/app); the scanner still requires a lockfile for any
+    # package.json, so it is ignored here.
+    scanignore:
+      - watchapp/package.json
     gradle:
       - yes
 
