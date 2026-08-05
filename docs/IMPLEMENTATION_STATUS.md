@@ -2,6 +2,33 @@
 
 _Last updated: 2026-08-05_
 
+## OsmAnd navigation ruleset (2026-08-05)
+
+**Requirement.** A user FULL diagnostics export (en-US, Android 16) showed 88 `net.osmand` events, all
+unmatched — OsmAnd had no ruleset, so an actively-navigating OsmAnd user got nothing on the watch.
+OsmAnd puts the whole step in the notification **title** as `"<distance> • <instruction>"`
+(`BigTextStyle`; `text`/`subText` null), e.g. `"200 m • Turn right and go"`, `"700 ft • Turn right and
+go"`; downloads/indexing (`"Downloading … map"`, `"Indexing map…"`) correctly stay non-maneuver.
+
+**Shipped: `rules/bundled/osmand/en.json`** (packages `net.osmand` + `net.osmand.plus`, locale `en`),
+modelled on `google-maps/en.json`: maneuver keyword against `combinedText` (== title here), distance
+from the leading number+unit, road/instruction as primary text. **Turn-left/right are capture-confirmed;**
+roundabout, U-turn, keep, slight, sharp, continue and arrive are authored from OsmAnd's known English
+phrasing and marked pending capture (the app stays `captureOnly` in the catalog, like CoMaps/OM, so it
+keeps inviting captures). **ARRIVE sits at priority 40** — below every maneuver — applying the same
+lesson as the localized Google Maps fix: the title carries the destination road name, so an explicit
+maneuver must win; `arriveRanksBelowEveryManeuverRule` and an `*-arrive-stem-in-road-name` fixture pin
+it. `continue` matches only `Go straight`/`Continue`, never the bare `"and go"` that ends every turn
+title. Fixtures `rules/fixtures/osmand.json` (15: 6 capture, 9 synthetic); `OsmandRulesRegressionTest`
+(JVM) + workbench regression (now google-maps + comaps + organic-maps + osmand).
+
+**Verification.** `./scripts/validate-rules.sh` OK; workbench 64/64 + 7/7 + 5/5 + 15/15; JVM
+`:app:testDebugUnitTest` + `lint` BUILD SUCCESSFUL.
+
+**Deferred (same log).** Google Maps approaching-a-POI state (`"60 m · vehicle inspection Deurne"`,
+ProgressStyle, distance + destination name, no maneuver word) is still unmatched — same arrival-approach
+gap as the bare-address case; matching "distance · anything" is unsafe without a dedicated signal.
+
 ## Non-breaking-space fix + Google Maps "classic" layout; OM fixture re-pinned (2026-08-05)
 
 **Requirement.** Four more user diagnostics exports analysed. They surfaced one **critical** defect and

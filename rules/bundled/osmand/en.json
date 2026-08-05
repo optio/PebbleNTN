@@ -1,0 +1,443 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "osmand-en-2026.08.1",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-08-05T00:00:00Z",
+  "publisher": "PebbleNTN maintainers",
+  "rules": [
+    {
+      "id": "osmand-roundabout-en",
+      "enabled": true,
+      "priority": 190,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Authored from OsmAnd's English phrasing; validate against a real roundabout capture.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\broundabout\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-uturn-en",
+      "enabled": true,
+      "priority": 180,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Authored from OsmAnd's English phrasing; validate against a real capture.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bu-?turn\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-en",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bsharp\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-left-en",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bsharp\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-en",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bslight(?:ly)?\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-en",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bslight(?:ly)?\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-en",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bkeep\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-en",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bkeep\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-en",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Capture-confirmed (2026-08, en). OsmAnd title format is '<distance> • Turn right and go ...'; distance is the leading number+unit.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-en",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Capture-confirmed (2026-08, en).",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-continue-en",
+      "enabled": true,
+      "priority": 50,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Matches 'Go straight'/'Continue' only, never the bare 'and go' that ends every OsmAnd turn title.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\b(?:go\\s+straight|continue)\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    },
+    {
+      "id": "osmand-arrive-en",
+      "enabled": true,
+      "priority": 40,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Lowest priority, title only: the title carries the destination road name, so an explicit maneuver must win and only a maneuver-less title falls through to ARRIVE (same lesson as the localized Google Maps fix). Authored from OsmAnd phrasing; validate against a real arrival capture.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)\\b(?:arrive|arrived|reached|destination)\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        }
+      }
+    }
+  ]
+}
