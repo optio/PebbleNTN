@@ -121,6 +121,22 @@ jobs:
           python3 scripts/changelog.py "$range" > CHANGELOG_RELEASE.md
           cat CHANGELOG_RELEASE.md
 
+      # Write the per-version F-Droid changelog into the tagged commit, so F-Droid shows release
+      # notes with no manual step. The filename is the versionCode (already bumped in build.gradle),
+      # and the body is the same commit range rendered plain and capped to F-Droid's 500-char limit.
+      - name: Write F-Droid changelog
+        env:
+          PREVIOUS_TAG: ${{ steps.version.outputs.previous_tag }}
+        run: |
+          range="HEAD"
+          [ -n "$PREVIOUS_TAG" ] && range="$PREVIOUS_TAG..HEAD"
+          code=$(grep -E '^\s*versionCode = ' android/app/build.gradle.kts | grep -oE '[0-9]+' | head -1)
+          dir="fastlane/metadata/android/en-US/changelogs"
+          mkdir -p "$dir"
+          python3 scripts/changelog.py "$range" --fdroid > "$dir/${code}.txt"
+          echo "Wrote $dir/${code}.txt:"
+          cat "$dir/${code}.txt"
+
       - name: Decode signing keystore (if configured)
         id: signing
         env:
@@ -171,7 +187,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add VERSION android/app/build.gradle.kts watchapp/package.json watchapp/src/c/main.c
+          git add VERSION android/app/build.gradle.kts watchapp/package.json watchapp/src/c/main.c \
+                  fastlane/metadata/android/en-US/changelogs/
           git commit -m "chore(release): ${TAG} [skip ci]"
           git tag -a "$TAG" -m "$TAG"
           git push origin HEAD:main
