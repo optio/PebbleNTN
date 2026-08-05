@@ -26,7 +26,7 @@
 
 _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 
-#define APP_VERSION_STR "0.0.17"
+#define APP_VERSION_STR "0.0.18"
 #define PRIMARY_TEXT_MAX 64
 #define SECONDARY_TEXT_MAX 24
 
