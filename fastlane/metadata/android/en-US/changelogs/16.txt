@@ -1,0 +1,3 @@
+New: CoMaps and Organic Maps support (distance + road; these apps show the turn direction only as an icon, so the watch shows a neutral marker).
+Fix: distances written with a non-breaking space (e.g. "220 m") are now read correctly.
+Google Maps' split notification layout ("220 m" + "toward <road>") is now recognised.

@@ -1,0 +1,1 @@
+Packaging: added F-Droid metadata (app descriptions and per-version changelogs). No functional changes to the app.

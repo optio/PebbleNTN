@@ -16,13 +16,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // PebbleKit Android 2 (io.rebble.pebblekit2:client) is published on JitPack, not Maven
-        // Central. Without this the io.rebble.pebblekit2.* classes are absent from the compile
-        // classpath (every import unresolved).
-        maven { url = uri("https://jitpack.io") }
     }
 }
 
 rootProject.name = "PebbleNTN"
 include(":app")
 include(":fixture-publisher")
+// PebbleKit Android 2 vendored from source (see android/pebblekit/README.md) instead of JitPack, so
+// the whole app builds from source with no prebuilt-artifact dependency (required for F-Droid).
+include(":pebblekit")
