@@ -13,9 +13,13 @@ not distributed through F-Droid.
   so the whole app builds from source with no non-reproducible binary dependency.
 - **No binary blobs:** the app embeds no `.pbw`, `.so`, `.jar` or `.aar`. The rule
   data shipped in the APK is generated from source by the Gradle `syncRuleData` task.
-- **Builds from source, unsigned:** `./gradlew :app:assembleRelease` (with no release
-  keystore in the environment) produces `app-release-unsigned.apk`, which F-Droid
-  signs with its own key.
+- **Builds from source:** `./gradlew :app:assembleRelease` (with no release keystore in
+  the environment) produces `app-release-unsigned.apk`.
+- **Reproducible-ready:** the release build is deterministic (byte-identical across clean
+  rebuilds) — AGP's non-reproducible dependency-metadata blob is excluded
+  (`dependenciesInfo`), the toolchain and every dependency are version-pinned, and there
+  are no build timestamps or git-hash injection. See `REPRODUCIBLE_BUILDS.md` to finish
+  enabling reproducible builds (so F-Droid ships PebbleNTN's own signature).
 - **Release tags:** each release is tagged `vX.Y.Z`, so `UpdateCheckMode: Tags` +
   `AutoUpdateMode: Version v%v` work.
 - **Permissions:** notification listener (core function) + INTERNET (an optional,
@@ -24,6 +28,8 @@ not distributed through F-Droid.
 ## Files
 
 - `metadata/com.pebblentn.app.yml` — the fdroiddata build recipe.
+- `REPRODUCIBLE_BUILDS.md` — how to enable reproducible builds (use PebbleNTN's own
+  signature on F-Droid); the code side is done, the keystore steps are yours.
 - `../fastlane/metadata/android/en-US/` — store listing: title, short and full
   descriptions, per-version changelogs, and phone screenshots. F-Droid reads these
   from the built tag.
