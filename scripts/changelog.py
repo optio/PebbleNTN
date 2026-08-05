@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Render a Markdown changelog for a git revision range, grouped by Conventional Commit type.
+"""Render a changelog for a git revision range, grouped by Conventional Commit type.
 
-    scripts/changelog.py v0.1.0..HEAD
-    scripts/changelog.py            # everything since the last tag, or all history if untagged
+    scripts/changelog.py v0.1.0..HEAD          # Markdown, for the GitHub release body
+    scripts/changelog.py v0.1.0..HEAD --fdroid # plain text, <=500 chars, for F-Droid
+    scripts/changelog.py                       # everything since the last tag, or all history
 
 Commits whose subject does not parse as a Conventional Commit still appear, under "Other" — a
 changelog that silently drops commits is worse than an untidy one. Release-bump commits and merge
 commits are omitted: they describe the release process, not the release.
+
+`--fdroid` writes what an F-Droid user sees per version: user-facing changes only (features, fixes,
+performance), one bullet each, no commit hashes, capped at F-Droid's 500-character limit. The
+release workflow writes it to fastlane/metadata/android/en-US/changelogs/<versionCode>.txt so each
+tagged release ships its own changelog with no manual step.
 """
 from __future__ import annotations
 
@@ -54,28 +60,75 @@ def commits(rev_range: str) -> list[tuple[str, str]]:
     return rows
 
 
+# F-Droid changelog: the types a user cares about, in order, and the hard character limit.
+FDROID_TYPES = ("feat", "fix", "perf")
+FDROID_MAX_CHARS = 500
+
+
+def render_fdroid(parsed: list[dict]) -> str:
+    """A plain, user-facing changelog capped at F-Droid's 500-char limit."""
+    summaries: list[str] = []
+    seen: set[str] = set()
+    for entry in parsed:
+        if entry["breaking"] or entry["kind"] in FDROID_TYPES:
+            s = entry["summary"].strip()
+            if s and s not in seen:
+                seen.add(s)
+                summaries.append(s)
+    if not summaries:
+        return "Maintenance and internal improvements."
+    lines: list[str] = []
+    total = 0
+    for s in summaries:
+        bullet = f"• {s}"
+        cost = len(bullet) + (1 if lines else 0)  # + newline once we have a line
+        if total + cost > FDROID_MAX_CHARS:
+            break
+        lines.append(bullet)
+        total += cost
+    return "\n".join(lines)
+
+
 def main() -> int:
-    rev_range = sys.argv[1] if len(sys.argv) > 1 else default_range()
+    args = sys.argv[1:]
+    fdroid = "--fdroid" in args
+    positional = [a for a in args if not a.startswith("--")]
+    rev_range = positional[0] if positional else default_range()
     rows = commits(rev_range)
+
+    parsed: list[dict] = []
+    for sha, subject in rows:
+        m = SUBJECT.match(subject)
+        if m:
+            parsed.append({
+                "kind": m.group("type"),
+                "scope": m.group("scope"),
+                "summary": m.group("summary"),
+                "sha": sha,
+                "breaking": bool(m.group("breaking")),
+            })
+        else:
+            parsed.append({"kind": "other", "scope": None, "summary": subject, "sha": sha, "breaking": False})
+
+    if fdroid:
+        print(render_fdroid(parsed))
+        return 0
+
     if not rows:
         print("_No changes._")
         return 0
 
     grouped: dict[str, list[str]] = {}
     breaking: list[str] = []
-
-    for sha, subject in rows:
-        m = SUBJECT.match(subject)
-        if m:
-            kind = m.group("type")
-            scope = m.group("scope")
-            summary = m.group("summary")
-            entry = f"- {f'**{scope}:** ' if scope else ''}{summary} ({sha})"
-            if m.group("breaking"):
-                breaking.append(entry)
-            grouped.setdefault(kind, []).append(entry)
-        else:
-            grouped.setdefault("other", []).append(f"- {subject} ({sha})")
+    for entry in parsed:
+        scope, summary, sha = entry["scope"], entry["summary"], entry["sha"]
+        if entry["kind"] == "other":
+            grouped.setdefault("other", []).append(f"- {summary} ({sha})")
+            continue
+        line = f"- {f'**{scope}:** ' if scope else ''}{summary} ({sha})"
+        if entry["breaking"]:
+            breaking.append(line)
+        grouped.setdefault(entry["kind"], []).append(line)
 
     print("## What's changed")
     print()
