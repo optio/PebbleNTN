@@ -1,6 +1,89 @@
 # Implementation Status
 
-_Last updated: 2026-07-28_
+_Last updated: 2026-08-05_
+
+## Non-breaking-space fix + Google Maps "classic" layout; OM fixture re-pinned (2026-08-05)
+
+**Requirement.** Four more user diagnostics exports analysed. They surfaced one **critical** defect and
+one coverage gap, plus a real Organic Maps capture.
+
+**Critical: distances use U+00A0 and were silently dropped off-device.** Every navigation app formats
+the distance with a non-breaking space between number and unit (`"92 m"`, `"350 m"`,
+`"0 yd"`, `"90 m"` — confirmed by hex-dumping the real captures). Java's `\s` on the desktop
+JVM does **not** match U+00A0, so `DistanceParser` and the CoMaps/Organic-Maps title regexes failed on
+the true input; the shipped CoMaps/OM rules matched **nothing** on the real byte, and Google Maps turns
+lost their distance. It only "worked" in a 0.0.15 field log because Android ART's `\s` happens to be
+Unicode-aware — behaviour our JVM unit tests never exercised (fixtures used ASCII spaces). **Fix:**
+`SnapshotFields.resolve` now maps every Unicode space separator (`Character.SPACE_SEPARATOR`, i.e.
+U+00A0/U+202F/U+2009/…) to an ASCII space before any condition or extractor runs — deterministic and
+identical on JVM and ART; the stored snapshot is untouched so diagnostics keep the raw text. Locked by
+`SnapshotFieldsTest` and by re-pinning the CoMaps/OM/Google fixtures to carry a real ` `.
+
+**Gap: Google Maps "classic" (non-ProgressStyle) layout was unmatched.** Two layouts are live in the
+field: ProgressStyle (en-US) puts the whole step in the title (`"350 m · Turn left onto X"`, matches);
+the classic layout (en-CA/en-GB, `template=null`) splits it — title = distance, text = instruction. Its
+**turns** already match via `combinedText`, but the cruising state is a bare `"toward <road>"` in `text`
+with no leading verb, which `google-maps-continue-en` (requires head/continue/go/proceed) missed, so
+those drivers got nothing. **Shipped:** `google-maps-toward-en` (priority 40) matches `^\s*towards?\s`
+in `text` → `STRAIGHT`, distance read from **title only** (avoids grabbing the trip total `"166 km"`
+from subText when the title is absent), road as primary text. English only for now — other locales need
+their own captures. Turn variants of this layout still want one FULL mid-turn capture to confirm wording.
+
+**OM fixture re-pinned.** A real en-GB Organic Maps capture (`app.organicmaps`, `"90 m"` + street)
+appeared, matching the from-source design exactly; `capture-90m` is now `source=capture` (street was
+redacted in the privacy-safe export, so a representative name stands in; the distance + U+00A0 are real).
+
+**Verification.** `./scripts/validate-rules.sh` OK; workbench regression 58/58 + 7/7 + 5/5; JVM
+`:app:testDebugUnitTest` + `lint` BUILD SUCCESSFUL (adds `SnapshotFieldsTest`, 4 Google Maps fixtures).
+
+**Deferred (from the same analysis, not yet built).** Duplicate flooding — OM re-posts the identical
+`"90 m"` ~16×/step and Google Maps updates frequently; a "suppress if identical to last-sent" coalesce
+would cut watch/BLE traffic. Google Maps arrival: as you approach, the title becomes the bare
+destination address (`"Torstraße 49"`) → currently `CAPTURED_UNMATCHED`; an ARRIVE opportunity.
+
+## CoMaps support: distance + street ruleset; arrow spike (2026-07-30)
+
+**Requirement being implemented.** A maintainer report ("tried CoMaps but it doesn't detect the
+movement") with a real capture: 65 identical events, `app.comaps.google`, all `CAPTURED_NON_MANEUVER`,
+`title="92 m"`, `text="Kroonstraat"`, everything else null. Two causes: (1) no CoMaps ruleset existed
+(only `google-maps/`), so nothing matched → no watch output; (2) CoMaps (an Organic Maps fork) never
+puts the turn direction in text — it's a graphical arrow only.
+
+**Shipped: `rules/bundled/comaps/any.json`** (locale-agnostic, one rule `comaps-navigation-step`,
+packages `app.comaps.google` + `app.comaps.fdroid`). Gated on a leading distance in the `title`
+(number + unit), it extracts `distanceMeters` from the title and the road from `text`, and emits
+`maneuver = UNKNOWN` **on purpose** — the watch shows distance + road with its neutral UNKNOWN glyph
+rather than a fabricated arrow (matched instructions forward regardless of maneuver;
+`debug_maneuver_unknown_hint` already exists). Auto-loaded by `AssetRuleRepository` (recursive asset
+walk). Fixtures `rules/fixtures/comaps.json` (7, incl. the real capture + non-navigation negatives);
+regression `ComapsRulesRegressionTest` (JVM, authoritative) and the workbench subset engine (now runs
+google-maps **and** comaps). Side effect resolved: these captures now match (disposition MATCHED), so
+they no longer sit as `CAPTURED_NON_MANEUVER` — no `ManeuverHeuristic` change needed.
+
+**Arrow spike — verdict: icon-name mapping infeasible.** Read Organic Maps `NavigationService.java`
+(CoMaps' upstream): title = `distToTurn`, text = `nextStreet`, `setSmallIcon(ic_splash)` (static),
+and the turn arrow is `carDirection.getTurnRes(exitNum)` rendered to a **Bitmap** via
+`Graphics.drawableToBitmap` and set with `setLargeIcon(Bitmap)`. A NotificationListener therefore reads
+the large icon back as `Icon` `TYPE_BITMAP` — pixels only, **no resource id/name to map**; the only
+resource-backed icon is the turn-agnostic splash. Real arrows would require **image template-matching**
+the large-icon bitmap against OM/CoMaps' turn-glyph set — feasible but a separate milestone (tint
+varies; roundabouts composite the exit number into the bitmap). Not built now; distance+street with the
+neutral marker is the honest shippable state. Same structure almost certainly covers Organic Maps
+(`app.organicmaps`) — deferred until a real OM capture confirms it.
+
+**Verification.** `./scripts/validate-rules.sh` OK (schema); workbench regression 54/54 + 7/7; JVM
+`ComapsRulesRegressionTest` + `GoogleMapsRulesRegressionTest` BUILD SUCCESSFUL. Not yet exercised
+end-to-end on the emulator (rule pipeline is the same proven path as Google Maps).
+
+**Organic Maps added (2026-07-30).** `rules/bundled/organic-maps/any.json` (rule
+`organic-maps-navigation-step`, package `app.organicmaps`) mirrors the CoMaps rule — justified by
+reading OM's `NavigationService.java` directly (CoMaps is a fork of it; identical notification
+construction). Fixtures `rules/fixtures/organic-maps.json` are synthetic (no real OM capture yet, to be
+re-pinned as `source=capture` later); `OrganicMapsRulesRegressionTest` (JVM) + workbench regression
+(now google-maps + comaps + organic-maps). Schema OK; 54/54 + 7/7 + 5/5; JVM green.
+
+**Next atomic task.** Await maintainer's call on whether to scope arrow template-matching as a
+milestone; re-pin the OM fixtures against a real Organic Maps capture when available.
 
 ## Nudge-noise filter + ProgressStyle progress capture (2026-07-29)
 

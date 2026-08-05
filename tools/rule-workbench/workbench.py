@@ -315,14 +315,23 @@ def cmd_test(args) -> int:
     return run_fixtures(rules, fixtures)
 
 
-def cmd_regression(args) -> int:
-    # Load every localized ruleset (en, it, fr, …); the engine filters by each fixture's locale.
+def _regression_for(app: str) -> int:
+    # Load every ruleset for the app (localized files, or a single locale-agnostic one); the engine
+    # filters by each fixture's locale.
     rules = []
-    for path in sorted((REPO_ROOT / "rules" / "bundled" / "google-maps").glob("*.json")):
+    for path in sorted((REPO_ROOT / "rules" / "bundled" / app).glob("*.json")):
         rules.extend(load(str(path)).get("rules", []))
-    fixtures = load(str(REPO_ROOT / "rules" / "fixtures" / "google-maps.json")).get("fixtures", [])
-    print("Google Maps regression:")
+    fixtures = load(str(REPO_ROOT / "rules" / "fixtures" / f"{app}.json")).get("fixtures", [])
+    print(f"{app} regression:")
     return run_fixtures(rules, fixtures)
+
+
+def cmd_regression(args) -> int:
+    # Each bundled app with fixtures; a failure in any app fails the whole run.
+    failed = 0
+    for app in ("google-maps", "comaps", "organic-maps"):
+        failed |= _regression_for(app)
+    return failed
 
 
 def main() -> int:

@@ -1,0 +1,78 @@
+{
+  "note": "Organic Maps (app.organicmaps). The capture-90m fixture is pinned to a REAL en-GB capture (privacy-safe diagnostics export, 2026-07-29, Android 16): the title is the distance-to-turn '90 m' formatted with a non-breaking space (U+00A0, written \\u00a0) exactly as the app sends it, and the text is the road. In the privacy-safe export the street was redacted, so a representative public street name stands in for it; the tested distance and the U+00A0 byte are the real ones. Organic Maps builds the identical navigation notification to its CoMaps fork (verified in OM NavigationService.java): the turn DIRECTION is only a graphical arrow icon, never text, so the expected maneuver is UNKNOWN by design. Remaining fixtures are synthetic: units and a non-navigation notification that must not match.",
+  "fixtures": [
+    {
+      "name": "capture-90m",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "app.organicmaps",
+      "snapshot": {
+        "title": "90\u00a0m",
+        "text": "Ringlaan"
+      },
+      "comment": "Real en-GB capture (2026-07-29): title '90 m' carries the real U+00A0; the street was redacted in the privacy-safe export so 'Ringlaan' is representative. Maneuver UNKNOWN (arrow is icon-only).",
+      "expected": {
+        "maneuver": "UNKNOWN",
+        "distanceMeters": 90,
+        "ruleId": "organic-maps-navigation-step"
+      }
+    },
+    {
+      "name": "km-distance",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "app.organicmaps",
+      "snapshot": {
+        "title": "1.2 km",
+        "text": "Ringlaan"
+      },
+      "expected": {
+        "maneuver": "UNKNOWN",
+        "distanceMeters": 1200,
+        "ruleId": "organic-maps-navigation-step"
+      }
+    },
+    {
+      "name": "leading-distance-no-street",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "app.organicmaps",
+      "snapshot": {
+        "title": "500 m"
+      },
+      "expected": {
+        "maneuver": "UNKNOWN",
+        "distanceMeters": 500,
+        "ruleId": "organic-maps-navigation-step"
+      }
+    },
+    {
+      "name": "imperial-feet",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "app.organicmaps",
+      "snapshot": {
+        "title": "300 ft",
+        "text": "Main Street"
+      },
+      "expected": {
+        "maneuver": "UNKNOWN",
+        "distanceMeters": 91,
+        "ruleId": "organic-maps-navigation-step"
+      }
+    },
+    {
+      "name": "non-navigation-download",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "app.organicmaps",
+      "snapshot": {
+        "title": "Downloading maps",
+        "text": "Netherlands"
+      },
+      "expected": {
+        "matched": false
+      }
+    }
+  ]
+}

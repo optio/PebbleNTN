@@ -13,8 +13,12 @@ import kotlinx.coroutines.launch
 /** UI state for the share-to-help screen. */
 data class ShareDiagnosticsState(
     val loading: Boolean = true,
-    /** Which dataset the user chose to share: redacted or full (with street names). */
-    val mode: ExportMode = ExportMode.PRIVACY_SAFE,
+    /**
+     * Which dataset the user chose to share: redacted or full (with street names). Defaults to
+     * [ExportMode.FULL] — the full notification text is far more useful for adding missing
+     * direction/turn-word translations, and the user reviews the exact payload below before sending.
+     */
+    val mode: ExportMode = ExportMode.FULL,
     /** JSON (redacted or raw per [mode]), capped for on-screen review. */
     val previewText: String = "",
     /** Whether [previewText] is a shortened view of a larger attachment. */
@@ -47,7 +51,7 @@ class ShareDiagnosticsViewModel(
     private var capped: CappedExport? = null
 
     init {
-        prepare(ExportMode.PRIVACY_SAFE)
+        prepare(ExportMode.FULL)
     }
 
     /** Switch which dataset is shown/shared and rebuild the preview. */

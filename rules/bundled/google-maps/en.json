@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.07.3",
+  "rulesetVersion": "google-maps-en-2026.07.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -492,6 +492,42 @@
           "field": "subText",
           "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-toward-en",
+      "enabled": true,
+      "priority": 40,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Google Maps' classic (non-ProgressStyle) layout splits the step: title = distance ('220 m'), text = a bare 'toward <road>' with no leading verb, so google-maps-continue-en (needs head/continue/go/proceed) misses it and en-CA/en-GB drivers saw nothing (real captures, 2026-07-30). A bare heading is continue-straight. Distance comes from the title ONLY: when the title is absent, combinedText's first number+unit is the trip total in subText ('166 km').",
+      "conditions": [
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)^\\s*towards?\\s+\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
         }
       }
     }
