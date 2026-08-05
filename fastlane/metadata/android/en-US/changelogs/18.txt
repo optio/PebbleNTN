@@ -1,0 +1,2 @@
+New: OsmAnd navigation support — the next turn, distance and road now show on the watch while navigating with OsmAnd.
+Turn-left/right are confirmed from real captures; roundabout, U-turn, keep, slight, sharp and arrival patterns are included and will be refined as more captures come in.

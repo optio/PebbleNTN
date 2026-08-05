@@ -1,0 +1,27 @@
+PebbleNTN — Pebble Notification To Navigation — puts the turn-by-turn directions from your phone's navigation app onto your Pebble watch, so you don't have to reach for your phone while you ride, walk or drive.
+
+It works by reading your navigation app's notifications on the phone and sending the next step to the watch: the maneuver arrow, the distance to it, the road name and the ETA. Nothing is sent to any server — the notification is parsed on your device and forwarded to your paired Pebble over the local connection.
+
+Supported navigation apps:
+
+* Google Maps (English plus German, French, Spanish, Italian and Dutch)
+* Organic Maps
+* CoMaps
+* OsmAnd
+
+More apps can be added without a new release: PebbleNTN uses a small, declarative rule set to recognise each app's notifications. You can write your own rules for an unsupported app, or share an anonymised capture log to help add official support.
+
+Features:
+
+* Next maneuver, distance, road and ETA on the watch
+* Three arrow styles, accent colours, and light or dark themes
+* Metric or imperial units, left- or right-hand arrow layout
+* Privacy-first: the notification is parsed locally and never uploaded; the optional "share logs to help" step lets you review and redact before sharing
+* No ads, no tracking, no account
+
+Permissions:
+
+* Notification access — to read the navigation app's turn-by-turn notification (this is the core function)
+* Internet — used only for an optional, off-by-default weekly check for a newer version on GitHub; it sends no personal data
+
+Requires a paired Pebble watch and the Pebble/Rebble companion app installed on the phone. The matching Pebble watchapp is distributed separately (Rebble app store / .pbw).

@@ -1,0 +1,1 @@
+Fix: on non-English Google Maps, a road whose name begins with an "arrive" word (e.g. Zielstattstraße, Rue de l'Arrivée) is no longer shown as "arrived" mid-route. The turn is shown correctly; only a step with no maneuver word is treated as arrival.
