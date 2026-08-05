@@ -85,6 +85,44 @@ re-pinned as `source=capture` later); `OrganicMapsRulesRegressionTest` (JVM) + w
 **Next atomic task.** Await maintainer's call on whether to scope arrow template-matching as a
 milestone; re-pin the OM fixtures against a real Organic Maps capture when available.
 
+## Localized ARRIVE demoted below the maneuver rules (2026-07-29)
+
+**Bug (v0.0.15, introduced by f2b3e90).** The generated `google-maps-arrive-<lang>` rules match a
+bare *prefix stem* — `arriv`, `ziel`, `llega`, `giunt`, `bestemming` — against `title` at priority
+200, the top of the ladder. `title` also carries the destination road name, so any road beginning
+with the stem was classified ARRIVE and short-circuited every turn rule below it: `Links abbiegen
+auf Zielstattstraße` (Munich) → ARRIVE instead of LEFT, `Tournez à gauche sur Rue de l'Arrivée`
+(Paris 15e) → ARRIVE instead of LEFT. On the watch: the arrival glyph mid-route, and no further
+turns for that step. `en.json` is unaffected — it is hand-authored and matches whole words.
+
+**Why not a tighter stem.** Constraining the German stem with an inflection suffix list fixes
+German, but not French: `Arrivée` is a well-formed inflection of `arriv`, so no lexical pattern
+separates it from a genuine arrival. The problem is structural — a maneuver-word match against a
+field containing proper nouns is unsafe at the top of the ladder, in any language.
+
+**Fix.** `gen_localized_google_maps.py` emits ARRIVE at priority **40**, below every maneuver rule
+(continue is 50, turns 100), and the rule is listed last so the file reads in evaluation order. No
+regex change, no per-language keyword list. A title carrying an explicit maneuver now resolves as
+that maneuver; only a title with no maneuver word falls through to ARRIVE — which is what real
+arrival phrasings look like (`Ziel erreicht`, `Sei arrivato a destinazione`, `Has llegado a tu
+destino` all still ARRIVE). The "title only, never `combinedText`" guard is unchanged; it addresses
+a different failure (the localized arrival word in the `subText` ETA) and is still needed.
+Rulesets regenerated as `google-maps-<lang>-2026.07.5`.
+
+**Tests.** Six fixtures (`*-arrive-stem-in-road-name`, one per localized ruleset plus the
+no-maneuver German variant asserting `Richtung Zielstattstraße` → STRAIGHT) pin the classification,
+and `localizedArriveRanksBelowEveryManeuverRule` pins the ladder itself so a future regeneration
+cannot quietly restore priority 200.
+
+Commands: `python3 tools/rule-workbench/gen_localized_google_maps.py`, `./scripts/validate-rules.sh`,
+`./android/gradlew -p android test`.
+
+**Related gaps filed alongside this and NOT addressed here:** missing `de` coverage for
+`Fußgängerübergang nehmen` and `Nach Osten/Süden/…` compass headings, and the locale gate reading
+`Locale.getDefault()` rather than the notification's language. (A third gap noted here originally —
+`DistanceParser` never parsing Google Maps' U+00A0-separated distances — has since been fixed; see the
+2026-08-05 entry.)
+
 ## Nudge-noise filter + ProgressStyle progress capture (2026-07-29)
 
 Prompted by a maintainer's own log: 64 of 65 captured Google Maps notifications were non-maneuver

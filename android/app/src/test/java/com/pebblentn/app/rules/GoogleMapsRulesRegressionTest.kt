@@ -159,4 +159,27 @@ class GoogleMapsRulesRegressionTest {
             )
         }
     }
+
+    /**
+     * The localized ARRIVE patterns are prefix stems ("arriv", "ziel", …) matched against a title
+     * that also carries the destination road name, so they fire on ordinary road names —
+     * Zielstattstraße, Rue de l'Arrivée. Tightening the stem cannot fix it ("Arrivée" is a
+     * well-formed inflection), so ARRIVE must sit below every maneuver rule: a title with an
+     * explicit maneuver resolves as that maneuver, and only a title with no maneuver word falls
+     * through to ARRIVE. This pins the ladder itself; the `*-arrive-stem-in-road-name` fixtures pin
+     * the resulting classifications.
+     */
+    @Test
+    fun localizedArriveRanksBelowEveryManeuverRule() {
+        for (lang in locales - "en") {
+            val rules = RulesetCodec.parse(resource("/rules/bundled/google-maps/$lang.json")).rules
+            val arrive = rules.single { it.id == "google-maps-arrive-$lang" }
+            val lowestManeuver = rules.filterNot { it.id == arrive.id }.minOf { it.priority }
+            assertTrue(
+                "google-maps-arrive-$lang (priority ${arrive.priority}) must rank below every " +
+                    "maneuver rule (lowest is $lowestManeuver)",
+                arrive.priority < lowestManeuver,
+            )
+        }
+    }
 }
