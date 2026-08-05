@@ -176,9 +176,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
-    // PebbleKit Android 2 — resolved from JitPack (see android/settings.gradle.kts). JitPack builds
-    // a version on first request, so a cold CI cache may need one retry while that build completes.
-    implementation(libs.pebblekit)
+    // PebbleKit Android 2 — vendored from source (see android/pebblekit/README.md), not JitPack.
+    implementation(project(":pebblekit"))
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
