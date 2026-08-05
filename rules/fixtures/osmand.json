@@ -1,0 +1,213 @@
+{
+  "note": "OsmAnd (net.osmand / net.osmand.plus). OsmAnd puts the whole step in the notification TITLE as '<distance> • <instruction>' (BigTextStyle; text/subText null); the distance is the leading number+unit. Capture-confirmed fixtures (source=capture) are from a real en FULL export (2026-08): only turn-left/right and the '0 m • ' at-maneuver + download/index non-nav states were observed. Synthetic fixtures exercise the maneuvers authored from OsmAnd's known English phrasing (roundabout, U-turn, keep, slight, sharp, continue, arrive), to be re-pinned as source=capture as real captures arrive.",
+  "fixtures": [
+    {
+      "name": "capture-turn-right-200",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "200 m • Turn right and go"
+      },
+      "comment": "Real capture (2026-08, FULL). OsmAnd puts distance + maneuver in the title, ' • '-separated; text/subText are null.",
+      "expected": {
+        "maneuver": "RIGHT",
+        "distanceMeters": 200,
+        "ruleId": "osmand-turn-right-en"
+      }
+    },
+    {
+      "name": "capture-turn-left-100",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "100 m • Turn left and go"
+      },
+      "expected": {
+        "maneuver": "LEFT",
+        "distanceMeters": 100,
+        "ruleId": "osmand-turn-left-en"
+      }
+    },
+    {
+      "name": "capture-turn-right-imperial",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "700 ft • Turn right and go"
+      },
+      "comment": "700 ft -> 213 m.",
+      "expected": {
+        "maneuver": "RIGHT",
+        "distanceMeters": 213,
+        "ruleId": "osmand-turn-right-en"
+      }
+    },
+    {
+      "name": "capture-at-maneuver-0m",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "0 m • "
+      },
+      "comment": "At the maneuver point OsmAnd shows '0 m • ' with no instruction word; nothing to render (transient).",
+      "expected": {
+        "matched": false
+      }
+    },
+    {
+      "name": "capture-downloading-nonav",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "Downloading Belgium Flanders, Brussels-Capital Standard map"
+      },
+      "comment": "Map download notification must not put an arrow on the watch.",
+      "expected": {
+        "matched": false
+      }
+    },
+    {
+      "name": "capture-indexing-nonav",
+      "source": "capture",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "Indexing map… Belgium_flanders_europe.obf"
+      },
+      "expected": {
+        "matched": false
+      }
+    },
+    {
+      "name": "roundabout",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "300 m • Enter the roundabout and take the 2nd exit"
+      },
+      "expected": {
+        "maneuver": "ROUNDABOUT",
+        "distanceMeters": 300,
+        "ruleId": "osmand-roundabout-en"
+      }
+    },
+    {
+      "name": "uturn",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "150 m • Make a U-turn"
+      },
+      "expected": {
+        "maneuver": "UTURN_LEFT",
+        "distanceMeters": 150,
+        "ruleId": "osmand-uturn-en"
+      }
+    },
+    {
+      "name": "keep-left",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "500 m • Keep left"
+      },
+      "expected": {
+        "maneuver": "SLIGHT_LEFT",
+        "distanceMeters": 500,
+        "ruleId": "osmand-keep-left-en"
+      }
+    },
+    {
+      "name": "slight-right",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "400 m • Turn slightly right"
+      },
+      "expected": {
+        "maneuver": "SLIGHT_RIGHT",
+        "distanceMeters": 400,
+        "ruleId": "osmand-slight-right-en"
+      }
+    },
+    {
+      "name": "sharp-left",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "200 m • Make a sharp left and go"
+      },
+      "expected": {
+        "maneuver": "SHARP_LEFT",
+        "distanceMeters": 200,
+        "ruleId": "osmand-sharp-left-en"
+      }
+    },
+    {
+      "name": "continue",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "1.2 km • Continue and go"
+      },
+      "expected": {
+        "maneuver": "STRAIGHT",
+        "distanceMeters": 1200,
+        "ruleId": "osmand-continue-en"
+      }
+    },
+    {
+      "name": "go-straight",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "80 m • Go straight"
+      },
+      "expected": {
+        "maneuver": "STRAIGHT",
+        "distanceMeters": 80,
+        "ruleId": "osmand-continue-en"
+      }
+    },
+    {
+      "name": "arrive",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "0 m • Arrive at your destination"
+      },
+      "comment": "Maneuver-less arrival phrasing falls through to ARRIVE at the bottom of the ladder.",
+      "expected": {
+        "maneuver": "ARRIVE",
+        "ruleId": "osmand-arrive-en"
+      }
+    },
+    {
+      "name": "arrive-stem-in-road-name",
+      "source": "synthetic",
+      "locale": "en",
+      "packageName": "net.osmand",
+      "snapshot": {
+        "title": "200 m • Turn right and go along Destination Road"
+      },
+      "comment": "Destination Road starts with the ARRIVE 'destination' stem; the explicit turn must win (arrive sits below every maneuver).",
+      "expected": {
+        "maneuver": "RIGHT",
+        "ruleId": "osmand-turn-right-en"
+      }
+    }
+  ]
+}
