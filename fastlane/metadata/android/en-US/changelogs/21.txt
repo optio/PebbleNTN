@@ -1,0 +1,1 @@
+• scanignore watchapp/package.json; stop fdroid edits cutting releases
