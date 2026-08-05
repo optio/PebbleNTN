@@ -1,6 +1,45 @@
 # Implementation Status
 
-_Last updated: 2026-07-30_
+_Last updated: 2026-08-05_
+
+## Non-breaking-space fix + Google Maps "classic" layout; OM fixture re-pinned (2026-08-05)
+
+**Requirement.** Four more user diagnostics exports analysed. They surfaced one **critical** defect and
+one coverage gap, plus a real Organic Maps capture.
+
+**Critical: distances use U+00A0 and were silently dropped off-device.** Every navigation app formats
+the distance with a non-breaking space between number and unit (`"92 m"`, `"350 m"`,
+`"0 yd"`, `"90 m"` — confirmed by hex-dumping the real captures). Java's `\s` on the desktop
+JVM does **not** match U+00A0, so `DistanceParser` and the CoMaps/Organic-Maps title regexes failed on
+the true input; the shipped CoMaps/OM rules matched **nothing** on the real byte, and Google Maps turns
+lost their distance. It only "worked" in a 0.0.15 field log because Android ART's `\s` happens to be
+Unicode-aware — behaviour our JVM unit tests never exercised (fixtures used ASCII spaces). **Fix:**
+`SnapshotFields.resolve` now maps every Unicode space separator (`Character.SPACE_SEPARATOR`, i.e.
+U+00A0/U+202F/U+2009/…) to an ASCII space before any condition or extractor runs — deterministic and
+identical on JVM and ART; the stored snapshot is untouched so diagnostics keep the raw text. Locked by
+`SnapshotFieldsTest` and by re-pinning the CoMaps/OM/Google fixtures to carry a real ` `.
+
+**Gap: Google Maps "classic" (non-ProgressStyle) layout was unmatched.** Two layouts are live in the
+field: ProgressStyle (en-US) puts the whole step in the title (`"350 m · Turn left onto X"`, matches);
+the classic layout (en-CA/en-GB, `template=null`) splits it — title = distance, text = instruction. Its
+**turns** already match via `combinedText`, but the cruising state is a bare `"toward <road>"` in `text`
+with no leading verb, which `google-maps-continue-en` (requires head/continue/go/proceed) missed, so
+those drivers got nothing. **Shipped:** `google-maps-toward-en` (priority 40) matches `^\s*towards?\s`
+in `text` → `STRAIGHT`, distance read from **title only** (avoids grabbing the trip total `"166 km"`
+from subText when the title is absent), road as primary text. English only for now — other locales need
+their own captures. Turn variants of this layout still want one FULL mid-turn capture to confirm wording.
+
+**OM fixture re-pinned.** A real en-GB Organic Maps capture (`app.organicmaps`, `"90 m"` + street)
+appeared, matching the from-source design exactly; `capture-90m` is now `source=capture` (street was
+redacted in the privacy-safe export, so a representative name stands in; the distance + U+00A0 are real).
+
+**Verification.** `./scripts/validate-rules.sh` OK; workbench regression 58/58 + 7/7 + 5/5; JVM
+`:app:testDebugUnitTest` + `lint` BUILD SUCCESSFUL (adds `SnapshotFieldsTest`, 4 Google Maps fixtures).
+
+**Deferred (from the same analysis, not yet built).** Duplicate flooding — OM re-posts the identical
+`"90 m"` ~16×/step and Google Maps updates frequently; a "suppress if identical to last-sent" coalesce
+would cut watch/BLE traffic. Google Maps arrival: as you approach, the title becomes the bare
+destination address (`"Torstraße 49"`) → currently `CAPTURED_UNMATCHED`; an ARRIVE opportunity.
 
 ## CoMaps support: distance + street ruleset; arrow spike (2026-07-30)
 
