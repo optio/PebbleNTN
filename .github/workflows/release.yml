@@ -182,6 +182,18 @@ jobs:
       - name: Checksums
         run: sha256sum pebble-ntn.apk pebble-ntn.pbw | tee SHA256SUMS.txt
 
+      # Surface the signing certificate's SHA-256 in the build log. This is the value F-Droid needs
+      # as `AllowedAPKSigningKeys` to enable reproducible builds (fdroid/REPRODUCIBLE_BUILDS.md), so
+      # it is captured automatically on every signed release instead of being read out by hand.
+      - name: Signing certificate SHA-256 (F-Droid AllowedAPKSigningKeys)
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          sha=$("$apksigner" verify --print-certs pebble-ntn.apk \
+            | grep -i "certificate SHA-256" | head -1 | awk '{print $NF}')
+          echo "F-Droid AllowedAPKSigningKeys for this signed APK:"
+          echo "  $sha"
+
       - name: Commit and tag the version bump
         env:
           TAG: ${{ steps.version.outputs.tag }}
