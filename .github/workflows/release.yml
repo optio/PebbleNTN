@@ -20,6 +20,7 @@ on:
     paths-ignore:
       - "**/*.md"
       - "docs/**"
+      - "fdroid/**" # F-Droid submission recipe/docs; not part of the app build
   workflow_dispatch:
     inputs:
       bump:
