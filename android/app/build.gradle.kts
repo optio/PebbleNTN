@@ -84,6 +84,15 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    // Reproducible builds (F-Droid). AGP otherwise embeds a Google-signed dependency-metadata blob
+    // in the release APK that a from-source rebuild cannot recreate, so F-Droid's build would never
+    // match our signed APK byte-for-byte. Excluding it lets F-Droid verify the build and distribute
+    // our own signature (spec/600-security-release, fdroid/README.md).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     // Release signing from environment (CI supplies these via a protected environment). Never
     // committed; when absent (local dev), release builds are produced unsigned.
     //
