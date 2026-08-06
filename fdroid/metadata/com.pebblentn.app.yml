@@ -11,26 +11,21 @@ AutoName: PebbleNTN
 
 RepoType: git
 Repo: https://github.com/optio/PebbleNTN.git
-# Reproducible builds: F-Droid rebuilds from source and verifies it matches this published,
-# release-signed APK, then distributes our signature. Verified with `fdroid build` — the from-source
-# build reproduces v0.0.23 byte-for-byte. See fdroid/REPRODUCIBLE_BUILDS.md.
-Binaries: https://github.com/optio/PebbleNTN/releases/download/v%v/pebble-ntn.apk
+Binaries:
+  https://github.com/optio/PebbleNTN/releases/download/v%v/pebble-ntn.apk
 
 Builds:
   - versionName: 0.0.23
     versionCode: 23
-    commit: v0.0.23
+    commit: 037a7368602035832b34dc0d2cac123de7715277
     subdir: android/app
-    # The Pebble watchapp's package.json is app metadata with no npm dependencies and is not part of
-    # the Android build (subdir android/app); the scanner still requires a lockfile for any
-    # package.json, so it is ignored here.
     scanignore:
       - watchapp/package.json
     gradle:
       - yes
 
-# SHA-256 of the release signing certificate (printed in each signed release's run summary).
 AllowedAPKSigningKeys: 75efa3eadde9da624d1330abf62eab5e6c330d8361156abdf4af1d6e41a7b46b
+
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
 CurrentVersion: 0.0.23
