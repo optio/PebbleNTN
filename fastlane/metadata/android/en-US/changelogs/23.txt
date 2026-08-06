@@ -1,0 +1,1 @@
+• robust keystore decode with actionable errors
