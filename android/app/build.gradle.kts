@@ -53,6 +53,17 @@ tasks.withType<Test>().configureEach {
     maxParallelForks = 1
 }
 
+// Reproducible builds (F-Droid): the compiled ART baseline profile packaged at
+// assets/dexopt/baseline.prof[m] is not byte-reproducible across build environments (profgen output
+// varies by a few bytes) and is the only non-reproducible part of the release APK. Skip building and
+// packaging it so F-Droid's from-source build matches our release-signed APK byte-for-byte. The cost
+// is only a minor startup profile-guided optimization, irrelevant for this companion app.
+tasks.configureEach {
+    if (name.contains("ReleaseArtProfile")) {
+        enabled = false
+    }
+}
+
 // Release automation gate: verify the target SDK still meets the current Play submission floor
 // (spec/600-security-release/BuildRelease.md). Bump PLAY_MIN_TARGET_SDK as Google raises it.
 val playMinTargetSdk = 35
