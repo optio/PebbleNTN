@@ -242,6 +242,10 @@ jobs:
               echo "> Play-grade artifact. To sign properly, set the UPLOAD_KEYSTORE_BASE64,"
               echo "> KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD secrets."
               echo
+            else
+              echo "> \`pebble-ntn.apk\` is a **release-signed** build, reproducible from source"
+              echo "> (verified on F-Droid). The signing certificate SHA-256 is in the run summary."
+              echo
             fi
             cat CHANGELOG_RELEASE.md
             echo "## Install"
