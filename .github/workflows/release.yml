@@ -206,6 +206,15 @@ jobs:
             | grep -i "certificate SHA-256" | head -1 | awk '{print $NF}')
           echo "F-Droid AllowedAPKSigningKeys for this signed APK:"
           echo "  $sha"
+          # Also record it in the run summary so it's easy to read without opening the logs.
+          {
+            echo "### Signing certificate SHA-256"
+            echo "F-Droid \`AllowedAPKSigningKeys\` for this release:"
+            echo ""
+            echo "\`\`\`"
+            echo "$sha"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit and tag the version bump
         env:
