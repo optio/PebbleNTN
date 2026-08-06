@@ -15,9 +15,9 @@ Binaries:
   https://github.com/optio/PebbleNTN/releases/download/v%v/pebble-ntn.apk
 
 Builds:
-  - versionName: 0.0.23
-    versionCode: 23
-    commit: 037a7368602035832b34dc0d2cac123de7715277
+  - versionName: 0.0.25
+    versionCode: 25
+    commit: 61fbdeb1ef77c6eb1144703f6c8f9c3507994cb8
     subdir: android/app
     scanignore:
       - watchapp/package.json
@@ -28,5 +28,5 @@ AllowedAPKSigningKeys: 75efa3eadde9da624d1330abf62eab5e6c330d8361156abdf4af1d6e4
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: 0.0.23
-CurrentVersionCode: 23
+CurrentVersion: 0.0.25
+CurrentVersionCode: 25
