@@ -11,8 +11,9 @@ AutoName: PebbleNTN
 
 RepoType: git
 Repo: https://github.com/optio/PebbleNTN.git
-# Reproducible builds: F-Droid rebuilds from source and verifies against this published,
-# release-signed APK, then distributes our signature. See fdroid/REPRODUCIBLE_BUILDS.md.
+# Reproducible builds: F-Droid rebuilds from source and verifies it matches this published,
+# release-signed APK, then distributes our signature. Verified with `fdroid build` — the from-source
+# build reproduces v0.0.23 byte-for-byte. See fdroid/REPRODUCIBLE_BUILDS.md.
 Binaries: https://github.com/optio/PebbleNTN/releases/download/v%v/pebble-ntn.apk
 
 Builds:
@@ -28,10 +29,8 @@ Builds:
     gradle:
       - yes
 
-# 64-hex SHA-256 of the release signing certificate. The release workflow prints it
-# ("F-Droid AllowedAPKSigningKeys for this signed APK"); read it from the v0.0.23 run, or run
-# `apksigner verify --print-certs pebble-ntn.apk`. Fill it in before submitting with RB enabled.
-AllowedAPKSigningKeys: REPLACE_WITH_RELEASE_CERT_SHA256
+# SHA-256 of the release signing certificate (printed in each signed release's run summary).
+AllowedAPKSigningKeys: 75efa3eadde9da624d1330abf62eab5e6c330d8361156abdf4af1d6e41a7b46b
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
 CurrentVersion: 0.0.23

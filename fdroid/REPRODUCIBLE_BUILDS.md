@@ -20,9 +20,11 @@ came from this source.
   git-hash injection.
 - The release workflow already produces a signed release APK when the signing secrets
   are present (`.github/workflows/release.yml`).
-
-So the build is reproducible-ready. What remains needs **your signing key**, which only
-you can create and hold — I must never see it.
+- **Verified:** `fdroid build` for v0.0.23 reproduced the published signed APK
+  byte-for-byte ("compared built binary to supplied reference binary successfully"),
+  and the signer matches `AllowedAPKSigningKeys`. The recipe
+  (`metadata/com.pebblentn.app.yml`) is finalized with `Binaries` + the real
+  `AllowedAPKSigningKeys`, so the "Enable reproducible builds" box can be checked.
 
 ## What you need to do
 
