@@ -9,10 +9,10 @@ name: release
 # No loop: the version-bump commit is pushed with GITHUB_TOKEN, and GitHub does not start workflows
 # for pushes made with that token. ([skip ci] in the subject is a second belt.)
 #
-# Signing: with the release keystore secrets configured the APK is a signed release build; without
-# them it is a debug-signed build — installable, but not a Play-grade artifact. The release notes say
-# which one it is rather than leaving it ambiguous. The signed AAB for Play is a separate, manual
-# flow (play-release.yml).
+# Signing: with the release keystore secrets configured the APK is a signed release build,
+# reproducible from source (verified on F-Droid); without them it is a debug-signed build —
+# installable, but not a Play-grade artifact. The release notes say which one it is rather than
+# leaving it ambiguous. The signed AAB for Play is a separate, manual flow (play-release.yml).
 
 on:
   push:
