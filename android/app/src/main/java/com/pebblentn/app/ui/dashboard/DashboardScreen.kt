@@ -48,6 +48,7 @@ fun DashboardScreen(
     onAppEnabledChange: (Boolean) -> Unit = {},
     onOpenDebugHistory: () -> Unit = {},
     onOpenRules: () -> Unit = {},
+    onOpenNavigationApps: () -> Unit = {},
     onRefreshApp: () -> Unit = {},
     unmatchedCaptureCount: Int = 0,
     onShareDiagnostics: () -> Unit = {},
@@ -191,6 +192,9 @@ fun DashboardScreen(
             }
             OutlinedButton(onClick = onOpenRules) {
                 Text(stringResource(R.string.dashboard_open_rules))
+            }
+            OutlinedButton(onClick = onOpenNavigationApps) {
+                Text(stringResource(R.string.dashboard_open_navigation_apps))
             }
 
             // Recovery action for the case where Android has silently stopped delivering

@@ -5,10 +5,10 @@
     <!-- Onboarding -->
     <string name="onboarding_title">Welcome to PebbleNTN</string>
     <string name="onboarding_intro">PebbleNTN turns navigation-app notifications into turn-by-turn instructions on your Pebble watch.</string>
-    <!-- Exact prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
-    <string name="onboarding_disclosure">PebbleNTN reads notifications from navigation apps you enable, extracts upcoming turn information, and sends it to your Pebble watch. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. The app connects to the network only to check GitHub for a newer app version — when you tap Check for updates, or, if you turn on weekly checks, about once a week — and this sends no personal data.</string>
+    <!-- Prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
+    <string name="onboarding_disclosure">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Manage navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. The app connects to the network only to check GitHub for a newer app version — when you tap Check for updates, or, if you turn on weekly checks, about once a week — and this sends no personal data.</string>
     <string name="onboarding_open_settings">Grant notification access</string>
-    <string name="onboarding_privacy_note">You can disable any app or revoke access at any time in system settings.</string>
+    <string name="onboarding_privacy_note">You can turn off any navigation app in Manage navigation apps, or revoke notification access entirely at any time in system settings.</string>
 
     <!-- Notification-access status -->
     <string name="access_status_granted">Notification access granted</string>
@@ -25,6 +25,7 @@
 
     <string name="dashboard_open_debug">Debug history</string>
     <string name="dashboard_open_rules">Rules</string>
+    <string name="dashboard_open_navigation_apps">Manage navigation apps</string>
     <string name="dashboard_refresh_app">Refresh app</string>
     <string name="dashboard_refresh_app_explanation">If navigation is running on your phone but your watch isn\'t picking it up, tap this to reconnect notification access.</string>
     <string name="dashboard_refresh_app_done">Reconnecting notification access…</string>
@@ -42,6 +43,12 @@
     <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
     <!-- Where the "Download latest version" button sends the user. -->
     <string name="update_releases_url" translatable="false">https://github.com/optio/PebbleNTN/releases/latest</string>
+
+    <!-- Navigation apps (per-app enablement, REQ-ANDROID-004/009) -->
+    <string name="navigation_apps_title">Manage navigation apps</string>
+    <string name="navigation_apps_explanation">Every supported app is enabled by default when installed. Turn off any app you don\'t want PebbleNTN to read notifications from.</string>
+    <string name="navigation_apps_empty">No supported navigation apps are installed yet.</string>
+    <string name="navigation_apps_capture_only_badge">Capture-only</string>
 
     <!-- Rules -->
     <string name="rules_title">Rules</string>

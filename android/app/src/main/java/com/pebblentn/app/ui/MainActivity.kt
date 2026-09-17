@@ -24,6 +24,7 @@ import com.pebblentn.app.R
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.rules.PreviewResult
 import com.pebblentn.app.rules.RuleValidationResult
+import com.pebblentn.app.ui.apps.NavigationAppsScreen
 import com.pebblentn.app.ui.dashboard.DashboardScreen
 import com.pebblentn.app.ui.debug.DebugDetailScreen
 import com.pebblentn.app.ui.debug.DebugHistoryScreen
@@ -117,6 +118,7 @@ class MainActivity : ComponentActivity() {
                     onAppEnabledChange = container::setAppEnabled,
                     onOpenDebugHistory = { navController.navigate("debug") },
                     onOpenRules = { navController.navigate("rules") },
+                    onOpenNavigationApps = { navController.navigate("navigation-apps") },
                     onRefreshApp = { container.notificationListenerRefresher.refresh() },
                     unmatchedCaptureCount = unmatchedCount,
                     onShareDiagnostics = { navController.navigate("share-diagnostics") },
@@ -160,6 +162,15 @@ class MainActivity : ComponentActivity() {
                         debugViewModel.deleteEvent(id)
                         navController.popBackStack()
                     },
+                )
+            }
+            composable("navigation-apps") {
+                val navigationApps by container.enabledAppRepository.observeEnablement()
+                    .collectAsState(initial = emptyList())
+                NavigationAppsScreen(
+                    apps = navigationApps,
+                    onToggle = ::setNavigationAppEnabled,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("rules") {
@@ -233,6 +244,11 @@ class MainActivity : ComponentActivity() {
     private fun setAutoCheckUpdates(enabled: Boolean) {
         container.updateCheckRepository.setAutoCheckEnabled(enabled)
         if (enabled) checkForUpdate()
+    }
+
+    /** Toggle one navigation app's enablement (REQ-ANDROID-009); the listener cache picks it up via [com.pebblentn.app.data.EnabledAppRepository.setEnabled]. */
+    private fun setNavigationAppEnabled(appId: String, enabled: Boolean) {
+        lifecycleScope.launch { container.enabledAppRepository.setEnabled(appId, enabled) }
     }
 
     /** Manual "Check for updates": force a check now and report the outcome (REQ-ANDROID-013). */

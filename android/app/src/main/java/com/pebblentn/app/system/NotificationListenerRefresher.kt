@@ -3,6 +3,8 @@ package com.pebblentn.app.system
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import com.pebblentn.app.notification.NavigationNotificationListenerService
 
@@ -29,27 +31,43 @@ fun interface NotificationListenerRefresher {
  *    name, so it survives the toggle; `DONT_KILL_APP` keeps our process and the visible UI alive.
  *
  * On success the platform calls `onListenerConnected`, which re-delivers the currently posted
- * notifications, so an in-progress navigation is picked up again.
+ * notifications and re-discovers installed catalog apps (REQ-ANDROID-004 via
+ * [com.pebblentn.app.di.AppContainer.onListenerConnected]), so an in-progress navigation — or a
+ * navigation app installed since the listener last connected — is picked up again.
+ *
+ * The disable/enable pair is separated by [REBIND_DELAY_MILLIS] on the main looper rather than
+ * issued back-to-back: on-device testing showed an immediate disable-then-enable is coalesced by
+ * the platform into a no-op (the binding survives untouched), which is why only a full force-stop
+ * — never this button — recovered a wedged listener before this fix.
  */
-class SystemNotificationListenerRefresher(context: Context) : NotificationListenerRefresher {
+class SystemNotificationListenerRefresher(
+    context: Context,
+    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
+) : NotificationListenerRefresher {
 
     private val appContext = context.applicationContext
 
     override fun refresh() {
         val component = ComponentName(appContext, NavigationNotificationListenerService::class.java)
-
         val pm = appContext.packageManager
+
         pm.setComponentEnabledSetting(
             component,
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
             PackageManager.DONT_KILL_APP,
         )
-        pm.setComponentEnabledSetting(
-            component,
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP,
-        )
 
-        NotificationListenerService.requestRebind(component)
+        mainHandler.postDelayed({
+            pm.setComponentEnabledSetting(
+                component,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+            NotificationListenerService.requestRebind(component)
+        }, REBIND_DELAY_MILLIS)
+    }
+
+    private companion object {
+        const val REBIND_DELAY_MILLIS = 500L
     }
 }

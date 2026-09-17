@@ -1,6 +1,51 @@
 # Implementation Status
 
-_Last updated: 2026-08-05_
+_Last updated: 2026-09-18_
+
+## MR review findings: description accuracy, listener-refresh reliability, per-app enablement UI (2026-09-18)
+
+**Requirement.** Three findings from the fdroiddata MR review (!44999, manual on-device test by
+MiggiV2) needed fixes, not just documentation changes.
+
+**Finding 1 — description overstated non-Google-Maps support.** `full_description.txt` promised
+maneuver arrow, distance, road and ETA on the watch for all four supported apps; a live Organic Maps
+test showed maneuver as the `UNKNOWN` fallback glyph and empty ETA, because only the Google Maps
+ruleset extracts those fields (Organic Maps/CoMaps/OsmAnd emit `maneuver = UNKNOWN` on purpose — see
+the 2026-07-30 CoMaps entry above). **Fix:** the supported-apps list and Features bullet now state
+per-app capability (Google Maps: full; the other three: distance + road, neutral marker, no ETA) and
+note full parity is a future-update target. No functional change.
+
+**Finding 2 — "Refresh app" didn't pick up a navigation app installed after the grant.** The
+recovery path (REQ-ANDROID-012) already re-syncs installed catalog apps on `onListenerConnected`
+(`AppContainer.onListenerConnected` → `EnabledAppRepository.syncInstalledApps`), so the plumbing to
+*discover* a newly-installed app was correct — but on-device testing showed the button's
+disable-then-enable toggle wasn't actually forcing a rebind: called back-to-back, the platform
+coalesces the pair into a no-op, so only a real force-stop (which the button was meant to replace)
+ever re-fired `onListenerConnected`. **Fix:**
+`SystemNotificationListenerRefresher.refresh()` now separates the disable and the
+enable-plus-`requestRebind` by 500 ms on the main looper instead of issuing them synchronously.
+Regression test `refreshDisablesBeforeTheDelayedReenable` pins that the component is genuinely left
+DISABLED in the gap (proving the re-enable is a distinct, later event); the two existing tests are
+updated to run the main looper to idle before asserting the final ENABLED state.
+
+**Finding 3 — onboarding disclosure promised per-app control that didn't exist.** The disclosure said
+notifications are read from "navigation apps you enable," but no UI ever called
+`EnabledAppRepository.setEnabled`, and `REQ-ANDROID-009` ("Settings SHALL include per-app
+enablement") was unimplemented. Default-enable-on-discovery is correct per REQ-ANDROID-004 (opt-out
+by design, not a bug) — the missing piece was the ability to opt back out. **Fix:** new
+`ui/apps/NavigationAppsScreen.kt` (list of catalog apps with a `Switch` per app, capture-only badge,
+wired through `MainActivity`'s `navigation-apps` route to
+`EnabledAppRepository.observeEnablement()` / `setEnabled`), a "Manage navigation apps" entry point on
+the dashboard, and reworded `onboarding_disclosure` / `onboarding_privacy_note` to describe the real
+opt-out model and point at the new screen instead of a nonexistent "system settings" control.
+
+**Verification.** `./scripts/validate-spec-assets.sh` OK (34 files); `./scripts/validate-rules.sh` OK
+(19 apps, `<queries>` cross-check OK); `./android/gradlew -p android test lint assembleDebug` BUILD
+SUCCESSFUL, 235 JVM unit tests / 0 failures, lint clean on all changed/new files. Compose screens in
+this repo are not unit-tested directly (no existing precedent — verified via emulator per convention
+elsewhere in this doc); on-device confirmation of `NavigationAppsScreen`'s toggle behavior and the
+delayed-rebind fix's real-world effect (install an app after granting access, confirm it's picked up
+without a force-stop) is still pending and should happen before this ships.
 
 ## OsmAnd navigation ruleset (2026-08-05)
 
