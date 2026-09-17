@@ -1,19 +1,21 @@
 PebbleNTN — Pebble Notification To Navigation — puts the turn-by-turn directions from your phone's navigation app onto your Pebble watch, so you don't have to reach for your phone while you ride, walk or drive.
 
-It works by reading your navigation app's notifications on the phone and sending the next step to the watch: the maneuver arrow, the distance to it, the road name and the ETA. Nothing is sent to any server — the notification is parsed on your device and forwarded to your paired Pebble over the local connection.
+It works by reading your navigation app's notifications on the phone and sending the next step to the watch: distance, road name, and — depending on the app — the maneuver arrow and ETA. Nothing is sent to any server — the notification is parsed on your device and forwarded to your paired Pebble over the local connection.
 
 Supported navigation apps:
 
-* Google Maps (English plus German, French, Spanish, Italian and Dutch)
-* Organic Maps
-* CoMaps
-* OsmAnd
+* Google Maps (English plus German, French, Spanish, Italian and Dutch) — maneuver arrow, distance, road and ETA
+* Organic Maps — distance and road; the watch shows a neutral turn marker (no ETA)
+* CoMaps — distance and road; the watch shows a neutral turn marker (no ETA)
+* OsmAnd — distance and road; the watch shows a neutral turn marker (no ETA)
+
+Full maneuver arrows and ETA for these apps depend on data they don't currently put in the notification text; support may improve in a future update.
 
 More apps can be added without a new release: PebbleNTN uses a small, declarative rule set to recognise each app's notifications. You can write your own rules for an unsupported app, or share an anonymised capture log to help add official support.
 
 Features:
 
-* Next maneuver, distance, road and ETA on the watch
+* Next maneuver, distance, road and ETA on the watch (maneuver icon and ETA are currently Google Maps only — see supported apps above)
 * Three arrow styles, accent colours, and light or dark themes
 * Metric or imperial units, left- or right-hand arrow layout
 * Privacy-first: the notification is parsed locally and never uploaded; the optional "share logs to help" step lets you review and redact before sharing
