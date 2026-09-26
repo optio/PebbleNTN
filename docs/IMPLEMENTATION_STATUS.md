@@ -1,6 +1,26 @@
 # Implementation Status
 
-_Last updated: 2026-09-18_
+_Last updated: 2026-09-25_
+
+## Configurable watchapp auto-launch setting (REQ-WATCH-005, REQ-ANDROID-009, Issue #9) (2026-09-25)
+
+**Requirement.** GitHub Issue #9 requested an option to disable automatic watchapp launch when navigation begins. Previously, auto-launch occurred unconditionally every time any navigation session started, which was disruptive for users driving with Android Auto, using rental car dashboard displays, or wanting to control when the Pebble watchapp appears. The consolidated spec and requirements stated auto-launch is user-configurable, but no UI or persistence repository existed to toggle it.
+
+**Implementation.**
+- **`WatchSettingsRepository`:** New repository (`data/WatchSettingsRepository.kt`) persisting `WatchSettings` (specifically `autoLaunchOnSessionStart`) to `SharedPreferences` (`"pebblentn_settings"`, matching `AppEnabledRepository`). Provides a thread-safe cached read `isAutoLaunchEnabled()` for callbacks and transports, and exposes `settings` and `autoLaunchEnabled` `StateFlow`s for the UI.
+- **Single decision point & all launch call sites:**
+  1. `NavigationSessionReducer` gates `ReducerEffect.LaunchWatchApp` behind `state.settings.autoLaunchOnSessionStart`.
+  2. `PebbleWatchTransport.launchApp()` checks `autoLaunchEnabled()` before requesting `startAppOnTheWatch`.
+  3. `PebbleWatchTransport.send()` gates the `FailedDifferentAppOpen` fallback relaunch behind `autoLaunchEnabled()`, preventing unwanted relaunch mid-session when the user leaves the watchapp.
+  4. `NavigationController` preserves `state.settings` on process restoration (`restore()`) and propagates settings updates via `onSettingsChanged()`.
+- **UI:** Added "Launch watchapp when navigation starts" toggle to `DashboardScreen` and wired through `MainActivity` and `AppContainer`. Follows existing Material 3 / Compose UI architecture and Android string resource conventions (`R.string.dashboard_auto_launch`, `R.string.dashboard_auto_launch_hint`).
+- **Data forwarding:** When auto-launch is disabled, notification parsing, rule evaluation, and data forwarding are unaffected: when the user manually opens the watchapp (or if it's already open), the watchapp sends `WATCH_READY` (or `onAppOpened` fires), and the current navigation state is immediately sent and updated live.
+
+**Verification.**
+- `WatchSettingsRepositoryTest`: Default enabled; immediate state flow emission on toggle; persistence across new repository instances.
+- `NavigationSessionReducerTest`: Verified `autoLaunchDisabledDoesNotEmitLaunchEffectForGoogleMapsNotification`, `autoLaunchDisabledDoesNotEmitLaunchEffectForOsmAndNotification`, `autoLaunchDisabledThenManualWatchReadySendsCurrentStateAndContinuesForwarding`, and `toggleAutoLaunchMidNavigationDoesNotKillOrStop`.
+- `NavigationControllerTest`: Verified `instructionWithAutoLaunchDisabledDoesNotLaunchOrScheduleAutonomousReady`, `autoLaunchDisabledThenManualWatchReadySendsState`, and `toggleAutoLaunchViaSettingsChangedUpdatesControllerState`.
+- Documentation updated in `README.md` and `fastlane/metadata/android/en-US/full_description.txt`.
 
 ## MR review findings: description accuracy, listener-refresh reliability, per-app enablement UI (2026-09-18)
 

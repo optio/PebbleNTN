@@ -41,9 +41,10 @@ class NavigationController(
     private val baseBackoffMillis: Long = 50,
     private val readySettleMillis: Long = 1_500,
     private val stateStore: NavigationStateRepository? = null,
+    initialSettings: WatchSettings = WatchSettings.DEFAULT,
 ) {
     private val mutex = Mutex()
-    private var state = ReducerState()
+    private var state = ReducerState(settings = initialSettings)
 
     /**
      * Begin collecting inbound watch messages. A transport failure (no Pebble app installed, a
@@ -60,11 +61,12 @@ class NavigationController(
 
     /**
      * Restore the last cached navigation state (REQ-ANDROID-010). Safe to call once on startup
-     * before [start]; watch readiness is not restored, so the watch re-handshakes.
+     * before [start]; watch readiness is not restored, so the watch re-handshakes. Settings are
+     * preserved from current runtime configuration.
      */
     suspend fun restore() {
         val restored = stateStore?.loadReducerState() ?: return
-        mutex.withLock { state = restored }
+        mutex.withLock { state = restored.copy(settings = state.settings) }
     }
 
     suspend fun onInstruction(instruction: NavigationInstruction) =

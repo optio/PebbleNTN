@@ -2,10 +2,15 @@ package com.pebblentn.app.pebble
 
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.core.WatchSettings
+import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.protocol.AppMessage
 import com.pebblentn.app.protocol.FakeWatchTransport
 import com.pebblentn.app.protocol.Protocol
 import com.pebblentn.app.protocol.SendResult
+import com.pebblentn.app.rules.LayeredRules
+import com.pebblentn.app.rules.RuleEngine
+import com.pebblentn.app.rules.RulesetCodec
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -152,5 +157,124 @@ class NavigationControllerTest {
         runCurrent()
 
         assertEquals("watch app still launched", 1, transport.launchCount)
+    }
+
+    @Test
+    fun instructionWithAutoLaunchDisabledDoesNotLaunchOrScheduleAutonomousReady() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport,
+            backgroundScope,
+            appVersion = "0.0.1",
+            clock = { 0 },
+            initialSettings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false),
+        )
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        runCurrent()
+
+        assertEquals("launch count must be 0 when auto-launch is disabled", 0, transport.launchCount)
+        assertTrue("nothing sent before READY", transport.sent.isEmpty())
+
+        testScheduler.advanceTimeBy(3_000)
+        runCurrent()
+
+        assertTrue("autonomous ready must NOT be scheduled when auto-launch is disabled", transport.sent.isEmpty())
+    }
+
+    @Test
+    fun autoLaunchDisabledThenManualWatchReadySendsState() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport,
+            backgroundScope,
+            appVersion = "0.0.1",
+            clock = { 0 },
+            initialSettings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false),
+        )
+        controller.start()
+        runCurrent()
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        runCurrent()
+        assertEquals(0, transport.launchCount)
+
+        // Simulate user manually opening the watchapp on the watch
+        transport.emitInbound(readyMessage())
+        runCurrent()
+
+        assertTrue("state is sent after manual WATCH_READY", events(transport).contains(Protocol.Events.NAVIGATION_UPDATE))
+    }
+
+    @Test
+    fun toggleAutoLaunchViaSettingsChangedUpdatesControllerState() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = controller(transport, backgroundScope)
+
+        // Initially autoLaunch is enabled by default; disable it via SettingsChanged
+        controller.onSettingsChanged(WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false))
+        runCurrent()
+
+        controller.onInstruction(NavigationInstruction(Maneuver.LEFT, distanceMeters = 200))
+        runCurrent()
+
+        assertEquals("launch count must be 0 after disabling via onSettingsChanged", 0, transport.launchCount)
+    }
+
+    @Test
+    fun googleMapsNotificationWithAutoLaunchDisabledDoesNotLaunchWatchapp() = runTest {
+        val rulesJson = javaClass.getResourceAsStream("/rules/bundled/google-maps/en.json")!!.bufferedReader().readText()
+        val rules = LayeredRules(bundled = RulesetCodec.parse(rulesJson).rules)
+        val snapshot = NotificationSnapshot(
+            packageName = "com.google.android.apps.maps",
+            notificationId = 1,
+            text = "In 200 m, turn right",
+            title = "Main St",
+        )
+        val eval = RuleEngine().evaluate(snapshot, rules, locale = "en")
+        assertTrue("Google Maps notification must match", eval.matched)
+        val instruction = eval.instruction!!
+
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport,
+            backgroundScope,
+            appVersion = "0.0.1",
+            clock = { 0 },
+            initialSettings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false),
+        )
+
+        controller.onInstruction(instruction)
+        runCurrent()
+
+        assertEquals("launch count must be 0 for Google Maps notification format when auto-launch disabled", 0, transport.launchCount)
+    }
+
+    @Test
+    fun osmandNotificationWithAutoLaunchDisabledDoesNotLaunchWatchapp() = runTest {
+        val rulesJson = javaClass.getResourceAsStream("/rules/bundled/osmand/en.json")!!.bufferedReader().readText()
+        val rules = LayeredRules(bundled = RulesetCodec.parse(rulesJson).rules)
+        val snapshot = NotificationSnapshot(
+            packageName = "net.osmand",
+            notificationId = 1,
+            title = "200 m • Turn right",
+        )
+        val eval = RuleEngine().evaluate(snapshot, rules, locale = "en")
+        assertTrue("OsmAnd notification must match", eval.matched)
+        val instruction = eval.instruction!!
+
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport,
+            backgroundScope,
+            appVersion = "0.0.1",
+            clock = { 0 },
+            initialSettings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false),
+        )
+
+        controller.onInstruction(instruction)
+        runCurrent()
+
+        assertEquals("launch count must be 0 for OsmAnd notification format when auto-launch disabled", 0, transport.launchCount)
     }
 }
