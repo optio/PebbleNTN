@@ -1,6 +1,35 @@
 # Implementation Status
 
-_Last updated: 2026-09-28_
+_Last updated: 2026-09-29_
+
+## Google Maps walking rules from a shared diagnostics log (2026-09-29)
+
+**Trigger.** A shared full-diagnostics export (v0.0.25, en-US, Android 17) of a train ride followed
+by a walk: 458 of 500 Google Maps notifications were unmatched. The watch showed nothing during
+the ride and kept stale turn cards (`0 m`) between walking turns, and the road line on classic
+turn cards repeated the distance.
+
+**Change (rules only, `rules/bundled/google-maps/en.json`, `google-maps-en-2026.09.1`).**
+- `google-maps-walk-arrive-in-en` (195): `Arrive in N min (D m)` → ARRIVE, with D as the distance.
+- `google-maps-walk-overview-en` (195): `Walk N min (D m)` / `Arrive HH:MM · <dest>` → STRAIGHT,
+  with the destination as the road line and the ETA, and no distance (D is the whole remaining walk).
+- `*-distance-title-en` variants of the eleven turn/continue rules (base priority + 1): when the
+  title is a bare distance, the road line comes from the text. The base rules are unchanged.
+- Test contract: both engines now check `primaryText`, plus a new `noDistance` assertion
+  (`GoogleMapsRulesRegressionTest`, `workbench.py check_fixture`). Nine new capture fixtures, with
+  place names replaced.
+
+**Split out.** Transit legs → #20 (feature request; a transit glyph needs a protocol maneuver
+code). Carrying the ETA across turn cards → #21 (Android state across notifications, a later
+release).
+
+**Verified.** `workbench.py regression` (Google Maps 73/73); `GoogleMapsRulesRegressionTest`
+(5/5); replaying the full log through the new rules leaves only the transit ride (316, #20) and
+non-navigation notifications unmatched. `./scripts/test-all.sh` (see commit).
+
+**Next atomic task.** Merge, then check with a real walking route that the ARRIVE/STRAIGHT
+switching between overview cards doesn't vibrate annoyingly (Maps briefly flips between `Walk`
+and `Arrive in` near the destination).
 
 ## Configurable watchapp auto-launch setting (REQ-WATCH-005, REQ-ANDROID-009, Issue #9) (2026-09-25)
 

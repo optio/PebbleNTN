@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.07.4",
+  "rulesetVersion": "google-maps-en-2026.09.1",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -33,6 +33,126 @@
           "fields": [
             "title",
             "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-walk-arrive-in-en",
+      "enabled": true,
+      "priority": 195,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Walking, last stretch: ProgressStyle card, title 'Arrive in 1 min (70 m)', text '<destination>'. No turns remain, so ARRIVE with the distance to the destination; unmatched, the watch kept the last turn card ('0 m, turn right') for minutes (real capture, 2026-09). Just below google-maps-arrive-en, above every maneuver rule, so a destination name with a maneuver word cannot win. '1 min' never parses as a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*arrive\\s+in\\s+\\d+\\s*min\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        }
+      }
+    },
+    {
+      "id": "google-maps-walk-overview-en",
+      "enabled": true,
+      "priority": 195,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Walking between turns: ProgressStyle card, title 'Walk 7 min (500 m)', text 'Arrive 18:57 · <destination>'. Continue toward the destination, with its ETA. Deliberately NO distance: the metres are the whole remaining walk, not the distance to the next turn, and under an arrow they would read as 'turn in 500 m' (real capture, 2026-09).",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*walk\\s+\\d+\\s*min\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "text",
+          "pattern": "·\\s*(.+?)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "text",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-roundabout-distance-title-en",
+      "enabled": true,
+      "priority": 191,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-roundabout-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\broundabout\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
           ]
         },
         "secondaryText": {
@@ -85,6 +205,53 @@
       }
     },
     {
+      "id": "google-maps-uturn-distance-title-en",
+      "enabled": true,
+      "priority": 181,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-uturn-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bu-?turn\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
       "id": "google-maps-uturn-en",
       "enabled": true,
       "priority": 180,
@@ -115,6 +282,53 @@
           "fields": [
             "title",
             "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-sharp-right-distance-title-en",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-sharp-right-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bsharp\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
           ]
         },
         "secondaryText": {
@@ -167,6 +381,53 @@
       }
     },
     {
+      "id": "google-maps-sharp-left-distance-title-en",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-sharp-left-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bsharp\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
       "id": "google-maps-sharp-left-en",
       "enabled": true,
       "priority": 170,
@@ -197,6 +458,53 @@
           "fields": [
             "title",
             "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-slight-right-distance-title-en",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-slight-right-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bslight(ly)?\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
           ]
         },
         "secondaryText": {
@@ -249,6 +557,53 @@
       }
     },
     {
+      "id": "google-maps-slight-left-distance-title-en",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-slight-left-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bslight(ly)?\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
       "id": "google-maps-slight-left-en",
       "enabled": true,
       "priority": 160,
@@ -279,6 +634,53 @@
           "fields": [
             "title",
             "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-keep-right-distance-title-en",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-keep-right-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bkeep\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
           ]
         },
         "secondaryText": {
@@ -331,6 +733,53 @@
       }
     },
     {
+      "id": "google-maps-keep-left-distance-title-en",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-keep-left-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bkeep\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
       "id": "google-maps-keep-left-en",
       "enabled": true,
       "priority": 120,
@@ -361,6 +810,53 @@
           "fields": [
             "title",
             "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-turn-right-distance-title-en",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-turn-right-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+right\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
           ]
         },
         "secondaryText": {
@@ -413,6 +909,53 @@
       }
     },
     {
+      "id": "google-maps-turn-left-distance-title-en",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-turn-left-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bturn\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
       "id": "google-maps-turn-left-en",
       "enabled": true,
       "priority": 100,
@@ -443,6 +986,53 @@
           "fields": [
             "title",
             "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-continue-distance-title-en",
+      "enabled": true,
+      "priority": 51,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-continue-en: title is the bare distance ('50 m'), text the instruction. Same maneuver, but the road line takes the instruction from text; the base rule's title-first primaryText showed the distance twice (real walking capture, 2026-09). One priority step above the base rule so it wins whenever the title is only a distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\b(continue|head|go|proceed)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
           ]
         },
         "secondaryText": {
