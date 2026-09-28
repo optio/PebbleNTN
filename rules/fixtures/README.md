@@ -45,6 +45,29 @@ falls through to ARRIVE, which is what real arrival phrasings look like. The
 English is unaffected: `en.json` matches whole words (`arriving|arrived|destination`) and keeps
 ARRIVE on top.
 
+## What a walking capture taught us (2026-09)
+
+A shared full-diagnostics log (en-US, Android 17: a train ride, then a walk) was 92% unmatched.
+Walking navigation switches **one** notification between two layouts:
+
+1. **An overview card between turns** (`ProgressStyle`): `Walk 7 min (500 m)` /
+   `Arrive 18:57 · <destination>`, and on the last stretch `Arrive in 1 min (70 m)` /
+   `<destination>`. Unmatched, the watch kept the previous turn card (`0 m`, turn right) for minutes.
+   `google-maps-walk-overview-en` shows *continue toward the destination* with the ETA and
+   deliberately **no distance**, because the metres are the whole remaining walk, not the distance
+   to the next turn (fixtures assert this with `noDistance`). `google-maps-walk-arrive-in-en` shows
+   ARRIVE with the distance to the destination, since no turns remain.
+2. **Classic turn cards**: title = bare distance (`50 m`), text = instruction. These already
+   matched, but the title-first road line showed the distance twice. The `*-distance-title-en`
+   variants (one priority step above each base rule) take the road line from the text. Fixtures now
+   pin `primaryText`, checked by both engines.
+
+Transit legs (`Ride to <station>` / `5 stops · 10 min`) stay unmatched on purpose until transit
+support exists ([#20](https://github.com/optio/PebbleNTN/issues/20));
+`capture-transit-ride-unmatched` pins that. The ETA is missing on classic turn cards, and carrying
+it over from the overview card is an Android change
+([#21](https://github.com/optio/PebbleNTN/issues/21)).
+
 ## Known gaps
 
 - Non-English locales — the bundle now ships Italian, French, Spanish, German and Dutch Google Maps

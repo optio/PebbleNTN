@@ -286,9 +286,13 @@ def check_fixture(result: dict | None, expected: dict) -> str | None:
         return None if result is None else f"expected no match, got {result['ruleId']}"
     if result is None:
         return "expected a match, got none"
-    for field in ("maneuver", "distanceMeters", "secondaryText", "ruleId"):
+    for field in ("maneuver", "distanceMeters", "primaryText", "secondaryText", "ruleId"):
         if field in expected and result.get(field) != expected[field]:
             return f"{field}: expected {expected[field]!r}, got {result.get(field)!r}"
+    # `noDistance: true` asserts the distance is absent — an omitted `distanceMeters` only means
+    # "not checked", and some cards carry metres that must not be shown as the turn distance.
+    if expected.get("noDistance") and result.get("distanceMeters") is not None:
+        return f"distanceMeters: expected none, got {result['distanceMeters']!r}"
     return None
 
 

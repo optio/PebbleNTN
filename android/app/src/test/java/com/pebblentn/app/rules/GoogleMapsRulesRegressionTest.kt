@@ -33,6 +33,13 @@ class GoogleMapsRulesRegressionTest {
         val ruleId: String? = null,
         /** The ETA the watch shows in its status strip, extracted from Google Maps' subText. */
         val secondaryText: String? = null,
+        /** The road line on the watch. */
+        val primaryText: String? = null,
+        /**
+         * Asserts the distance is absent. An omitted [distanceMeters] only means "not checked", and
+         * some cards carry metres that must not be shown as the turn distance.
+         */
+        val noDistance: Boolean = false,
     )
 
     @Serializable
@@ -113,6 +120,12 @@ class GoogleMapsRulesRegressionTest {
             }
             fixture.expected.secondaryText?.let { expected ->
                 assertEquals("fixture '${fixture.name}' ETA", expected, result.instruction.secondaryText)
+            }
+            fixture.expected.primaryText?.let { expected ->
+                assertEquals("fixture '${fixture.name}' road line", expected, result.instruction.primaryText)
+            }
+            if (fixture.expected.noDistance) {
+                assertEquals("fixture '${fixture.name}' must carry no distance", null, result.instruction.distanceMeters)
             }
         }
     }
