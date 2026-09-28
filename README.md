@@ -52,3 +52,8 @@ navigation app's own arrow icon from the notification and forward it. That choic
 - **Cross-app compatibility.** Built-in glyphs render identically for every navigation app (Google
   Maps, Waze, OsmAnd, …) and every language, instead of depending on each app's private icon format. An unclassified maneuver falls back to a clear "?" glyph rather than guessing.
 
+## Contributors
+
+Thanks to [@ajlunis](https://github.com/ajlunis) (made auto-launch of the watchapp optional),
+[@arnowelzel](https://github.com/arnowelzel) (many feature ideas that improved the app overall) and
+[@L0renz00](https://github.com/L0renz00) (localization fixes for Google Maps).
