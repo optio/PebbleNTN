@@ -33,8 +33,10 @@ watchapp (`pebble-ntn.pbw`), attached to a GitHub Release with `SHA256SUMS.txt`.
 The **[Pebble watchapp](https://apps.repebble.com/ad4971e345854b909b73b1a9)** can be installed [directly from the Pebble store](https://apps.repebble.com/ad4971e345854b909b73b1a9).
 Alternativly you can download the latest `pebble-ntn.pbw` from [PebbleNTN Releases](https://github.com/optio/PebbleNTN/releases) page. Open it on your phone using the Pebble app to install the .pbw file.
 
-**Android companion** - download `pebble-ntn.apk` from the [GitHub PebbleNTN Releases](https://github.com/optio/PebbleNTN/releases) page. ( The APK is debug-signed until the release keystore secrets are configured, so expect the unknown-sources prompt. )
-- For auto-updates, add the repository's releases to **[Obtainium](https://github.com/ImranR98/Obtainium)**  (point it at this repo's [GitHub releases](https://github.com/optio/PebbleNTN/releases). Obtainium then tracks and installs each new release automatically.
+**Android companion** - download `pebble-ntn.apk`
+- From the [GitHub PebbleNTN Releases](https://github.com/optio/PebbleNTN/releases) page. ( expect the unknown-sources prompt. )
+- Using [F-Droid](https://f-droid.org/en/packages/com.pebblentn.app/) which notifies about app updates
+- Using Obtainium, add the repository's releases to **[Obtainium](https://github.com/ImranR98/Obtainium)**  (point it at this repo's [GitHub releases](https://github.com/optio/PebbleNTN/releases). Obtainium then tracks and installs each new release automatically.
 
 Play Store distribution is currently not in scope (but is technically possible if there are enough request)
 
