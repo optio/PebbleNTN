@@ -38,6 +38,7 @@ import java.util.UUID
 class PebbleWatchTransport(
     context: Context,
     private val appUuid: UUID = PEBBLENTN_UUID,
+    private val autoLaunchEnabled: () -> Boolean = { true },
 ) : WatchTransport {
 
     private val appContext = context.applicationContext
@@ -46,6 +47,11 @@ class PebbleWatchTransport(
 
     override val inbound: Flow<AppMessage> = WatchInboundBus.messages
 
+    // Not gated on autoLaunchEnabled: whether to launch at session start is the reducer's decision
+    // (it only emits LaunchWatchApp when the setting is on). A second check here read the setting at
+    // a different moment than the reducer did, so a toggle racing a session start could have the
+    // reducer record the launch and schedule autonomous READY for an app this call then refused to
+    // open.
     override suspend fun launchApp() {
         runCatching { sender.startAppOnTheWatch(appUuid) }
             .onSuccess { results -> Timber.i("PebbleKit: launchApp -> %s", results) }
@@ -60,8 +66,8 @@ class PebbleWatchTransport(
         // in the foreground on the watch — and right after a session starts it often is not yet.
         // Re-launch it and give it time to come to the front, then retry once. This mirrors the
         // working konsumer/pebble-map-android flow; the ~900 ms wait is essential (a short retry
-        // races the launch and fails again).
-        if (isDifferentAppOpen(results)) {
+        // races the launch and fails again). Respects autoLaunchEnabled.
+        if (isDifferentAppOpen(results) && autoLaunchEnabled()) {
             Timber.i("PebbleKit: watchapp not in foreground — relaunching then retrying")
             runCatching { sender.startAppOnTheWatch(appUuid) }
             delay(RELAUNCH_DELAY_MS)

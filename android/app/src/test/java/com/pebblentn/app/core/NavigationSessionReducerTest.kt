@@ -246,4 +246,76 @@ class NavigationSessionReducerTest {
         val navigating = send.state as NavigationState.Navigating
         assertEquals(Maneuver.LEFT, navigating.instruction.maneuver)
     }
+
+    // --- Auto-launch disabled setting (REQ-WATCH-005, Issue #9) -----------------------------------
+
+    @Test
+    fun autoLaunchDisabledDoesNotEmitLaunchEffectForGoogleMapsNotification() {
+        val settings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false)
+        val googleMapsInstruction = instr(Maneuver.RIGHT, 100, "Turn right on Main St")
+        val result = reducer.reduce(
+            ReducerState(settings = settings),
+            ReducerEvent.InstructionReceived(googleMapsInstruction, atEpochSeconds = 0),
+        )
+
+        assertFalse("must not launch watchapp when auto-launch is disabled", result.effects.contains(ReducerEffect.LaunchWatchApp))
+        assertEquals(null, result.state.launchedSessionId)
+        assertTrue(result.state.current is NavigationState.Navigating)
+        assertEquals(1, (result.state.current as NavigationState.Navigating).sessionId)
+    }
+
+    @Test
+    fun autoLaunchDisabledDoesNotEmitLaunchEffectForOsmAndNotification() {
+        val settings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false)
+        val osmandInstruction = instr(Maneuver.UNKNOWN, 200, "Turn right and go")
+        val result = reducer.reduce(
+            ReducerState(settings = settings),
+            ReducerEvent.InstructionReceived(osmandInstruction, atEpochSeconds = 0),
+        )
+
+        assertFalse("must not launch watchapp for OsmAnd when auto-launch is disabled", result.effects.contains(ReducerEffect.LaunchWatchApp))
+        assertEquals(null, result.state.launchedSessionId)
+        assertTrue(result.state.current is NavigationState.Navigating)
+    }
+
+    @Test
+    fun autoLaunchDisabledThenManualWatchReadySendsCurrentStateAndContinuesForwarding() {
+        val settings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false)
+        var state = ReducerState(settings = settings)
+        // 1. Navigation starts: instruction received with auto-launch disabled
+        val navStart = reducer.reduce(state, ReducerEvent.InstructionReceived(instr(Maneuver.RIGHT, 300), 0))
+        assertFalse(navStart.effects.contains(ReducerEffect.LaunchWatchApp))
+        assertTrue("no send before watch is ready", sendEffects(navStart).isEmpty())
+        state = navStart.state
+
+        // 2. User manually opens watchapp on watch (watch sends WATCH_READY)
+        val readyResult = reducer.reduce(state, ReducerEvent.WatchReady(Protocol.MAJOR, Protocol.MINOR, atEpochSeconds = 1))
+        val initialSend = sendEffects(readyResult).single()
+        assertEquals(Maneuver.RIGHT, (initialSend.state as NavigationState.Navigating).instruction.maneuver)
+        state = readyResult.state
+
+        // 3. Subsequent navigation update arrives: data continues to be forwarded live
+        val updateResult = reducer.reduce(state, ReducerEvent.InstructionReceived(instr(Maneuver.LEFT, 150), 2))
+        assertFalse("must not launch mid-session", updateResult.effects.contains(ReducerEffect.LaunchWatchApp))
+        val updateSend = sendEffects(updateResult).single()
+        assertEquals(Maneuver.LEFT, (updateSend.state as NavigationState.Navigating).instruction.maneuver)
+    }
+
+    @Test
+    fun toggleAutoLaunchMidNavigationDoesNotKillOrStop() {
+        var state = reducer.reduce(ReducerState(), ReducerEvent.WatchReady(Protocol.MAJOR, Protocol.MINOR, 0)).state
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(instr(Maneuver.RIGHT, 100), 1)).state
+
+        // User toggles autoLaunch off mid-navigation
+        val disabledSettings = state.settings.copy(autoLaunchOnSessionStart = false)
+        val settingsChangedResult = reducer.reduce(state, ReducerEvent.SettingsChanged(disabledSettings))
+        assertTrue("settings change must produce no side effects (no kill/stop)", settingsChangedResult.effects.isEmpty())
+        assertTrue("navigation state must remain active", settingsChangedResult.state.current is NavigationState.Navigating)
+        assertFalse(settingsChangedResult.state.settings.autoLaunchOnSessionStart)
+
+        // Navigation updates continue normally
+        val nextResult = reducer.reduce(settingsChangedResult.state, ReducerEvent.InstructionReceived(instr(Maneuver.LEFT, 50), 2))
+        val send = sendEffects(nextResult).single()
+        assertEquals(Maneuver.LEFT, (send.state as NavigationState.Navigating).instruction.maneuver)
+    }
 }

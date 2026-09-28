@@ -8,6 +8,7 @@ import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
 import com.pebblentn.app.data.NavigationStateRepository
 import com.pebblentn.app.data.UserRuleRepository
+import com.pebblentn.app.data.WatchSettingsRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
 import com.pebblentn.app.export.DiagnosticExporter
 import com.pebblentn.app.export.DiagnosticShareManager
@@ -111,7 +112,12 @@ class AppContainer(context: Context) {
 
     val diagnosticShareManager = DiagnosticShareManager(appContext)
 
-    val watchTransport: WatchTransport = PebbleWatchTransport(appContext)
+    val watchSettingsRepository = WatchSettingsRepository(appContext)
+
+    val watchTransport: WatchTransport = PebbleWatchTransport(
+        appContext,
+        autoLaunchEnabled = watchSettingsRepository::isAutoLaunchEnabled,
+    )
 
     private val navigationStateRepository = NavigationStateRepository(database.navigationStateDao())
 
@@ -120,7 +126,16 @@ class AppContainer(context: Context) {
         scope = applicationScope,
         appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
         stateStore = navigationStateRepository,
+        initialSettings = watchSettingsRepository.settings.value,
     )
+
+    init {
+        applicationScope.launch {
+            watchSettingsRepository.settings.collect { settings ->
+                navigationController.onSettingsChanged(settings)
+            }
+        }
+    }
 
     private val notificationProcessor = DebugCaptureProcessor(
         debugHistory = debugHistoryRepository,
@@ -149,6 +164,13 @@ class AppContainer(context: Context) {
         if (!enabled) {
             applicationScope.launch { navigationController.onNavigationStopped() }
         }
+    }
+
+    /**
+     * Toggle automatic watchapp launch when navigation starts (REQ-WATCH-005, REQ-ANDROID-009).
+     */
+    fun setWatchAutoLaunch(enabled: Boolean) {
+        watchSettingsRepository.setAutoLaunch(enabled)
     }
 
     private val installedAppsProvider = InstalledAppsProvider(appContext)

@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
             .collectAsState(initial = 0)
         val updateState by container.updateCheckRepository.state.collectAsState()
         val autoCheckUpdates by container.updateCheckRepository.autoCheckEnabled.collectAsState()
+        val autoLaunch by container.watchSettingsRepository.autoLaunchEnabled.collectAsState()
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
@@ -128,6 +129,8 @@ class MainActivity : ComponentActivity() {
                     onCheckForUpdate = ::checkForUpdate,
                     autoCheckUpdates = autoCheckUpdates,
                     onAutoCheckUpdatesChange = ::setAutoCheckUpdates,
+                    autoLaunch = autoLaunch,
+                    onAutoLaunchChange = container::setWatchAutoLaunch,
                 )
             }
             composable("share-diagnostics") {

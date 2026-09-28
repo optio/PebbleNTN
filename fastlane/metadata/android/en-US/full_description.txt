@@ -16,6 +16,7 @@ More apps can be added without a new release: PebbleNTN uses a small, declarativ
 Features:
 
 * Next maneuver, distance, road and ETA on the watch (maneuver icon and ETA are currently Google Maps only — see supported apps above)
+* Automatic watchapp launch when navigation starts (configurable in settings)
 * Three arrow styles, accent colours, and light or dark themes
 * Metric or imperial units, left- or right-hand arrow layout
 * Privacy-first: the notification is parsed locally and never uploaded; the optional "share logs to help" step lets you review and redact before sharing

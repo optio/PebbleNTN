@@ -58,6 +58,8 @@ fun DashboardScreen(
     onCheckForUpdate: () -> Unit = {},
     autoCheckUpdates: Boolean = false,
     onAutoCheckUpdatesChange: (Boolean) -> Unit = {},
+    autoLaunch: Boolean = true,
+    onAutoLaunchChange: (Boolean) -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
     modifier: Modifier = Modifier,
 ) {
@@ -214,9 +216,26 @@ fun DashboardScreen(
                 Text(stringResource(R.string.dashboard_refresh_app))
             }
 
-            // Footer: update controls + version. (The column scrolls, so no weight spacer.)
+            // Footer: watch settings, update controls + version. (The column scrolls, so no weight spacer.)
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.dashboard_auto_launch),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.dashboard_auto_launch_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = autoLaunch, onCheckedChange = onAutoLaunchChange)
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

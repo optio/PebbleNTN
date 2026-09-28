@@ -141,6 +141,11 @@ cd android
 ./gradlew connectedDebugAndroidTest
 ```
 
+`scripts/test_manual_open_e2e.py` chains both emulators for the "auto-launch off, watchapp opened by
+hand" case: it runs `ManualOpenWithAutoLaunchOffTest` on the running Android emulator, then injects
+the exact state message that test sent into the Pebble emulator and checks navigation renders
+(screenshots land in `watchapp/build/e2e-manual-open/`).
+
 ### Testing without a real navigation app — the fixture publisher
 
 `android/fixture-publisher` is a debug app that posts synthetic navigation-like notifications.
