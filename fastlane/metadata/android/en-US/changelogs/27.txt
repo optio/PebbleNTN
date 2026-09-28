@@ -1,0 +1,3 @@
+• sync README.md hash in the spec manifest
+• single auto-launch decision; test manual open with auto-launch off
+• add option to disable automatic watchapp launch
