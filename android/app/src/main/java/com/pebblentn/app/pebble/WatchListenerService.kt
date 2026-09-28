@@ -55,12 +55,19 @@ class WatchListenerService : BasePebbleListenerService() {
     override fun onAppOpened(watchappUUID: UUID, watch: WatchIdentifier) {
         if (watchappUUID != PebbleWatchTransport.PEBBLENTN_UUID) return
         Timber.i("PebbleKit: watchapp opened on the watch; requesting state (re)send")
-        WatchInboundBus.emit(
-            AppMessage.builder()
-                .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY)
-                .putInt(Protocol.Keys.PROTOCOL_MAJOR, Protocol.MAJOR)
-                .putInt(Protocol.Keys.PROTOCOL_MINOR, Protocol.MINOR)
-                .build(),
-        )
+        WatchInboundBus.emit(appOpenedReadyMessage())
+    }
+
+    companion object {
+        /**
+         * The synthetic WATCH_READY emitted when the watchapp comes to the foreground. It is the only
+         * readiness signal when auto-launch is off and the user opens the watchapp by hand, since no
+         * launch means no autonomous READY either.
+         */
+        fun appOpenedReadyMessage(): AppMessage = AppMessage.builder()
+            .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY)
+            .putInt(Protocol.Keys.PROTOCOL_MAJOR, Protocol.MAJOR)
+            .putInt(Protocol.Keys.PROTOCOL_MINOR, Protocol.MINOR)
+            .build()
     }
 }

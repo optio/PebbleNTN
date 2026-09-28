@@ -207,6 +207,35 @@ class NavigationControllerTest {
     }
 
     @Test
+    fun autoLaunchDisabledThenWatchappOpenedByHandSendsState() = runTest {
+        // Companions like the Core Devices Pebble app never forward the watch's own WATCH_READY, and
+        // with auto-launch off there is no launch and so no autonomous READY. The only readiness
+        // signal left is WatchListenerService.onAppOpened; its synthetic READY must unblock the send.
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport,
+            backgroundScope,
+            appVersion = "0.0.1",
+            clock = { 0 },
+            initialSettings = WatchSettings.DEFAULT.copy(autoLaunchOnSessionStart = false),
+        )
+        controller.start()
+        runCurrent()
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 450))
+        testScheduler.advanceTimeBy(3_000)
+        runCurrent()
+        assertEquals("not launched", 0, transport.launchCount)
+        assertTrue("nothing sent while the watchapp is closed", transport.sent.isEmpty())
+
+        transport.emitInbound(WatchListenerService.appOpenedReadyMessage())
+        runCurrent()
+
+        assertEquals(listOf(Protocol.Events.NAVIGATION_UPDATE), events(transport))
+        assertEquals(0, transport.launchCount)
+    }
+
+    @Test
     fun toggleAutoLaunchViaSettingsChangedUpdatesControllerState() = runTest {
         val transport = FakeWatchTransport()
         val controller = controller(transport, backgroundScope)

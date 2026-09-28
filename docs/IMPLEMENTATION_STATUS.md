@@ -1,6 +1,6 @@
 # Implementation Status
 
-_Last updated: 2026-09-25_
+_Last updated: 2026-09-28_
 
 ## Configurable watchapp auto-launch setting (REQ-WATCH-005, REQ-ANDROID-009, Issue #9) (2026-09-25)
 
@@ -9,18 +9,25 @@ _Last updated: 2026-09-25_
 **Implementation.**
 - **`WatchSettingsRepository`:** New repository (`data/WatchSettingsRepository.kt`) persisting `WatchSettings` (specifically `autoLaunchOnSessionStart`) to `SharedPreferences` (`"pebblentn_settings"`, matching `AppEnabledRepository`). Provides a thread-safe cached read `isAutoLaunchEnabled()` for callbacks and transports, and exposes `settings` and `autoLaunchEnabled` `StateFlow`s for the UI.
 - **Single decision point & all launch call sites:**
-  1. `NavigationSessionReducer` gates `ReducerEffect.LaunchWatchApp` behind `state.settings.autoLaunchOnSessionStart`.
-  2. `PebbleWatchTransport.launchApp()` checks `autoLaunchEnabled()` before requesting `startAppOnTheWatch`.
-  3. `PebbleWatchTransport.send()` gates the `FailedDifferentAppOpen` fallback relaunch behind `autoLaunchEnabled()`, preventing unwanted relaunch mid-session when the user leaves the watchapp.
-  4. `NavigationController` preserves `state.settings` on process restoration (`restore()`) and propagates settings updates via `onSettingsChanged()`.
+  1. `NavigationSessionReducer` already gated `ReducerEffect.LaunchWatchApp` behind `state.settings.autoLaunchOnSessionStart` (since the reducer was introduced); what was missing was a persisted setting feeding it. That gate is the only session-start launch decision — `PebbleWatchTransport.launchApp()` does not re-check the setting (see the review follow-up below).
+  2. `PebbleWatchTransport.send()` gates the `FailedDifferentAppOpen` fallback relaunch behind `autoLaunchEnabled()`, preventing unwanted relaunch mid-session when the user leaves the watchapp.
+  3. `NavigationController` preserves `state.settings` on process restoration (`restore()`) and propagates settings updates via `onSettingsChanged()`.
 - **UI:** Added "Launch watchapp when navigation starts" toggle to `DashboardScreen` and wired through `MainActivity` and `AppContainer`. Follows existing Material 3 / Compose UI architecture and Android string resource conventions (`R.string.dashboard_auto_launch`, `R.string.dashboard_auto_launch_hint`).
-- **Data forwarding:** When auto-launch is disabled, notification parsing, rule evaluation, and data forwarding are unaffected: when the user manually opens the watchapp (or if it's already open), the watchapp sends `WATCH_READY` (or `onAppOpened` fires), and the current navigation state is immediately sent and updated live.
+- **Data forwarding:** When auto-launch is disabled, notification parsing, rule evaluation, and data forwarding are unaffected: when the user opens the watchapp by hand, `WatchListenerService.onAppOpened` emits a synthetic `WATCH_READY` and the current navigation state is sent and then updated live. With the Core Devices companion that callback is the *only* readiness signal in this mode: the companion does not forward the watch's own `WATCH_READY`, and with no launch there is no autonomous READY either.
 
 **Verification.**
 - `WatchSettingsRepositoryTest`: Default enabled; immediate state flow emission on toggle; persistence across new repository instances.
 - `NavigationSessionReducerTest`: Verified `autoLaunchDisabledDoesNotEmitLaunchEffectForGoogleMapsNotification`, `autoLaunchDisabledDoesNotEmitLaunchEffectForOsmAndNotification`, `autoLaunchDisabledThenManualWatchReadySendsCurrentStateAndContinuesForwarding`, and `toggleAutoLaunchMidNavigationDoesNotKillOrStop`.
 - `NavigationControllerTest`: Verified `instructionWithAutoLaunchDisabledDoesNotLaunchOrScheduleAutonomousReady`, `autoLaunchDisabledThenManualWatchReadySendsState`, and `toggleAutoLaunchViaSettingsChangedUpdatesControllerState`.
 - Documentation updated in `README.md` and `fastlane/metadata/android/en-US/full_description.txt`.
+
+**Review follow-up (2026-09-28).**
+- *Race removed:* `PebbleWatchTransport.launchApp()` no longer checks `autoLaunchEnabled()`. The reducer reads its settings copy (updated asynchronously via `AppContainer`'s `settings.collect`), the transport read the repository's cache directly; a toggle racing a session start could let the reducer record the launch and schedule autonomous READY while the transport skipped the launch — `watchReady` then went true for a closed watchapp and the session's one launch was spent. The `send()` relaunch keeps its check.
+- *Manual-open path tested explicitly:* `WatchListenerService.appOpenedReadyMessage()` factors out the synthetic READY. `NavigationControllerTest.autoLaunchDisabledThenWatchappOpenedByHandSendsState` drives it with the setting off (no launch, nothing sent until the app opens, then exactly one `NAVIGATION_UPDATE`).
+- *Two-emulator check:* `ManualOpenWithAutoLaunchOffTest` (androidTest; real persisted setting, controller and `WatchListenerService.onAppOpened`, recording transport per the spec's emulator limitation) logs the state message it sent; `scripts/test_manual_open_e2e.py` runs it on the Android emulator, then opens the watchapp on the Pebble emulator without any phone launch, injects that exact message and checks the screen switches from the waiting screen to navigation.
+- *Commands:* `./android/gradlew -p android :app:testDebugUnitTest --tests '*NavigationControllerTest*'` (13/13); `./scripts/test-all.sh` (green, incl. lint); `./scripts/run-android-emulator.sh` + `scripts/test_manual_open_e2e.py --platform basalt` (PASS: waiting QR → "450 m → Rue de la Loi").
+- *Blockers:* none. On-wrist confirmation with the Core Devices companion that `onAppOpened` fires for a launcher open (not only a phone launch) remains the hardware check.
+- *Next atomic task:* merge; then on-wrist check of manual open with auto-launch off.
 
 ## MR review findings: description accuracy, listener-refresh reliability, per-app enablement UI (2026-09-18)
 
