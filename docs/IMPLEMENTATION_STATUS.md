@@ -2,6 +2,27 @@
 
 _Last updated: 2026-09-30_
 
+## Google Maps lane guidance rules (2026-09-30)
+
+**Trigger.** A shared full-diagnostics export (v0.0.29, en-US, Android 16, a drive in Belgium):
+115 of 500 Google Maps updates unmatched, all lane guidance (`Use the left lane to merge onto …`,
+`Use the right lane to take the … ramp to …`). The watch kept the previous step for the whole
+approach. Every other match in the log was correct.
+
+**Change (rules only, `google-maps-en-2026.09.3`).** `google-maps-use-lane-left-en` /
+`-right-en` (priority 90) → SLIGHT_LEFT / SLIGHT_RIGHT, like keep left/right, plus classic-layout
+`*-distance-title-en` variants (91). Below every turn rule, so an explicit turn in the same
+sentence wins. Nine fixtures, including precedence, multi-lane, middle lane, the classic layout
+and `Rerouting...`.
+
+**Verified.** `workbench.py regression` (Google Maps 86/86), `GoogleMapsRulesRegressionTest`, and
+`./scripts/test-all.sh`. Replaying the log, all 114 lane updates match and none of the 369
+previous matches changes. `Rerouting...` and non-navigation notifications stay unmatched.
+
+**Not in scope, noted.** On the en-US layout A (`70 m · Slight left onto …` in the title), the road
+line repeats the distance, because the base rules take the whole title. Fixing that needs a
+primaryText change across the base rules; it's a separate change.
+
 ## ETA carry-over across turn cards (#21; REQ-ANDROID-014) (2026-09-30)
 
 **Problem.** Google Maps' classic turn cards (walking, and the en-CA/en-GB driving layout) carry no
