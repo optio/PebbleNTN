@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.09.2",
+  "rulesetVersion": "google-maps-en-2026.09.3",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -1019,6 +1019,184 @@
         "maneuver": {
           "type": "literal",
           "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-use-lane-left-distance-title-en",
+      "enabled": true,
+      "priority": 91,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-use-lane-left-en: title is the bare distance, text the instruction, so the road line comes from text.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\buse\\s+the\\s+left(?:\\s+\\d+)?\\s+lanes?\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-use-lane-left-en",
+      "enabled": true,
+      "priority": 90,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Lane guidance: 'Use the left lane to merge onto <road>' / 'Use the left 2 lanes to take the <road> ramp'. Treated like keep left (SLIGHT_LEFT). Unmatched before (real en-US capture, Belgium, 2026-09). Priority 90, below the turn rules, so 'Use the right lane to turn left' still shows a left turn.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\buse\\s+the\\s+left(?:\\s+\\d+)?\\s+lanes?\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-use-lane-right-distance-title-en",
+      "enabled": true,
+      "priority": 91,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-use-lane-right-en: title is the bare distance, text the instruction, so the road line comes from text.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\buse\\s+the\\s+right(?:\\s+\\d+)?\\s+lanes?\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-use-lane-right-en",
+      "enabled": true,
+      "priority": 90,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Lane guidance: 'Use the right lane to merge onto <road>' / 'Use the right 2 lanes to take the <road> ramp'. Treated like keep right (SLIGHT_RIGHT). Unmatched before (real en-US capture, Belgium, 2026-09). Priority 90, below the turn rules, so 'Use the right lane to turn left' still shows a left turn.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\buse\\s+the\\s+right(?:\\s+\\d+)?\\s+lanes?\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
         },
         "distanceMeters": {
           "type": "distance",

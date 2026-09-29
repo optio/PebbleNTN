@@ -72,6 +72,15 @@ Boarding, transfers and alighting cards, and other languages, need real captures
 it over from the overview card is an Android change
 ([#21](https://github.com/optio/PebbleNTN/issues/21)).
 
+## Lane guidance (2026-09)
+
+A shared en-US driving log (Android 16, Belgium) had 115 unmatched updates, all lane guidance:
+`Use the left lane to merge onto <road>` and `Use the right lane to take the <road> ramp to <city>`.
+`google-maps-use-lane-{left,right}-en` read these as keep left/right (SLIGHT_*), with
+`*-distance-title-en` variants for the classic layout. They sit at priority 90, below every turn
+rule, so a lane instruction that names an explicit turn (`Use the right lane to turn left`) still
+shows that turn. A middle lane is neither left nor right, and falls through to continue.
+
 ## Known gaps
 
 - Non-English locales — the bundle now ships Italian, French, Spanish, German and Dutch Google Maps
