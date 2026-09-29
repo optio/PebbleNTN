@@ -1,6 +1,26 @@
 # Implementation Status
 
-_Last updated: 2026-09-29_
+_Last updated: 2026-09-30_
+
+## ETA carry-over across turn cards (#21; REQ-ANDROID-014) (2026-09-30)
+
+**Problem.** Google Maps' classic turn cards (walking, and the en-CA/en-GB driving layout) carry no
+ETA; only the overview cards between turns do. The watch's ETA line blanked out at every turn.
+
+**Change (Android, `NavigationSessionReducer`).** `ReducerState.knownEta` remembers the session's
+latest estimate (`secondaryText` / `etaEpochSeconds`, session id, when it was observed). An
+instruction with neither field reuses it when it belongs to the same session and is at most
+`ETA_CARRY_MAX_AGE_SECONDS` (300) old. Reuse doesn't refresh the age, a stop clears it, and it
+never crosses sessions. Every bundled ruleset uses `secondaryText` for the arrival time (checked),
+so carrying it is safe. `knownEta` is not persisted: after process recovery, the next overview
+card supplies a fresh estimate.
+
+**Verified.** `NavigationSessionReducerTest` 30/30 (6 new: carried within the session, own ETA
+wins, epoch carried, never across sessions, dropped past the limit, reuse doesn't refresh age).
+Simulating the carry-over on the shared walking log: all 112 matched instructions without
+their own ETA get one. `./scripts/test-all.sh`.
+
+**Next atomic task.** Merge; #23 waits on transit captures.
 
 ## Public-transit support (#20; REQ-WATCH-018, REQ-RULE-016) (2026-09-29)
 
