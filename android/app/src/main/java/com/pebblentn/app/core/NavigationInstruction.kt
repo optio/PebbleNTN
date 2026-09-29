@@ -13,6 +13,7 @@ import kotlinx.serialization.Serializable
  * @property primaryText main line (typically the road/step text).
  * @property secondaryText optional secondary line.
  * @property etaEpochSeconds estimated arrival time as a Unix epoch second, or null.
+ * @property stopsRemaining public-transit stops left on the current ride, or null. Never negative.
  */
 @Serializable
 data class NavigationInstruction(
@@ -21,10 +22,14 @@ data class NavigationInstruction(
     val primaryText: String? = null,
     val secondaryText: String? = null,
     val etaEpochSeconds: Long? = null,
+    val stopsRemaining: Int? = null,
 ) {
     init {
         require(distanceMeters == null || distanceMeters >= 0) {
             "distanceMeters must be null or non-negative, was $distanceMeters"
+        }
+        require(stopsRemaining == null || stopsRemaining >= 0) {
+            "stopsRemaining must be null or non-negative, was $stopsRemaining"
         }
     }
 }

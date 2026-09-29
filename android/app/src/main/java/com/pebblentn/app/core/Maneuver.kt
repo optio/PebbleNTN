@@ -25,6 +25,7 @@ enum class Maneuver(val code: Int) {
     UTURN_RIGHT(Protocol.ManeuverCodes.UTURN_RIGHT),
     ROUNDABOUT(Protocol.ManeuverCodes.ROUNDABOUT),
     ARRIVE(Protocol.ManeuverCodes.ARRIVE),
+    TRANSIT(Protocol.ManeuverCodes.TRANSIT),
     ;
 
     companion object {

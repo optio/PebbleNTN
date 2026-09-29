@@ -66,6 +66,15 @@ class NavigationStateRepositoryTest {
     }
 
     @Test
+    fun savesAndRestoresTransitStopsRemaining() = runTest {
+        // stopsRemaining is optional with a default, so rows written before it existed still decode.
+        val instruction = NavigationInstruction(Maneuver.TRANSIT, primaryText = "Example Station", stopsRemaining = 5)
+        repo.save(ReducerState(current = NavigationState.Navigating(3, instruction, 10)))
+        val restored = repo.loadReducerState()!!.current as NavigationState.Navigating
+        assertEquals(instruction, restored.instruction)
+    }
+
+    @Test
     fun overwritesSingletonRow() = runTest {
         repo.save(ReducerState(current = NavigationState.Navigating(1, NavigationInstruction(Maneuver.LEFT), 10)))
         repo.save(ReducerState(current = NavigationState.NoActiveNavigation, nextSessionId = 9))

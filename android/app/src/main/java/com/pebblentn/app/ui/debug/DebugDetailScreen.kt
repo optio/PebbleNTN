@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
@@ -103,6 +104,12 @@ fun DebugDetailScreen(
                     stringResource(R.string.debug_field_eta),
                     instruction.etaEpochSeconds
                         ?.let { DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it * 1000)) }
+                        ?: emptyPlaceholder,
+                )
+                ElementRow(
+                    stringResource(R.string.debug_field_stops_remaining),
+                    instruction.stopsRemaining
+                        ?.let { pluralStringResource(R.plurals.debug_stops_remaining, it, it) }
                         ?: emptyPlaceholder,
                 )
             }

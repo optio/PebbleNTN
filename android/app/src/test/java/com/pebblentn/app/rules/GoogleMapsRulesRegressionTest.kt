@@ -40,6 +40,8 @@ class GoogleMapsRulesRegressionTest {
          * some cards carry metres that must not be shown as the turn distance.
          */
         val noDistance: Boolean = false,
+        /** Public-transit stops left (REQ-RULE-016). */
+        val stopsRemaining: Int? = null,
     )
 
     @Serializable
@@ -123,6 +125,9 @@ class GoogleMapsRulesRegressionTest {
             }
             fixture.expected.primaryText?.let { expected ->
                 assertEquals("fixture '${fixture.name}' road line", expected, result.instruction.primaryText)
+            }
+            fixture.expected.stopsRemaining?.let { expected ->
+                assertEquals("fixture '${fixture.name}' stops", expected, result.instruction.stopsRemaining)
             }
             if (fixture.expected.noDistance) {
                 assertEquals("fixture '${fixture.name}' must carry no distance", null, result.instruction.distanceMeters)

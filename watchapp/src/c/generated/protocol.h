@@ -4,7 +4,7 @@
 #pragma once
 
 #define PBNTN_PROTOCOL_MAJOR 1
-#define PBNTN_PROTOCOL_MINOR 0
+#define PBNTN_PROTOCOL_MINOR 1
 
 // AppMessage dictionary keys.
 #define PBNTN_KEY_EVENT 0
@@ -20,6 +20,7 @@
 #define PBNTN_KEY_FLAGS 10
 #define PBNTN_KEY_APP_VERSION 11
 #define PBNTN_KEY_ERROR_CODE 12
+#define PBNTN_KEY_STOPS_REMAINING 13
 
 // Values for the EVENT key.
 #define PBNTN_EVENT_NAVIGATION_UPDATE 1
@@ -54,6 +55,7 @@
 #define PBNTN_MANEUVER_UTURN_RIGHT 9
 #define PBNTN_MANEUVER_ROUNDABOUT 10
 #define PBNTN_MANEUVER_ARRIVE 11
+#define PBNTN_MANEUVER_TRANSIT 12
 
 // Values for the ERROR_CODE key.
 #define PBNTN_ERROR_NONE 0

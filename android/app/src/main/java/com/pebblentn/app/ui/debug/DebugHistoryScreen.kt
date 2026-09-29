@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
@@ -111,8 +112,9 @@ private fun DebugEventRow(event: DebugEvent, onClick: () -> Unit) {
         // What went to the watch, so a drive can be scanned without opening every event.
         event.instruction?.let { instruction ->
             val distance = instruction.distanceMeters?.let { stringResource(R.string.debug_distance_meters, it) }
+            val stops = instruction.stopsRemaining?.let { pluralStringResource(R.plurals.debug_stops_remaining, it, it) }
             Text(
-                text = listOfNotNull(instruction.maneuver.name, distance, instruction.primaryText).joinToString(" · "),
+                text = listOfNotNull(instruction.maneuver.name, distance, stops, instruction.primaryText).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )

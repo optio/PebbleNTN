@@ -166,6 +166,39 @@ def arrive() -> Canvas:
     return rows
 
 
+def transit() -> Canvas:
+    """Front view of a train: rounded body, a wide window, two headlights and splayed legs.
+
+    Public-transit legs (REQ-WATCH-018). Reads as a vehicle, not a direction, at a glance.
+    """
+    rows = blank()
+
+    def in_rounded_rect(u: float, v: float, x0: float, y0: float, x1: float, y1: float, r: float) -> bool:
+        if not (x0 <= u <= x1 and y0 <= v <= y1):
+            return False
+        cx = min(max(u, x0 + r), x1 - r)
+        cy = min(max(v, y0 + r), y1 - r)
+        return math.hypot(u - cx, v - cy) <= r
+
+    def in_leg(u: float, v: float, top_x: float, bottom_x: float) -> bool:
+        if not 44 <= v <= 61:
+            return False
+        centre = top_x + (bottom_x - top_x) * (v - 44) / (61 - 44)
+        return abs(u - centre) <= 4.0
+
+    fill(rows, lambda u, v: in_rounded_rect(u, v, 12, 3, 52, 49, 10)
+         or in_leg(u, v, 22, 13) or in_leg(u, v, 42, 51))
+    # Cut-outs (back to white): the window and the two headlights.
+    for y in range(SIZE):
+        for x in range(SIZE):
+            u, v = to_canon(x), to_canon(y)
+            if (in_rounded_rect(u, v, 18.5, 10, 45.5, 27, 3)
+                    or math.hypot(u - 22, v - 38.5) <= 6.0
+                    or math.hypot(u - 42, v - 38.5) <= 6.0):
+                rows[y][x] = WHITE
+    return rows
+
+
 def question() -> Canvas:
     """A question mark: the watch's fallback for a maneuver it could not classify."""
     rows = blank()
@@ -242,6 +275,7 @@ GLYPHS = {
     "uturn_right": lambda: uturn(mirror=True),
     "roundabout": roundabout,
     "arrive": arrive,
+    "transit": transit,
     "unknown": question,
 }
 

@@ -1,10 +1,53 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.09.1",
+  "rulesetVersion": "google-maps-en-2026.09.2",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
+    {
+      "id": "google-maps-transit-ride-en",
+      "enabled": true,
+      "priority": 205,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Public-transit ride (REQ-RULE-016): title 'Ride to <station>', text '5 stops · 10 min', subText 'Arrive 20:26'. TRANSIT with the stop count, the station as the road line and the ETA; unmatched, the watch showed nothing for the whole ride (real capture, 2026-09). Above google-maps-arrive-en: it is anchored to a leading 'Ride to', so a station named like 'Destination Park' must not read as ARRIVE.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*ride\\s+to\\s+\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "TRANSIT"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "title",
+          "pattern": "(?i)^\\s*ride\\s+to\\s+(.+?)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        },
+        "stopsRemaining": {
+          "type": "regexCapture",
+          "field": "text",
+          "pattern": "(?i)(\\d+)\\s*stops?\\b",
+          "group": 1
+        }
+      }
+    },
     {
       "id": "google-maps-arrive-en",
       "enabled": true,

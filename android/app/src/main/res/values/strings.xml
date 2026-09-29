@@ -146,6 +146,11 @@
     <string name="debug_distance_meters">%1$d m</string>
     <string name="debug_no_distance">none</string>
     <string name="debug_field_eta">ETA</string>
+    <string name="debug_field_stops_remaining">Stops remaining</string>
+    <plurals name="debug_stops_remaining">
+        <item quantity="one">%1$d stop</item>
+        <item quantity="other">%1$d stops</item>
+    </plurals>
     <string name="debug_watch_elements">Parsed watchface elements</string>
     <string name="debug_element_none">— (element empty)</string>
     <string name="debug_maneuver_unknown_hint">UNKNOWN — the watch shows the “?” fallback glyph</string>
