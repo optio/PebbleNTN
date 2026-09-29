@@ -44,3 +44,6 @@ The distance extractor SHALL require an explicit unit and SHALL recognize both a
 
 ## REQ-RULE-015 — Bundled ruleset layout
 Bundled official rulesets SHALL be organized per navigation app then per language as `rules/bundled/<app>/<language>.json`. The app SHALL discover every bundled ruleset recursively and MAY present them grouped by app then language. File layout SHALL NOT affect matching: rules are selected by their declared `packageNames` and `locales`, never by filename.
+
+## REQ-RULE-016 — Public-transit rides
+Rule outputs MAY set `stopsRemaining`, the number of public-transit stops left on the current ride. It SHALL accept either a numeric extraction or text whose first integer is the count (for example "5 stops · 10 min"), SHALL be omitted when no count is found, and SHALL never be negative. The bundled Google Maps rules SHALL classify a transit ride card (`Ride to <station>`) as the TRANSIT maneuver, with the destination station as the primary text, the stop count as `stopsRemaining` and the arrival time as the secondary text. The Kotlin engine and the Python rule-workbench SHALL stay in lockstep.

@@ -30,6 +30,7 @@ object ProtocolCodec {
                     .putInt(Protocol.Keys.DISTANCE_METERS, i.distanceMeters)
                     .putString(Protocol.Keys.PRIMARY_TEXT, limitText(i.primaryText))
                     .putString(Protocol.Keys.SECONDARY_TEXT, limitText(i.secondaryText))
+                    .putInt(Protocol.Keys.STOPS_REMAINING, i.stopsRemaining)
                     .putInt(Protocol.Keys.ETA_EPOCH_SECONDS, i.etaEpochSeconds?.let(::toInt32))
                     .putInt(Protocol.Keys.STATE_TIMESTAMP_SECONDS, toInt32(state.stateTimestampSeconds))
                     .putInt(Protocol.Keys.SESSION_ID, state.sessionId)

@@ -22,6 +22,7 @@
 #include "eta_text.h"
 #include "generated/protocol.h"
 #include "settings_window.h"
+#include "stops_text.h"
 #include "theme.h"
 
 _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
@@ -36,7 +37,7 @@ static Layer *s_strip_layer;   // ETA + stale marker
 static Layer *s_road_layer;    // road name
 static Layer *s_message_layer; // connecting / no navigation / arrived
 
-static GBitmap *s_maneuver_bitmaps[12];
+static GBitmap *s_maneuver_bitmaps[PBNTN_MANEUVER_TRANSIT + 1];
 
 // The full-screen message layer shows one of three things (REQ-WATCH-017): a plain centred line
 // (Connecting / No navigation / Arrived / errors), the connect countdown, or the install-the-app QR
@@ -63,6 +64,8 @@ static GBitmap *s_qr_bitmap;
 // Current normalized state, as sent by the phone.
 static int s_maneuver = PBNTN_MANEUVER_UNKNOWN;
 static int32_t s_distance_meters = -1;
+// Public-transit stops left (protocol 1.1, REQ-WATCH-018); -1 when the phone sent none.
+static int32_t s_stops_remaining = -1;
 static int32_t s_flags = 0;
 static int s_last_maneuver = -1;
 static bool s_showing_message = true;
@@ -93,6 +96,7 @@ static uint32_t maneuver_resource_id(int maneuver, GlyphPack pack) {
         case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_UTURN_RIGHT;
         case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_BOLD_ROUNDABOUT;
         case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_BOLD_ARRIVE;
+        case PBNTN_MANEUVER_TRANSIT: return RESOURCE_ID_MANEUVER_BOLD_TRANSIT;
         default: return RESOURCE_ID_MANEUVER_BOLD_UNKNOWN;
       }
     case GLYPH_PACK_OUTLINE:
@@ -108,6 +112,7 @@ static uint32_t maneuver_resource_id(int maneuver, GlyphPack pack) {
         case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_UTURN_RIGHT;
         case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_OUTLINE_ROUNDABOUT;
         case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_OUTLINE_ARRIVE;
+        case PBNTN_MANEUVER_TRANSIT: return RESOURCE_ID_MANEUVER_OUTLINE_TRANSIT;
         default: return RESOURCE_ID_MANEUVER_OUTLINE_UNKNOWN;
       }
     case GLYPH_PACK_CLASSIC:
@@ -124,6 +129,7 @@ static uint32_t maneuver_resource_id(int maneuver, GlyphPack pack) {
         case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_UTURN_RIGHT;
         case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_ROUNDABOUT;
         case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_ARRIVE;
+        case PBNTN_MANEUVER_TRANSIT: return RESOURCE_ID_MANEUVER_TRANSIT;
         default: return RESOURCE_ID_MANEUVER_UNKNOWN;
       }
   }
@@ -136,7 +142,7 @@ static GlyphPack s_cached_pack = GLYPH_PACK_CLASSIC;
 static GBitmap *maneuver_bitmap(int maneuver) {
   const GlyphPack pack = settings_glyph_pack();
   if (pack != s_cached_pack) {
-    for (int i = 0; i < 12; i++) {
+    for (unsigned i = 0; i < ARRAY_LENGTH(s_maneuver_bitmaps); i++) {
       if (s_maneuver_bitmaps[i] != NULL) {
         gbitmap_destroy(s_maneuver_bitmaps[i]);
         s_maneuver_bitmaps[i] = NULL;
@@ -144,7 +150,7 @@ static GBitmap *maneuver_bitmap(int maneuver) {
     }
     s_cached_pack = pack;
   }
-  if (maneuver < 0 || maneuver > PBNTN_MANEUVER_ARRIVE) {
+  if (maneuver < 0 || maneuver > PBNTN_MANEUVER_TRANSIT) {
     maneuver = PBNTN_MANEUVER_UNKNOWN;
   }
   if (s_maneuver_bitmaps[maneuver] == NULL) {
@@ -302,8 +308,13 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   }
 
   char value[12];
-  char unit[4];
-  format_distance(s_distance_meters, value, sizeof(value), unit, sizeof(unit));
+  char unit[8];
+  // A transit ride has no turn distance; its stop count takes the distance's place (REQ-WATCH-018).
+  if (s_maneuver == PBNTN_MANEUVER_TRANSIT && s_stops_remaining >= 0) {
+    stops_format(s_stops_remaining, value, sizeof(value), unit, sizeof(unit));
+  } else {
+    format_distance(s_distance_meters, value, sizeof(value), unit, sizeof(unit));
+  }
   if (value[0] == '\0') {
     return;
   }
@@ -741,9 +752,11 @@ static void render_navigation(DictionaryIterator *iter) {
   Tuple *secondary_t = dict_find(iter, PBNTN_KEY_SECONDARY_TEXT);
   Tuple *eta_epoch_t = dict_find(iter, PBNTN_KEY_ETA_EPOCH_SECONDS);
   Tuple *flags_t = dict_find(iter, PBNTN_KEY_FLAGS);
+  Tuple *stops_t = dict_find(iter, PBNTN_KEY_STOPS_REMAINING);
 
   s_maneuver = maneuver_t ? maneuver_t->value->int32 : PBNTN_MANEUVER_UNKNOWN;
   s_distance_meters = distance_t ? distance_t->value->int32 : -1;
+  s_stops_remaining = stops_t ? stops_t->value->int32 : -1;
   // The phone omits the ETA epoch when a rule extracts no arrival time; 0 means "unknown".
   s_eta_epoch = eta_epoch_t ? eta_epoch_t->value->int32 : 0;
   s_flags = flags_t ? flags_t->value->int32 : 0;

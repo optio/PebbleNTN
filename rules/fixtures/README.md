@@ -62,9 +62,13 @@ Walking navigation switches **one** notification between two layouts:
    variants (one priority step above each base rule) take the road line from the text. Fixtures now
    pin `primaryText`, checked by both engines.
 
-Transit legs (`Ride to <station>` / `5 stops · 10 min`) stay unmatched on purpose until transit
-support exists ([#20](https://github.com/optio/PebbleNTN/issues/20));
-`capture-transit-ride-unmatched` pins that. The ETA is missing on classic turn cards, and carrying
+Transit legs (`Ride to <station>` / `5 stops · 10 min`, subText `Arrive 20:26`) are handled by
+`google-maps-transit-ride-en` ([#20](https://github.com/optio/PebbleNTN/issues/20)): the TRANSIT
+maneuver, the station as the road line, the ETA, and the stop count as `stopsRemaining` (fixtures
+assert it). It ranks above `google-maps-arrive-en` because it's anchored to a leading `Ride to`,
+while the arrive rule matches "destination" anywhere in the title, so a station named
+"Destination Park" would otherwise read as ARRIVE. Only the English ride card has been captured.
+Boarding, transfers and alighting cards, and other languages, need real captures before rules. The ETA is missing on classic turn cards, and carrying
 it over from the overview card is an Android change
 ([#21](https://github.com/optio/PebbleNTN/issues/21)).
 

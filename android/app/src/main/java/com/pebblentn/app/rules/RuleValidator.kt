@@ -77,7 +77,7 @@ object RuleValidator {
     }
 
     private fun collectExtractorErrors(output: RuleOutput, errors: MutableList<String>) {
-        listOfNotNull(output.maneuver, output.distanceMeters, output.primaryText, output.secondaryText, output.etaEpochSeconds)
+        listOfNotNull(output.maneuver, output.distanceMeters, output.primaryText, output.secondaryText, output.etaEpochSeconds, output.stopsRemaining)
             .forEach { extractor ->
                 if (extractor is RegexCaptureExtractor) {
                     checkRegex(extractor.pattern, "regexCapture extractor", errors)

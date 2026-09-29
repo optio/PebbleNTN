@@ -26,6 +26,7 @@
 | 10 | flags | int32 |
 | 11 | appVersion | string |
 | 12 | errorCode | int32 |
+| 13 | stopsRemaining | int32 (optional; protocol 1.1) |
 
 ## Events
 

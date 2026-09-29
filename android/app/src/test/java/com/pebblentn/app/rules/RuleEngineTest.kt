@@ -48,6 +48,26 @@ class RuleEngineTest {
     }
 
     @Test
+    fun stopsRemainingTakesTheFirstIntegerOfText() {
+        // REQ-RULE-016: "5 stops · 10 min" -> 5, never the minutes.
+        val transit = rule(
+            id = "transit",
+            conditions = listOf(Condition("title", ConditionOperator.STARTS_WITH, "Ride to")),
+            output = RuleOutput(
+                maneuver = LiteralExtractor("TRANSIT"),
+                stopsRemaining = FieldCopyExtractor("text"),
+            ),
+        )
+        val rules = LayeredRules(bundled = listOf(transit))
+        val result = engine.evaluate(snapshot(title = "Ride to Example Station", text = "5 stops · 10 min"), rules)
+        assertEquals(Maneuver.TRANSIT, result.instruction!!.maneuver)
+        assertEquals(5, result.instruction!!.stopsRemaining)
+
+        val noCount = engine.evaluate(snapshot(title = "Ride to Example Station", text = "soon"), rules)
+        assertNull("no integer means no count", noCount.instruction!!.stopsRemaining)
+    }
+
+    @Test
     fun noMatchWhenConditionsFail() {
         val result = engine.evaluate(snapshot(text = "In 500 m, turn left"), LayeredRules(bundled = listOf(turnRightRule)))
         assertFalse(result.matched)

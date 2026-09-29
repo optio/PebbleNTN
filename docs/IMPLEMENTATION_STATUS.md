@@ -2,6 +2,40 @@
 
 _Last updated: 2026-09-29_
 
+## Public-transit support (#20; REQ-WATCH-018, REQ-RULE-016) (2026-09-29)
+
+**Protocol 1.1** (additive; major stays 1): maneuver code `TRANSIT = 12` and the optional key
+`STOPS_REMAINING = 13` (`protocol/protocol-definition.json`, `examples/protocol-definition.json`,
+`spec/200-architecture/Protocol.md`, the consolidated spec; generated `Protocol.kt` / `protocol.h`).
+A pre-1.1 watchapp ignores the key and draws "?" for code 12. Verified on the emulator with the
+v0.0.28 `.pbw`.
+
+**Rules.** `stopsRemaining` rule output (schema + `RuleOutput`; the engine takes a number or the
+first integer in text, never negative; the Python workbench mirrors it).
+`google-maps-transit-ride-en` (priority 205): `Ride to <station>` → TRANSIT, station, ETA, stops.
+Replaying the shared diagnostics log matches all 316 ride updates (stops 7 → 3).
+
+**Android.** `Maneuver.TRANSIT`, `NavigationInstruction.stopsRemaining` (optional; stored state
+without it still decodes, so no migration), the codec sends key 13, and the diagnostic export and
+debug screens show it (string/plural resources).
+
+**Watch.** A transit (train) glyph in the Classic/Bold/Outline packs at 48 px and emery 64 px
+(`gen_maneuver_bitmaps.py`; the existing glyphs regenerate byte-identical). "N stops" / "1 stop"
+takes the distance's place (`stops_text.c`, host-tested). The bitmap cache is sized from
+`PBNTN_MANEUVER_TRANSIT`.
+
+**Verified.** Android unit tests 254/254 (new: maneuver round-trip, instruction bounds, codec key
+13 + minor 1, engine count parsing, state restore); workbench regression (Google Maps 77/77);
+watch unit tests; `build-watchapp.sh` (all platforms); emulator screenshots of basalt + emery in
+all three packs, `5 stops` / `1 stop`; old watchapp → "?". The linker's "LOAD segment with RWX
+permissions" warnings come from the SDK 4.33.1 toolchain and appear on `main` too.
+
+**Not covered (needs captures).** Boarding, transfer and alighting phrasings, bus/tram/ferry
+variants, and non-English transit cards.
+
+**Next atomic task.** Merge, then ride transit with the new build to confirm the stop countdown
+and the Arriving hand-off on a real watch.
+
 ## Google Maps walking rules from a shared diagnostics log (2026-09-29)
 
 **Trigger.** A shared full-diagnostics export (v0.0.25, en-US, Android 17) of a train ride followed

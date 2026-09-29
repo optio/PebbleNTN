@@ -65,6 +65,8 @@ data class RuleOutput(
     val primaryText: Extractor? = null,
     val secondaryText: Extractor? = null,
     val etaEpochSeconds: Extractor? = null,
+    /** Public-transit stops left (REQ-RULE-016): a number, or text whose first integer is the count. */
+    val stopsRemaining: Extractor? = null,
 )
 
 /**

@@ -23,6 +23,19 @@ class NavigationInstructionTest {
     }
 
     @Test
+    fun stopsRemainingDefaultsToAbsentAndAllowsZero() {
+        assertNull(NavigationInstruction().stopsRemaining)
+        assertEquals(0, NavigationInstruction(stopsRemaining = 0).stopsRemaining)
+    }
+
+    @Test
+    fun negativeStopsRemainingIsRejected() {
+        assertThrows(IllegalArgumentException::class.java) {
+            NavigationInstruction(stopsRemaining = -1)
+        }
+    }
+
+    @Test
     fun negativeDistanceIsRejected() {
         assertThrows(IllegalArgumentException::class.java) {
             NavigationInstruction(distanceMeters = -1)

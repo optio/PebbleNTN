@@ -42,6 +42,7 @@ data class ExportedWatchOutput(
     val distanceMeters: Int? = null,
     val primaryText: String? = null,
     val secondaryText: String? = null,
+    val stopsRemaining: Int? = null,
 )
 
 @Serializable
@@ -104,6 +105,7 @@ class ExportBuilder(
                 distanceMeters = it.distanceMeters,
                 primaryText = it.primaryText?.let { text -> if (redact) redactor.redactText(text) else text },
                 secondaryText = it.secondaryText?.let { text -> if (redact) redactor.redactText(text) else text },
+                stopsRemaining = it.stopsRemaining,
             )
         }
         return ExportedEvent(

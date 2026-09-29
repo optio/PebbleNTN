@@ -6,7 +6,7 @@ package com.pebblentn.app.protocol
 /** AppMessage protocol constants shared with the Pebble watchapp. */
 object Protocol {
     const val MAJOR = 1
-    const val MINOR = 0
+    const val MINOR = 1
 
     /** AppMessage dictionary keys. */
     object Keys {
@@ -23,6 +23,7 @@ object Protocol {
         const val FLAGS = 10
         const val APP_VERSION = 11
         const val ERROR_CODE = 12
+        const val STOPS_REMAINING = 13
     }
 
     /** Values for the [Keys.EVENT] field. */
@@ -65,6 +66,7 @@ object Protocol {
         const val UTURN_RIGHT = 9
         const val ROUNDABOUT = 10
         const val ARRIVE = 11
+        const val TRANSIT = 12
     }
 
     /** Values for the [Keys.ERROR_CODE] field. */

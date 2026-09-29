@@ -270,8 +270,19 @@ def evaluate(snap: dict, rules: list, locale: str):
                 "distanceMeters": run_extractor(out.get("distanceMeters"), snap),
                 "primaryText": run_extractor(out.get("primaryText"), snap),
                 "secondaryText": run_extractor(out.get("secondaryText"), snap),
+                "stopsRemaining": as_count(run_extractor(out.get("stopsRemaining"), snap)),
             }
     return None
+
+
+def as_count(value) -> int | None:
+    """Mirror RuleEngine.asCount: a number, or the first integer in text ("5 stops" -> 5); never negative."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return max(0, int(value))
+    m = re.search(r"\d+", str(value))
+    return int(m.group(0)) if m else None
 
 
 def check_fixture(result: dict | None, expected: dict) -> str | None:
@@ -286,7 +297,7 @@ def check_fixture(result: dict | None, expected: dict) -> str | None:
         return None if result is None else f"expected no match, got {result['ruleId']}"
     if result is None:
         return "expected a match, got none"
-    for field in ("maneuver", "distanceMeters", "primaryText", "secondaryText", "ruleId"):
+    for field in ("maneuver", "distanceMeters", "primaryText", "secondaryText", "stopsRemaining", "ruleId"):
         if field in expected and result.get(field) != expected[field]:
             return f"{field}: expected {expected[field]!r}, got {result.get(field)!r}"
     # `noDistance: true` asserts the distance is absent — an omitted `distanceMeters` only means

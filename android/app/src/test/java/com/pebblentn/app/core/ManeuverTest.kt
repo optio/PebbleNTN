@@ -34,6 +34,14 @@ class ManeuverTest {
     }
 
     @Test
+    fun transitRoundTripsFromCodeAndToken() {
+        // REQ-WATCH-018 / REQ-RULE-016: rules emit the TRANSIT token; the watch receives code 12.
+        assertEquals(12, Maneuver.TRANSIT.code)
+        assertEquals(Maneuver.TRANSIT, Maneuver.fromCode(12))
+        assertEquals(Maneuver.TRANSIT, Maneuver.fromToken("transit"))
+    }
+
+    @Test
     fun fromTokenNullOrBlankOrUnknownIsUnknown() {
         assertEquals(Maneuver.UNKNOWN, Maneuver.fromToken(null))
         assertEquals(Maneuver.UNKNOWN, Maneuver.fromToken(""))
@@ -48,6 +56,7 @@ class ManeuverTest {
         assertEquals(Protocol.ManeuverCodes.RIGHT, Maneuver.RIGHT.code)
         assertEquals(Protocol.ManeuverCodes.ARRIVE, Maneuver.ARRIVE.code)
         assertEquals(Protocol.ManeuverCodes.UNKNOWN, Maneuver.UNKNOWN.code)
+        assertEquals(Protocol.ManeuverCodes.TRANSIT, Maneuver.TRANSIT.code)
         assertNotEquals(Maneuver.LEFT.code, Maneuver.RIGHT.code)
     }
 }

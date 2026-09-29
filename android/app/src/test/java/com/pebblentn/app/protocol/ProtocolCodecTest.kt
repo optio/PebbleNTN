@@ -50,6 +50,27 @@ class ProtocolCodecTest {
         assertNull(msg.stringOrNull(Protocol.Keys.PRIMARY_TEXT))
         assertNull(msg.stringOrNull(Protocol.Keys.SECONDARY_TEXT))
         assertNull(msg.intOrNull(Protocol.Keys.ETA_EPOCH_SECONDS))
+        assertNull(msg.intOrNull(Protocol.Keys.STOPS_REMAINING))
+    }
+
+    @Test
+    fun encodeTransitCarriesManeuverAndStopsRemaining() {
+        // REQ-WATCH-018: protocol 1.1 adds the optional stopsRemaining key for TRANSIT states.
+        val state = NavigationState.Navigating(
+            sessionId = 2,
+            instruction = NavigationInstruction(
+                maneuver = Maneuver.TRANSIT,
+                primaryText = "Example Station",
+                secondaryText = "20:26",
+                stopsRemaining = 5,
+            ),
+            stateTimestampSeconds = 100,
+        )
+        val msg = ProtocolCodec.encodeState(state, flags = 0, appVersion = appVersion)
+        assertEquals(Protocol.ManeuverCodes.TRANSIT, msg.intOrNull(Protocol.Keys.MANEUVER))
+        assertEquals(5, msg.intOrNull(Protocol.Keys.STOPS_REMAINING))
+        assertNull("a ride has no turn distance", msg.intOrNull(Protocol.Keys.DISTANCE_METERS))
+        assertEquals(1, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
     }
 
     @Test

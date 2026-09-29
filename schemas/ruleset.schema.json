@@ -171,6 +171,10 @@
             },
             "etaEpochSeconds": {
               "$ref": "#/$defs/extractor"
+            },
+            "stopsRemaining": {
+              "$ref": "#/$defs/extractor",
+              "description": "Public-transit stops left on the current ride (REQ-RULE-016). A number, or text whose first integer is the count."
             }
           }
         }

@@ -261,8 +261,29 @@
         },
         {
           "type": "bitmap",
+          "name": "MANEUVER_TRANSIT",
+          "file": "images/transit.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
           "name": "MANEUVER_ARRIVE",
           "file": "images/emery/arrive.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_TRANSIT",
+          "file": "images/emery/transit.png",
           "memoryFormat": "1BitPalette",
           "targetPlatforms": [
             "emery"
@@ -513,8 +534,29 @@
         },
         {
           "type": "bitmap",
+          "name": "MANEUVER_BOLD_TRANSIT",
+          "file": "images/bold/transit.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
           "name": "MANEUVER_BOLD_ARRIVE",
           "file": "images/emery/bold/arrive.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_BOLD_TRANSIT",
+          "file": "images/emery/bold/transit.png",
           "memoryFormat": "1BitPalette",
           "targetPlatforms": [
             "emery"
@@ -765,8 +807,29 @@
         },
         {
           "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_TRANSIT",
+          "file": "images/outline/transit.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+          ]
+        },
+        {
+          "type": "bitmap",
           "name": "MANEUVER_OUTLINE_ARRIVE",
           "file": "images/emery/outline/arrive.png",
+          "memoryFormat": "1BitPalette",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "name": "MANEUVER_OUTLINE_TRANSIT",
+          "file": "images/emery/outline/transit.png",
           "memoryFormat": "1BitPalette",
           "targetPlatforms": [
             "emery"

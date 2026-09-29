@@ -69,6 +69,8 @@ class RuleEngine(
     companion object {
         /** Safety bound on rules evaluated per source package (RuleEngine "Regex safety"). */
         const val MAX_RULES_PER_PACKAGE = 500
+
+        private val FIRST_INTEGER = Regex("\\d+")
     }
 
     fun evaluate(
@@ -128,9 +130,17 @@ class RuleEngine(
                 if (extractor is DurationExtractor) nowEpochSeconds + value else value
             }
         }
-        return NavigationInstruction(maneuver, distance, primary, secondary, eta)
+        val stops = output.stopsRemaining?.let { asCount(extractors.run(it, snapshot)) }
+        return NavigationInstruction(maneuver, distance, primary, secondary, eta, stops)
     }
 
     private fun asText(result: ExtractionResult): String? = (result as? ExtractionResult.Text)?.value
+
+    /** A count from a number, or from the first integer in text ("5 stops · 10 min" -> 5); never negative. */
+    private fun asCount(result: ExtractionResult): Int? = when (result) {
+        is ExtractionResult.Num -> result.value
+        is ExtractionResult.Text -> FIRST_INTEGER.find(result.value)?.value?.toLongOrNull()
+        else -> null
+    }?.coerceIn(0, Int.MAX_VALUE.toLong())?.toInt()
     private fun asNum(result: ExtractionResult): Long? = (result as? ExtractionResult.Num)?.value
 }
