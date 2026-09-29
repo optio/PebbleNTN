@@ -318,4 +318,74 @@ class NavigationSessionReducerTest {
         val send = sendEffects(nextResult).single()
         assertEquals(Maneuver.LEFT, (send.state as NavigationState.Navigating).instruction.maneuver)
     }
+
+    // --- ETA carry-over (REQ-ANDROID-014) --------------------------------------------------------
+
+    private fun eta(state: ReducerState) = (state.current as NavigationState.Navigating).instruction.secondaryText
+
+    /** Walking: an overview card with the ETA, then a classic turn card without one. */
+    private fun overview(etaText: String) =
+        NavigationInstruction(Maneuver.STRAIGHT, primaryText = "Example Destination", secondaryText = etaText)
+
+    private val turnCard = instr(Maneuver.LEFT, 50, "Turn left onto Example Street")
+
+    private fun ready() = reducer.reduce(ReducerState(), ReducerEvent.WatchReady(Protocol.MAJOR, Protocol.MINOR, 0)).state
+
+    @Test
+    fun turnCardWithoutEtaReusesTheSessionsLastEta() {
+        var state = reducer.reduce(ready(), ReducerEvent.InstructionReceived(overview("18:57"), 10)).state
+        val result = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, 20))
+
+        assertEquals("18:57", eta(result.state))
+        val sent = sendEffects(result).single().state as NavigationState.Navigating
+        assertEquals("the watch receives the carried ETA", "18:57", sent.instruction.secondaryText)
+        assertEquals(Maneuver.LEFT, sent.instruction.maneuver)
+    }
+
+    @Test
+    fun anInstructionsOwnEtaWinsAndBecomesTheNewCarriedEta() {
+        var state = reducer.reduce(ready(), ReducerEvent.InstructionReceived(overview("18:57"), 10)).state
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(overview("18:59"), 20)).state
+        assertEquals("18:59", eta(state))
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, 30)).state
+        assertEquals("18:59", eta(state))
+    }
+
+    @Test
+    fun etaEpochSecondsIsCarriedToo() {
+        val withEpoch = NavigationInstruction(Maneuver.STRAIGHT, etaEpochSeconds = 1_800_000_000L)
+        var state = reducer.reduce(ready(), ReducerEvent.InstructionReceived(withEpoch, 10)).state
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, 20)).state
+        assertEquals(1_800_000_000L, (state.current as NavigationState.Navigating).instruction.etaEpochSeconds)
+    }
+
+    @Test
+    fun etaIsNeverCarriedIntoANewSession() {
+        var state = reducer.reduce(ready(), ReducerEvent.InstructionReceived(overview("18:57"), 10)).state
+        state = reducer.reduce(state, ReducerEvent.NavigationStopped(20)).state
+        assertEquals(null, state.knownEta)
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, 30)).state
+        assertEquals(2, (state.current as NavigationState.Navigating).sessionId)
+        assertEquals("a new route starts without the old ETA", null, eta(state))
+    }
+
+    @Test
+    fun anEtaOlderThanTheLimitIsDropped() {
+        val limit = NavigationSessionReducer.ETA_CARRY_MAX_AGE_SECONDS
+        var state = reducer.reduce(ready(), ReducerEvent.InstructionReceived(overview("18:57"), 0)).state
+        val atLimit = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, limit)).state
+        assertEquals("still carried at the limit", "18:57", eta(atLimit))
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, limit + 1)).state
+        assertEquals("dropped once older than the limit", null, eta(state))
+    }
+
+    @Test
+    fun reusingAnEtaDoesNotRefreshItsAge() {
+        val limit = NavigationSessionReducer.ETA_CARRY_MAX_AGE_SECONDS
+        var state = reducer.reduce(ready(), ReducerEvent.InstructionReceived(overview("18:57"), 0)).state
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard, limit - 10)).state
+        assertEquals("18:57", eta(state))
+        state = reducer.reduce(state, ReducerEvent.InstructionReceived(turnCard.copy(distanceMeters = 20), limit + 1)).state
+        assertEquals("age counts from when the ETA was seen, not reused", null, eta(state))
+    }
 }

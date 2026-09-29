@@ -63,6 +63,21 @@ data class ReducerState(
     val watchCompatible: Boolean = true,
     /** Last instruction actually sent to the watch, for dedup and maneuver-change detection. */
     val lastSentInstruction: NavigationInstruction? = null,
+    /** Latest arrival estimate of the current session, for carry-over (REQ-ANDROID-014). */
+    val knownEta: KnownEta? = null,
+)
+
+/**
+ * The latest arrival estimate seen in a session (REQ-ANDROID-014), kept so it can be reused on
+ * instructions that carry none. Google Maps' classic turn cards omit the ETA that its overview
+ * cards show, so without this the watch's ETA blinks out for every turn.
+ */
+data class KnownEta(
+    val secondaryText: String?,
+    val etaEpochSeconds: Long?,
+    val sessionId: Int,
+    /** When the estimate was last actually observed (not when it was last reused). */
+    val observedAtSeconds: Long,
 )
 
 /** Result of a single reduction: the next [state] and the [effects] to run in order. */
@@ -82,6 +97,13 @@ object NavigationSessionReducer {
     /** A Navigating state older than this (seconds) is considered stale. */
     const val STALE_AFTER_SECONDS: Long = 30
 
+    /**
+     * An arrival estimate is reused for at most this long (seconds) after it was last observed. Maps
+     * refreshes it every few seconds to a minute between turns, so an older one has most likely been
+     * overtaken, for example by a reroute, and showing none beats showing a wrong one.
+     */
+    const val ETA_CARRY_MAX_AGE_SECONDS: Long = 300
+
     fun reduce(state: ReducerState, event: ReducerEvent): ReducerResult = when (event) {
         is ReducerEvent.InstructionReceived -> onInstruction(state, event)
         is ReducerEvent.NavigationStopped -> onStopped(state, event)
@@ -93,7 +115,6 @@ object NavigationSessionReducer {
     }
 
     private fun onInstruction(state: ReducerState, event: ReducerEvent.InstructionReceived): ReducerResult {
-        val instruction = quantized(event.instruction)
         val current = state.current
 
         // Same session if already navigating; otherwise a fresh session begins.
@@ -106,6 +127,8 @@ object NavigationSessionReducer {
             sessionId = state.nextSessionId
             nextSessionId = state.nextSessionId + 1
         }
+
+        val (instruction, knownEta) = withCarriedEta(quantized(event.instruction), state.knownEta, sessionId, event.atEpochSeconds)
 
         val navigating = NavigationState.Navigating(
             sessionId = sessionId,
@@ -141,9 +164,30 @@ object NavigationSessionReducer {
                 nextSessionId = nextSessionId,
                 launchedSessionId = launchedSessionId,
                 lastSentInstruction = lastSent,
+                knownEta = knownEta,
             ),
             effects = effects,
         )
+    }
+
+    /**
+     * Fill in the session's last arrival estimate when [instruction] carries none (REQ-ANDROID-014),
+     * and record a fresh estimate when it does. Only the same session's estimate is reused, and only
+     * while it is younger than [ETA_CARRY_MAX_AGE_SECONDS]; reuse never refreshes its age.
+     */
+    private fun withCarriedEta(
+        instruction: NavigationInstruction,
+        known: KnownEta?,
+        sessionId: Int,
+        atEpochSeconds: Long,
+    ): Pair<NavigationInstruction, KnownEta?> {
+        if (instruction.secondaryText != null || instruction.etaEpochSeconds != null) {
+            return instruction to KnownEta(instruction.secondaryText, instruction.etaEpochSeconds, sessionId, atEpochSeconds)
+        }
+        val usable = known?.takeIf {
+            it.sessionId == sessionId && atEpochSeconds - it.observedAtSeconds <= ETA_CARRY_MAX_AGE_SECONDS
+        } ?: return instruction to known?.takeIf { it.sessionId == sessionId }
+        return instruction.copy(secondaryText = usable.secondaryText, etaEpochSeconds = usable.etaEpochSeconds) to usable
     }
 
     private fun onStopped(state: ReducerState, event: ReducerEvent.NavigationStopped): ReducerResult {
@@ -162,6 +206,7 @@ object NavigationSessionReducer {
                 current = stopped,
                 launchedSessionId = null,
                 lastSentInstruction = null,
+                knownEta = null,
             ),
             effects = effects,
         )
