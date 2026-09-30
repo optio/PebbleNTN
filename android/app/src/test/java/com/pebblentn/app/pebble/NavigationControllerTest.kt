@@ -306,4 +306,23 @@ class NavigationControllerTest {
 
         assertEquals("launch count must be 0 for OsmAnd notification format when auto-launch disabled", 0, transport.launchCount)
     }
+
+    @Test
+    fun statusReportsTheLastInstructionSentAndClearsOnStop() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = controller(transport, backgroundScope)
+        controller.start()
+        runCurrent()
+        assertEquals(WatchLinkStatus(), controller.status.value)
+
+        val turn = NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100, primaryText = "Main St")
+        controller.onInstruction(turn)
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        assertEquals(WatchLinkStatus(navigating = true, lastSent = turn), controller.status.value)
+
+        controller.onNavigationStopped()
+        runCurrent()
+        assertEquals(WatchLinkStatus(navigating = false, lastSent = null), controller.status.value)
+    }
 }

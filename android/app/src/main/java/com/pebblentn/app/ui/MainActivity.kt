@@ -111,6 +111,11 @@ class MainActivity : ComponentActivity() {
         val updateState by container.updateCheckRepository.state.collectAsState()
         val autoCheckUpdates by container.updateCheckRepository.autoCheckEnabled.collectAsState()
         val autoLaunch by container.watchSettingsRepository.autoLaunchEnabled.collectAsState()
+        val watchStatus by container.navigationController.status.collectAsState()
+        val discoveredApps by container.enabledAppRepository.observeEnablement().collectAsState(initial = emptyList())
+        val userRuleCount by produceState(initialValue = 0) {
+            container.userRuleRepository.observeUserRules().collect { value = it.size }
+        }
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
@@ -133,6 +138,11 @@ class MainActivity : ComponentActivity() {
                     onAutoCheckUpdatesChange = ::setAutoCheckUpdates,
                     autoLaunch = autoLaunch,
                     onAutoLaunchChange = container::setWatchAutoLaunch,
+                    lastSentToWatch = watchStatus.lastSent.takeIf { watchStatus.navigating },
+                    enabledAppCount = discoveredApps.count { it.enabled },
+                    installedAppCount = discoveredApps.size,
+                    officialRuleCount = container.bundledOfficialRules.size,
+                    userRuleCount = userRuleCount,
                 )
             }
             composable("share-diagnostics") {

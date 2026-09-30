@@ -21,13 +21,13 @@
     <string name="dashboard_app_enabled_on">Navigation notifications are read and sent to your watch.</string>
     <string name="dashboard_app_enabled_off">Paused. No notifications are read, stored, or sent to your watch.</string>
     <string name="dashboard_last_eligible_none">No eligible notifications yet</string>
-    <string name="dashboard_last_eligible">Last eligible notification: %1$s</string>
+    <string name="dashboard_last_eligible">%1$s</string>
 
     <string name="dashboard_open_debug">Debug history</string>
     <string name="dashboard_open_rules">Rules</string>
-    <string name="dashboard_open_navigation_apps">Manage navigation apps</string>
-    <string name="dashboard_refresh_app">Refresh app</string>
-    <string name="dashboard_refresh_app_explanation">If navigation is running on your phone but your watch isn\'t picking it up, tap this to reconnect notification access.</string>
+    <string name="dashboard_open_navigation_apps">Navigation apps</string>
+    <string name="dashboard_refresh_app">Reconnect notification access</string>
+    <string name="dashboard_refresh_app_explanation">Use this if navigation runs on your phone but your watch isn\'t picking it up.</string>
     <string name="dashboard_refresh_app_done">Reconnecting notification access…</string>
     <string name="dashboard_version">Version %1$s</string>
 
@@ -39,7 +39,7 @@
     <string name="dashboard_update_title">Update available</string>
     <string name="dashboard_update_body">PebbleNTN %1$s is available — you have %2$s. Tap below to download the latest APK from GitHub. If it won\'t install over the current app, uninstall PebbleNTN first, then install the downloaded version.</string>
     <string name="dashboard_update_download">Download latest version</string>
-    <string name="dashboard_check_update">Check for updates</string>
+    <string name="dashboard_check_update">Check for updates now</string>
     <string name="dashboard_auto_update">Check for updates weekly</string>
     <string name="dashboard_auto_update_hint">When on, PebbleNTN checks GitHub about once a week. Off by default; nothing is sent.</string>
     <string name="update_check_available">An update is available.</string>
@@ -193,4 +193,23 @@
     <string name="confirm_delete_rule_title">Delete this rule?</string>
     <string name="confirm_delete_rule_message">“%1$s” is removed from your rules. It can\'t be undone.</string>
     <string name="cd_add_rule">Add a rule</string>
+    <!-- Dashboard sections and rows (#28). -->
+    <string name="dashboard_section_status">Status</string>
+    <string name="dashboard_section_watch">Watch</string>
+    <string name="dashboard_section_navigation">Navigation</string>
+    <string name="dashboard_section_troubleshooting">Troubleshooting</string>
+    <string name="dashboard_section_updates">Updates</string>
+    <string name="dashboard_last_notification">Last navigation notification</string>
+    <string name="dashboard_last_sent">Last sent to watch</string>
+    <string name="dashboard_last_sent_none">No active navigation</string>
+    <string name="dashboard_last_sent_eta">ETA %1$s</string>
+    <string name="dashboard_debug_summary">Every captured notification, and why it did or didn\'t match</string>
+    <string name="dashboard_share_summary">Send captures so support for more apps and languages can be added</string>
+    <string name="dashboard_watch_paused">PebbleNTN is off, so nothing is sent to the watch.</string>
+    <plurals name="dashboard_navigation_apps_summary">
+        <item quantity="one">%1$d of %2$d installed app enabled</item>
+        <item quantity="other">%1$d of %2$d installed apps enabled</item>
+    </plurals>
+    <string name="dashboard_navigation_apps_none">No supported navigation app installed</string>
+    <string name="dashboard_rules_summary">%1$d official · %2$d yours</string>
 </resources>

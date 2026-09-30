@@ -2,6 +2,32 @@
 
 _Last updated: 2026-09-30_
 
+## Dashboard regrouped (#28, part B) (2026-09-30)
+
+The dashboard was a flat column: a master switch, a full-width update button, three narrow buttons
+of different widths, a refresh button, then two more switches at the bottom. It's now grouped:
+
+- **Prompts on top, only when they apply:** update available; captures to share.
+- **Status:** master switch, notification access, last navigation notification, and **last sent
+  to watch** (readable, e.g. "Slight left · 70 m · Main St · ETA 17:47"). This comes from the new
+  `NavigationController.status` (`WatchLinkStatus`), updated after every reduction.
+- **Watch:** launch the watchapp when navigation starts. Dimmed and disabled when PebbleNTN is off.
+- **Navigation:** navigation apps ("1 of 2 installed apps enabled"), rules ("105 official · 0 yours").
+- **Troubleshooting:** debug history, help add app support (always reachable now, not only through
+  the nudge), and **Reconnect notification access** (was "Refresh app").
+- **Updates:** check now (with the version), and the weekly check.
+
+The rows are full-width `ListItem`s with icons. Setting rows toggle when the whole row is tapped
+(`Modifier.toggleable`, `Role.Switch`), which gives bigger touch targets and one TalkBack node.
+
+**Verified.** `NavigationControllerTest.statusReportsTheLastInstructionSentAndClearsOnStop`; all
+unit tests; `./scripts/test-all.sh`. Emulator screenshots top to bottom, with PebbleNTN off
+(dependent rows dimmed), and at 150 % font scale.
+
+**Noted, not changed.** "Last navigation notification" is in-memory, so it reads "No eligible
+notifications yet" after an app restart even when debug history has events. It's pre-existing and
+tracked in #28 follow-ups.
+
 ## UI basics: readable labels, back navigation, confirmations (#28, part A) (2026-09-30)
 
 First slice of the UI review (#28), the groundwork the later slices build on:
