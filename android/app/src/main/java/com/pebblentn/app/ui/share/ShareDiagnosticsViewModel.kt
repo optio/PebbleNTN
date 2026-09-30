@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/** UI state for the share-to-help screen. */
+/** UI state for the share-diagnostics screen (all three export modes, REQ-DEBUG-005). */
 data class ShareDiagnosticsState(
     val loading: Boolean = true,
     /**
@@ -29,7 +29,8 @@ data class ShareDiagnosticsState(
     /** True when older events were dropped to fit the 10 MB attachment budget. */
     val truncatedToFit: Boolean = false,
 ) {
-    val hasContent: Boolean get() = includedEvents > 0
+    /** Something to share: captured events, or the user's rules in rules-only mode. */
+    val hasContent: Boolean get() = includedEvents > 0 || mode == ExportMode.RULES_ONLY
 }
 
 /**

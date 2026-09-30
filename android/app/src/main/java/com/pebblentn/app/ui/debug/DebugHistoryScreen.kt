@@ -1,30 +1,38 @@
 package com.pebblentn.app.ui.debug
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,26 +40,37 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
+import com.pebblentn.app.data.DebugDisposition
 import com.pebblentn.app.data.DebugEvent
-import com.pebblentn.app.export.ExportMode
+import com.pebblentn.app.data.DebugEventType
 import com.pebblentn.app.ui.components.ConfirmDialog
 import com.pebblentn.app.ui.format.DisplayLabels
 import java.text.DateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Date
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Debug history (#28): filter by status and app, grouped by day under sticky date headers, with
+ * readable rows and a status badge. Sharing and deleting live in the overflow menu.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DebugHistoryScreen(
     events: List<DebugEvent>,
     onEventClick: (Long) -> Unit,
     onDeleteAll: () -> Unit,
-    onExport: (ExportMode) -> Unit = {},
+    onShare: () -> Unit = {},
     onBack: () -> Unit = {},
     appName: (String) -> String = { it },
     modifier: Modifier = Modifier,
 ) {
-    var showExportDialog by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
+    var status by rememberSaveable { mutableStateOf(StatusFilter.ALL) }
+    var packageName by rememberSaveable { mutableStateOf<String?>(null) }
 
     if (confirmDeleteAll) {
         ConfirmDialog(
@@ -66,16 +85,6 @@ fun DebugHistoryScreen(
         )
     }
 
-    if (showExportDialog) {
-        ExportDialog(
-            onDismiss = { showExportDialog = false },
-            onExport = {
-                showExportDialog = false
-                onExport(it)
-            },
-        )
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -87,12 +96,27 @@ fun DebugHistoryScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { showExportDialog = true }) {
-                        Text(stringResource(R.string.debug_export))
-                    }
-                    if (events.isNotEmpty()) {
-                        TextButton(onClick = { confirmDeleteAll = true }) {
-                            Text(stringResource(R.string.debug_delete_all))
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.cd_more_actions))
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.debug_share)) },
+                                onClick = {
+                                    menuOpen = false
+                                    onShare()
+                                },
+                            )
+                            if (events.isNotEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.debug_delete_all)) },
+                                    onClick = {
+                                        menuOpen = false
+                                        confirmDeleteAll = true
+                                    },
+                                )
+                            }
                         }
                     }
                 },
@@ -108,14 +132,97 @@ fun DebugHistoryScreen(
             ) {
                 Text(stringResource(R.string.debug_empty))
             }
-        } else {
-            LazyColumn(modifier = Modifier.padding(innerPadding)) {
-                items(events, key = { it.id }) { event ->
+            return@Scaffold
+        }
+
+        val filter = DebugHistoryFilter(status, packageName)
+        val days = remember(events, filter) { filter.apply(events) }
+        val packages = remember(events) { DebugHistoryFilter.packagesIn(events) }
+
+        LazyColumn(modifier = Modifier.padding(innerPadding)) {
+            item(key = "filters") {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    ChipRow {
+                        StatusFilter.entries.forEach { option ->
+                            FilterChip(
+                                selected = status == option,
+                                onClick = { status = option },
+                                label = { Text(statusFilterLabel(option)) },
+                            )
+                        }
+                    }
+                    if (packages.size > 1) {
+                        ChipRow {
+                            FilterChip(
+                                selected = packageName == null,
+                                onClick = { packageName = null },
+                                label = { Text(stringResource(R.string.debug_filter_all_apps)) },
+                            )
+                            packages.forEach { pkg ->
+                                FilterChip(
+                                    selected = packageName == pkg,
+                                    onClick = { packageName = pkg },
+                                    label = { Text(appName(pkg)) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            if (days.isEmpty()) {
+                item(key = "no-match") {
+                    Text(
+                        stringResource(R.string.debug_filter_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+            }
+            days.forEach { day ->
+                stickyHeader(key = "day-${day.date}") { DayHeader(day) }
+                items(day.events, key = { it.id }) { event ->
                     DebugEventRow(event = event, appName = appName(event.packageName), onClick = { onEventClick(event.id) })
                     HorizontalDivider()
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ChipRow(content: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) { content() }
+}
+
+@Composable
+private fun statusFilterLabel(filter: StatusFilter): String = when (filter) {
+    StatusFilter.ALL -> stringResource(R.string.debug_filter_all)
+    StatusFilter.RECOGNISED -> stringResource(DisplayLabels.disposition(DebugDisposition.MATCHED))
+    StatusFilter.NOT_RECOGNISED -> stringResource(DisplayLabels.disposition(DebugDisposition.CAPTURED_UNMATCHED))
+    StatusFilter.NOT_A_DIRECTION -> stringResource(DisplayLabels.disposition(DebugDisposition.CAPTURED_NON_MANEUVER))
+}
+
+/** "Today", "Yesterday", or the full date, with how many events the day has. */
+@Composable
+private fun DayHeader(day: DayGroup) {
+    val today = LocalDate.now(ZoneId.systemDefault())
+    val label = when (day.date) {
+        today -> stringResource(R.string.debug_today)
+        today.minusDays(1) -> stringResource(R.string.debug_yesterday)
+        else -> day.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
+    }
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "$label · " + pluralStringResource(R.plurals.debug_day_count, day.events.size, day.events.size),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        )
     }
 }
 
@@ -128,16 +235,17 @@ private fun DebugEventRow(event: DebugEvent, appName: String, onClick: () -> Uni
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = DateFormat.getDateTimeInstance().format(Date(event.receivedTimestampMillis)),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Text(
-            text = appName,
-            style = MaterialTheme.typography.bodySmall,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(event.receivedTimestampMillis)),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(text = appName, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            StatusBadge(event)
+        }
         // What went to the watch, so a drive can be scanned without opening every event.
-        event.instruction?.let { instruction ->
+        val instruction = event.instruction
+        if (instruction != null) {
             val distance = instruction.distanceMeters?.let { stringResource(R.string.debug_distance_meters, it) }
             val stops = instruction.stopsRemaining?.let { pluralStringResource(R.plurals.debug_stops_remaining, it, it) }
             Text(
@@ -150,59 +258,29 @@ private fun DebugEventRow(event: DebugEvent, appName: String, onClick: () -> Uni
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
+        } else {
+            // Nothing was sent: show what arrived, so an unrecognised card can be spotted.
+            event.snapshot?.title?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium, maxLines = 2) }
         }
-        Text(
-            text = stringResource(DisplayLabels.eventType(event.eventType)) + " · " +
-                stringResource(DisplayLabels.disposition(event.disposition)),
-            style = MaterialTheme.typography.labelSmall,
-        )
     }
 }
 
-/**
- * Export mode chooser. Rules-only and privacy-safe export immediately; full requires acknowledging
- * the privacy warning (REQ-DEBUG-007) before sharing.
- */
+/** A small coloured label: Recognised, Not recognised, Not a direction, or Navigation ended. */
 @Composable
-private fun ExportDialog(onDismiss: () -> Unit, onExport: (ExportMode) -> Unit) {
-    var confirmingFull by remember { mutableStateOf(false) }
-
-    if (confirmingFull) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.export_privacy_warning_title)) },
-            text = { Text(stringResource(R.string.export_privacy_warning)) },
-            confirmButton = {
-                TextButton(onClick = { onExport(ExportMode.FULL) }) {
-                    Text(stringResource(R.string.export_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.export_cancel)) }
-            },
-        )
-        return
+private fun StatusBadge(event: DebugEvent) {
+    val colors = MaterialTheme.colorScheme
+    val label = if (event.eventType == DebugEventType.REMOVED) {
+        stringResource(DisplayLabels.eventType(event.eventType))
+    } else {
+        stringResource(DisplayLabels.disposition(event.disposition))
     }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.export_dialog_title)) },
-        text = {
-            Column {
-                TextButton(onClick = { onExport(ExportMode.RULES_ONLY) }) {
-                    Text(stringResource(R.string.export_rules_only))
-                }
-                TextButton(onClick = { onExport(ExportMode.PRIVACY_SAFE) }) {
-                    Text(stringResource(R.string.export_privacy_safe))
-                }
-                TextButton(onClick = { confirmingFull = true }) {
-                    Text(stringResource(R.string.export_full))
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.export_cancel)) }
-        },
-    )
+    val (container, content) = when {
+        event.eventType == DebugEventType.REMOVED -> colors.surfaceVariant to colors.onSurfaceVariant
+        event.disposition == DebugDisposition.MATCHED -> colors.primaryContainer to colors.onPrimaryContainer
+        event.disposition == DebugDisposition.CAPTURED_UNMATCHED -> colors.errorContainer to colors.onErrorContainer
+        else -> colors.surfaceVariant to colors.onSurfaceVariant
+    }
+    Surface(color = container, contentColor = content, shape = MaterialTheme.shapes.small) {
+        Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+    }
 }
