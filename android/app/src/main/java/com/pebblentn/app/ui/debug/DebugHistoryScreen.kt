@@ -239,10 +239,12 @@ private fun DebugEventRow(event: DebugEvent, appName: String, onClick: () -> Uni
             Text(
                 text = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(event.receivedTimestampMillis)),
                 style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
             )
-            Text(text = appName, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
             StatusBadge(event)
         }
+        // Its own line, so a long app name never gets squeezed between the time and the badge.
+        Text(text = appName, style = MaterialTheme.typography.bodySmall)
         // What went to the watch, so a drive can be scanned without opening every event.
         val instruction = event.instruction
         if (instruction != null) {

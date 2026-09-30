@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.data.AppEnablement
@@ -80,9 +82,12 @@ fun NavigationAppsScreen(
 
 @Composable
 private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit) {
+    // The whole row toggles, so TalkBack reads the app name with the switch state and a tap on the
+    // name works too.
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .toggleable(value = app.enabled, role = Role.Switch, onValueChange = onToggle)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -104,6 +109,6 @@ private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit) {
                 }
             }
         }
-        Switch(checked = app.enabled, onCheckedChange = onToggle)
+        Switch(checked = app.enabled, onCheckedChange = null)
     }
 }
