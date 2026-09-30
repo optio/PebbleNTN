@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -185,6 +186,10 @@ class AppContainer(context: Context) {
             navigationController.start()
             enabledAppRepository.refreshCache()
             userRuleRepository.refreshCache()
+            // The dashboard's "last navigation notification" survives restarts via the debug history.
+            debugHistoryRepository.observeRecent(LAST_ELIGIBLE_LOOKBACK).first()
+                .firstOrNull { it.eventType == com.pebblentn.app.data.DebugEventType.POSTED }
+                ?.let { lastEligibleNotificationStore.seed(it.receivedTimestampMillis) }
             ruleUpdateRepository.refreshCache()
             // Log the watch link once so a logcat capture shows whether a PebbleKit 2 companion app
             // is present and a watch is connected — the usual reason the watchapp stays "Connecting".
@@ -210,5 +215,10 @@ class AppContainer(context: Context) {
             val installed = installedAppsProvider.installedPackages(catalog.allPackageNames)
             enabledAppRepository.syncInstalledApps(installed)
         }
+    }
+
+    private companion object {
+        /** How many recent debug events to scan for the newest posted notification. */
+        const val LAST_ELIGIBLE_LOOKBACK = 20
     }
 }

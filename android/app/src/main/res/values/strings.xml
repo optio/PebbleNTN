@@ -49,7 +49,7 @@
     <string name="update_releases_url" translatable="false">https://github.com/optio/PebbleNTN/releases/latest</string>
 
     <!-- Navigation apps (per-app enablement, REQ-ANDROID-004/009) -->
-    <string name="navigation_apps_title">Manage navigation apps</string>
+    <string name="navigation_apps_title">Navigation apps</string>
     <string name="navigation_apps_explanation">Every supported app is enabled by default when installed. Turn off any app you don\'t want PebbleNTN to read notifications from.</string>
     <string name="navigation_apps_empty">No supported navigation apps are installed yet.</string>
     <string name="navigation_apps_capture_only_badge">Capture-only</string>

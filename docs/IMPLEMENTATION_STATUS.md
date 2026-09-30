@@ -1,6 +1,27 @@
 # Implementation Status
 
-_Last updated: 2026-09-30_
+_Last updated: 2026-10-01_
+
+## Small UI fixes: last notification, theme, accessibility pass (#28) (2026-10-01)
+
+- **Last navigation notification survives restarts.** `LastEligibleNotificationStore` is seeded at
+  startup from the newest posted event in the debug history (`seed` never replaces a newer live
+  value). Tested in `LastEligibleNotificationStoreTest` (3).
+- **Theme: system dynamic colours only.** On Android 12+ (minSdk 31) the orange Pebble accent never
+  appeared, and the user chose to drop it. `PebbleNtnTheme` now uses the dynamic light/dark schemes
+  unconditionally. The optional "Pebble monochrome theme" in spec/400-ui was never implemented and
+  remains a gap.
+- **Accessibility pass** on every reworked screen at 200 % font scale, with a UI-tree scan for
+  tappable elements that have no label anywhere inside them. Fixed:
+  - Navigation apps: the switches had no TalkBack label and tapping the name did nothing. The whole
+    row is now `toggleable` (Role.Switch).
+  - Rule detail: "Copy JSON" was squeezed into a vertical strip next to "Clone"; the buttons now
+    wrap (`FlowRow`).
+  - Debug history: the app name was squeezed between the time and the badge; it now has its own line.
+  - The "Manage navigation apps" title clipped at large sizes; it's now "Navigation apps", matching
+    the dashboard row.
+
+  After the fixes, every screen scans clean (0 unlabelled tappable elements) and reads correctly at 200 %.
 
 ## Debug history grouped and filtered; one share screen (#28, part E) (2026-09-30)
 

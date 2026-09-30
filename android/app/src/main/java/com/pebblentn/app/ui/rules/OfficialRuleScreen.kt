@@ -2,7 +2,8 @@ package com.pebblentn.app.ui.rules
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -48,7 +49,7 @@ import kotlinx.coroutines.launch
  * maintainer's note, and the JSON on demand. Official rules are read-only; cloning is how to change
  * one (your rules take precedence).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun OfficialRuleScreen(
     rule: Rule?,
@@ -97,7 +98,8 @@ fun OfficialRuleScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Wraps onto a second line at large font sizes instead of squeezing the second button.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
                     onClone(rule)
                     scope.launch { snackbarHostState.showSnackbar(clonedMessage) }
