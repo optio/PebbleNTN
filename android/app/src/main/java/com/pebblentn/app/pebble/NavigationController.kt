@@ -15,6 +15,10 @@ import com.pebblentn.app.protocol.SendResult
 import com.pebblentn.app.protocol.WatchTransport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import com.pebblentn.app.core.NavigationState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -45,6 +49,11 @@ class NavigationController(
 ) {
     private val mutex = Mutex()
     private var state = ReducerState(settings = initialSettings)
+
+    private val _status = MutableStateFlow(WatchLinkStatus())
+
+    /** What the watch was last sent, for the dashboard (#28); updated after every reduction. */
+    val status: StateFlow<WatchLinkStatus> = _status.asStateFlow()
 
     /**
      * Begin collecting inbound watch messages. A transport failure (no Pebble app installed, a
@@ -87,6 +96,10 @@ class NavigationController(
     private suspend fun dispatch(event: ReducerEvent) = mutex.withLock {
         val result = NavigationSessionReducer.reduce(state, event)
         state = result.state
+        _status.value = WatchLinkStatus(
+            navigating = state.current is NavigationState.Navigating,
+            lastSent = state.lastSentInstruction,
+        )
         for (effect in result.effects) {
             runEffect(effect)
         }
@@ -144,3 +157,12 @@ class NavigationController(
 
     private fun nowSeconds(): Long = clock.nowMillis() / 1000
 }
+
+/**
+ * The dashboard's view of the watch link (#28): whether navigation is active and the last
+ * instruction handed to the watch. "Sent" means the phone sent it; delivery itself is best-effort.
+ */
+data class WatchLinkStatus(
+    val navigating: Boolean = false,
+    val lastSent: NavigationInstruction? = null,
+)
