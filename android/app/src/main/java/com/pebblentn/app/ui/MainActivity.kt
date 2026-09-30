@@ -31,6 +31,7 @@ import com.pebblentn.app.ui.debug.DebugHistoryScreen
 import com.pebblentn.app.ui.debug.DebugHistoryViewModel
 import com.pebblentn.app.ui.onboarding.OnboardingScreen
 import com.pebblentn.app.ui.onboarding.OnboardingViewModel
+import com.pebblentn.app.ui.rules.OfficialRuleScreen
 import com.pebblentn.app.ui.rules.RuleEditorScreen
 import com.pebblentn.app.ui.rules.RulesScreen
 import com.pebblentn.app.ui.rules.RulesViewModel
@@ -196,13 +197,25 @@ class MainActivity : ComponentActivity() {
                 RulesScreen(
                     officialGroups = rulesViewModel.officialGroups,
                     userRules = userRules,
-                    onClone = { rulesViewModel.clone(it) },
+                    onOpenOfficial = { id -> navController.navigate("official-rule/$id") },
                     onToggleUser = { id, enabled -> rulesViewModel.setEnabled(id, enabled) },
                     onEditUser = { id -> navController.navigate("rule-editor/$id") },
                     onDeleteUser = { id -> rulesViewModel.delete(id) },
                     onNewRule = { navController.navigate("rule-editor") },
                     onBack = { navController.popBackStack() },
                     appName = ::appName,
+                )
+            }
+            composable(
+                route = "official-rule/{ruleId}",
+                arguments = listOf(navArgument("ruleId") { type = NavType.StringType }),
+            ) { entry ->
+                val rule = entry.arguments?.getString("ruleId")?.let(rulesViewModel::officialRule)
+                OfficialRuleScreen(
+                    rule = rule,
+                    appName = rule?.let(rulesViewModel::officialRuleAppName),
+                    onBack = { navController.popBackStack() },
+                    onClone = { rulesViewModel.clone(it) },
                 )
             }
             composable("rule-editor") { RuleEditorRoute(navController, ruleId = null) }

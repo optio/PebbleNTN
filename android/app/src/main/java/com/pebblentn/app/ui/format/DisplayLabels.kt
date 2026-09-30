@@ -6,6 +6,7 @@ import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.data.DebugDisposition
 import com.pebblentn.app.data.DebugEventType
+import com.pebblentn.app.rules.ConditionOperator
 import com.pebblentn.app.rules.RuleLayer
 import com.pebblentn.app.rules.RuleOutcome
 
@@ -62,6 +63,31 @@ object DisplayLabels {
         RuleLayer.USER -> R.string.rule_layer_user
         RuleLayer.DOWNLOADED -> R.string.rule_layer_downloaded
         RuleLayer.BUNDLED -> R.string.rule_layer_bundled
+    }
+
+    /** A condition field as users read it; null for a field without a friendlier name. */
+    @StringRes
+    fun conditionField(field: String): Int? = when (field) {
+        "title" -> R.string.condition_field_title
+        "text" -> R.string.condition_field_text
+        "subText" -> R.string.condition_field_subtext
+        "bigText" -> R.string.condition_field_bigtext
+        "combinedText" -> R.string.condition_field_combined
+        else -> null
+    }
+
+    @StringRes
+    fun conditionOperator(operator: ConditionOperator): Int = when (operator) {
+        ConditionOperator.EXISTS -> R.string.condition_op_exists
+        ConditionOperator.NOT_EXISTS -> R.string.condition_op_not_exists
+        ConditionOperator.EQUALS -> R.string.condition_op_equals
+        ConditionOperator.EQUALS_IGNORE_CASE -> R.string.condition_op_equals_ignore_case
+        ConditionOperator.CONTAINS -> R.string.condition_op_contains
+        ConditionOperator.CONTAINS_IGNORE_CASE -> R.string.condition_op_contains_ignore_case
+        ConditionOperator.STARTS_WITH -> R.string.condition_op_starts_with
+        ConditionOperator.ENDS_WITH -> R.string.condition_op_ends_with
+        ConditionOperator.REGEX -> R.string.condition_op_regex
+        ConditionOperator.IN -> R.string.condition_op_in
     }
 
     /** The catalog's display name for [packageName], or the package name itself when it is unknown. */
