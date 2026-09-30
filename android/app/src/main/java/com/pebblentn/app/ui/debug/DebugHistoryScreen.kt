@@ -9,9 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.export.ExportMode
+import com.pebblentn.app.ui.components.ConfirmDialog
+import com.pebblentn.app.ui.format.DisplayLabels
 import java.text.DateFormat
 import java.util.Date
 
@@ -40,9 +46,25 @@ fun DebugHistoryScreen(
     onEventClick: (Long) -> Unit,
     onDeleteAll: () -> Unit,
     onExport: (ExportMode) -> Unit = {},
+    onBack: () -> Unit = {},
+    appName: (String) -> String = { it },
     modifier: Modifier = Modifier,
 ) {
     var showExportDialog by remember { mutableStateOf(false) }
+    var confirmDeleteAll by remember { mutableStateOf(false) }
+
+    if (confirmDeleteAll) {
+        ConfirmDialog(
+            title = stringResource(R.string.confirm_delete_all_title),
+            message = stringResource(R.string.confirm_delete_all_message),
+            confirmLabel = stringResource(R.string.delete),
+            onConfirm = {
+                confirmDeleteAll = false
+                onDeleteAll()
+            },
+            onDismiss = { confirmDeleteAll = false },
+        )
+    }
 
     if (showExportDialog) {
         ExportDialog(
@@ -59,12 +81,17 @@ fun DebugHistoryScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.debug_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                    }
+                },
                 actions = {
                     TextButton(onClick = { showExportDialog = true }) {
                         Text(stringResource(R.string.debug_export))
                     }
                     if (events.isNotEmpty()) {
-                        TextButton(onClick = onDeleteAll) {
+                        TextButton(onClick = { confirmDeleteAll = true }) {
                             Text(stringResource(R.string.debug_delete_all))
                         }
                     }
@@ -84,7 +111,7 @@ fun DebugHistoryScreen(
         } else {
             LazyColumn(modifier = Modifier.padding(innerPadding)) {
                 items(events, key = { it.id }) { event ->
-                    DebugEventRow(event = event, onClick = { onEventClick(event.id) })
+                    DebugEventRow(event = event, appName = appName(event.packageName), onClick = { onEventClick(event.id) })
                     HorizontalDivider()
                 }
             }
@@ -93,7 +120,7 @@ fun DebugHistoryScreen(
 }
 
 @Composable
-private fun DebugEventRow(event: DebugEvent, onClick: () -> Unit) {
+private fun DebugEventRow(event: DebugEvent, appName: String, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -106,7 +133,7 @@ private fun DebugEventRow(event: DebugEvent, onClick: () -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(
-            text = event.packageName,
+            text = appName,
             style = MaterialTheme.typography.bodySmall,
         )
         // What went to the watch, so a drive can be scanned without opening every event.
@@ -114,13 +141,19 @@ private fun DebugEventRow(event: DebugEvent, onClick: () -> Unit) {
             val distance = instruction.distanceMeters?.let { stringResource(R.string.debug_distance_meters, it) }
             val stops = instruction.stopsRemaining?.let { pluralStringResource(R.plurals.debug_stops_remaining, it, it) }
             Text(
-                text = listOfNotNull(instruction.maneuver.name, distance, stops, instruction.primaryText).joinToString(" · "),
+                text = listOfNotNull(
+                    stringResource(DisplayLabels.maneuver(instruction.maneuver)),
+                    distance,
+                    stops,
+                    instruction.primaryText,
+                ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
         Text(
-            text = "${event.eventType.name} · ${event.disposition}",
+            text = stringResource(DisplayLabels.eventType(event.eventType)) + " · " +
+                stringResource(DisplayLabels.disposition(event.disposition)),
             style = MaterialTheme.typography.labelSmall,
         )
     }

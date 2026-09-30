@@ -18,12 +18,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
+import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.data.DebugEvent
+import com.pebblentn.app.ui.components.ConfirmDialog
+import com.pebblentn.app.ui.format.DisplayLabels
 import java.text.DateFormat
 import java.util.Date
 
@@ -33,8 +40,22 @@ fun DebugDetailScreen(
     event: DebugEvent?,
     onBack: () -> Unit,
     onDelete: () -> Unit,
+    appName: (String) -> String = { it },
     modifier: Modifier = Modifier,
 ) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    if (confirmDelete) {
+        ConfirmDialog(
+            title = stringResource(R.string.confirm_delete_event_title),
+            message = stringResource(R.string.confirm_delete_event_message),
+            confirmLabel = stringResource(R.string.delete),
+            onConfirm = {
+                confirmDelete = false
+                onDelete()
+            },
+            onDismiss = { confirmDelete = false },
+        )
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -47,7 +68,7 @@ fun DebugDetailScreen(
                 },
                 actions = {
                     if (event != null) {
-                        IconButton(onClick = onDelete) {
+                        IconButton(onClick = { confirmDelete = true }) {
                             Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.cd_delete_event))
                         }
                     }
@@ -80,10 +101,10 @@ fun DebugDetailScreen(
                 Text(stringResource(R.string.debug_watch_none), style = MaterialTheme.typography.bodyMedium)
             } else {
                 val maneuverValue =
-                    if (instruction.maneuver.name == "UNKNOWN") {
+                    if (instruction.maneuver == Maneuver.UNKNOWN) {
                         stringResource(R.string.debug_maneuver_unknown_hint)
                     } else {
-                        instruction.maneuver.name
+                        stringResource(DisplayLabels.maneuver(instruction.maneuver))
                     }
                 ElementRow(stringResource(R.string.debug_field_maneuver), maneuverValue)
                 ElementRow(
@@ -142,9 +163,10 @@ fun DebugDetailScreen(
                 text = stringResource(R.string.debug_notification_section),
                 style = MaterialTheme.typography.titleMedium,
             )
+            Field(stringResource(R.string.debug_field_app), appName(event.packageName))
             Field(stringResource(R.string.debug_field_package), event.packageName)
-            Field(stringResource(R.string.debug_field_event_type), event.eventType.name)
-            Field(stringResource(R.string.debug_field_disposition), event.disposition)
+            Field(stringResource(R.string.debug_field_event_type), stringResource(DisplayLabels.eventType(event.eventType)))
+            Field(stringResource(R.string.debug_field_disposition), stringResource(DisplayLabels.disposition(event.disposition)))
             Field(
                 stringResource(R.string.debug_field_received),
                 DateFormat.getDateTimeInstance().format(Date(event.receivedTimestampMillis)),

@@ -127,7 +127,7 @@
     <string name="debug_field_event_type">Event type</string>
     <string name="debug_field_received">Received</string>
     <string name="debug_field_posted">Posted</string>
-    <string name="debug_field_disposition">Disposition</string>
+    <string name="debug_field_disposition">Status</string>
     <string name="debug_field_title">Title</string>
     <string name="debug_field_text">Text</string>
     <string name="debug_field_subtext">Sub text</string>
@@ -137,6 +137,7 @@
     <string name="debug_not_found">This event is no longer available.</string>
     <string name="debug_watch_output">Sent to watch</string>
     <string name="debug_watch_none">Nothing sent — no rule matched this notification.</string>
+    <string name="debug_field_app">App</string>
     <string name="debug_field_matched_rule">Matched rule</string>
     <string name="debug_field_maneuver">Maneuver</string>
     <string name="debug_field_distance">Distance</string>
@@ -163,4 +164,33 @@
     <string name="cd_access_granted">Notification access is granted</string>
     <string name="cd_access_denied">Notification access is not granted</string>
     <string name="cd_delete_event">Delete this event</string>
+    <!-- Readable labels for internal identifiers (ui/format/DisplayLabels.kt). -->
+    <string name="maneuver_unknown">Unknown maneuver</string>
+    <string name="maneuver_straight">Straight on</string>
+    <string name="maneuver_slight_left">Slight left</string>
+    <string name="maneuver_left">Turn left</string>
+    <string name="maneuver_sharp_left">Sharp left</string>
+    <string name="maneuver_slight_right">Slight right</string>
+    <string name="maneuver_right">Turn right</string>
+    <string name="maneuver_sharp_right">Sharp right</string>
+    <string name="maneuver_uturn_left">U-turn (left)</string>
+    <string name="maneuver_uturn_right">U-turn (right)</string>
+    <string name="maneuver_roundabout">Roundabout</string>
+    <string name="maneuver_arrive">Arrive</string>
+    <string name="maneuver_transit">Transit ride</string>
+    <string name="disposition_matched">Recognised</string>
+    <string name="disposition_unmatched">Not recognised</string>
+    <string name="disposition_non_maneuver">Not a direction</string>
+    <string name="disposition_other">Other</string>
+    <string name="event_type_posted">Notification</string>
+    <string name="event_type_removed">Navigation ended</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="confirm_delete_all_title">Delete all history?</string>
+    <string name="confirm_delete_all_message">This removes every captured notification from the debug history. It can\'t be undone.</string>
+    <string name="confirm_delete_event_title">Delete this event?</string>
+    <string name="confirm_delete_event_message">It is removed from the debug history. It can\'t be undone.</string>
+    <string name="confirm_delete_rule_title">Delete this rule?</string>
+    <string name="confirm_delete_rule_message">“%1$s” is removed from your rules. It can\'t be undone.</string>
+    <string name="cd_add_rule">Add a rule</string>
 </resources>
