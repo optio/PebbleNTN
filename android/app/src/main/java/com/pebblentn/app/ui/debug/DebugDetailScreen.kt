@@ -16,19 +16,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.data.DebugEvent
+import com.pebblentn.app.rules.RuleOutcome
+import com.pebblentn.app.rules.RuleTraceEntry
 import com.pebblentn.app.ui.components.ConfirmDialog
 import com.pebblentn.app.ui.format.DisplayLabels
 import java.text.DateFormat
@@ -88,13 +93,24 @@ fun DebugDetailScreen(
                 Text(stringResource(R.string.debug_not_found))
                 return@Column
             }
-            // The parse result broken down per watchface element — the first thing a rule author or
-            // a user debugging a wrong arrow wants to see. Every element the watch renders is shown
-            // with its own key, even when empty, so it is obvious what each element resolved to.
-            Text(
-                text = stringResource(R.string.debug_watch_elements),
-                style = MaterialTheme.typography.titleMedium,
+            // Read top to bottom as a story (#28): what arrived, what the watch showed, and why.
+            SectionTitle(stringResource(R.string.debug_notification_section))
+            Field(stringResource(R.string.debug_field_app), appName(event.packageName))
+            Field(
+                stringResource(R.string.debug_field_posted),
+                DateFormat.getDateTimeInstance().format(Date(event.eventTimestampMillis)),
             )
+            event.snapshot?.let { snap ->
+                Field(stringResource(R.string.debug_field_title), snap.title)
+                Field(stringResource(R.string.debug_field_text), snap.text)
+                Field(stringResource(R.string.debug_field_subtext), snap.subText)
+                Field(stringResource(R.string.debug_field_bigtext), snap.bigText)
+            }
+
+            HorizontalDivider()
+            // Every element the watch renders is shown, even when empty: an empty element is itself
+            // what someone debugging a wrong arrow is looking for.
+            SectionTitle(stringResource(R.string.debug_watch_elements))
             val instruction = event.instruction
             val emptyPlaceholder = stringResource(R.string.debug_element_none)
             if (instruction == null) {
@@ -134,57 +150,83 @@ fun DebugDetailScreen(
                         ?: emptyPlaceholder,
                 )
             }
-            Field(stringResource(R.string.debug_field_matched_rule), event.matchedRuleId)
 
             HorizontalDivider()
-            // Why this result: which rules were tried and how each one resolved.
-            Text(
-                text = stringResource(R.string.debug_trace_section),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            if (event.trace.isEmpty()) {
-                Text(stringResource(R.string.debug_trace_none), style = MaterialTheme.typography.bodyMedium)
-            } else {
-                event.trace.forEach { entry ->
-                    ElementRow(
-                        entry.ruleId,
-                        stringResource(
-                            R.string.debug_trace_entry,
-                            entry.layer.name,
-                            entry.outcome.name,
-                            entry.message ?: "",
-                        ).trimEnd(' ', '·'),
-                    )
-                }
-            }
+            SectionTitle(stringResource(R.string.debug_trace_section))
+            TraceSection(event)
 
             HorizontalDivider()
-            Text(
-                text = stringResource(R.string.debug_notification_section),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Field(stringResource(R.string.debug_field_app), appName(event.packageName))
-            Field(stringResource(R.string.debug_field_package), event.packageName)
-            Field(stringResource(R.string.debug_field_event_type), stringResource(DisplayLabels.eventType(event.eventType)))
-            Field(stringResource(R.string.debug_field_disposition), stringResource(DisplayLabels.disposition(event.disposition)))
-            Field(
-                stringResource(R.string.debug_field_received),
-                DateFormat.getDateTimeInstance().format(Date(event.receivedTimestampMillis)),
-            )
-            Field(
-                stringResource(R.string.debug_field_posted),
-                DateFormat.getDateTimeInstance().format(Date(event.eventTimestampMillis)),
-            )
-            event.snapshot?.let { snap ->
-                Field(stringResource(R.string.debug_field_title), snap.title)
-                Field(stringResource(R.string.debug_field_text), snap.text)
-                Field(stringResource(R.string.debug_field_subtext), snap.subText)
-                Field(stringResource(R.string.debug_field_bigtext), snap.bigText)
-                Field(stringResource(R.string.debug_field_category), snap.category)
-                Field(stringResource(R.string.debug_field_channel), snap.channelId)
-            }
+            TechnicalDetails(event)
         }
     }
+}
+
+/** The deciding rules first; the rules that simply didn't apply stay collapsed behind a count. */
+@Composable
+private fun TraceSection(event: DebugEvent) {
+    if (event.trace.isEmpty()) {
+        Text(stringResource(R.string.debug_trace_none), style = MaterialTheme.typography.bodyMedium)
+        return
+    }
+    val summary = remember(event.trace) { TraceSummary.of(event.trace) }
+    var showOthers by rememberSaveable(event.id) { mutableStateOf(false) }
+    if (summary.decisive.isEmpty()) {
+        Text(stringResource(R.string.debug_trace_no_match), style = MaterialTheme.typography.bodyMedium)
+    }
+    summary.decisive.forEach { TraceRow(it) }
+    if (summary.others.isNotEmpty()) {
+        TextButton(onClick = { showOthers = !showOthers }) {
+            Text(
+                if (showOthers) {
+                    stringResource(R.string.debug_trace_hide_others)
+                } else {
+                    pluralStringResource(R.plurals.debug_trace_show_others, summary.others.size, summary.others.size)
+                },
+            )
+        }
+        if (showOthers) summary.others.forEach { TraceRow(it) }
+    }
+}
+
+@Composable
+private fun TraceRow(entry: RuleTraceEntry) {
+    val label = stringResource(
+        R.string.debug_trace_entry_label,
+        stringResource(DisplayLabels.ruleLayer(entry.layer)),
+        stringResource(DisplayLabels.ruleOutcome(entry.outcome)),
+    )
+    ElementRow(
+        label = entry.ruleId,
+        value = listOfNotNull(label, entry.message).joinToString(" · "),
+        valueColor = if (entry.outcome == RuleOutcome.ERROR) MaterialTheme.colorScheme.error else null,
+    )
+}
+
+/** Fields only a maintainer needs, collapsed by default. */
+@Composable
+private fun TechnicalDetails(event: DebugEvent) {
+    var expanded by rememberSaveable(event.id) { mutableStateOf(false) }
+    TextButton(onClick = { expanded = !expanded }) {
+        Text(stringResource(if (expanded) R.string.debug_technical_details_hide else R.string.debug_technical_details))
+    }
+    if (!expanded) return
+    Field(stringResource(R.string.debug_field_package), event.packageName)
+    Field(stringResource(R.string.debug_field_event_type), stringResource(DisplayLabels.eventType(event.eventType)))
+    Field(stringResource(R.string.debug_field_disposition), stringResource(DisplayLabels.disposition(event.disposition)))
+    Field(stringResource(R.string.debug_field_matched_rule), event.matchedRuleId)
+    Field(
+        stringResource(R.string.debug_field_received),
+        DateFormat.getDateTimeInstance().format(Date(event.receivedTimestampMillis)),
+    )
+    event.snapshot?.let { snap ->
+        Field(stringResource(R.string.debug_field_category), snap.category)
+        Field(stringResource(R.string.debug_field_channel), snap.channelId)
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text = text, style = MaterialTheme.typography.titleMedium)
 }
 
 @Composable
@@ -199,9 +241,9 @@ private fun Field(label: String, value: String?) {
 /** Like [Field] but always rendered — used for the per-element parse breakdown and the trace, where
  *  showing an empty element is itself the information the user is looking for. */
 @Composable
-private fun ElementRow(label: String, value: String) {
+private fun ElementRow(label: String, value: String, valueColor: Color? = null) {
     Column {
         Text(text = label, style = MaterialTheme.typography.labelMedium)
-        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge, color = valueColor ?: Color.Unspecified)
     }
 }

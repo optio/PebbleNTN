@@ -6,6 +6,8 @@ import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.data.DebugDisposition
 import com.pebblentn.app.data.DebugEventType
+import com.pebblentn.app.rules.RuleLayer
+import com.pebblentn.app.rules.RuleOutcome
 
 /**
  * One place that turns internal identifiers into what users read (#28): maneuver enums, debug
@@ -44,6 +46,22 @@ object DisplayLabels {
     fun eventType(type: DebugEventType): Int = when (type) {
         DebugEventType.POSTED -> R.string.event_type_posted
         DebugEventType.REMOVED -> R.string.event_type_removed
+    }
+
+    @StringRes
+    fun ruleOutcome(outcome: RuleOutcome): Int = when (outcome) {
+        RuleOutcome.MATCHED -> R.string.rule_outcome_matched
+        RuleOutcome.CONDITIONS_FAILED -> R.string.rule_outcome_conditions_failed
+        RuleOutcome.DISABLED -> R.string.rule_outcome_disabled
+        RuleOutcome.SKIPPED_LOCALE -> R.string.rule_outcome_skipped_locale
+        RuleOutcome.ERROR -> R.string.rule_outcome_error
+    }
+
+    @StringRes
+    fun ruleLayer(layer: RuleLayer): Int = when (layer) {
+        RuleLayer.USER -> R.string.rule_layer_user
+        RuleLayer.DOWNLOADED -> R.string.rule_layer_downloaded
+        RuleLayer.BUNDLED -> R.string.rule_layer_bundled
     }
 
     /** The catalog's display name for [packageName], or the package name itself when it is unknown. */
