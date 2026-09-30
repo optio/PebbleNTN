@@ -1,0 +1,1 @@
+• keep last notification across restarts; dynamic theme; a11y fixes
