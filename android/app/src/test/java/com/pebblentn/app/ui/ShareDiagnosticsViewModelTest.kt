@@ -100,4 +100,17 @@ class ShareDiagnosticsViewModelTest {
         assertEquals(ExportMode.PRIVACY_SAFE, vm.currentMode())
         assertFalse("redacted preview drops the road name", state.previewText.contains("Elm Street"))
     }
+
+    @Test
+    fun rulesOnlyHasContentWithoutNotificationText() {
+        val vm = ShareDiagnosticsViewModel(exporter)
+        vm.awaitLoaded()
+
+        vm.setMode(ExportMode.RULES_ONLY)
+        val state = vm.awaitLoaded()
+
+        assertEquals("no events in a rules-only export", 0, state.includedEvents)
+        assertTrue("the user's rules can always be shared", state.hasContent)
+        assertFalse(state.previewText.contains("Elm Street"))
+    }
 }

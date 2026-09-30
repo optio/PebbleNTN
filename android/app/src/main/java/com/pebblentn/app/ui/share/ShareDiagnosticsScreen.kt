@@ -19,6 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -35,9 +36,9 @@ import com.pebblentn.app.R
 import com.pebblentn.app.export.ExportMode
 
 /**
- * Guided "share logs to help add app support" screen (REQ-DEBUG-011). Explains that no personal data
- * is shared, shows the exact redacted dataset for review, and opens the user's email app with the
- * attachment. The payload is already capped to the 10 MB email budget upstream.
+ * The one share-diagnostics screen (REQ-DEBUG-005/006/007/011): pick full, redacted or rules-only
+ * data, read the privacy explanation, review the exact payload, then send it by email or with the
+ * Android Sharesheet. The payload is already capped to the 10 MB email budget upstream.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +47,7 @@ fun ShareDiagnosticsScreen(
     onBack: () -> Unit,
     onShareEmail: () -> Unit,
     onModeChange: (ExportMode) -> Unit = {},
+    onShareSheet: () -> Unit = {},
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -68,11 +70,54 @@ fun ShareDiagnosticsScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // One screen for every way of sharing diagnostics (#28): the three export modes
+            // (REQ-DEBUG-005), the privacy explanation before anything leaves the phone
+            // (REQ-DEBUG-007), a review of the exact data, and sending by email or through the
+            // Android Sharesheet. Nothing is transmitted automatically (REQ-DEBUG-006).
+            Text(
+                text = stringResource(R.string.share_diag_explainer),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = stringResource(R.string.share_diag_mode_label),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            ModeOption(
+                selected = state.mode == ExportMode.FULL,
+                title = stringResource(R.string.share_diag_mode_full),
+                hint = stringResource(R.string.share_diag_mode_full_hint),
+                onSelect = { onModeChange(ExportMode.FULL) },
+            )
+            ModeOption(
+                selected = state.mode == ExportMode.PRIVACY_SAFE,
+                title = stringResource(R.string.share_diag_mode_redacted),
+                hint = stringResource(R.string.share_diag_mode_redacted_hint),
+                onSelect = { onModeChange(ExportMode.PRIVACY_SAFE) },
+            )
+            ModeOption(
+                selected = state.mode == ExportMode.RULES_ONLY,
+                title = stringResource(R.string.share_diag_mode_rules),
+                hint = stringResource(R.string.share_diag_mode_rules_hint),
+                onSelect = { onModeChange(ExportMode.RULES_ONLY) },
+            )
+
+            if (state.mode != ExportMode.RULES_ONLY) {
+                Text(
+                    text = stringResource(R.string.share_diag_privacy_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    text = stringResource(R.string.export_privacy_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             when {
                 // First load, before we know whether there is anything to share.
                 state.loading && !state.hasContent -> {
                     Column(
-                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        modifier = Modifier.fillMaxWidth().height(160.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) { CircularProgressIndicator() }
@@ -86,30 +131,6 @@ fun ShareDiagnosticsScreen(
                 }
 
                 else -> {
-                    Text(
-                        text = stringResource(R.string.share_diag_explainer),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-
-                    // Let the user choose the redacted dataset or the fuller one that keeps street
-                    // names (more valuable for adding direction/turn-word translations).
-                    Text(
-                        text = stringResource(R.string.share_diag_mode_label),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    ModeOption(
-                        selected = state.mode == ExportMode.PRIVACY_SAFE,
-                        title = stringResource(R.string.share_diag_mode_redacted),
-                        hint = stringResource(R.string.share_diag_mode_redacted_hint),
-                        onSelect = { onModeChange(ExportMode.PRIVACY_SAFE) },
-                    )
-                    ModeOption(
-                        selected = state.mode == ExportMode.FULL,
-                        title = stringResource(R.string.share_diag_mode_full),
-                        hint = stringResource(R.string.share_diag_mode_full_hint),
-                        onSelect = { onModeChange(ExportMode.FULL) },
-                    )
-
                     Text(
                         text = stringResource(
                             R.string.share_diag_summary,
@@ -171,6 +192,13 @@ fun ShareDiagnosticsScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(stringResource(R.string.share_diag_share_email))
+                    }
+                    OutlinedButton(
+                        onClick = onShareSheet,
+                        enabled = !state.loading,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.share_diag_share_sheet))
                     }
                 }
             }

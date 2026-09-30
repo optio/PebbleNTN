@@ -153,6 +153,7 @@ class MainActivity : ComponentActivity() {
                     onBack = { navController.popBackStack() },
                     onShareEmail = ::shareCaptureLogsByEmail,
                     onModeChange = shareDiagnosticsViewModel::setMode,
+                    onShareSheet = ::shareDiagnosticsWithSharesheet,
                 )
             }
             composable("debug") {
@@ -160,7 +161,7 @@ class MainActivity : ComponentActivity() {
                     events = events,
                     onEventClick = { id -> navController.navigate("debug/$id") },
                     onDeleteAll = debugViewModel::deleteAll,
-                    onExport = ::exportDiagnostics,
+                    onShare = { navController.navigate("share-diagnostics") },
                     onBack = { navController.popBackStack() },
                     appName = ::appName,
                 )
@@ -300,12 +301,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Build the export payload off the main thread, then open the Sharesheet (never auto-sends). */
-    private fun exportDiagnostics(mode: com.pebblentn.app.export.ExportMode) {
-        lifecycleScope.launch {
-            val json = container.diagnosticExporter.build(mode)
-            container.diagnosticShareManager.share(json, mode)
-        }
+    /**
+     * Share the reviewed payload with any app through the Android Sharesheet (REQ-DEBUG-006). It is
+     * the same data the user just reviewed; nothing is sent until they pick an app and send it.
+     */
+    private fun shareDiagnosticsWithSharesheet() {
+        val json = shareDiagnosticsViewModel.payloadJson() ?: return
+        container.diagnosticShareManager.share(json, shareDiagnosticsViewModel.currentMode())
     }
 
     /**

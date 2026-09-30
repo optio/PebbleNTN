@@ -84,16 +84,8 @@
     <string name="debug_title">Debug history</string>
     <string name="debug_empty">No captured notifications yet</string>
     <string name="debug_delete_all">Delete all</string>
-    <string name="debug_export">Export</string>
 
     <!-- Export -->
-    <string name="export_dialog_title">Export diagnostics</string>
-    <string name="export_rules_only">Rules only (no notification content)</string>
-    <string name="export_privacy_safe">Privacy-safe diagnostics</string>
-    <string name="export_full">Full diagnostics (raw content)</string>
-    <string name="export_cancel">Cancel</string>
-    <string name="export_confirm">Export</string>
-    <string name="export_privacy_warning_title">Before you export</string>
     <!-- Exact required privacy explanation (REQ-DEBUG-007, spec/600-security-release). -->
     <string name="export_privacy_warning">Diagnostic notification content can contain only information that the navigation app placed in its Android notification. This can still include private information such as destinations, road names, saved-place labels, route context, and travel timing.</string>
 
@@ -102,8 +94,8 @@
     <string name="dashboard_share_nudge_title">Help add app support</string>
     <string name="dashboard_share_nudge_body">PebbleNTN captured navigation notifications from apps it can\'t turn into watch directions yet (%1$d so far). Sharing these logs helps add support.</string>
     <string name="dashboard_share_nudge_action">Review &amp; share</string>
-    <string name="share_diag_title">Help add app support</string>
-    <string name="share_diag_explainer">Sharing these capture logs helps us add turn-by-turn support for more navigation apps. Choose what to include, review it below, and send it from your own email app — nothing is sent automatically.</string>
+    <string name="share_diag_title">Share diagnostics</string>
+    <string name="share_diag_explainer">Sharing capture logs helps add turn-by-turn support for more navigation apps and languages. Choose what to include, review it below, and send it yourself: by email or with any app. Nothing is sent automatically.</string>
     <string name="share_diag_mode_label">What to include</string>
     <string name="share_diag_mode_redacted">Redacted (road names removed)</string>
     <string name="share_diag_mode_full">Include street names</string>
@@ -114,7 +106,7 @@
     <string name="share_diag_preview_label">Data to be shared (review)</string>
     <string name="share_diag_preview_trimmed">Preview shortened for display — the attached file contains all %1$d events.</string>
     <string name="share_diag_share_email">Share via email</string>
-    <string name="share_diag_empty">There are no unsupported-app captures to share right now.</string>
+    <string name="share_diag_empty">There are no captured notifications to share yet. You can still share your rules.</string>
     <!-- Recipient for shared capture logs. Set by the maintainer; empty = user fills it in the mail app. -->
     <string name="share_logs_recipient">pebblentn@mg.mijnesite.be</string>
     <string name="share_logs_subject">PebbleNTN capture logs (help add app support)</string>
@@ -275,4 +267,20 @@
     <string name="condition_op_ends_with">ends with</string>
     <string name="condition_op_regex">matches the pattern</string>
     <string name="condition_op_in">is one of</string>
+    <!-- Unified share screen and debug history (#28, part E). -->
+    <string name="share_diag_mode_rules">Rules only</string>
+    <string name="share_diag_mode_rules_hint">Only your own rules. No notification content at all.</string>
+    <string name="share_diag_privacy_title">About privacy</string>
+    <string name="share_diag_share_sheet">Share with another app</string>
+    <string name="debug_share">Share diagnostics</string>
+    <string name="cd_more_actions">More actions</string>
+    <string name="debug_filter_all">All</string>
+    <string name="debug_filter_all_apps">All apps</string>
+    <string name="debug_filter_empty">No events match these filters.</string>
+    <string name="debug_today">Today</string>
+    <string name="debug_yesterday">Yesterday</string>
+    <plurals name="debug_day_count">
+        <item quantity="one">%1$d event</item>
+        <item quantity="other">%1$d events</item>
+    </plurals>
 </resources>

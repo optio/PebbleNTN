@@ -2,6 +2,27 @@
 
 _Last updated: 2026-09-30_
 
+## Debug history grouped and filtered; one share screen (#28, part E) (2026-09-30)
+
+- **Debug history** (`DebugHistoryFilter`, pure and tested): status chips (All · Recognised ·
+  Not recognised · Not a direction) and app chips; events grouped by local day under sticky
+  headers ("Today · 3 events"), with the time on each row; a coloured status badge (or
+  "Navigation ended"); unrecognised rows show the notification title. *Share diagnostics* and
+  *Delete all* (confirmed) moved into the ⋮ menu.
+- **One share screen.** The Export dialog (rules only / privacy-safe / full, through the
+  Sharesheet) and the *Help add app support* screen (redacted / full, by email) overlapped. Both
+  entry points now open **Share diagnostics**: the three modes (REQ-DEBUG-005; full preselected per
+  REQ-DEBUG-011), the privacy explanation before anything is shared (REQ-DEBUG-007; not shown for
+  rules only), a review of the exact payload, and **Share via email** or **Share with another app**
+  (Android Sharesheet, REQ-DEBUG-006). Both send the reviewed payload. Rules-only now works even
+  with no captured events. The old export-dialog strings are removed.
+
+**Verified.** `DebugHistoryFilterTest` (4: day grouping across midnight, status filters, app plus
+status, app order), `ShareDiagnosticsViewModelTest` (3, now including rules only); all 288 unit
+tests; `./scripts/test-all.sh`. On the emulator, with events seeded over two days: grouping,
+badges, both filters, the menu, all three share modes, and the Sharesheet opening with
+`pebblentn-rules.json`.
+
 ## Rules screen: filters, search, collapsible sections, rule detail (#28, part D) (2026-09-30)
 
 The Official tab was one long list (105 rules across apps and six languages). Every rule repeated
