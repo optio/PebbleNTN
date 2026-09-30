@@ -15,7 +15,7 @@ data class ShareDiagnosticsState(
     val loading: Boolean = true,
     /**
      * Which dataset the user chose to share: redacted or full (with street names). Defaults to
-     * [ExportMode.FULL] — the full notification text is far more useful for adding missing
+     * [ExportMode.FULL] (REQ-DEBUG-011) — the full notification text is far more useful for adding missing
      * direction/turn-word translations, and the user reviews the exact payload below before sending.
      */
     val mode: ExportMode = ExportMode.FULL,

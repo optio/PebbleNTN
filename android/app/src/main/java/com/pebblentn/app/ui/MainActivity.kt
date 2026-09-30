@@ -96,6 +96,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         onboardingViewModel.refresh()
+        // Catch navigation apps installed while we were in the background (REQ-ANDROID-004).
+        container.discoverInstalledApps()
     }
 
     @androidx.compose.runtime.Composable

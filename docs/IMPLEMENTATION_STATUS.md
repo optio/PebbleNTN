@@ -2,6 +2,27 @@
 
 _Last updated: 2026-09-30_
 
+## Share default documented; live navigation-app discovery (2026-09-30)
+
+From the UI review (#28):
+
+- **Share-to-help default.** The screen has preselected *Include street names* since `c151da6`
+  (a deliberate choice: full text is what makes translations possible), but REQ-DEBUG-011 still
+  said redacted was the default. Decision: keep full as the default and bring REQ-DEBUG-011 in
+  line (full preselected with its privacy explanation; redacted one tap away).
+  `ShareDiagnosticsViewModelTest` pins both.
+- **Navigation apps installed while PebbleNTN runs.** Discovery ran only when the notification
+  listener connected (process start), so a newly installed catalog app stayed unknown and its
+  notifications were dropped by the allowlist until a restart. `NavigationAppInstallReceiver`
+  (runtime-registered, unexported; `PACKAGE_ADDED` / `PACKAGE_REPLACED`, catalog packages only)
+  and `MainActivity.onResume` now call `AppContainer.discoverInstalledApps()`. A debug-only
+  manifest adds the fixture publisher to `<queries>`, so it's visible like every real catalog app.
+
+**Verified.** `ShareDiagnosticsViewModelTest` (2) and `NavigationAppInstallReceiverTest` (5,
+including a real broadcast); `./scripts/test-all.sh`. On the api34 emulator, from cleared app
+data: the fixture app installed while *Manage navigation apps* was open appeared within seconds,
+in the same process, and its next notification was captured.
+
 ## Google Maps lane guidance rules (2026-09-30)
 
 **Trigger.** A shared full-diagnostics export (v0.0.29, en-US, Android 16, a drive in Belgium):

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only additions. The fixture publisher (android/fixture-publisher) is a debug catalog entry;
+    like every real navigation app it must be visible under package visibility, so that discovery
+    (getPackageInfo) and install broadcasts behave the same as for, say, OsmAnd.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="com.pebblentn.fixturepublisher" />
+    </queries>
+</manifest>
