@@ -177,6 +177,9 @@ class AppContainer(context: Context) {
 
     /** Restore state, warm the caches, and begin listening for watch messages on app start. */
     fun start() {
+        // A navigation app installed while we run must be picked up without a restart (REQ-ANDROID-004).
+        com.pebblentn.app.system.NavigationAppInstallReceiver(catalog.allPackageNames, ::discoverInstalledApps)
+            .register(appContext)
         applicationScope.launch {
             navigationController.restore()
             navigationController.start()
@@ -194,11 +197,15 @@ class AppContainer(context: Context) {
         }
     }
 
+    /** Called when the listener connects: discover installed catalog apps. */
+    fun onListenerConnected() = discoverInstalledApps()
+
     /**
-     * Called when the listener connects: discover installed catalog apps (default-enabling new
-     * ones) and refresh the allowlist cache.
+     * Discover installed catalog apps, default-enabling new ones (REQ-ANDROID-004), and refresh the
+     * allowlist cache. Runs when the listener connects, when a catalog app is installed or updated,
+     * and when the app returns to the foreground; it is cheap and idempotent.
      */
-    fun onListenerConnected() {
+    fun discoverInstalledApps() {
         applicationScope.launch {
             val installed = installedAppsProvider.installedPackages(catalog.allPackageNames)
             enabledAppRepository.syncInstalledApps(installed)
