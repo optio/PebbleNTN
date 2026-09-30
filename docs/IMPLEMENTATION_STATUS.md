@@ -2,6 +2,28 @@
 
 _Last updated: 2026-10-01_
 
+## Rule authors: create from a capture, better preview, share your rules (#28) (2026-10-01)
+
+- **Create rule from this notification** (event detail) opens the editor with a valid starting
+  rule (`RuleTemplates.fromCapture`): the app's package, a condition on the title with the leading
+  distance stripped (including Google Maps' non-breaking space, a bug the test caught), and the
+  maneuver the watch showed, or UNKNOWN.
+- **Editor preview** against a capture the author picks (the 20 most recent), showing every watch
+  element, "doesn't match", or the validation errors, instead of just the maneuver name.
+- **Unsaved changes:** leaving the editor with changes (back button or arrow) asks "Discard your
+  changes?".
+- **Share your rules** (Your rules tab) opens the share screen with *Rules only* preselected
+  (`share-diagnostics?mode=RULES_ONLY`), so custom rules are reviewed and emailed like logs.
+- **Race fixed** (found on the emulator): the share screen's first full build could finish after a
+  mode chosen right away and switch it back to full. A newer build now cancels the older one;
+  `ShareDiagnosticsViewModelTest.aModeChosenRightAwayIsNotOverwrittenByTheFirstBuild`.
+- #28's watch preview item was removed at the user's request.
+
+**Verified.** `RuleTemplatesTest` (3), `RulesViewModelTest` (+2: preview against the chosen capture,
+create from capture), the share race test; all 304 unit tests; `./scripts/test-all.sh`. On the
+emulator: create from a capture, preview against the preselected capture, the discard dialog,
+save, the rule under Your rules, and Share your rules opening in Rules only.
+
 ## New users: setup checklist and all supported apps (#28) (2026-10-01)
 
 - **Setup checklist** ("Get started" card on the dashboard until every step is done): notification

@@ -6,6 +6,7 @@ import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.data.RuleValidationStatus
 import com.pebblentn.app.data.UserRule
 import com.pebblentn.app.data.UserRuleRepository
+import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.rules.PreviewResult
 import com.pebblentn.app.rules.Rule
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -84,17 +86,33 @@ class RulesViewModel(
         return result
     }
 
-    /** Preview a candidate against the most recently captured notification, if any. */
-    suspend fun previewAgainstLatest(json: String): PreviewResult? {
-        val snapshot = debugHistoryRepository.observeRecent(1).first().firstOrNull()?.snapshot ?: return null
+    /** Recent captured notifications the editor can preview against (#28), newest first. */
+    val recentCaptures: StateFlow<List<DebugEvent>> = debugHistoryRepository.observeRecent(RECENT_CAPTURES)
+        .map { events -> events.filter { it.snapshot != null } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Preview a candidate against the chosen capture, or the most recent one when [eventId] is null.
+     * Null when there is no capture to preview against.
+     */
+    suspend fun previewAgainst(json: String, eventId: Long?): PreviewResult? {
+        val event = eventId?.let { debugHistoryRepository.getById(it) }
+            ?: debugHistoryRepository.observeRecent(1).first().firstOrNull()
+        val snapshot = event?.snapshot ?: return null
         return previewService.previewCandidate(snapshot, json)
     }
+
+    /** A starting rule made from a captured notification ("Create rule from this notification"). */
+    suspend fun editorJsonFromCapture(eventId: Long): String? =
+        debugHistoryRepository.getById(eventId)?.let { RulesetCodec.canonicalizeRule(RuleTemplates.fromCapture(it)) }
 
     /** JSON to open the editor with: the user rule's canonical form, or a new-rule template. */
     suspend fun editorInitialJson(ruleId: String?): String =
         ruleId?.let { userRuleRepository.getUserRule(it)?.canonicalJson } ?: NEW_RULE_TEMPLATE
 
     companion object {
+        private const val RECENT_CAPTURES = 20
+
         val NEW_RULE_TEMPLATE: String = """
             {
               "id": "my-rule",

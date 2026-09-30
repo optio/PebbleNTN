@@ -73,12 +73,9 @@
     <string name="rule_editor_validate">Validate</string>
     <string name="rule_editor_format">Format</string>
     <string name="rule_editor_save">Save</string>
-    <string name="rule_editor_preview">Preview against last capture</string>
+    <string name="rule_editor_preview">Preview</string>
     <string name="rule_editor_valid">Rule is valid</string>
-    <string name="rule_editor_saved">Saved</string>
-    <string name="rule_editor_no_capture">No captured notification to preview against</string>
-    <string name="rule_editor_preview_matched">Matched: %1$s</string>
-    <string name="rule_editor_preview_unmatched">No match (%1$d rule(s) evaluated)</string>
+    <string name="rule_editor_no_capture">No captured notification to preview against yet.</string>
 
     <!-- Debug history -->
     <string name="debug_title">Debug history</string>
@@ -307,4 +304,15 @@
     <string name="navigation_apps_directions">Turn-by-turn directions</string>
     <string name="navigation_apps_get">Get %1$s</string>
     <string name="navigation_apps_store_url" translatable="false">https://play.google.com/store/apps/details?id=%1$s</string>
+    <!-- Rule authors (#28). -->
+    <string name="rule_editor_preview_title">Preview</string>
+    <string name="rule_editor_preview_against">Preview against</string>
+    <string name="rule_editor_preview_match">The watch would show</string>
+    <string name="rule_editor_preview_no_match">This rule doesn\'t match the chosen notification.</string>
+    <string name="rule_editor_discard_title">Discard your changes?</string>
+    <string name="rule_editor_discard_message">This rule has changes that aren\'t saved.</string>
+    <string name="rule_editor_discard">Discard</string>
+    <string name="debug_create_rule">Create rule from this notification</string>
+    <string name="rules_share_yours">Share your rules</string>
+    <string name="rules_share_yours_hint">Send your rules to the developers so they can become official for everyone.</string>
 </resources>

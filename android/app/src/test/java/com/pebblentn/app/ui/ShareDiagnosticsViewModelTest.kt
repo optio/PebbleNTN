@@ -113,4 +113,17 @@ class ShareDiagnosticsViewModelTest {
         assertTrue("the user's rules can always be shared", state.hasContent)
         assertFalse(state.previewText.contains("Elm Street"))
     }
+
+    @Test
+    fun aModeChosenRightAwayIsNotOverwrittenByTheFirstBuild() {
+        // "Share your rules" opens the screen and selects rules only immediately; the initial full
+        // build finishing later must not switch it back (seen on the emulator).
+        val vm = ShareDiagnosticsViewModel(exporter)
+        vm.setMode(ExportMode.RULES_ONLY)
+        val state = vm.awaitLoaded()
+        runBlocking { delay(300) } // give a stale build every chance to land
+
+        assertEquals(ExportMode.RULES_ONLY, vm.state.value.mode)
+        assertEquals(0, state.includedEvents)
+    }
 }

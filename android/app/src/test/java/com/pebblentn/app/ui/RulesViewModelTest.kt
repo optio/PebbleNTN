@@ -28,6 +28,8 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class RulesViewModelTest {
 
+    private lateinit var history: DebugHistoryRepository
+
     private lateinit var db: PebbleNtnDatabase
     private lateinit var vm: RulesViewModel
     private lateinit var userRepo: UserRuleRepository
@@ -46,9 +48,10 @@ class RulesViewModelTest {
             PebbleNtnDatabase::class.java,
         ).allowMainThreadQueries().build()
         userRepo = UserRuleRepository(db.userRuleDao())
+        history = DebugHistoryRepository(db.debugEventDao())
         vm = RulesViewModel(
             userRuleRepository = userRepo,
-            debugHistoryRepository = DebugHistoryRepository(db.debugEventDao()),
+            debugHistoryRepository = history,
             previewService = RulePreviewService(),
             catalog = NavigationAppCatalog(schemaVersion = 1, apps = emptyList()),
             officialRules = emptyList(),
@@ -93,5 +96,36 @@ class RulesViewModelTest {
     @Test
     fun editorInitialJsonForNewRuleIsTemplate() = runTest {
         assertEquals(RulesViewModel.NEW_RULE_TEMPLATE, vm.editorInitialJson(null))
+    }
+
+    private suspend fun capture(title: String): Long = history.recordPosted(
+        com.pebblentn.app.notification.PostedNotification(
+            snapshot = com.pebblentn.app.notification.NotificationSnapshot(
+                packageName = "com.google.android.apps.maps",
+                notificationId = 1,
+                title = title,
+            ),
+            notificationKey = title,
+            tag = null,
+            receivedAtMillis = 1,
+        ),
+    )
+
+    @Test
+    fun previewRunsAgainstTheChosenCapture() = runTest {
+        val turnRight = capture("Turn right onto Main St")
+        capture("Continue straight") // the latest, which the preview must NOT use
+        val result = vm.previewAgainst(validRule, turnRight)
+        val evaluated = result as com.pebblentn.app.rules.PreviewResult.Evaluated
+        assertTrue("the chosen capture matches the rule", evaluated.evaluation.matched)
+    }
+
+    @Test
+    fun createRuleFromCaptureGivesAValidRuleForThatApp() = runTest {
+        val id = capture("Use the left lane to merge")
+        val json = vm.editorJsonFromCapture(id)!!
+        assertTrue(json, vm.validate(json) is RuleValidationResult.Valid)
+        assertTrue(json.contains("com.google.android.apps.maps"))
+        assertTrue(json.contains("Use the left lane to merge"))
     }
 }

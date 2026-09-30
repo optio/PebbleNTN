@@ -6,6 +6,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -22,7 +23,7 @@ import androidx.navigation.NavType
 import com.pebblentn.app.PebbleNtnApplication
 import com.pebblentn.app.R
 import com.pebblentn.app.data.DebugEvent
-import com.pebblentn.app.rules.PreviewResult
+import com.pebblentn.app.export.ExportMode
 import com.pebblentn.app.rules.RuleValidationResult
 import com.pebblentn.app.ui.apps.NavigationAppsScreen
 import com.pebblentn.app.ui.dashboard.DashboardScreen
@@ -31,6 +32,7 @@ import com.pebblentn.app.ui.debug.DebugHistoryScreen
 import com.pebblentn.app.ui.debug.DebugHistoryViewModel
 import com.pebblentn.app.ui.onboarding.OnboardingScreen
 import com.pebblentn.app.ui.onboarding.OnboardingViewModel
+import com.pebblentn.app.ui.rules.CaptureChoice
 import com.pebblentn.app.ui.rules.OfficialRuleScreen
 import com.pebblentn.app.ui.rules.RuleEditorScreen
 import com.pebblentn.app.ui.rules.RulesScreen
@@ -150,7 +152,14 @@ class MainActivity : ComponentActivity() {
                     onConfirmWatchapp = container.watchappPresence::confirmManually,
                 )
             }
-            composable("share-diagnostics") {
+            composable(
+                route = "share-diagnostics?mode={mode}",
+                arguments = listOf(navArgument("mode") { type = NavType.StringType; defaultValue = ExportMode.FULL.name }),
+            ) { entry ->
+                // Every visit starts on the mode it was opened for: full (REQ-DEBUG-011), or rules
+                // only from "Share your rules".
+                val mode = entry.arguments?.getString("mode")?.let { runCatching { ExportMode.valueOf(it) }.getOrNull() } ?: ExportMode.FULL
+                LaunchedEffect(mode) { shareDiagnosticsViewModel.setMode(mode) }
                 val shareState by shareDiagnosticsViewModel.state.collectAsState()
                 ShareDiagnosticsScreen(
                     state = shareState,
@@ -186,6 +195,7 @@ class MainActivity : ComponentActivity() {
                         navController.popBackStack()
                     },
                     appName = ::appName,
+                    onCreateRule = { navController.navigate("rule-editor-from/$id") },
                 )
             }
             composable("navigation-apps") {
@@ -211,6 +221,7 @@ class MainActivity : ComponentActivity() {
                     onNewRule = { navController.navigate("rule-editor") },
                     onBack = { navController.popBackStack() },
                     appName = ::appName,
+                    onShareRules = { navController.navigate("share-diagnostics?mode=${ExportMode.RULES_ONLY.name}") },
                 )
             }
             composable(
@@ -230,13 +241,22 @@ class MainActivity : ComponentActivity() {
                 route = "rule-editor/{ruleId}",
                 arguments = listOf(navArgument("ruleId") { type = NavType.StringType }),
             ) { entry -> RuleEditorRoute(navController, ruleId = entry.arguments?.getString("ruleId")) }
+            composable(
+                route = "rule-editor-from/{eventId}",
+                arguments = listOf(navArgument("eventId") { type = NavType.LongType }),
+            ) { entry -> RuleEditorRoute(navController, ruleId = null, fromEventId = entry.arguments?.getLong("eventId")) }
         }
     }
 
     @androidx.compose.runtime.Composable
-    private fun RuleEditorRoute(navController: androidx.navigation.NavController, ruleId: String?) {
-        val initialJson by produceState<String?>(initialValue = null, ruleId) {
-            value = rulesViewModel.editorInitialJson(ruleId)
+    private fun RuleEditorRoute(navController: androidx.navigation.NavController, ruleId: String?, fromEventId: Long? = null) {
+        val initialJson by produceState<String?>(initialValue = null, ruleId, fromEventId) {
+            value = fromEventId?.let { rulesViewModel.editorJsonFromCapture(it) } ?: rulesViewModel.editorInitialJson(ruleId)
+        }
+        val recent by rulesViewModel.recentCaptures.collectAsState()
+        val captures = recent.map { event ->
+            val time = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(event.receivedTimestampMillis))
+            CaptureChoice(event.id, listOfNotNull(time, appName(event.packageName), event.snapshot?.title).joinToString(" · "))
         }
         initialJson?.let { json ->
             RuleEditorScreen(
@@ -250,21 +270,10 @@ class MainActivity : ComponentActivity() {
                         is RuleValidationResult.Invalid -> result.errors
                     }
                 },
-                onPreview = { text -> previewDisplay(rulesViewModel.previewAgainstLatest(text)) },
+                onPreview = { text, eventId -> rulesViewModel.previewAgainst(text, eventId) },
+                captures = captures,
+                initialCaptureId = fromEventId,
             )
-        }
-    }
-
-    private fun previewDisplay(result: PreviewResult?): String? = when (result) {
-        null -> null
-        is PreviewResult.InvalidRule -> result.errors.joinToString("; ")
-        is PreviewResult.Evaluated -> {
-            val eval = result.evaluation
-            if (eval.matched) {
-                getString(R.string.rule_editor_preview_matched, eval.instruction!!.maneuver.name)
-            } else {
-                getString(R.string.rule_editor_preview_unmatched, eval.trace.size)
-            }
         }
     }
 
