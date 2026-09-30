@@ -14,6 +14,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +47,7 @@ fun DebugDetailScreen(
     onBack: () -> Unit,
     onDelete: () -> Unit,
     appName: (String) -> String = { it },
+    onCreateRule: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
@@ -154,6 +156,10 @@ fun DebugDetailScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.debug_trace_section))
             TraceSection(event)
+            // Turn this notification into a starting rule in the editor (#28).
+            if (onCreateRule != null && event.snapshot != null) {
+                OutlinedButton(onClick = onCreateRule) { Text(stringResource(R.string.debug_create_rule)) }
+            }
 
             HorizontalDivider()
             TechnicalDetails(event)

@@ -8,6 +8,7 @@ import com.pebblentn.app.export.ExportMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** UI state for the share-diagnostics screen (all three export modes, REQ-DEBUG-005). */
@@ -60,10 +61,14 @@ class ShareDiagnosticsViewModel(
         if (mode != _state.value.mode) prepare(mode)
     }
 
+    /** The build in progress; a newer mode cancels it so a stale result can't overwrite the choice. */
+    private var building: Job? = null
+
     private fun prepare(mode: ExportMode) {
         // Preserve the previous preview while rebuilding so the mode selector doesn't flash away.
         _state.value = _state.value.copy(loading = true, mode = mode)
-        viewModelScope.launch {
+        building?.cancel()
+        building = viewModelScope.launch {
             val export = exporter.buildCapped(mode, DiagnosticExporter.EMAIL_MAX_BYTES)
             capped = export
             val trimmedPreview = export.json.length > PREVIEW_CHARS

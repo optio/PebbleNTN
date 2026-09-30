@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -70,6 +71,7 @@ fun RulesScreen(
     onBack: () -> Unit = {},
     appName: (String) -> String = { it },
     phoneLanguage: String = Locale.getDefault().language,
+    onShareRules: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -101,7 +103,7 @@ fun RulesScreen(
             }
             when (selectedTab) {
                 0 -> OfficialList(officialGroups, phoneLanguage, onOpenOfficial)
-                else -> UserList(userRules, onToggleUser, onEditUser, onDeleteUser, appName)
+                else -> UserList(userRules, onToggleUser, onEditUser, onDeleteUser, appName, onShareRules)
             }
         }
     }
@@ -309,6 +311,7 @@ private fun UserList(
     onEdit: (String) -> Unit,
     onDelete: (String) -> Unit,
     appName: (String) -> String,
+    onShare: () -> Unit,
 ) {
     if (rules.isEmpty()) {
         EmptyState(stringResource(R.string.rules_user_empty))
@@ -328,6 +331,17 @@ private fun UserList(
         )
     }
     LazyColumn {
+        // Send custom rules to the developers the same way as logs: reviewed, then emailed (#28).
+        item(key = "share") {
+            ListItem(
+                modifier = Modifier.clickable(role = Role.Button, onClick = onShare),
+                leadingContent = { Icon(Icons.Filled.Share, contentDescription = null) },
+                headlineContent = { Text(stringResource(R.string.rules_share_yours)) },
+                supportingContent = { Text(stringResource(R.string.rules_share_yours_hint)) },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+            )
+            HorizontalDivider()
+        }
         items(rules, key = { it.ruleId }) { rule ->
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
