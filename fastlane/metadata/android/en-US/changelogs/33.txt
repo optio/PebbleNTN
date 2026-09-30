@@ -1,0 +1,1 @@
+• readable labels, back navigation and delete confirmations
