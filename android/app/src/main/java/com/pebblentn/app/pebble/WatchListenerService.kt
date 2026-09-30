@@ -41,6 +41,7 @@ class WatchListenerService : BasePebbleListenerService() {
         watch: WatchIdentifier,
     ): ReceiveResult {
         if (watchappUUID == PebbleWatchTransport.PEBBLENTN_UUID) {
+            markWatchappSeen()
             WatchInboundBus.emit(PebbleAppMessageMapper.fromDictionary(data))
         }
         return ReceiveResult.Ack
@@ -55,7 +56,14 @@ class WatchListenerService : BasePebbleListenerService() {
     override fun onAppOpened(watchappUUID: UUID, watch: WatchIdentifier) {
         if (watchappUUID != PebbleWatchTransport.PEBBLENTN_UUID) return
         Timber.i("PebbleKit: watchapp opened on the watch; requesting state (re)send")
+        markWatchappSeen()
         WatchInboundBus.emit(appOpenedReadyMessage())
+    }
+
+    /** Hearing from our watchapp proves it is installed (setup checklist, #28). */
+    private fun markWatchappSeen() {
+        (application as? com.pebblentn.app.PebbleNtnApplication)?.container?.watchappPresence
+            ?.markSeen(System.currentTimeMillis())
     }
 
     companion object {

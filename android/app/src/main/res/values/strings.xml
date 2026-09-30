@@ -6,9 +6,9 @@
     <string name="onboarding_title">Welcome to PebbleNTN</string>
     <string name="onboarding_intro">PebbleNTN turns navigation-app notifications into turn-by-turn instructions on your Pebble watch.</string>
     <!-- Prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
-    <string name="onboarding_disclosure">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Manage navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. The app connects to the network only to check GitHub for a newer app version — when you tap Check for updates, or, if you turn on weekly checks, about once a week — and this sends no personal data.</string>
+    <string name="onboarding_disclosure">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. The app connects to the network only to check GitHub for a newer app version — when you tap Check for updates, or, if you turn on weekly checks, about once a week — and this sends no personal data.</string>
     <string name="onboarding_open_settings">Grant notification access</string>
-    <string name="onboarding_privacy_note">You can turn off any navigation app in Manage navigation apps, or revoke notification access entirely at any time in system settings.</string>
+    <string name="onboarding_privacy_note">You can turn off any navigation app in Navigation apps, or revoke notification access entirely at any time in system settings.</string>
 
     <!-- Notification-access status -->
     <string name="access_status_granted">Notification access granted</string>
@@ -52,7 +52,7 @@
     <string name="navigation_apps_title">Navigation apps</string>
     <string name="navigation_apps_explanation">Every supported app is enabled by default when installed. Turn off any app you don\'t want PebbleNTN to read notifications from.</string>
     <string name="navigation_apps_empty">No supported navigation apps are installed yet.</string>
-    <string name="navigation_apps_capture_only_badge">Capture-only</string>
+    <string name="navigation_apps_capture_only_badge">Captures only: no directions yet</string>
 
     <!-- Rules -->
     <string name="rules_title">Rules</string>
@@ -283,4 +283,28 @@
         <item quantity="one">%1$d event</item>
         <item quantity="other">%1$d events</item>
     </plurals>
+    <!-- Setup checklist and supported apps (#28, new users). -->
+    <string name="watchapp_store_url" translatable="false">https://apps.repebble.com/ad4971e345854b909b73b1a9</string>
+    <string name="onboarding_steps_title">What you need</string>
+    <string name="onboarding_step_access">1. Allow PebbleNTN to read notifications (below).</string>
+    <string name="onboarding_step_watchapp">2. Install the PebbleNTN watchapp on your Pebble, from the Pebble app store.</string>
+    <string name="onboarding_step_navigation">3. Start navigation in a supported app, such as Google Maps.</string>
+    <string name="setup_title">Get started</string>
+    <string name="setup_step_access">Notification access allowed</string>
+    <string name="setup_step_watchapp">Install the watchapp on your Pebble</string>
+    <string name="setup_step_watchapp_hint">Get PebbleNTN from the Pebble app store, then open it once on your watch. This step ticks itself when your watch answers.</string>
+    <string name="setup_step_watchapp_done">Watchapp installed</string>
+    <string name="setup_get_watchapp">Get the watchapp</string>
+    <string name="setup_watchapp_installed">I\'ve installed it</string>
+    <string name="setup_step_navigation">Start navigation in a supported app</string>
+    <string name="setup_step_navigation_hint">For example Google Maps. Directions then appear on your watch.</string>
+    <string name="setup_step_navigation_done">Navigation notification received</string>
+    <string name="setup_step_done">Done</string>
+    <string name="setup_step_todo">Step %1$d, to do</string>
+    <string name="navigation_apps_installed">Installed</string>
+    <string name="navigation_apps_also_supported">Also supported</string>
+    <string name="navigation_apps_also_supported_hint">Install one of these and PebbleNTN picks it up automatically.</string>
+    <string name="navigation_apps_directions">Turn-by-turn directions</string>
+    <string name="navigation_apps_get">Get %1$s</string>
+    <string name="navigation_apps_store_url" translatable="false">https://play.google.com/store/apps/details?id=%1$s</string>
 </resources>

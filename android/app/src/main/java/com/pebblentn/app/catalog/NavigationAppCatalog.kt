@@ -69,3 +69,13 @@ data class NavigationAppCatalog(
         }
     }
 }
+
+/**
+ * Supported apps that aren't installed, for the navigation-apps screen (#28): apps with directions
+ * first, then by name. PebbleNTN's own debug fixture app is never offered.
+ */
+fun supportedNotInstalled(catalog: NavigationAppCatalog, installedAppIds: Set<String>): List<NavigationAppEntry> =
+    catalog.apps
+        .filter { it.appId !in installedAppIds }
+        .filterNot { entry -> entry.packageNames.all { it.startsWith("com.pebblentn.") } }
+        .sortedWith(compareByDescending<NavigationAppEntry> { it.hasOfficialRules }.thenBy { it.displayName.lowercase() })

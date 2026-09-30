@@ -46,6 +46,8 @@ class NavigationController(
     private val readySettleMillis: Long = 1_500,
     private val stateStore: NavigationStateRepository? = null,
     initialSettings: WatchSettings = WatchSettings.DEFAULT,
+    /** Called when a message reached the watchapp: proof it is installed (setup checklist, #28). */
+    private val onWatchappReached: () -> Unit = {},
 ) {
     private val mutex = Mutex()
     private var state = ReducerState(settings = initialSettings)
@@ -149,7 +151,10 @@ class NavigationController(
     private suspend fun sendWithRetry(message: AppMessage) {
         var attempt = 0
         while (attempt < maxSendAttempts) {
-            if (transport.send(message) == SendResult.SENT) return
+            if (transport.send(message) == SendResult.SENT) {
+                onWatchappReached()
+                return
+            }
             attempt++
             if (attempt < maxSendAttempts) delay(baseBackoffMillis shl attempt)
         }

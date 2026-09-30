@@ -45,6 +45,19 @@ fun OnboardingScreen(
                 text = stringResource(R.string.onboarding_intro),
                 style = MaterialTheme.typography.bodyLarge,
             )
+            // The whole setup at a glance (spec/400-ui: Pebble/watchapp setup guidance).
+            Text(
+                text = stringResource(R.string.onboarding_steps_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = listOf(
+                    stringResource(R.string.onboarding_step_access),
+                    stringResource(R.string.onboarding_step_watchapp),
+                    stringResource(R.string.onboarding_step_navigation),
+                ).joinToString("\n"),
+                style = MaterialTheme.typography.bodyMedium,
+            )
             Text(
                 text = stringResource(R.string.onboarding_disclosure),
                 style = MaterialTheme.typography.bodyMedium,

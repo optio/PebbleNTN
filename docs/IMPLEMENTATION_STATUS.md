@@ -2,6 +2,31 @@
 
 _Last updated: 2026-10-01_
 
+## New users: setup checklist and all supported apps (#28) (2026-10-01)
+
+- **Setup checklist** ("Get started" card on the dashboard until every step is done): notification
+  access, the watchapp, and a first navigation notification (`SetupProgress`, tested). The
+  **watchapp step ticks itself**: PebbleKit can't list a watch's apps, so
+  `WatchappPresenceRepository` records proof instead: `WatchListenerService.onAppOpened` or any
+  message from our UUID, or a delivered send (`NavigationController.onWatchappReached`). It's
+  stored so it survives restarts. "Get the watchapp" opens the store listing; "I've installed it"
+  covers a watchapp that hasn't been opened yet. An uninstall can't be detected.
+- **Onboarding** lists what's needed (access, the watchapp, navigation), per spec/400-ui's
+  "Pebble/watchapp setup guidance".
+- **Navigation apps** shows *Installed* (toggles) and *Also supported* (every other catalog app,
+  with directions first, each linking to its store page). The debug fixture app is never offered.
+  The capture-only label now reads "Captures only: no directions yet".
+- **Catalog fix:** `hasOfficialRules` was still false for OsmAnd, Organic Maps and CoMaps, although
+  bundled rules exist, so the app labelled them capture-only. Corrected, and
+  `NavigationAppCatalogTest.captureOnlyMatchesTheBundledRules` now keeps the flag in step with the
+  bundled rules.
+
+**Verified.** `WatchappPresenceRepositoryTest` (3), `SetupProgressTest` (2), a controller test that
+only a delivered send counts, the catalog consistency test; all 298 unit tests;
+`./scripts/test-all.sh`. On the emulator from cleared app data: the onboarding steps, the
+checklist, "I've installed it" ticking step 2, a first notification completing it (card gone), and
+Installed / Also supported.
+
 ## Small UI fixes: last notification, theme, accessibility pass (#28) (2026-10-01)
 
 - **Last navigation notification survives restarts.** `LastEligibleNotificationStore` is seeded at
