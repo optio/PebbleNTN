@@ -2,6 +2,24 @@
 
 _Last updated: 2026-09-30_
 
+## UI basics: readable labels, back navigation, confirmations (#28, part A) (2026-09-30)
+
+First slice of the UI review (#28), the groundwork the later slices build on:
+
+- **`ui/format/DisplayLabels`:** the one place that turns identifiers into user-facing text:
+  maneuvers (`SLIGHT_LEFT` → "Slight left"), dispositions (`CAPTURED_UNMATCHED` → "Not
+  recognised"), event types, and package names → catalog app names (falling back to the package
+  name). Used by debug history rows, the event detail and user rules. All strings are resources.
+- **Back arrows** on Debug history and Rules (the other sub-screens already had them).
+- **`ui/components/ConfirmDialog`** before every delete: all history, one event, one user rule.
+  The destructive action is shown in the error colour.
+- The Rules FAB shows an Add icon with a content description instead of the text "+". The detail
+  field "Disposition" is now "Status".
+
+**Verified.** `DisplayLabelsTest` (4: distinct readable label per maneuver, dispositions with a
+fallback, event types, app names with a fallback); all 271 unit tests; `./scripts/test-all.sh`.
+Emulator screenshots of Debug history, the event detail, both confirmations, Rules and Your rules.
+
 ## Share default documented; live navigation-app discovery (2026-09-30)
 
 From the UI review (#28):

@@ -12,10 +12,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -41,6 +46,7 @@ import com.pebblentn.app.data.RuleValidationStatus
 import com.pebblentn.app.data.UserRule
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RulesetCodec
+import com.pebblentn.app.ui.components.ConfirmDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,16 +58,29 @@ fun RulesScreen(
     onEditUser: (String) -> Unit,
     onDeleteUser: (String) -> Unit,
     onNewRule: () -> Unit,
+    onBack: () -> Unit = {},
+    appName: (String) -> String = { it },
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.rules_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.rules_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             if (selectedTab == 1) {
-                FloatingActionButton(onClick = onNewRule) { Text("+") }
+                FloatingActionButton(onClick = onNewRule) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_add_rule))
+                }
             }
         },
     ) { innerPadding ->
@@ -72,7 +91,7 @@ fun RulesScreen(
             }
             when (selectedTab) {
                 0 -> OfficialList(officialGroups, onClone)
-                else -> UserList(userRules, onToggleUser, onEditUser, onDeleteUser)
+                else -> UserList(userRules, onToggleUser, onEditUser, onDeleteUser, appName)
             }
         }
     }
@@ -179,10 +198,24 @@ private fun UserList(
     onToggle: (String, Boolean) -> Unit,
     onEdit: (String) -> Unit,
     onDelete: (String) -> Unit,
+    appName: (String) -> String,
 ) {
     if (rules.isEmpty()) {
         EmptyState(stringResource(R.string.rules_user_empty))
         return
+    }
+    var confirmingDelete by remember { mutableStateOf<String?>(null) }
+    confirmingDelete?.let { ruleId ->
+        ConfirmDialog(
+            title = stringResource(R.string.confirm_delete_rule_title),
+            message = stringResource(R.string.confirm_delete_rule_message, ruleId),
+            confirmLabel = stringResource(R.string.delete),
+            onConfirm = {
+                confirmingDelete = null
+                onDelete(ruleId)
+            },
+            onDismiss = { confirmingDelete = null },
+        )
     }
     LazyColumn {
         items(rules, key = { it.ruleId }) { rule ->
@@ -191,13 +224,13 @@ private fun UserList(
                     Text(rule.ruleId, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                     Switch(checked = rule.enabled, onCheckedChange = { onToggle(rule.ruleId, it) })
                 }
-                Text(rule.packageName, style = MaterialTheme.typography.bodySmall)
+                Text(appName(rule.packageName), style = MaterialTheme.typography.bodySmall)
                 if (rule.validationStatus == RuleValidationStatus.INVALID) {
                     Text(stringResource(R.string.rules_invalid_badge), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                 }
                 Row {
                     TextButton(onClick = { onEdit(rule.ruleId) }) { Text(stringResource(R.string.rules_edit)) }
-                    TextButton(onClick = { onDelete(rule.ruleId) }) { Text(stringResource(R.string.rules_delete)) }
+                    TextButton(onClick = { confirmingDelete = rule.ruleId }) { Text(stringResource(R.string.rules_delete)) }
                 }
             }
             HorizontalDivider()

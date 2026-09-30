@@ -150,6 +150,8 @@ class MainActivity : ComponentActivity() {
                     onEventClick = { id -> navController.navigate("debug/$id") },
                     onDeleteAll = debugViewModel::deleteAll,
                     onExport = ::exportDiagnostics,
+                    onBack = { navController.popBackStack() },
+                    appName = ::appName,
                 )
             }
             composable(
@@ -167,6 +169,7 @@ class MainActivity : ComponentActivity() {
                         debugViewModel.deleteEvent(id)
                         navController.popBackStack()
                     },
+                    appName = ::appName,
                 )
             }
             composable("navigation-apps") {
@@ -188,6 +191,8 @@ class MainActivity : ComponentActivity() {
                     onEditUser = { id -> navController.navigate("rule-editor/$id") },
                     onDeleteUser = { id -> rulesViewModel.delete(id) },
                     onNewRule = { navController.navigate("rule-editor") },
+                    onBack = { navController.popBackStack() },
+                    appName = ::appName,
                 )
             }
             composable("rule-editor") { RuleEditorRoute(navController, ruleId = null) }
@@ -232,6 +237,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /** The catalog's name for a package, for every screen that shows which app something came from. */
+    private fun appName(packageName: String): String =
+        com.pebblentn.app.ui.format.DisplayLabels.appName(container.catalog, packageName)
 
     private fun openNotificationListenerSettings() {
         startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
