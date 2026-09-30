@@ -152,10 +152,10 @@
         <item quantity="one">%1$d stop</item>
         <item quantity="other">%1$d stops</item>
     </plurals>
-    <string name="debug_watch_elements">Parsed watchface elements</string>
+    <string name="debug_watch_elements">What the watch showed</string>
     <string name="debug_element_none">— (element empty)</string>
     <string name="debug_maneuver_unknown_hint">UNKNOWN — the watch shows the “?” fallback glyph</string>
-    <string name="debug_trace_section">Rule evaluation trace</string>
+    <string name="debug_trace_section">Why</string>
     <string name="debug_trace_none">No rules were evaluated.</string>
     <string name="debug_trace_entry">%1$s · %2$s · %3$s</string>
     <string name="cd_back">Back</string>
@@ -212,4 +212,22 @@
     </plurals>
     <string name="dashboard_navigation_apps_none">No supported navigation app installed</string>
     <string name="dashboard_rules_summary">%1$d official · %2$d yours</string>
+    <!-- Event detail (#28). -->
+    <string name="debug_trace_no_match">No rule matched this notification.</string>
+    <plurals name="debug_trace_show_others">
+        <item quantity="one">Show %1$d other rule checked</item>
+        <item quantity="other">Show %1$d other rules checked</item>
+    </plurals>
+    <string name="debug_trace_hide_others">Hide the other rules</string>
+    <string name="debug_trace_entry_label">%1$s · %2$s</string>
+    <string name="debug_technical_details">Technical details</string>
+    <string name="debug_technical_details_hide">Hide technical details</string>
+    <string name="rule_outcome_matched">Matched</string>
+    <string name="rule_outcome_conditions_failed">Didn\'t match</string>
+    <string name="rule_outcome_disabled">Disabled</string>
+    <string name="rule_outcome_skipped_locale">Other language</string>
+    <string name="rule_outcome_error">Error</string>
+    <string name="rule_layer_user">Your rule</string>
+    <string name="rule_layer_downloaded">Downloaded rule</string>
+    <string name="rule_layer_bundled">Official rule</string>
 </resources>

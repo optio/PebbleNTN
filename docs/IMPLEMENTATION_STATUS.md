@@ -2,6 +2,24 @@
 
 _Last updated: 2026-09-30_
 
+## Event detail reordered (#28, part C) (2026-09-30)
+
+The event detail used to show the parsed watch elements first, then the full rule trace (one row
+per rule, 25+ on a Google Maps event), and the actual notification at the very bottom. It now
+reads top to bottom:
+
+1. **Notification:** app name, time, title, text, subtext, big text (only the fields present).
+2. **What the watch showed:** every watch element, even when empty.
+3. **Why:** the deciding rules (the match, and any rule that errored, in red), with the rules
+   that simply didn't apply collapsed behind "Show N other rules checked". `TraceSummary` does the
+   split. Layers and outcomes are readable ("Official rule · Didn't match"; `DisplayLabels`).
+4. **Technical details** (collapsed): package, event type, status, matched rule id, received
+   time, category, channel.
+
+**Verified.** `TraceSummaryTest` (3), `DisplayLabelsTest` (5, now including outcomes and
+layers); all unit tests; `./scripts/test-all.sh`. On the emulator, with a seeded realistic Google
+Maps match: collapsed and expanded trace, and technical details.
+
 ## Dashboard regrouped (#28, part B) (2026-09-30)
 
 The dashboard was a flat column: a master switch, a full-width update button, three narrow buttons

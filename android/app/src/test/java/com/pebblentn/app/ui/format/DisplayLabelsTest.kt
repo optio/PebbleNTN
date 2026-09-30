@@ -6,6 +6,8 @@ import com.pebblentn.app.catalog.NavigationAppCatalog
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.data.DebugDisposition
 import com.pebblentn.app.data.DebugEventType
+import com.pebblentn.app.rules.RuleLayer
+import com.pebblentn.app.rules.RuleOutcome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -52,5 +54,14 @@ class DisplayLabelsTest {
         assertEquals("Google Maps", DisplayLabels.appName(catalog, "com.google.android.apps.maps"))
         assertNotEquals("net.osmand.plus", DisplayLabels.appName(catalog, "net.osmand.plus"))
         assertEquals("unknown packages stay visible", "com.example.other", DisplayLabels.appName(catalog, "com.example.other"))
+    }
+
+    @Test
+    fun ruleOutcomesAndLayersAreReadable() {
+        val outcomes = RuleOutcome.entries.map { context.getString(DisplayLabels.ruleOutcome(it)) }
+        assertEquals("outcome labels are distinct", outcomes.size, outcomes.toSet().size)
+        assertEquals("Didn't match", context.getString(DisplayLabels.ruleOutcome(RuleOutcome.CONDITIONS_FAILED)))
+        val layers = RuleLayer.entries.map { context.getString(DisplayLabels.ruleLayer(it)) }
+        assertEquals(listOf("Your rule", "Downloaded rule", "Official rule"), layers)
     }
 }
