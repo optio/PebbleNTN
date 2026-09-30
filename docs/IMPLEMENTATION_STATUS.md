@@ -2,6 +2,31 @@
 
 _Last updated: 2026-09-30_
 
+## Rules screen: filters, search, collapsible sections, rule detail (#28, part D) (2026-09-30)
+
+The Official tab was one long list (105 rules across apps and six languages). Every rule repeated
+its package name and had *View* and *Clone* buttons, and viewing a rule opened a JSON dialog.
+
+- **Filters and search** (`RuleFilter`, pure and tested): app chips, language chips, and a search
+  over rule ids, maintainer comments and condition values. It **starts on the phone's language**
+  when rules exist for it. Rules for every language (e.g. CoMaps) always stay visible.
+- **Collapsible app → language sections** with rule counts; headers have expand/collapse labels
+  for TalkBack.
+- **Simpler rows:** rule id plus what it shows ("Slight left · priority 160"), or "Maneuver read
+  from the notification". The whole row opens the rule.
+- **Full-screen rule detail** (`OfficialRuleScreen`) instead of the dialog: plain-language
+  conditions ("Title matches the pattern …"), what it shows on the watch, app, languages,
+  priority, the maintainer's note, the JSON on demand, and **Copy JSON** / **Clone to your rules**
+  (with a snackbar).
+- A precedence line ("Your rules take precedence…") and a helpful empty state under *Your rules*.
+- **Fixed along the way:** language labels were hard-coded English strings in `RulesViewModel`
+  (AGENTS.md rule 16). The UI now builds them from system language names (translated
+  automatically), with "All languages" as a resource.
+
+**Verified.** `RuleFilterTest` (7); all 283 unit tests; `./scripts/test-all.sh`. On the emulator:
+the default English filter, German, search "lane" (4 rules), the Google Maps filter, rule detail
+with JSON, clone plus snackbar, and the clone under *Your rules*.
+
 ## Event detail reordered (#28, part C) (2026-09-30)
 
 The event detail used to show the parsed watch elements first, then the full rule trace (one row

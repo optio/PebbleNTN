@@ -22,10 +22,11 @@ import kotlinx.coroutines.launch
 
 /** A group of official rules for one navigation app, split by language. */
 data class OfficialLanguageGroup(
-    /** Canonical locale key ("all" when the rules apply to every language). */
+    /**
+     * Canonical locale key: comma-joined language codes, or [LOCALE_ALL] when the rules apply to
+     * every language. The screen turns it into a label (system language names, string resources).
+     */
     val locale: String,
-    /** User-facing label, e.g. "English" / "All languages". */
-    val languageLabel: String,
     val rules: List<Rule>,
 )
 
@@ -50,6 +51,13 @@ class RulesViewModel(
      * one flat list of every bundled rule. Computed once: the bundled set is immutable at runtime.
      */
     val officialGroups: List<OfficialAppGroup> = groupOfficialRules(officialRules, catalog)
+
+    /** An official rule by id, for the rule detail screen. */
+    fun officialRule(id: String): Rule? = officialRules.firstOrNull { it.id == id }
+
+    /** The app an official rule belongs to, for the rule detail screen. */
+    fun officialRuleAppName(rule: Rule): String? =
+        rule.packageNames.firstNotNullOfOrNull { catalog.entryForPackage(it)?.displayName }
 
     val userRules: StateFlow<List<UserRule>> = userRuleRepository.observeUserRules()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -127,7 +135,6 @@ private fun groupOfficialRules(
                 .map { (localeKey, localeRules) ->
                     OfficialLanguageGroup(
                         locale = localeKey,
-                        languageLabel = languageLabel(localeKey),
                         rules = localeRules.sortedWith(compareByDescending<Rule> { it.priority }.thenBy { it.id }),
                     )
                 }
@@ -137,21 +144,5 @@ private fun groupOfficialRules(
 
 private data class AppKey(val appId: String, val displayName: String)
 
-private const val LOCALE_ALL = "all"
-
-/** A short, human label for a locale key (comma-joined codes, or "all"). */
-private fun languageLabel(localeKey: String): String {
-    if (localeKey == LOCALE_ALL) return "All languages"
-    return localeKey.split(",").joinToString(", ") { code ->
-        when (code.lowercase()) {
-            "en" -> "English"
-            "de" -> "German"
-            "fr" -> "French"
-            "es" -> "Spanish"
-            "it" -> "Italian"
-            "nl" -> "Dutch"
-            "pt" -> "Portuguese"
-            else -> code.uppercase()
-        }
-    }
-}
+/** Locale key of rules that apply to every language. */
+const val LOCALE_ALL = "all"
