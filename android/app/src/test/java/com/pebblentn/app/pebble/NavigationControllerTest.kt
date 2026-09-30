@@ -325,4 +325,28 @@ class NavigationControllerTest {
         runCurrent()
         assertEquals(WatchLinkStatus(navigating = false, lastSent = null), controller.status.value)
     }
+
+    @Test
+    fun aSuccessfulSendProvesTheWatchappIsInstalled() = runTest {
+        var reached = 0
+        val transport = FakeWatchTransport(sendResults = listOf(SendResult.FAILED, SendResult.SENT))
+        val controller = NavigationController(
+            transport,
+            backgroundScope,
+            appVersion = "0.0.1",
+            clock = { 0 },
+            baseBackoffMillis = 1,
+            onWatchappReached = { reached++ },
+        )
+        controller.start()
+        runCurrent()
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        transport.emitInbound(readyMessage())
+        runCurrent() // the first send fails
+        assertEquals("a failed send proves nothing", 0, reached)
+        testScheduler.advanceTimeBy(1_000)
+        runCurrent() // the retry is delivered
+
+        assertEquals("only the delivered attempt counts", 1, reached)
+    }
 }

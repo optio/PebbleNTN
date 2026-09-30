@@ -33,14 +33,15 @@ class NavigationAppCatalogTest {
 
         val waze = catalog.entryForPackage("com.waze")
         assertNotNull(waze)
-        assertTrue("Waze ships without official rules initially", waze!!.captureOnly)
+        assertTrue("Waze has no official rules yet", waze!!.captureOnly)
     }
 
     @Test
     fun commonNavigationAppsAreDetectedAndCaptureOnly() {
         val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
         // Package name -> expected catalog appId. Locks the identifiers so a typo or an accidental
-        // removal fails loudly. All are capture-only until official parsing rules are authored.
+        // removal fails loudly. Whether each is capture-only is checked against the bundled rules in
+        // captureOnlyMatchesTheBundledRules.
         val expected = mapOf(
             "com.waze" to "waze",
             "net.osmand" to "osmand",
@@ -66,7 +67,24 @@ class NavigationAppCatalogTest {
             val entry = catalog.entryForPackage(pkg)
             assertNotNull("expected catalog entry for $pkg", entry)
             assertEquals("wrong app for $pkg", appId, entry!!.appId)
-            assertTrue("$appId should be capture-only until rules exist", entry.captureOnly)
+        }
+    }
+
+    /**
+     * `hasOfficialRules` drives the "Capture only" label in the app. It drifted once (OsmAnd, Organic
+     * Maps and CoMaps had rules but were still marked capture-only), so it is derived-checked here.
+     */
+    @Test
+    fun captureOnlyMatchesTheBundledRules() {
+        val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
+        val bundledDir = java.io.File(javaClass.getResource("/rules/bundled")!!.toURI())
+        val packagesWithRules = bundledDir.walk().filter { it.isFile && it.extension == "json" }
+            .flatMap { com.pebblentn.app.rules.RulesetCodec.parse(it.readText()).rules.asSequence() }
+            .flatMap { it.packageNames.asSequence() }
+            .toSet()
+        for (app in catalog.apps) {
+            val hasRules = app.packageNames.any { it in packagesWithRules }
+            assertEquals("${app.appId}: hasOfficialRules must match the bundled rules", hasRules, app.hasOfficialRules)
         }
     }
 

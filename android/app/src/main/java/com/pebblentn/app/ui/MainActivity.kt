@@ -113,6 +113,7 @@ class MainActivity : ComponentActivity() {
         val autoCheckUpdates by container.updateCheckRepository.autoCheckEnabled.collectAsState()
         val autoLaunch by container.watchSettingsRepository.autoLaunchEnabled.collectAsState()
         val watchStatus by container.navigationController.status.collectAsState()
+        val watchappInstalled by container.watchappPresence.detected.collectAsState()
         val discoveredApps by container.enabledAppRepository.observeEnablement().collectAsState(initial = emptyList())
         val userRuleCount by produceState(initialValue = 0) {
             container.userRuleRepository.observeUserRules().collect { value = it.size }
@@ -144,6 +145,9 @@ class MainActivity : ComponentActivity() {
                     installedAppCount = discoveredApps.size,
                     officialRuleCount = container.bundledOfficialRules.size,
                     userRuleCount = userRuleCount,
+                    watchappInstalled = watchappInstalled,
+                    onGetWatchapp = { openUrl(getString(R.string.watchapp_store_url)) },
+                    onConfirmWatchapp = container.watchappPresence::confirmManually,
                 )
             }
             composable("share-diagnostics") {
@@ -191,6 +195,8 @@ class MainActivity : ComponentActivity() {
                     apps = navigationApps,
                     onToggle = ::setNavigationAppEnabled,
                     onBack = { navController.popBackStack() },
+                    notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(container.catalog, navigationApps.map { it.appId }.toSet()),
+                    onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
                 )
             }
             composable("rules") {

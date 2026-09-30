@@ -84,6 +84,9 @@ fun DashboardScreen(
     installedAppCount: Int = 0,
     officialRuleCount: Int = 0,
     userRuleCount: Int = 0,
+    watchappInstalled: Boolean = true,
+    onGetWatchapp: () -> Unit = {},
+    onConfirmWatchapp: () -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
     modifier: Modifier = Modifier,
 ) {
@@ -107,6 +110,16 @@ fun DashboardScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
+
+            // Until setup is done: access, the watchapp, a first navigation (#28).
+            val setup = SetupProgress(
+                accessGranted = accessGranted,
+                watchappInstalled = watchappInstalled,
+                navigationSeen = lastEligibleAtMillis != null,
+            )
+            if (!setup.complete) {
+                SetupChecklist(progress = setup, onGetWatchapp = onGetWatchapp, onConfirmWatchapp = onConfirmWatchapp)
+            }
 
             if (updateAvailable) {
                 PromptCard(

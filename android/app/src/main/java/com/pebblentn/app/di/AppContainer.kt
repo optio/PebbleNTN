@@ -9,6 +9,7 @@ import com.pebblentn.app.data.EnabledAppRepository
 import com.pebblentn.app.data.NavigationStateRepository
 import com.pebblentn.app.data.UserRuleRepository
 import com.pebblentn.app.data.WatchSettingsRepository
+import com.pebblentn.app.data.WatchappPresenceRepository
 import com.pebblentn.app.data.db.PebbleNtnDatabase
 import com.pebblentn.app.export.DiagnosticExporter
 import com.pebblentn.app.export.DiagnosticShareManager
@@ -115,6 +116,9 @@ class AppContainer(context: Context) {
 
     val watchSettingsRepository = WatchSettingsRepository(appContext)
 
+    /** Whether the watchapp is known to be installed (setup checklist, #28). */
+    val watchappPresence = WatchappPresenceRepository(appContext)
+
     val watchTransport: WatchTransport = PebbleWatchTransport(
         appContext,
         autoLaunchEnabled = watchSettingsRepository::isAutoLaunchEnabled,
@@ -127,6 +131,7 @@ class AppContainer(context: Context) {
         scope = applicationScope,
         appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
         stateStore = navigationStateRepository,
+        onWatchappReached = { watchappPresence.markSeen(System.currentTimeMillis()) },
         initialSettings = watchSettingsRepository.settings.value,
     )
 
