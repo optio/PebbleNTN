@@ -1,5 +1,6 @@
 package com.pebblentn.app.ui.apps
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
@@ -27,14 +29,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.catalog.NavigationAppEntry
 import com.pebblentn.app.data.AppEnablement
+import com.pebblentn.app.ui.rules.languageLabel
+import androidx.core.graphics.drawable.toBitmap
 
 /**
  * Per-app enablement (REQ-ANDROID-009): every supported app is enabled by default on discovery
@@ -52,6 +59,8 @@ fun NavigationAppsScreen(
     onGetApp: (String) -> Unit = {},
     /** Open an app's official rules, pre-filtered (#28); only offered for apps with rules. */
     onViewRules: (String) -> Unit = {},
+    /** Language codes the official rules cover, per app id (#28). */
+    languagesByApp: Map<String, List<String>> = emptyMap(),
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -90,6 +99,7 @@ fun NavigationAppsScreen(
                     app = app,
                     onToggle = { enabled -> onToggle(app.appId, enabled) },
                     onViewRules = { onViewRules(app.appId) }.takeUnless { app.captureOnly },
+                    languages = languagesByApp[app.appId].orEmpty(),
                 )
                 HorizontalDivider()
             }
@@ -104,7 +114,7 @@ fun NavigationAppsScreen(
                     )
                 }
                 items(notInstalled, key = { "supported-${it.appId}" }) { entry ->
-                    SupportedAppRow(entry, onGet = { onGetApp(entry.packageNames.first()) })
+                    SupportedAppRow(entry, languagesByApp[entry.appId].orEmpty(), onGet = { onGetApp(entry.packageNames.first()) })
                     HorizontalDivider()
                 }
             }
@@ -124,16 +134,20 @@ private fun SectionTitle(text: String) {
 
 /** A supported app that isn't installed: what PebbleNTN does with it, and a link to get it. */
 @Composable
-private fun SupportedAppRow(entry: NavigationAppEntry, onGet: () -> Unit) {
+private fun SupportedAppRow(entry: NavigationAppEntry, languages: List<String>, onGet: () -> Unit) {
     val action = stringResource(R.string.navigation_apps_get, entry.displayName)
     ListItem(
         modifier = Modifier.clickable(role = Role.Button, onClickLabel = action, onClick = onGet),
         headlineContent = { Text(entry.displayName) },
         supportingContent = {
             Text(
-                stringResource(
-                    if (entry.hasOfficialRules) R.string.navigation_apps_directions else R.string.navigation_apps_capture_only_badge,
-                ),
+                if (entry.hasOfficialRules && languages.isNotEmpty()) {
+                    stringResource(R.string.navigation_apps_languages, languageLabel(languages.joinToString(",")))
+                } else {
+                    stringResource(
+                        if (entry.hasOfficialRules) R.string.navigation_apps_directions else R.string.navigation_apps_capture_only_badge,
+                    )
+                },
             )
         },
         trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
@@ -141,7 +155,12 @@ private fun SupportedAppRow(entry: NavigationAppEntry, onGet: () -> Unit) {
 }
 
 @Composable
-private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit, onViewRules: (() -> Unit)?) {
+private fun NavigationAppRow(
+    app: AppEnablement,
+    onToggle: (Boolean) -> Unit,
+    onViewRules: (() -> Unit)?,
+    languages: List<String>,
+) {
     Column {
     // The whole row toggles, so TalkBack reads the app name with the switch state and a tap on the
     // name works too.
@@ -153,8 +172,16 @@ private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit, on
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        AppIcon(app.packageNames)
+        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
             Text(text = app.displayName, style = MaterialTheme.typography.titleMedium)
+            if (!app.captureOnly && languages.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.navigation_apps_languages, languageLabel(languages.joinToString(","))),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (app.captureOnly) {
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
@@ -180,3 +207,18 @@ private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit, on
     }
     }
 }
+
+/** The installed app's own launcher icon (decorative: its name is right next to it). */
+@Composable
+private fun AppIcon(packageNames: List<String>) {
+    val context = LocalContext.current
+    val icon = remember(packageNames) {
+        packageNames.firstNotNullOfOrNull { pkg ->
+            runCatching { context.packageManager.getApplicationIcon(pkg).toBitmap(96, 96).asImageBitmap() }.getOrNull()
+        }
+    }
+    if (icon != null) {
+        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(40.dp))
+    }
+}
+

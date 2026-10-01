@@ -3,6 +3,7 @@ package com.pebblentn.app.pebble
 import android.content.Context
 import com.pebblentn.app.protocol.AppMessage
 import com.pebblentn.app.protocol.SendResult
+import com.pebblentn.app.protocol.WatchLink
 import com.pebblentn.app.protocol.WatchTransport
 import io.rebble.pebblekit2.client.DefaultPebbleAndroidAppPicker
 import io.rebble.pebblekit2.client.DefaultPebbleInfoRetriever
@@ -11,7 +12,13 @@ import io.rebble.pebblekit2.common.model.PebbleDictionary
 import io.rebble.pebblekit2.common.model.TransmissionResult
 import io.rebble.pebblekit2.common.model.WatchIdentifier
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
@@ -93,6 +100,18 @@ class PebbleWatchTransport(
 
     private fun isDifferentAppOpen(results: Map<WatchIdentifier, TransmissionResult>?): Boolean =
         results?.values?.any { it is TransmissionResult.FailedDifferentAppOpen } == true
+
+    override fun watchLink(): Flow<WatchLink> = flow {
+        val companion = runCatching { DefaultPebbleAndroidAppPicker.getInstance(appContext).getCurrentlySelectedApp() }.getOrNull()
+        if (companion == null) {
+            emit(WatchLink.NoCompanion)
+        } else {
+            emitAll(infoRetriever.getConnectedWatches().map { watches -> WatchLink.from(true, watches.map { it.name }) })
+        }
+    }
+        .catch { emit(WatchLink.NotConnected) }
+        // The companion's content provider must not be queried on the main thread (@WorkerThread).
+        .flowOn(Dispatchers.IO)
 
     override suspend fun linkDiagnostics(): String {
         val picker = DefaultPebbleAndroidAppPicker.getInstance(appContext)

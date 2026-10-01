@@ -85,7 +85,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PebbleNtnTheme {
+            val monochrome by container.appearance.monochrome.collectAsState()
+            PebbleNtnTheme(monochrome = monochrome) {
                 val uiState by onboardingViewModel.uiState.collectAsState()
                 if (uiState.accessGranted) {
                     AppNavHost()
@@ -116,6 +117,8 @@ class MainActivity : ComponentActivity() {
         val autoLaunch by container.watchSettingsRepository.autoLaunchEnabled.collectAsState()
         val watchStatus by container.navigationController.status.collectAsState()
         val watchappInstalled by container.watchappPresence.detected.collectAsState()
+        val watchLink by container.watchLink.collectAsState()
+        val monochrome by container.appearance.monochrome.collectAsState()
         val discoveredApps by container.enabledAppRepository.observeEnablement().collectAsState(initial = emptyList())
         val userRuleCount by produceState(initialValue = 0) {
             container.userRuleRepository.observeUserRules().collect { value = it.size }
@@ -150,6 +153,9 @@ class MainActivity : ComponentActivity() {
                     watchappInstalled = watchappInstalled,
                     onGetWatchapp = { openUrl(getString(R.string.watchapp_store_url)) },
                     onConfirmWatchapp = container.watchappPresence::confirmManually,
+                    watchLink = watchLink,
+                    monochrome = monochrome,
+                    onMonochromeChange = container.appearance::setMonochrome,
                 )
             }
             composable(
@@ -213,6 +219,7 @@ class MainActivity : ComponentActivity() {
                     notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(container.catalog, navigationApps.map { it.appId }.toSet()),
                     onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
                     onViewRules = { appId -> navController.navigate("rules?app=$appId") },
+                    languagesByApp = rulesViewModel.languagesByApp,
                 )
             }
             composable(

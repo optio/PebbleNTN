@@ -323,4 +323,14 @@
     <string name="undo">Undo</string>
     <string name="debug_share_event">Share this event</string>
     <string name="navigation_apps_view_rules">View its rules</string>
+    <!-- Leftovers of #28, part 2. -->
+    <string name="dashboard_watch">Watch</string>
+    <string name="dashboard_watch_checking">Checking…</string>
+    <string name="dashboard_watch_no_companion">The Pebble app isn\'t installed</string>
+    <string name="dashboard_watch_not_connected">Not connected</string>
+    <string name="dashboard_watch_connected">%1$s connected</string>
+    <string name="dashboard_section_appearance">Appearance</string>
+    <string name="dashboard_monochrome">Pebble monochrome theme</string>
+    <string name="dashboard_monochrome_hint">Black and white, like a Pebble screen, instead of your phone\'s colours.</string>
+    <string name="navigation_apps_languages">Directions in %1$s</string>
 </resources>

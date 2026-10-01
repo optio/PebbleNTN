@@ -54,6 +54,11 @@ class RulesViewModel(
      */
     val officialGroups: List<OfficialAppGroup> = groupOfficialRules(officialRules, catalog)
 
+    /** Language codes the official rules cover, per app id, for the navigation apps screen (#28). */
+    val languagesByApp: Map<String, List<String>> = officialGroups.associate { app ->
+        app.appId to RuleFilter.languagesIn(listOf(app))
+    }
+
     /** An official rule by id, for the rule detail screen. */
     fun officialRule(id: String): Rule? = officialRules.firstOrNull { it.id == id }
 
