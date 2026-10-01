@@ -2,6 +2,8 @@ package com.pebblentn.app.ui.debug
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +42,7 @@ import com.pebblentn.app.ui.format.DisplayLabels
 import java.text.DateFormat
 import java.util.Date
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DebugDetailScreen(
     event: DebugEvent?,
@@ -48,6 +50,7 @@ fun DebugDetailScreen(
     onDelete: () -> Unit,
     appName: (String) -> String = { it },
     onCreateRule: (() -> Unit)? = null,
+    onShareEvent: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
@@ -156,9 +159,14 @@ fun DebugDetailScreen(
             HorizontalDivider()
             SectionTitle(stringResource(R.string.debug_trace_section))
             TraceSection(event)
-            // Turn this notification into a starting rule in the editor (#28).
-            if (onCreateRule != null && event.snapshot != null) {
-                OutlinedButton(onClick = onCreateRule) { Text(stringResource(R.string.debug_create_rule)) }
+            // Turn this notification into a rule, or share just this one event (#28).
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (onCreateRule != null && event.snapshot != null) {
+                    OutlinedButton(onClick = onCreateRule) { Text(stringResource(R.string.debug_create_rule)) }
+                }
+                if (onShareEvent != null) {
+                    OutlinedButton(onClick = onShareEvent) { Text(stringResource(R.string.debug_share_event)) }
+                }
             }
 
             HorizontalDivider()

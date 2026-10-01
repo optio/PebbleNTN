@@ -128,4 +128,13 @@ class RulesViewModelTest {
         assertTrue(json.contains("com.google.android.apps.maps"))
         assertTrue(json.contains("Use the left lane to merge"))
     }
+
+    @Test
+    fun undoBringsBackTheDeletedRule() = runTest {
+        vm.save(validRule)
+        vm.delete("turn-right").join()
+        assertTrue(userRepo.userRulesSnapshot().isEmpty())
+        vm.undoDelete().join()
+        assertEquals(listOf("turn-right"), userRepo.userRulesSnapshot().map { it.id })
+    }
 }

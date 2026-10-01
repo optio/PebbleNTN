@@ -307,5 +307,36 @@ def main() -> None:
             print(f"wrote pack '{pack}' size {size}px -> {out_dir}")
 
 
+# The companion app shows the same glyphs in its debug history (#28): the classic 48px set as
+# alpha-mask PNGs (black -> opaque, white -> transparent) so Compose can tint them with the theme.
+ANDROID_DRAWABLES = Path(__file__).resolve().parents[2] / "android" / "app" / "src" / "main" / "res" / "drawable-nodpi"
+
+
+def write_alpha_png(path: Path, pixels: Canvas) -> None:
+    """Grayscale+alpha PNG: black glyph pixels become opaque, white ones transparent."""
+    def chunk(typ: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + typ + data + struct.pack(">I", zlib.crc32(typ + data) & 0xFFFFFFFF)
+
+    height, width = len(pixels), len(pixels[0])
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 4, 0, 0, 0)  # 8-bit grayscale + alpha
+    raw = bytearray()
+    for row in pixels:
+        raw.append(0)
+        for value in row:
+            raw.extend((0, 255 - value))
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
+    path.write_bytes(png)
+
+
+def write_android_drawables() -> None:
+    global SIZE
+    SIZE = 48
+    ANDROID_DRAWABLES.mkdir(parents=True, exist_ok=True)
+    for name, builder in GLYPHS.items():
+        write_alpha_png(ANDROID_DRAWABLES / f"ic_maneuver_{name}.png", builder())
+    print(f"wrote {len(GLYPHS)} Android drawables -> {ANDROID_DRAWABLES}")
+
+
 if __name__ == "__main__":
     main()
+    write_android_drawables()

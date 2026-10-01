@@ -64,4 +64,11 @@ class DisplayLabelsTest {
         val layers = RuleLayer.entries.map { context.getString(DisplayLabels.ruleLayer(it)) }
         assertEquals(listOf("Your rule", "Downloaded rule", "Official rule"), layers)
     }
+
+    @Test
+    fun everyManeuverHasItsOwnGlyph() {
+        val icons = Maneuver.entries.map { DisplayLabels.maneuverIcon(it) }
+        assertEquals("one drawable per maneuver", icons.size, icons.toSet().size)
+        icons.forEach { assertNotEquals(null, context.getDrawable(it)) }
+    }
 }

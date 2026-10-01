@@ -56,9 +56,18 @@ class ShareDiagnosticsViewModel(
         prepare(ExportMode.FULL)
     }
 
+    /** One event only ("Share this event"), or null for the whole history. */
+    private var onlyEventId: Long? = null
+
     /** Switch which dataset is shown/shared and rebuild the preview. */
     fun setMode(mode: ExportMode) {
         if (mode != _state.value.mode) prepare(mode)
+    }
+
+    /** Open the screen on [mode], for the whole history or just [eventId] (#28). Always rebuilds. */
+    fun open(mode: ExportMode, eventId: Long?) {
+        onlyEventId = eventId
+        prepare(mode)
     }
 
     /** The build in progress; a newer mode cancels it so a stale result can't overwrite the choice. */
@@ -69,7 +78,7 @@ class ShareDiagnosticsViewModel(
         _state.value = _state.value.copy(loading = true, mode = mode)
         building?.cancel()
         building = viewModelScope.launch {
-            val export = exporter.buildCapped(mode, DiagnosticExporter.EMAIL_MAX_BYTES)
+            val export = exporter.buildCapped(mode, DiagnosticExporter.EMAIL_MAX_BYTES, onlyEventId)
             capped = export
             val trimmedPreview = export.json.length > PREVIEW_CHARS
             _state.value = ShareDiagnosticsState(

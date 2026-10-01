@@ -98,7 +98,10 @@
     <string name="share_diag_mode_full">Include street names</string>
     <string name="share_diag_mode_redacted_hint">Road names, destinations and other free text are removed (shown as ▮). Only maneuver words, numbers and units remain.</string>
     <string name="share_diag_mode_full_hint">Keeps the full notification text, including street names, destinations and route context. More valuable: it lets us add missing translations for turn and direction words in your language.</string>
-    <string name="share_diag_summary">%1$d events · %2$s</string>
+    <plurals name="share_diag_summary">
+        <item quantity="one">%1$d event · %2$s</item>
+        <item quantity="other">%1$d events · %2$s</item>
+    </plurals>
     <string name="share_diag_truncated">Older events were left out to keep the attachment under 10 MB (newest %1$d of %2$d included).</string>
     <string name="share_diag_preview_label">Data to be shared (review)</string>
     <string name="share_diag_preview_trimmed">Preview shortened for display — the attached file contains all %1$d events.</string>
@@ -315,4 +318,9 @@
     <string name="debug_create_rule">Create rule from this notification</string>
     <string name="rules_share_yours">Share your rules</string>
     <string name="rules_share_yours_hint">Send your rules to the developers so they can become official for everyone.</string>
+    <!-- Leftovers of #28. -->
+    <string name="rules_deleted">Rule deleted</string>
+    <string name="undo">Undo</string>
+    <string name="debug_share_event">Share this event</string>
+    <string name="navigation_apps_view_rules">View its rules</string>
 </resources>

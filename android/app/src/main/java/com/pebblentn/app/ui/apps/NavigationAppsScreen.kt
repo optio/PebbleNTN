@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -49,6 +50,8 @@ fun NavigationAppsScreen(
     /** Supported apps that aren't installed (#28), and how to get one by package name. */
     notInstalled: List<NavigationAppEntry> = emptyList(),
     onGetApp: (String) -> Unit = {},
+    /** Open an app's official rules, pre-filtered (#28); only offered for apps with rules. */
+    onViewRules: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -83,7 +86,11 @@ fun NavigationAppsScreen(
                 }
             }
             items(apps, key = { "installed-${it.appId}" }) { app ->
-                NavigationAppRow(app = app, onToggle = { enabled -> onToggle(app.appId, enabled) })
+                NavigationAppRow(
+                    app = app,
+                    onToggle = { enabled -> onToggle(app.appId, enabled) },
+                    onViewRules = { onViewRules(app.appId) }.takeUnless { app.captureOnly },
+                )
                 HorizontalDivider()
             }
             if (notInstalled.isNotEmpty()) {
@@ -134,7 +141,8 @@ private fun SupportedAppRow(entry: NavigationAppEntry, onGet: () -> Unit) {
 }
 
 @Composable
-private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit) {
+private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit, onViewRules: (() -> Unit)?) {
+    Column {
     // The whole row toggles, so TalkBack reads the app name with the switch state and a tap on the
     // name works too.
     Row(
@@ -163,5 +171,12 @@ private fun NavigationAppRow(app: AppEnablement, onToggle: (Boolean) -> Unit) {
             }
         }
         Switch(checked = app.enabled, onCheckedChange = null)
+    }
+    // Outside the toggle row, so it can't flip the switch.
+    onViewRules?.let {
+        TextButton(onClick = it, modifier = Modifier.padding(start = 8.dp)) {
+            Text(stringResource(R.string.navigation_apps_view_rules))
+        }
+    }
     }
 }

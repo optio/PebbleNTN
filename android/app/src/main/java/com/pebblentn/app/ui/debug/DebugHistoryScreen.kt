@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -36,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -250,16 +252,25 @@ private fun DebugEventRow(event: DebugEvent, appName: String, onClick: () -> Uni
         if (instruction != null) {
             val distance = instruction.distanceMeters?.let { stringResource(R.string.debug_distance_meters, it) }
             val stops = instruction.stopsRemaining?.let { pluralStringResource(R.plurals.debug_stops_remaining, it, it) }
-            Text(
-                text = listOfNotNull(
-                    stringResource(DisplayLabels.maneuver(instruction.maneuver)),
-                    distance,
-                    stops,
-                    instruction.primaryText,
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                // The same glyph the watch drew; the label next to it carries the meaning.
+                Icon(
+                    painter = painterResource(DisplayLabels.maneuverIcon(instruction.maneuver)),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = listOfNotNull(
+                        stringResource(DisplayLabels.maneuver(instruction.maneuver)),
+                        distance,
+                        stops,
+                        instruction.primaryText,
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         } else {
             // Nothing was sent: show what arrived, so an unrecognised card can be spotted.
             event.snapshot?.title?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium, maxLines = 2) }

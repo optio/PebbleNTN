@@ -70,6 +70,23 @@ class UserRuleRepository(
         refreshCache()
     }
 
+    /** Put back a rule exactly as it was, e.g. to undo a delete (#28), even an invalid one. */
+    suspend fun restore(rule: UserRule) {
+        dao.upsert(
+            UserRuleEntity(
+                ruleId = rule.ruleId,
+                sourceRuleId = rule.sourceRuleId,
+                packageName = rule.packageName,
+                canonicalJson = rule.canonicalJson,
+                enabled = rule.enabled,
+                createdAt = rule.updatedAt,
+                updatedAt = rule.updatedAt,
+                validationStatus = rule.validationStatus,
+            ),
+        )
+        refreshCache()
+    }
+
     private fun toDomain(entity: UserRuleEntity): UserRule {
         val rule = runCatching { RulesetCodec.parseRule(entity.canonicalJson) }.getOrNull()
         return UserRule(

@@ -31,6 +31,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -42,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +62,7 @@ import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.ui.components.ConfirmDialog
 import com.pebblentn.app.ui.format.DisplayLabels
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,12 +78,27 @@ fun RulesScreen(
     appName: (String) -> String = { it },
     phoneLanguage: String = Locale.getDefault().language,
     onShareRules: () -> Unit = {},
+    onUndoDelete: () -> Unit = {},
+    initialAppId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val deletedMessage = stringResource(R.string.rules_deleted)
+    val undoLabel = stringResource(R.string.undo)
+    // Deleting asks first, then still offers an undo (#28).
+    val deleteWithUndo: (String) -> Unit = { id ->
+        onDeleteUser(id)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(deletedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+            if (result == SnackbarResult.ActionPerformed) onUndoDelete()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.rules_title)) },
@@ -102,8 +123,8 @@ fun RulesScreen(
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.rules_tab_user)) })
             }
             when (selectedTab) {
-                0 -> OfficialList(officialGroups, phoneLanguage, onOpenOfficial)
-                else -> UserList(userRules, onToggleUser, onEditUser, onDeleteUser, appName, onShareRules)
+                0 -> OfficialList(officialGroups, phoneLanguage, onOpenOfficial, initialAppId)
+                else -> UserList(userRules, onToggleUser, onEditUser, deleteWithUndo, appName, onShareRules)
             }
         }
     }
@@ -114,12 +135,28 @@ fun RulesScreen(
  * (#28). Starts on the phone's language, since that is the ruleset in use.
  */
 @Composable
-private fun OfficialList(groups: List<OfficialAppGroup>, phoneLanguage: String, onOpen: (String) -> Unit) {
+private fun OfficialList(
+    groups: List<OfficialAppGroup>,
+    phoneLanguage: String,
+    onOpen: (String) -> Unit,
+    initialAppId: String?,
+) {
     if (groups.isEmpty()) {
         EmptyState(stringResource(R.string.rules_official_empty))
         return
     }
-    val initial = remember(groups) { RuleFilter.initial(groups, phoneLanguage) }
+    // Opened from an app (Navigation apps → its rules): start on that app (#28).
+    val initial = remember(groups, initialAppId) {
+        RuleFilter.initial(groups, phoneLanguage).let { base ->
+            if (initialAppId != null && groups.any { it.appId == initialAppId }) {
+                val filter = base.copy(appId = initialAppId)
+                // Keep the language only if that app has rules for it.
+                if (filter.language != null && filter.apply(groups).isEmpty()) filter.copy(language = null) else filter
+            } else {
+                base
+            }
+        }
+    }
     var appId by rememberSaveable { mutableStateOf(initial.appId) }
     var language by rememberSaveable { mutableStateOf(initial.language) }
     var query by rememberSaveable { mutableStateOf("") }

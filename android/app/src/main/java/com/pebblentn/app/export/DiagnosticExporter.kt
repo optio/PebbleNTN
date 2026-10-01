@@ -52,13 +52,14 @@ class DiagnosticExporter(
      * Build an export capped to [maxBytes], keeping only the NEWEST events that fit (events arrive
      * newest-first). Email providers reject oversized attachments, so the share-to-help flow trims
      * the oldest events rather than fail. Returns the payload plus how many events survived the cap.
+     * With [onlyEventId], just that one event is included ("Share this event", #28).
      */
-    suspend fun buildCapped(mode: ExportMode, maxBytes: Int): CappedExport {
+    suspend fun buildCapped(mode: ExportMode, maxBytes: Int, onlyEventId: Long? = null): CappedExport {
         val rules = userRules.observeUserRules().first().mapNotNull { it.rule }
-        val allEvents = if (mode == ExportMode.RULES_ONLY) {
-            emptyList()
-        } else {
-            debugHistory.observeRecent(DebugHistoryRepository.DEFAULT_RETENTION).first()
+        val allEvents = when {
+            mode == ExportMode.RULES_ONLY -> emptyList()
+            onlyEventId != null -> listOfNotNull(debugHistory.getById(onlyEventId))
+            else -> debugHistory.observeRecent(DebugHistoryRepository.DEFAULT_RETENTION).first()
         }
         val exportedAt = now()
 
