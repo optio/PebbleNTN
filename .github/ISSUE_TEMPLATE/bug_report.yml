@@ -1,0 +1,39 @@
+name: Bug report
+description: Something in PebbleNTN doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please don't paste notification text with private places in it; a diagnostics log shared from the app (Debug history → ⋮ → Share diagnostics) is the best way to show what happened.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we reproduce it?
+      placeholder: "1. Start navigation in …\n2. …"
+  - type: input
+    id: navigation-app
+    attributes:
+      label: Navigation app and language
+      placeholder: Google Maps in Italian
+  - type: input
+    id: app-version
+    attributes:
+      label: PebbleNTN app version
+      description: Filled in when you open this from the app.
+  - type: input
+    id: android-version
+    attributes:
+      label: Android version
+  - type: input
+    id: watch
+    attributes:
+      label: Watch and Pebble app
+      placeholder: Pebble Time 2, Core Devices Pebble app
