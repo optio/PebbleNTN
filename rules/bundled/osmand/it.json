@@ -1,25 +1,27 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-it-2026.10.1",
+  "rulesetVersion": "osmand-it-2026.10.1",
   "minimumAppVersionCode": 1,
-  "createdAt": "2026-07-28T00:00:00Z",
+  "createdAt": "2026-10-01T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
     {
-      "id": "google-maps-roundabout-it",
+      "id": "osmand-roundabout-it",
       "enabled": true,
       "priority": 190,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
       ],
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:rotonda|rotatoria)\\b"
+          "value": "(?i)\\brotond[ae]\\b"
         }
       ],
       "output": {
@@ -38,30 +40,26 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
       }
     },
     {
-      "id": "google-maps-uturn-it",
+      "id": "osmand-uturn-it",
       "enabled": true,
       "priority": 180,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
       ],
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:inversione|inverti\\s+la\\s+marcia)\\b"
+          "value": "(?i)\\binversione\\b"
         }
       ],
       "output": {
@@ -80,21 +78,16 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
       }
     },
     {
-      "id": "google-maps-sharp-right-it",
+      "id": "osmand-sharp-right-it",
       "enabled": true,
       "priority": 170,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
@@ -103,7 +96,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:netta|brusca|decisa|stretta|secca)\\b)(?=.*\\b(?:destra)\\b)"
+          "value": "(?i)\\b(?:bruscamente|stretta)\\s+a\\s+destra\\b"
         }
       ],
       "output": {
@@ -122,21 +115,17 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
-      }
+      },
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture."
     },
     {
-      "id": "google-maps-sharp-left-it",
+      "id": "osmand-sharp-left-it",
       "enabled": true,
       "priority": 170,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
@@ -145,7 +134,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:netta|brusca|decisa|stretta|secca)\\b)(?=.*\\b(?:sinistra)\\b)"
+          "value": "(?i)\\b(?:bruscamente|stretta)\\s+a\\s+sinistra\\b"
         }
       ],
       "output": {
@@ -164,21 +153,17 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
-      }
+      },
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture."
     },
     {
-      "id": "google-maps-slight-right-it",
+      "id": "osmand-slight-right-it",
       "enabled": true,
       "priority": 160,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
@@ -187,7 +172,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:leggermente)\\b)(?=.*\\b(?:destra)\\b)"
+          "value": "(?i)\\bleggermente\\s+a\\s+destra\\b"
         }
       ],
       "output": {
@@ -206,21 +191,17 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
-      }
+      },
+      "comment": "Real Italian capture (#16, OsmAnd, 2026-08). '275 m • Svolta leggermente a destra e prosegui su'."
     },
     {
-      "id": "google-maps-slight-left-it",
+      "id": "osmand-slight-left-it",
       "enabled": true,
       "priority": 160,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
@@ -229,7 +210,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:leggermente)\\b)(?=.*\\b(?:sinistra)\\b)"
+          "value": "(?i)\\bleggermente\\s+a\\s+sinistra\\b"
         }
       ],
       "output": {
@@ -248,21 +229,17 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
-      }
+      },
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture."
     },
     {
-      "id": "google-maps-keep-right-it",
+      "id": "osmand-keep-right-it",
       "enabled": true,
       "priority": 120,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
@@ -271,7 +248,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:tieni|mantieni|mantenere)\\b)(?=.*\\b(?:destra)\\b)"
+          "value": "(?i)\\btieni\\s+la\\s+destra\\b"
         }
       ],
       "output": {
@@ -290,21 +267,17 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
-      }
+      },
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture."
     },
     {
-      "id": "google-maps-keep-left-it",
+      "id": "osmand-keep-left-it",
       "enabled": true,
       "priority": 120,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
@@ -313,7 +286,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:tieni|mantieni|mantenere)\\b)(?=.*\\b(?:sinistra)\\b)"
+          "value": "(?i)\\btieni\\s+la\\s+sinistra\\b"
         }
       ],
       "output": {
@@ -332,30 +305,27 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
-      }
+      },
+      "comment": "Real Italian capture (#16, OsmAnd, 2026-08). '29 m • Tieni la sinistra e prosegui'."
     },
     {
-      "id": "google-maps-turn-right-it",
+      "id": "osmand-turn-right-it",
       "enabled": true,
       "priority": 100,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
       ],
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\ba\\s+destra\\b"
+          "value": "(?i)\\b(?:svolta|gira)\\s+a\\s+destra\\b"
         }
       ],
       "output": {
@@ -374,30 +344,26 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
       }
     },
     {
-      "id": "google-maps-turn-left-it",
+      "id": "osmand-turn-left-it",
       "enabled": true,
       "priority": 100,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
       ],
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\ba\\s+sinistra\\b"
+          "value": "(?i)\\b(?:svolta|gira)\\s+a\\s+sinistra\\b"
         }
       ],
       "output": {
@@ -416,30 +382,26 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
       }
     },
     {
-      "id": "google-maps-continue-it",
+      "id": "osmand-continue-it",
       "enabled": true,
       "priority": 50,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
       ],
+      "comment": "Real Italian capture (#16, OsmAnd, 2026-08). '158 m • Avanti'. Ranks below the turn and keep rules, whose phrasings often end in 'e prosegui'.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:sempre\\s+dritto|prosegui|procedi|continua|vai\\s+dritto|dritto|diritto)\\b"
+          "value": "(?i)\\b(?:avanti|prosegui|continua|dritto)\\b"
         }
       ],
       "output": {
@@ -458,31 +420,26 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
       }
     },
     {
-      "id": "google-maps-arrive-it",
+      "id": "osmand-arrive-it",
       "enabled": true,
       "priority": 40,
       "packageNames": [
-        "com.google.android.apps.maps"
+        "net.osmand",
+        "net.osmand.plus"
       ],
       "locales": [
         "it"
       ],
-      "comment": "Title only: the ETA in subText often carries the localized 'arrive' word, so matching combinedText would classify every turn as ARRIVE. Lowest priority: the pattern is a prefix stem and the title also carries the destination road name, so it fires on road names such as Zielstattstraße or Rue de l'Arrivée. A title with an explicit maneuver must resolve as that maneuver; only a title with no maneuver word falls through to ARRIVE.",
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture. Lowest priority, so a maneuver word always wins over a road name such as 'Via dell'Arrivo'.",
       "conditions": [
         {
-          "field": "title",
+          "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:arriv|giunt|destinazione)"
+          "value": "(?i)\\b(?:arrivo|arrivato|arrivata|arrivati|destinazione)\\b"
         }
       ],
       "output": {
@@ -497,12 +454,6 @@
             "text"
           ],
           "stripLeadingDistance": true
-        },
-        "secondaryText": {
-          "type": "regexCapture",
-          "field": "subText",
-          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
-          "group": 1
         }
       }
     }

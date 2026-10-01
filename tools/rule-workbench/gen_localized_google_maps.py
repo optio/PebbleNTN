@@ -51,7 +51,7 @@ LANGS = {
         "sharp": r"netta|brusca|decisa|stretta|secca",
         "slight": r"leggermente",
         "keep": r"tieni|mantieni|mantenere",
-        "straight": r"sempre\s+dritto|prosegui|continua|vai\s+dritto|dritto|diritto",
+        "straight": r"sempre\s+dritto|prosegui|procedi|continua|vai\s+dritto|dritto|diritto",
         # Prefix stems (no trailing \b): match arrivo / arrivato / arrivata / giunto.
         "arrive": r"arriv|giunt|destinazione",
     },

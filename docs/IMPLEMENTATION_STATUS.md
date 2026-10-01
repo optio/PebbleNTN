@@ -2,6 +2,28 @@
 
 _Last updated: 2026-10-01_
 
+## Italian: OsmAnd ruleset and Google Maps "procedi" (#16) (2026-10-01)
+
+From the Italian diagnostics log attached to #16 (v0.0.25, it-IT):
+
+- **OsmAnd Italian ruleset** (`rules/bundled/osmand/it.json`, mirroring en). Captured:
+  "Tieni la sinistra e prosegui" (keep left → SLIGHT_LEFT, 25), "Avanti" (STRAIGHT, 7), "Svolta
+  leggermente a destra e prosegui su" (SLIGHT_RIGHT, 2). The other phrasings (turns, sharp, u-turn,
+  roundabout, arrive) follow OsmAnd's Italian wording and are marked for validation. The keep and turn
+  rules rank above "continue", since their phrasings end in "e prosegui"; arrive ranks lowest.
+- **Google Maps Italian:** "procedi" added to the continue words (`gen_localized_google_maps.py`):
+  "Procedi verso Via …", "Procedi in direzione nordovest su …".
+- The OsmAnd Kotlin regression loads every OsmAnd language, and the arrive-ranks-lowest check is per
+  language. Fixtures: 10 OsmAnd Italian, 2 Google Maps Italian.
+
+**Left open, deliberately:** 39 Google Maps cards "<distance> · Località Acquasanta, 8", a
+destination address with no maneuver word. Mapping them (e.g. to ARRIVE) from one log would be a
+guess; it needs more captures.
+
+**Verified.** Regression (Google Maps 92/92, OsmAnd 25/25); all 316 unit tests;
+`./scripts/test-all.sh`. Replaying the log: all OsmAnd turn updates now match (34), and so do all
+"Procedi" cards.
+
 ## Street line without the leading distance (#26; REQ-RULE-017) (2026-10-01)
 
 Google Maps' current layout puts the distance before the instruction in the title ("70 m · Slight
