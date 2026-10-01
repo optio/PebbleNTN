@@ -12,6 +12,7 @@ import com.pebblentn.app.rules.ConditionOperator
 import com.pebblentn.app.rules.LiteralExtractor
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleOutput
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -115,5 +116,16 @@ class DiagnosticExporterTest {
         assertFalse("oldest event dropped", capped.json.contains("500001"))
         // Redaction still applies to whatever survives.
         assertFalse(capped.json.contains("Some Street"))
+    }
+
+    @Test
+    fun cappedExportCanBeLimitedToOneEvent() = runTest {
+        val all = exporter.buildCapped(ExportMode.FULL, DiagnosticExporter.EMAIL_MAX_BYTES)
+        val id = debugHistory.observeRecent(1).first().single().id
+        val one = exporter.buildCapped(ExportMode.FULL, DiagnosticExporter.EMAIL_MAX_BYTES, onlyEventId = id)
+        assertEquals(1, one.includedEvents)
+        assertEquals(all.includedEvents, 1)
+        val missing = exporter.buildCapped(ExportMode.FULL, DiagnosticExporter.EMAIL_MAX_BYTES, onlyEventId = id + 999)
+        assertEquals("an unknown event exports nothing", 0, missing.includedEvents)
     }
 }

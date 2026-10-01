@@ -153,13 +153,17 @@ class MainActivity : ComponentActivity() {
                 )
             }
             composable(
-                route = "share-diagnostics?mode={mode}",
-                arguments = listOf(navArgument("mode") { type = NavType.StringType; defaultValue = ExportMode.FULL.name }),
+                route = "share-diagnostics?mode={mode}&event={event}",
+                arguments = listOf(
+                    navArgument("mode") { type = NavType.StringType; defaultValue = ExportMode.FULL.name },
+                    navArgument("event") { type = NavType.LongType; defaultValue = -1L },
+                ),
             ) { entry ->
-                // Every visit starts on the mode it was opened for: full (REQ-DEBUG-011), or rules
-                // only from "Share your rules".
+                // Every visit starts on the mode it was opened for: full (REQ-DEBUG-011), rules only
+                // from "Share your rules", or one event from "Share this event".
                 val mode = entry.arguments?.getString("mode")?.let { runCatching { ExportMode.valueOf(it) }.getOrNull() } ?: ExportMode.FULL
-                LaunchedEffect(mode) { shareDiagnosticsViewModel.setMode(mode) }
+                val eventId = entry.arguments?.getLong("event")?.takeIf { it >= 0 }
+                LaunchedEffect(mode, eventId) { shareDiagnosticsViewModel.open(mode, eventId) }
                 val shareState by shareDiagnosticsViewModel.state.collectAsState()
                 ShareDiagnosticsScreen(
                     state = shareState,
@@ -196,6 +200,7 @@ class MainActivity : ComponentActivity() {
                     },
                     appName = ::appName,
                     onCreateRule = { navController.navigate("rule-editor-from/$id") },
+                    onShareEvent = { navController.navigate("share-diagnostics?event=$id") },
                 )
             }
             composable("navigation-apps") {
@@ -207,9 +212,13 @@ class MainActivity : ComponentActivity() {
                     onBack = { navController.popBackStack() },
                     notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(container.catalog, navigationApps.map { it.appId }.toSet()),
                     onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
+                    onViewRules = { appId -> navController.navigate("rules?app=$appId") },
                 )
             }
-            composable("rules") {
+            composable(
+                route = "rules?app={app}",
+                arguments = listOf(navArgument("app") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
                 val userRules by rulesViewModel.userRules.collectAsState()
                 RulesScreen(
                     officialGroups = rulesViewModel.officialGroups,
@@ -222,6 +231,8 @@ class MainActivity : ComponentActivity() {
                     onBack = { navController.popBackStack() },
                     appName = ::appName,
                     onShareRules = { navController.navigate("share-diagnostics?mode=${ExportMode.RULES_ONLY.name}") },
+                    onUndoDelete = { rulesViewModel.undoDelete() },
+                    initialAppId = entry.arguments?.getString("app"),
                 )
             }
             composable(

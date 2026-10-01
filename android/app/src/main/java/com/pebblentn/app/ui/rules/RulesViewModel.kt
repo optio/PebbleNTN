@@ -69,7 +69,19 @@ class RulesViewModel(
     fun setEnabled(ruleId: String, enabled: Boolean): Job =
         viewModelScope.launch { userRuleRepository.setEnabled(ruleId, enabled) }
 
-    fun delete(ruleId: String): Job = viewModelScope.launch { userRuleRepository.delete(ruleId) }
+    /** The most recently deleted rule, so the delete can be undone (#28). */
+    private var lastDeleted: UserRule? = null
+
+    fun delete(ruleId: String): Job = viewModelScope.launch {
+        lastDeleted = userRuleRepository.getUserRule(ruleId)
+        userRuleRepository.delete(ruleId)
+    }
+
+    /** Restore the rule deleted last, if any. */
+    fun undoDelete(): Job = viewModelScope.launch {
+        lastDeleted?.let { userRuleRepository.restore(it) }
+        lastDeleted = null
+    }
 
     fun validate(json: String): RuleValidationResult = RuleValidator.validate(json)
 

@@ -1,5 +1,6 @@
 package com.pebblentn.app.ui.format
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.pebblentn.app.R
 import com.pebblentn.app.catalog.NavigationAppCatalog
@@ -32,6 +33,24 @@ object DisplayLabels {
         Maneuver.ROUNDABOUT -> R.string.maneuver_roundabout
         Maneuver.ARRIVE -> R.string.maneuver_arrive
         Maneuver.TRANSIT -> R.string.maneuver_transit
+    }
+
+    /** The watch's own glyph for a maneuver (watchapp/tools/gen_maneuver_bitmaps.py), as a tintable mask. */
+    @DrawableRes
+    fun maneuverIcon(maneuver: Maneuver): Int = when (maneuver) {
+        Maneuver.UNKNOWN -> R.drawable.ic_maneuver_unknown
+        Maneuver.STRAIGHT -> R.drawable.ic_maneuver_straight
+        Maneuver.SLIGHT_LEFT -> R.drawable.ic_maneuver_slight_left
+        Maneuver.LEFT -> R.drawable.ic_maneuver_left
+        Maneuver.SHARP_LEFT -> R.drawable.ic_maneuver_sharp_left
+        Maneuver.SLIGHT_RIGHT -> R.drawable.ic_maneuver_slight_right
+        Maneuver.RIGHT -> R.drawable.ic_maneuver_right
+        Maneuver.SHARP_RIGHT -> R.drawable.ic_maneuver_sharp_right
+        Maneuver.UTURN_LEFT -> R.drawable.ic_maneuver_uturn_left
+        Maneuver.UTURN_RIGHT -> R.drawable.ic_maneuver_uturn_right
+        Maneuver.ROUNDABOUT -> R.drawable.ic_maneuver_roundabout
+        Maneuver.ARRIVE -> R.drawable.ic_maneuver_arrive
+        Maneuver.TRANSIT -> R.drawable.ic_maneuver_transit
     }
 
     /** A debug event's disposition; an unknown (future) value falls back to a generic label. */

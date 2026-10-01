@@ -86,4 +86,19 @@ class UserRuleRepositoryTest {
         assertEquals(created, after.createdAt)
         assertTrue(after.canonicalJson.contains("LEFT"))
     }
+
+    @Test
+    fun aDeletedRuleCanBeRestoredExactly() = runTest {
+        repo.save(rule("r1"), sourceRuleId = "official-r1")
+        repo.setEnabled("r1", false)
+        val before = repo.getUserRule("r1")!!
+        repo.delete("r1")
+        assertEquals(null, repo.getUserRule("r1"))
+
+        repo.restore(before)
+        val after = repo.getUserRule("r1")!!
+        assertEquals("disabled state survives the undo", false, after.enabled)
+        assertEquals("official-r1", after.sourceRuleId)
+        assertEquals(before.canonicalJson, after.canonicalJson)
+    }
 }

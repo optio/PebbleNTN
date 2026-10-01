@@ -28,6 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -132,8 +133,9 @@ fun ShareDiagnosticsScreen(
 
                 else -> {
                     Text(
-                        text = stringResource(
-                            R.string.share_diag_summary,
+                        text = pluralStringResource(
+                            R.plurals.share_diag_summary,
+                            state.includedEvents,
                             state.includedEvents,
                             formatSize(state.sizeBytes),
                         ),
