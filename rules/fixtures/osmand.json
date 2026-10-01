@@ -208,6 +208,17 @@
         "maneuver": "RIGHT",
         "ruleId": "osmand-turn-right-en"
       }
-    }
+    },
+
+    {"name": "it-capture-keep-left", "source": "capture", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "29 m • Tieni la sinistra e prosegui"}, "comment": "Real Italian capture (#16, 2026-08). 'e prosegui' must not turn it into straight on.", "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 29, "ruleId": "osmand-keep-left-it", "primaryText": "Tieni la sinistra e prosegui"}},
+    {"name": "it-capture-straight", "source": "capture", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "158 m • Avanti"}, "comment": "Real Italian capture (#16, 2026-08).", "expected": {"maneuver": "STRAIGHT", "distanceMeters": 158, "ruleId": "osmand-continue-it", "primaryText": "Avanti"}},
+    {"name": "it-capture-slight-right", "source": "capture", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "275 m • Svolta leggermente a destra e prosegui su"}, "comment": "Real Italian capture (#16, 2026-08).", "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 275, "ruleId": "osmand-slight-right-it"}},
+    {"name": "it-capture-at-maneuver-0m", "source": "capture", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "0 m"}, "comment": "Real Italian capture (#16, 2026-08). A bare '0 m' carries no maneuver.", "expected": {"matched": false}},
+    {"name": "it-capture-map-download", "source": "capture", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "Scaricamento Italia Liguria Mappe standard"}, "comment": "Real Italian capture (#16, 2026-08). A map download, not navigation.", "expected": {"matched": false}},
+    {"name": "it-turn-right", "source": "synthetic", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "120 m • Svolta a destra"}, "comment": "OsmAnd's Italian phrasing.", "expected": {"maneuver": "RIGHT", "distanceMeters": 120, "ruleId": "osmand-turn-right-it"}},
+    {"name": "it-roundabout", "source": "synthetic", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "300 m • Alla rotonda prendi la 2a uscita"}, "comment": "OsmAnd's Italian phrasing.", "expected": {"maneuver": "ROUNDABOUT", "ruleId": "osmand-roundabout-it"}},
+    {"name": "it-uturn", "source": "synthetic", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "50 m • Fai inversione a U"}, "comment": "OsmAnd's Italian phrasing.", "expected": {"maneuver": "UTURN_LEFT", "ruleId": "osmand-uturn-it"}},
+    {"name": "it-arrive", "source": "synthetic", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "Arrivo a destinazione"}, "comment": "OsmAnd's Italian phrasing.", "expected": {"maneuver": "ARRIVE", "ruleId": "osmand-arrive-it"}},
+    {"name": "it-arrive-word-in-road-name", "source": "synthetic", "locale": "it", "packageName": "net.osmand.plus", "snapshot": {"title": "200 m • Svolta a sinistra su Via dell'Arrivo"}, "comment": "A maneuver word wins over 'Arrivo' in a road name.", "expected": {"maneuver": "LEFT", "ruleId": "osmand-turn-left-it"}}
   ]
 }
