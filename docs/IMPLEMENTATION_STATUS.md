@@ -2,6 +2,25 @@
 
 _Last updated: 2026-10-01_
 
+## Street line without the leading distance (#26; REQ-RULE-017) (2026-10-01)
+
+Google Maps' current layout puts the distance before the instruction in the title ("70 m · Slight
+left onto N155"), and OsmAnd does the same ("200 m • Turn right and go"). The rules took the whole
+title as the street line, so the watch showed the distance twice.
+
+- `FirstNonEmptyExtractor.stripLeadingDistance` drops a leading "<number> <unit>" followed by `·`, `•`
+  or `|` (`DistanceParser.stripLeadingDistance`); an empty result falls through to the next field.
+  The Python workbench mirrors it. A bare "50 m", or a road such as "5 m Street", is kept.
+- Turned on for every title-first street line: Google Maps en (hand-written) and de/es/fr/it/nl
+  (`gen_localized_google_maps.py`, which reproduces the committed files exactly), plus OsmAnd en.
+  Ruleset versions bumped to 2026.10.1.
+- Fixtures pin `primaryText` for layout A (en, km, Italian, a numbered road name) and OsmAnd; the
+  OsmAnd Kotlin regression test now checks `primaryText` too.
+
+**Verified.** `StripLeadingDistanceTest` (3); regression (Google Maps 90/90, OsmAnd 15/15); all 316
+unit tests; `./scripts/test-all.sh`. Replaying the Belgian (483) and Italian (257) logs, no street
+line starts with a distance any more.
+
 ## #28 leftovers, part 2: watch status, app icons and languages, monochrome theme (2026-10-01)
 
 - **Watch status on the dashboard** (Status → Watch): "<name> connected", "Not connected", or "The

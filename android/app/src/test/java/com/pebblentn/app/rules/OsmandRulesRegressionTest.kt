@@ -33,6 +33,8 @@ class OsmandRulesRegressionTest {
         val distanceMeters: Int? = null,
         val ruleId: String? = null,
         val secondaryText: String? = null,
+        /** The road line on the watch (#26: no leading "200 m • "). */
+        val primaryText: String? = null,
     )
 
     @Serializable
@@ -102,6 +104,9 @@ class OsmandRulesRegressionTest {
             }
             fixture.expected.ruleId?.let { expected ->
                 assertEquals("fixture '${fixture.name}' matched rule", expected, result.matchedRuleId)
+            }
+            fixture.expected.primaryText?.let { expected ->
+                assertEquals("fixture '${fixture.name}' road line", expected, result.instruction!!.primaryText)
             }
         }
     }

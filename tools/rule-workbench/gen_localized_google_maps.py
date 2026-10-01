@@ -35,7 +35,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO_ROOT / "rules" / "bundled" / "google-maps"
 PACKAGE = "com.google.android.apps.maps"
-RULESET_DATE = "2026.07.5"
+RULESET_DATE = "2026.10.1"
 
 # Per language: the regex fragments. `turn_*` are full "to the side" phrases; `right`/`left` are the
 # bare direction tokens used by the sharp/slight/keep refinements; the rest are keyword alternations.
@@ -126,7 +126,8 @@ def output(maneuver: str, with_distance: bool = True) -> dict:
     out = {"maneuver": {"type": "literal", "value": maneuver}}
     if with_distance:
         out["distanceMeters"] = {"type": "distance", "field": "combinedText"}
-    out["primaryText"] = {"type": "firstNonEmpty", "fields": ["title", "text"]}
+    # The title may lead with the distance ("70 m · ..."), which the watch already shows (#26).
+    out["primaryText"] = {"type": "firstNonEmpty", "fields": ["title", "text"], "stripLeadingDistance": True}
     out["secondaryText"] = {"type": "regexCapture", "field": "subText", "pattern": ETA_PATTERN, "group": 1}
     return out
 

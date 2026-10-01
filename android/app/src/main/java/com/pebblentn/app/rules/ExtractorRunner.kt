@@ -22,7 +22,13 @@ class ExtractorRunner(
         is FieldCopyExtractor -> textOrNone(field(snapshot, extractor.field))
 
         is FirstNonEmptyExtractor ->
-            textOrNone(extractor.fields.firstNotNullOfOrNull { field(snapshot, it)?.takeIf(String::isNotEmpty) })
+            textOrNone(
+                extractor.fields.firstNotNullOfOrNull { name ->
+                    field(snapshot, name)
+                        ?.let { if (extractor.stripLeadingDistance) DistanceParser.stripLeadingDistance(it) else it }
+                        ?.takeIf(String::isNotEmpty)
+                },
+            )
 
         is RegexCaptureExtractor -> {
             val value = field(snapshot, extractor.field)

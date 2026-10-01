@@ -153,6 +153,18 @@ def combined_text(snap: dict) -> str:
     return " ".join(p for p in parts if p)
 
 
+LEADING_DISTANCE = re.compile(
+    r"^\s*\d+(?:[.,]\d+)?\s*(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft"
+    r"|yards|yard|yd|metres|meters|metre|meter|m)\s*[·•|]\s*",
+    re.IGNORECASE,
+)
+
+
+def strip_leading_distance(text: str) -> str:
+    """Mirror DistanceParser.stripLeadingDistance: "70 m · Slight left" -> "Slight left" (REQ-RULE-017)."""
+    return LEADING_DISTANCE.sub("", text, count=1)
+
+
 def field_value(snap: dict, name: str):
     if name == "combinedText":
         return combined_text(snap)
@@ -228,6 +240,8 @@ def run_extractor(ext: dict, snap: dict):
     if t == "firstNonEmpty":
         for f in ext["fields"]:
             v = field_value(snap, f)
+            if v and ext.get("stripLeadingDistance"):
+                v = strip_leading_distance(v)
             if v:
                 return v
         return None

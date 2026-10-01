@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.09.3",
+  "rulesetVersion": "google-maps-en-2026.10.1",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -76,7 +76,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -237,7 +238,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -325,7 +327,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -413,7 +416,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -501,7 +505,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -589,7 +594,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -677,7 +683,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -765,7 +772,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -853,7 +861,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -941,7 +950,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -1029,7 +1039,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -1118,7 +1129,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -1207,7 +1219,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",
@@ -1296,7 +1309,8 @@
           "fields": [
             "title",
             "text"
-          ]
+          ],
+          "stripLeadingDistance": true
         },
         "secondaryText": {
           "type": "regexCapture",

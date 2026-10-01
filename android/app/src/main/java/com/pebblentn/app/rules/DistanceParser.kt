@@ -28,6 +28,19 @@ object DistanceParser {
                 "|metres|meters|metre|meter|m)\\b",
         )
 
+    /**
+     * "70 m · Slight left onto N155" → "Slight left onto N155" (REQ-RULE-017). Only a distance that is
+     * followed by a separator (· • |) is dropped, so a bare "50 m" or a road name starting with a
+     * number stays as it is.
+     */
+    fun stripLeadingDistance(text: String): String = LEADING_DISTANCE.matcher(text).replaceFirst("")
+
+    private val LEADING_DISTANCE: Pattern = Pattern.compile(
+        "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*" +
+            "(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft|yards|yard|yd" +
+            "|metres|meters|metre|meter|m)\\s*[·•|]\\s*",
+    )
+
     fun parseMeters(text: String): Int? {
         val matcher = PATTERN.matcher(text)
         if (!matcher.find()) return null
