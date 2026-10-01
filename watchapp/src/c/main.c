@@ -21,6 +21,7 @@
 
 #include "eta_text.h"
 #include "generated/protocol.h"
+#include "glance_text.h"
 #include "settings_window.h"
 #include "stops_text.h"
 #include "theme.h"
@@ -72,6 +73,8 @@ static bool s_showing_message = true;
 // Arrival time as a Unix epoch second, or 0 when the phone did not send one. Used to render a live
 // "time to arrival" countdown when that ETA display mode is selected (REQ-WATCH-014).
 static int32_t s_eta_epoch = 0;
+// A route is active: set by every navigation update, cleared when navigation stops (REQ-WATCH-019).
+static bool s_navigating;
 
 static char s_primary_buf[PRIMARY_TEXT_MAX + 1];
 static char s_secondary_buf[SECONDARY_TEXT_MAX + 1];
@@ -759,6 +762,7 @@ static void render_navigation(DictionaryIterator *iter) {
   s_stops_remaining = stops_t ? stops_t->value->int32 : -1;
   // The phone omits the ETA epoch when a rule extracts no arrival time; 0 means "unknown".
   s_eta_epoch = eta_epoch_t ? eta_epoch_t->value->int32 : 0;
+  s_navigating = true;
   s_flags = flags_t ? flags_t->value->int32 : 0;
 
   // Remember the previous primary text so "new info" can be told apart from a plain resend of the
@@ -814,6 +818,7 @@ static void render_navigation(DictionaryIterator *iter) {
 }
 
 static void handle_stopped(DictionaryIterator *iter) {
+  s_navigating = false;
   Tuple *flags_t = dict_find(iter, PBNTN_KEY_FLAGS);
   int32_t flags = flags_t ? flags_t->value->int32 : 0;
   if (flags & PBNTN_FLAG_EXIT_TO_WATCHFACE_ON_STOP_MASK) {
@@ -855,6 +860,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
       break;
     case PBNTN_EVENT_NO_ACTIVE_NAVIGATION:
       s_last_maneuver = -1;
+      s_navigating = false;
       show_message("No navigation detected. If navigating, open PebbleNTN on your phone.");
       break;
     case PBNTN_EVENT_PHONE_COMPATIBILITY_ERROR:
@@ -969,7 +975,29 @@ static void init(void) {
   send_ready();
 }
 
+#if !PBL_PLATFORM_APLITE
+// Launcher subtitle (REQ-WATCH-019, #15): during a route, a countdown to the arrival time that the
+// launcher keeps current and that expires at the arrival time; after it, and otherwise, a short hint.
+static void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
+  char countdown[150];
+  if (limit >= 2 && glance_countdown_template(s_navigating, s_eta_epoch, (int32_t)time(NULL),
+                                              s_secondary_buf, countdown, sizeof(countdown))) {
+    app_glance_add_slice(session, (AppGlanceSlice){
+      .layout = { .icon = APP_GLANCE_SLICE_DEFAULT_ICON, .subtitle_template_string = countdown },
+      .expiration_time = s_eta_epoch,
+    });
+  }
+  app_glance_add_slice(session, (AppGlanceSlice){
+    .layout = { .icon = APP_GLANCE_SLICE_DEFAULT_ICON, .subtitle_template_string = GLANCE_HINT },
+    .expiration_time = APP_GLANCE_SLICE_NO_EXPIRATION,
+  });
+}
+#endif
+
 static void deinit(void) {
+#if !PBL_PLATFORM_APLITE
+  app_glance_reload(glance_reload_callback, NULL);  // the glance is set as the app closes
+#endif
   backlight_release();  // don't leave the light forced on after the app exits
   connect_stop();
   connection_service_unsubscribe();

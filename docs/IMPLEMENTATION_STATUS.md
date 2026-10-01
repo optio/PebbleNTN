@@ -2,6 +2,25 @@
 
 _Last updated: 2026-10-01_
 
+## Launcher subtitle on the watch (#15; REQ-WATCH-019) (2026-10-01)
+
+- When the watchapp closes it sets its **app glance**, the subtitle under its name in the launcher.
+  - **During a route:** `In 0:24 · ETA 13:24`. The countdown (`time_until`) is kept current by the
+    launcher, and the slice expires at the arrival time.
+  - **Otherwise / afterwards:** the hint `Navigate on phone`.
+- `s_navigating` is set by each navigation update and cleared by NAVIGATION_STOPPED and
+  NO_ACTIVE_NAVIGATION.
+- The text is in the pure unit `glance_text.c`, host-tested in `tests/test_glance_text.c`. It drops
+  `{ } \` from the phone's text and gives the hint rather than a cut-off template.
+- Only the watchapp can set a glance (PebbleKit can't), so this needs a watchapp store release.
+  Aplite has no glances; the code compiles out there.
+- **Why not the issue's original "Pebble Notification To Navigation":** about 18 characters fit
+  (basalt cuts it to "Pebble Notificatio…", and only emery scrolls the highlighted row).
+
+**Verified.** Watchapp unit tests; `pebble build` for all platforms. On the basalt and emery
+emulators: the countdown after leaving the app mid-route, ticking from 0:24 to 0:23; the hint after
+the arrival time passed; the hint after navigation stopped. `./scripts/test-all.sh`.
+
 ## Temporary feedback campaign (#29; REQ-ANDROID-015) (2026-10-01)
 
 - A **"Help shape PebbleNTN"** card on the dashboard: Report a bug, Request a feature, Suggest a name,
