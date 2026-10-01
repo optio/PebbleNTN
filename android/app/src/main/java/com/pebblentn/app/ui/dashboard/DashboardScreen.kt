@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Place
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.pebblentn.app.BuildConfig
 import com.pebblentn.app.R
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.protocol.WatchLink
 import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.format.DisplayLabels
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
@@ -85,6 +87,9 @@ fun DashboardScreen(
     officialRuleCount: Int = 0,
     userRuleCount: Int = 0,
     watchappInstalled: Boolean = true,
+    watchLink: WatchLink = WatchLink.Unknown,
+    monochrome: Boolean = false,
+    onMonochromeChange: (Boolean) -> Unit = {},
     onGetWatchapp: () -> Unit = {},
     onConfirmWatchapp: () -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
@@ -156,6 +161,15 @@ fun DashboardScreen(
                 ListItem(
                     headlineContent = { AccessStatusChip(accessGranted = accessGranted) },
                     colors = sectionColors(),
+                )
+                InfoRow(
+                    title = stringResource(R.string.dashboard_watch),
+                    value = when (watchLink) {
+                        WatchLink.Unknown -> stringResource(R.string.dashboard_watch_checking)
+                        WatchLink.NoCompanion -> stringResource(R.string.dashboard_watch_no_companion)
+                        WatchLink.NotConnected -> stringResource(R.string.dashboard_watch_not_connected)
+                        is WatchLink.Connected -> stringResource(R.string.dashboard_watch_connected, watchLink.watchNames.joinToString())
+                    },
                 )
                 InfoRow(
                     title = stringResource(R.string.dashboard_last_notification),
@@ -234,6 +248,16 @@ fun DashboardScreen(
                         scope.launch { snackbarHostState.showSnackbar(refreshDoneMessage) }
                     },
                     showChevron = false,
+                )
+            }
+
+            Section(stringResource(R.string.dashboard_section_appearance)) {
+                ToggleRow(
+                    icon = Icons.Filled.Face,
+                    title = stringResource(R.string.dashboard_monochrome),
+                    summary = stringResource(R.string.dashboard_monochrome_hint),
+                    checked = monochrome,
+                    onCheckedChange = onMonochromeChange,
                 )
             }
 

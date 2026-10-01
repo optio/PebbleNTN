@@ -1,6 +1,7 @@
 package com.pebblentn.app.protocol
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Abstraction over the Pebble link. Isolating the watch behind this interface keeps the reducer and
@@ -24,6 +25,35 @@ interface WatchTransport {
      * fakes need not implement it.
      */
     suspend fun linkDiagnostics(): String = "diagnostics unavailable"
+
+    /**
+     * The watch link as the dashboard shows it (#28), re-emitting when watches connect or
+     * disconnect. Fakes default to [WatchLink.Unknown].
+     */
+    fun watchLink(): Flow<WatchLink> = flowOf(WatchLink.Unknown)
+}
+
+/** Whether a Pebble is reachable, for the dashboard (#28). */
+sealed interface WatchLink {
+    /** Not determined yet. */
+    data object Unknown : WatchLink
+
+    /** No Pebble companion app (the Core Devices / Rebble Pebble app) is installed or selected. */
+    data object NoCompanion : WatchLink
+
+    /** The companion is there but no watch is connected to it. */
+    data object NotConnected : WatchLink
+
+    data class Connected(val watchNames: List<String>) : WatchLink
+
+    companion object {
+        /** Map what the companion reports to a [WatchLink]. */
+        fun from(companionPresent: Boolean, connectedNames: List<String>): WatchLink = when {
+            !companionPresent -> NoCompanion
+            connectedNames.isEmpty() -> NotConnected
+            else -> Connected(connectedNames)
+        }
+    }
 }
 
 /** Outcome of a single send attempt. Retry/backoff policy lives above the transport. */

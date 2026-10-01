@@ -2,6 +2,26 @@
 
 _Last updated: 2026-10-01_
 
+## #28 leftovers, part 2: watch status, app icons and languages, monochrome theme (2026-10-01)
+
+- **Watch status on the dashboard** (Status → Watch): "<name> connected", "Not connected", or "The
+  Pebble app isn't installed". `WatchTransport.watchLink()` (default `Unknown` for fakes);
+  `PebbleWatchTransport` maps the selected companion and its connected-watch content provider
+  (queried on `Dispatchers.IO`, as it's `@WorkerThread`) through `WatchLink.from`, re-emitting on
+  changes.
+- **Navigation apps:** installed apps show their launcher icon, and apps with rules list the
+  languages their official rules cover ("Directions in German, English, …"); rules for every
+  language say "Turn-by-turn directions".
+- **Pebble monochrome theme** (spec/400-ui "a Pebble monochrome theme available"): an opt-in toggle
+  under Appearance (`AppearanceRepository`, off by default). Black and white light/dark schemes,
+  keeping error red for destructive actions.
+
+**Verified.** `WatchLinkTest` (3), `AppearanceRepositoryTest` (2); all 313 unit tests;
+`./scripts/test-all.sh`. Emulator: the Watch line, the monochrome theme in light and dark, and
+navigation apps with icons and languages.
+
+With this, every item of #28 is done.
+
 ## #28 leftovers, part 1: undo, share one event, maneuver icons, rules per app (2026-10-01)
 
 - **Undo after deleting a user rule:** the confirmation stays; afterwards a "Rule deleted · Undo"

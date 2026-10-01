@@ -36,7 +36,9 @@ import kotlinx.coroutines.CoroutineScope
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -119,10 +121,17 @@ class AppContainer(context: Context) {
     /** Whether the watchapp is known to be installed (setup checklist, #28). */
     val watchappPresence = WatchappPresenceRepository(appContext)
 
+    /** The optional Pebble monochrome theme (#28). */
+    val appearance = com.pebblentn.app.data.AppearanceRepository(appContext)
+
     val watchTransport: WatchTransport = PebbleWatchTransport(
         appContext,
         autoLaunchEnabled = watchSettingsRepository::isAutoLaunchEnabled,
     )
+
+    /** Whether a Pebble is reachable, for the dashboard (#28). */
+    val watchLink: kotlinx.coroutines.flow.StateFlow<com.pebblentn.app.protocol.WatchLink> = watchTransport.watchLink()
+        .stateIn(applicationScope, SharingStarted.WhileSubscribed(5_000), com.pebblentn.app.protocol.WatchLink.Unknown)
 
     private val navigationStateRepository = NavigationStateRepository(database.navigationStateDao())
 
