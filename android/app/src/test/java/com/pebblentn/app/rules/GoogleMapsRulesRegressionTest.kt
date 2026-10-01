@@ -66,7 +66,7 @@ class GoogleMapsRulesRegressionTest {
             ?: error("resource not found: $path")
 
     /** Every bundled Google Maps locale; the engine filters by each fixture's locale. */
-    private val locales = listOf("en", "it", "fr", "es", "de", "nl")
+    private val locales = listOf("en", "it", "fr", "es", "de", "nl", "zh")
 
     private val bundledRules: LayeredRules by lazy {
         LayeredRules(

@@ -2,6 +2,31 @@
 
 _Last updated: 2026-10-01_
 
+## Traditional Chinese (zh-TW) Google Maps, and Chinese distance units (#17) (2026-10-01)
+
+From the zh-TW log attached to #17: Google Maps in Chinese on a phone set to English.
+
+- **Distance parser** (Kotlin and Python, in lockstep): 公尺 / 米 (metres) and 公里 / 千米
+  (kilometres). They're a separate alternative without `\b`, which means nothing after a CJK
+  character. "米蘭路" (a road name) is still not a distance.
+- **`google-maps/zh.json`** (12 rules, same priority ladder as English). Captured: "前往<road>"
+  (head toward → STRAIGHT), with the distance as "0 公尺" in the title, or no title at all. The
+  other phrasings (右轉/左轉, 靠右/靠左, 稍微右轉, 急右轉, 迴轉, 圓環, 抵達) follow Google Maps'
+  Traditional Chinese wording and are marked for validation.
+  - **No locales on purpose:** rules are picked by the phone's language, and this user's phone was in
+    English. Chinese phrases can't collide with other languages. (The Rules screen therefore lists
+    them under "All languages".)
+  - **Distance from the title only:** without a title, combinedText would pick the trip total from
+    the ETA line ("6 分鐘 · 1.9 公里 · 預計到達時間：13:24").
+  - **ARRIVE uses 抵達, never 到達:** "預計到達時間" (expected arrival time) is on every card.
+- Fixtures: 4 captures (run with locale en-US, as in the log) and 5 synthetic.
+
+**Left open:** two English-format cards with only a road name ("160 m" / "成功二路"); no
+maneuver word.
+
+**Verified.** Parser test; regression (Google Maps 101/101); all 317 unit tests;
+`./scripts/test-all.sh`. Replaying the log, every Chinese navigation card matches (16).
+
 ## Italian: OsmAnd ruleset and Google Maps "procedi" (#16) (2026-10-01)
 
 From the Italian diagnostics log attached to #16 (v0.0.25, it-IT):

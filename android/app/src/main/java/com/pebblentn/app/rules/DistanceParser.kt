@@ -20,12 +20,14 @@ import kotlin.math.roundToInt
  * so a spelled-out unit is never truncated to a shorter one.
  */
 object DistanceParser {
+    // Group 2: Latin units, which must end at a word boundary. Group 3: Chinese units (#17: 公尺 and
+    // 公里 in zh-TW, 米 and 千米 in zh-CN); \\b means nothing after a CJK character, so they have none.
     private val PATTERN: Pattern =
         Pattern.compile(
             "(?i)(\\d+(?:[.,]\\d+)?)\\s*" +
-                "(kilometres|kilometers|kilometre|kilometer|km" +
+                "(?:(kilometres|kilometers|kilometre|kilometer|km" +
                 "|miles|mile|mi|feet|foot|ft|yards|yard|yd" +
-                "|metres|meters|metre|meter|m)\\b",
+                "|metres|meters|metre|meter|m)\\b|(公里|千米|公尺|米))",
         )
 
     /**
@@ -45,12 +47,12 @@ object DistanceParser {
         val matcher = PATTERN.matcher(text)
         if (!matcher.find()) return null
         val number = matcher.group(1)?.replace(',', '.')?.toDoubleOrNull() ?: return null
-        val meters = when (matcher.group(2)?.lowercase()) {
-            "km", "kilometer", "kilometers", "kilometre", "kilometres" -> number * 1000.0
+        val meters = when ((matcher.group(2) ?: matcher.group(3))?.lowercase()) {
+            "km", "kilometer", "kilometers", "kilometre", "kilometres", "公里", "千米" -> number * 1000.0
             "mi", "mile", "miles" -> number * 1609.344
             "ft", "foot", "feet" -> number * 0.3048
             "yd", "yard", "yards" -> number * 0.9144
-            else -> number // metre / metres / meter / meters / m
+            else -> number // metre / metres / meter / meters / m / 公尺 / 米
         }
         return meters.roundToInt().coerceAtLeast(0)
     }

@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "google-maps-zh-2026.10.1",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-10-01T00:00:00Z",
+  "publisher": "PebbleNTN maintainers",
+  "rules": [
+    {
+      "id": "google-maps-roundabout-zh",
+      "enabled": true,
+      "priority": 190,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "圓環|環島"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-uturn-zh",
+      "enabled": true,
+      "priority": 180,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "迴轉|掉頭"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-sharp-right-zh",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "急右轉"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-sharp-left-zh",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "急左轉"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-slight-right-zh",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "稍微右轉|稍向右轉|向右前方"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-slight-left-zh",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "稍微左轉|稍向左轉|向左前方"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-keep-right-zh",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "靠右"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-keep-left-zh",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "靠左"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-turn-right-zh",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "右轉"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-turn-left-zh",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "左轉"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-continue-zh",
+      "enabled": true,
+      "priority": 50,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Real zh-TW capture (#17, 2026-08): '前往成功二路' (head toward), with the distance as '0 公尺' in the title or no title at all. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "前往|直行|繼續"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-arrive-zh",
+      "enabled": true,
+      "priority": 40,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "Google Maps' Traditional Chinese phrasing; validate against a real capture. '抵達', never '到達': the ETA line is '預計到達時間：13:24' on every card. No locales on purpose: rules are picked by the phone's language, and the #17 capture came from a phone set to English running Maps in Chinese. Chinese phrases can't collide with other languages.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "抵達"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2})",
+          "group": 1
+        }
+      }
+    }
+  ]
+}
