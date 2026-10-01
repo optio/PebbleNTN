@@ -69,4 +69,14 @@ class DistanceDurationParserTest {
         assertNull(DurationParser.parseSeconds("arrive"))
         assertNull(DurationParser.parseSeconds(""))
     }
+
+    @Test
+    fun chineseUnitsAreRecognised() {
+        // #17: zh-TW Google Maps writes 公尺 (metres) and 公里 (kilometres); zh-CN uses 米 and 千米.
+        assertEquals(0, DistanceParser.parseMeters("0 公尺"))
+        assertEquals(1900, DistanceParser.parseMeters("6 分鐘 · 1.9 公里"))
+        assertEquals(300, DistanceParser.parseMeters("300 米"))
+        assertEquals(2000, DistanceParser.parseMeters("2 千米"))
+        assertEquals("a road name is not a distance", null, DistanceParser.parseMeters("米蘭路"))
+    }
 }

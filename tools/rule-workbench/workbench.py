@@ -206,17 +206,17 @@ def parse_distance(text: str):
     # and spelled-out units are recognized; longer alternatives precede their prefixes.
     m = re.search(
         r"(\d+(?:[.,]\d+)?)\s*"
-        r"(kilometres|kilometers|kilometre|kilometer|km"
+        r"(?:(kilometres|kilometers|kilometre|kilometer|km"
         r"|miles|mile|mi|feet|foot|ft|yards|yard|yd"
-        r"|metres|meters|metre|meter|m)\b",
+        r"|metres|meters|metre|meter|m)\b|(公里|千米|公尺|米))",
         text,
         re.IGNORECASE,
     )
     if not m:
         return None
     num = float(m.group(1).replace(",", "."))
-    unit = m.group(2).lower()
-    if unit in ("km", "kilometer", "kilometers", "kilometre", "kilometres"):
+    unit = (m.group(2) or m.group(3)).lower()
+    if unit in ("km", "kilometer", "kilometers", "kilometre", "kilometres", "公里", "千米"):
         meters = num * 1000
     elif unit in ("mi", "mile", "miles"):
         meters = num * 1609.344
