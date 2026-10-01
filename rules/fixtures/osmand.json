@@ -10,7 +10,7 @@
         "title": "200 m • Turn right and go"
       },
       "comment": "Real capture (2026-08, FULL). OsmAnd puts distance + maneuver in the title, ' • '-separated; text/subText are null.",
-      "expected": {
+      "expected": {"primaryText": "Turn right and go", 
         "maneuver": "RIGHT",
         "distanceMeters": 200,
         "ruleId": "osmand-turn-right-en"
@@ -24,7 +24,7 @@
       "snapshot": {
         "title": "100 m • Turn left and go"
       },
-      "expected": {
+      "expected": {"primaryText": "Turn left and go", 
         "maneuver": "LEFT",
         "distanceMeters": 100,
         "ruleId": "osmand-turn-left-en"

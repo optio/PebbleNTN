@@ -94,7 +94,15 @@ data class FieldCopyExtractor(val field: String) : Extractor
 
 @Serializable
 @SerialName("firstNonEmpty")
-data class FirstNonEmptyExtractor(val fields: List<String>) : Extractor
+data class FirstNonEmptyExtractor(
+    val fields: List<String>,
+    /**
+     * Drop a leading "<distance> · " from the chosen text (REQ-RULE-017). Google Maps' current layout
+     * puts the distance before the instruction in the title ("70 m · Slight left onto N155"), and the
+     * watch already shows the distance on its own (#26).
+     */
+    val stripLeadingDistance: Boolean = false,
+) : Extractor
 
 @Serializable
 @SerialName("distance")

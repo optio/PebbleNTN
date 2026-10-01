@@ -47,3 +47,6 @@ Bundled official rulesets SHALL be organized per navigation app then per languag
 
 ## REQ-RULE-016 — Public-transit rides
 Rule outputs MAY set `stopsRemaining`, the number of public-transit stops left on the current ride. It SHALL accept either a numeric extraction or text whose first integer is the count (for example "5 stops · 10 min"), SHALL be omitted when no count is found, and SHALL never be negative. The bundled Google Maps rules SHALL classify a transit ride card (`Ride to <station>`) as the TRANSIT maneuver, with the destination station as the primary text, the stop count as `stopsRemaining` and the arrival time as the secondary text. The Kotlin engine and the Python rule-workbench SHALL stay in lockstep.
+
+## REQ-RULE-017 — Street line without a leading distance
+The `firstNonEmpty` extractor MAY set `stripLeadingDistance`, which removes a leading distance followed by a separator (`·`, `•` or `|`) from the chosen text, for example "70 m · Slight left onto N155" → "Slight left onto N155". A distance without a separator, or a number that isn't followed by a unit, SHALL be kept. Bundled rules SHALL use it wherever the navigation app puts the distance before the instruction, since the watch already shows the distance. The Kotlin engine and the Python rule-workbench SHALL stay in lockstep.
