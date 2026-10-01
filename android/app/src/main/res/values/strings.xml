@@ -333,4 +333,18 @@
     <string name="dashboard_monochrome">Pebble monochrome theme</string>
     <string name="dashboard_monochrome_hint">Black and white, like a Pebble screen, instead of your phone\'s colours.</string>
     <string name="navigation_apps_languages">Directions in %1$s</string>
+    <!-- Feedback campaign (#29, REQ-ANDROID-015). -->
+    <string name="feedback_title">Help shape PebbleNTN</string>
+    <string name="feedback_body">Found a bug, missing something, or have a better name for the app? Tell us. This opens GitHub or your email app; nothing is sent automatically.</string>
+    <string name="feedback_bug">Report a bug</string>
+    <string name="feedback_feature">Request a feature</string>
+    <string name="feedback_name">Suggest a name</string>
+    <string name="feedback_email">Send by email</string>
+    <string name="feedback_not_now">Not now</string>
+    <string name="feedback_dismiss">Don\'t show again</string>
+    <string name="feedback_bug_url" translatable="false">https://github.com/optio/PebbleNTN/issues/new?template=bug_report.yml&amp;app-version=%1$s&amp;android-version=%2$s</string>
+    <string name="feedback_feature_url" translatable="false">https://github.com/optio/PebbleNTN/issues/new?template=feature_request.yml&amp;app-version=%1$s</string>
+    <string name="feedback_name_url" translatable="false">https://github.com/optio/PebbleNTN/discussions/45</string>
+    <string name="feedback_email_subject">PebbleNTN feedback</string>
+    <string name="feedback_email_body">Bug, idea or name suggestion:\n\n\n---\nPebbleNTN %1$s, Android %2$s</string>
 </resources>

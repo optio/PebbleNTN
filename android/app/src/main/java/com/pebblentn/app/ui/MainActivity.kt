@@ -119,6 +119,7 @@ class MainActivity : ComponentActivity() {
         val watchappInstalled by container.watchappPresence.detected.collectAsState()
         val watchLink by container.watchLink.collectAsState()
         val monochrome by container.appearance.monochrome.collectAsState()
+        val feedbackState by container.feedbackCampaign.state.collectAsState()
         val discoveredApps by container.enabledAppRepository.observeEnablement().collectAsState(initial = emptyList())
         val userRuleCount by produceState(initialValue = 0) {
             container.userRuleRepository.observeUserRules().collect { value = it.size }
@@ -156,6 +157,12 @@ class MainActivity : ComponentActivity() {
                     watchLink = watchLink,
                     monochrome = monochrome,
                     onMonochromeChange = container.appearance::setMonochrome,
+                    showFeedback = com.pebblentn.app.data.FeedbackCampaign.CURRENT.isVisible(
+                        today = java.time.LocalDate.now(),
+                        usedForNavigation = lastEligible != null,
+                        state = feedbackState,
+                    ),
+                    feedbackActions = feedbackActions(),
                 )
             }
             composable(
@@ -293,6 +300,30 @@ class MainActivity : ComponentActivity() {
                 initialCaptureId = fromEventId,
             )
         }
+    }
+
+    /** The feedback card's actions (#29): GitHub pages pre-filled with versions, or an email draft. */
+    private fun feedbackActions(): com.pebblentn.app.ui.dashboard.FeedbackActions {
+        val app = com.pebblentn.app.BuildConfig.VERSION_NAME
+        val android = android.os.Build.VERSION.RELEASE
+        return com.pebblentn.app.ui.dashboard.FeedbackActions(
+            reportBug = { openUrl(getString(R.string.feedback_bug_url, app, android)) },
+            requestFeature = { openUrl(getString(R.string.feedback_feature_url, app)) },
+            suggestName = { openUrl(getString(R.string.feedback_name_url)) },
+            email = { emailFeedback(app, android) },
+            notNow = { container.feedbackCampaign.snooze(java.time.LocalDate.now()) },
+            dismiss = container.feedbackCampaign::dismiss,
+        )
+    }
+
+    /** For people without a GitHub account: a pre-addressed email draft they send themselves. */
+    private fun emailFeedback(appVersion: String, androidVersion: String) {
+        val intent = Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:")).apply {
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(getString(R.string.share_logs_recipient)))
+            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.feedback_email_subject))
+            putExtra(Intent.EXTRA_TEXT, getString(R.string.feedback_email_body, appVersion, androidVersion))
+        }
+        runCatching { startActivity(intent) }
     }
 
     /** The catalog's name for a package, for every screen that shows which app something came from. */

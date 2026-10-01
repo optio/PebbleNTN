@@ -90,6 +90,8 @@ fun DashboardScreen(
     watchLink: WatchLink = WatchLink.Unknown,
     monochrome: Boolean = false,
     onMonochromeChange: (Boolean) -> Unit = {},
+    showFeedback: Boolean = false,
+    feedbackActions: FeedbackActions = FeedbackActions(),
     onGetWatchapp: () -> Unit = {},
     onConfirmWatchapp: () -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
@@ -124,6 +126,18 @@ fun DashboardScreen(
             )
             if (!setup.complete) {
                 SetupChecklist(progress = setup, onGetWatchapp = onGetWatchapp, onConfirmWatchapp = onConfirmWatchapp)
+            }
+
+            // Temporary feedback campaign (#29): after first use, until its end date or dismissal.
+            if (showFeedback) {
+                FeedbackCard(
+                    onReportBug = feedbackActions.reportBug,
+                    onRequestFeature = feedbackActions.requestFeature,
+                    onSuggestName = feedbackActions.suggestName,
+                    onEmail = feedbackActions.email,
+                    onNotNow = feedbackActions.notNow,
+                    onDismiss = feedbackActions.dismiss,
+                )
             }
 
             if (updateAvailable) {
@@ -406,3 +420,13 @@ private fun DashboardPreview() {
         )
     }
 }
+
+/** What the feedback card's buttons do (#29). */
+data class FeedbackActions(
+    val reportBug: () -> Unit = {},
+    val requestFeature: () -> Unit = {},
+    val suggestName: () -> Unit = {},
+    val email: () -> Unit = {},
+    val notNow: () -> Unit = {},
+    val dismiss: () -> Unit = {},
+)

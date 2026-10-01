@@ -1,0 +1,20 @@
+name: Feature request
+description: An idea that would make PebbleNTN better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: Describe the idea, and the situation where it would help you.
+    validations:
+      required: true
+  - type: input
+    id: navigation-app
+    attributes:
+      label: Navigation app (if it's about one)
+  - type: input
+    id: app-version
+    attributes:
+      label: PebbleNTN app version
+      description: Filled in when you open this from the app.

@@ -124,6 +124,9 @@ class AppContainer(context: Context) {
     /** The optional Pebble monochrome theme (#28). */
     val appearance = com.pebblentn.app.data.AppearanceRepository(appContext)
 
+    /** The temporary feedback campaign's dismissal state (#29). */
+    val feedbackCampaign = com.pebblentn.app.data.FeedbackCampaignRepository(appContext)
+
     val watchTransport: WatchTransport = PebbleWatchTransport(
         appContext,
         autoLaunchEnabled = watchSettingsRepository::isAutoLaunchEnabled,

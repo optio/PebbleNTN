@@ -2,6 +2,24 @@
 
 _Last updated: 2026-10-01_
 
+## Temporary feedback campaign (#29; REQ-ANDROID-015) (2026-10-01)
+
+- A **"Help shape PebbleNTN"** card on the dashboard: Report a bug, Request a feature, Suggest a name,
+  Send by email; **Not now** (hidden for 14 days) and **Don't show again**.
+- **When it shows** (`FeedbackCampaign.isVisible`, pure and tested): after the app has been used for
+  navigation (a navigation notification was seen), up to and including the end date (campaign
+  `feedback-2026q4`, until 2026-12-31), and unless dismissed or snoozed. Choices are stored per
+  campaign id (`FeedbackCampaignRepository`), so a later campaign with a new id shows again.
+- **Where it leads:** new GitHub issue forms (`.github/ISSUE_TEMPLATE/bug_report.yml`,
+  `feature_request.yml`), pre-filled with only the app and Android versions; name ideas go to
+  Discussion #45 ("Name proposals for PebbleNTN", created for this), also linked from the issue
+  chooser; email opens a draft to the maintainers' address. Nothing is sent automatically, there's
+  no new permission, and no notification content is included.
+
+**Verified.** `FeedbackCampaignTest` (4); all 321 unit tests; `./scripts/test-all.sh`. On the
+emulator: the card shown after use, Report a bug opening the GitHub form, and Not now hiding it
+(still hidden after a restart).
+
 ## Traditional Chinese (zh-TW) Google Maps, and Chinese distance units (#17) (2026-10-01)
 
 From the zh-TW log attached to #17: Google Maps in Chinese on a phone set to English.
