@@ -10,6 +10,7 @@
 #define PERSIST_KEY_VIBE_PATTERN 8
 #define PERSIST_KEY_VIBE_INTENSITY 9
 #define PERSIST_KEY_BACKLIGHT_COLOR 10
+#define PERSIST_KEY_ETA_LABEL_STYLE 11
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
@@ -17,6 +18,7 @@ static UnitsId s_units = UNITS_METRIC;
 static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
 static bool s_arrow_left = false;
 static EtaMode s_eta_mode = ETA_MODE_ARRIVAL;
+static EtaLabelStyle s_eta_label_style = ETA_LABEL_LABELLED;
 static BacklightMode s_backlight = BACKLIGHT_OFF;
 static BacklightColorId s_backlight_color = BACKLIGHT_COLOR_DEFAULT;
 static VibePatternId s_vibe_pattern = VIBE_PATTERN_OFF;
@@ -135,6 +137,11 @@ const char *units_name(UnitsId id) {
   return (id == UNITS_IMPERIAL) ? "Miles / feet" : "Kilometres / metres";
 }
 
+// The setting shows the style itself, as the two tags it produces.
+const char *eta_label_style_name(EtaLabelStyle id) {
+  return (id == ETA_LABEL_COMPACT) ? "ETA / IN" : "ETA at / ETA in";
+}
+
 const char *eta_mode_name(EtaMode id) {
   return (id == ETA_MODE_DURATION) ? "Time to arrival" : "Arrival time";
 }
@@ -243,6 +250,7 @@ UnitsId settings_units(void) { return s_units; }
 GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
 bool settings_arrow_left(void) { return s_arrow_left; }
 EtaMode settings_eta_mode(void) { return s_eta_mode; }
+EtaLabelStyle settings_eta_label_style(void) { return s_eta_label_style; }
 BacklightMode settings_backlight(void) { return s_backlight; }
 BacklightColorId settings_backlight_color(void) { return s_backlight_color; }
 VibePatternId settings_vibe_pattern(void) { return s_vibe_pattern; }
@@ -271,6 +279,11 @@ void settings_set_glyph_pack(GlyphPack id) {
 void settings_set_arrow_left(bool arrow_left) {
   s_arrow_left = arrow_left;
   persist_write_bool(PERSIST_KEY_ARROW_LEFT, s_arrow_left);
+}
+
+void settings_set_eta_label_style(EtaLabelStyle id) {
+  s_eta_label_style = (id < ETA_LABEL_COUNT) ? id : ETA_LABEL_LABELLED;
+  persist_write_int(PERSIST_KEY_ETA_LABEL_STYLE, s_eta_label_style);
 }
 
 void settings_set_eta_mode(EtaMode id) {
@@ -385,6 +398,12 @@ void settings_load(void) {
     const int stored = persist_read_int(PERSIST_KEY_ETA_MODE);
     if (stored >= 0 && stored < ETA_MODE_COUNT) {
       s_eta_mode = (EtaMode)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_ETA_LABEL_STYLE)) {
+    const int stored = persist_read_int(PERSIST_KEY_ETA_LABEL_STYLE);
+    if (stored >= 0 && stored < ETA_LABEL_COUNT) {
+      s_eta_label_style = (EtaLabelStyle)stored;
     }
   }
   if (persist_exists(PERSIST_KEY_BACKLIGHT)) {

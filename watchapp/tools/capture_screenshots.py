@@ -47,10 +47,12 @@ ROW_VIBE_INTENSITY = 2
 ROW_COLOUR = 3
 ROW_INVERT = 4
 ROW_ETA = 5
-ROW_ARROW = 6
-ROW_GLYPH = 7
-ROW_UNITS = 8
-LAST_MAIN_ROW = ROW_UNITS
+ROW_ETA_LABEL = 6
+ROW_ARROW = 7
+ROW_GLYPH = 8
+ROW_UNITS = 9
+ROW_ABOUT = 10
+LAST_MAIN_ROW = ROW_ABOUT
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.
 CLOCK = "12:35:00"
@@ -84,6 +86,7 @@ DEFAULTS = {
     "accent": "green", "pack": "classic",
     "arrow_left": False, "inverted": False, "imperial": False,
     "eta_duration": False,
+    "eta_compact": False,
 }
 
 # name -> settings overrides applied on top of DEFAULTS.
@@ -105,6 +108,8 @@ MAIN_SHOTS = [
     ("main-glyph-pack-outline-green", {"pack": "outline"}),
     ("main-imperial-units-green", {"imperial": True}),
     ("main-eta-time-to-arrival", {"eta_duration": True}),
+    ("main-eta-label-compact", {"eta_compact": True}),
+    ("main-eta-label-compact-time-to-arrival", {"eta_compact": True, "eta_duration": True}),
 ]
 
 
@@ -228,7 +233,8 @@ def apply_settings(platform, state, target):
     for key, menu_row in (("arrow_left", ROW_ARROW),
                           ("inverted", ROW_INVERT),
                           ("imperial", ROW_UNITS),
-                          ("eta_duration", ROW_ETA)):
+                          ("eta_duration", ROW_ETA),
+                          ("eta_compact", ROW_ETA_LABEL)):
         if key in changes:
             row = move_to_row(platform, row, menu_row)
             click(platform, "select")
@@ -256,6 +262,12 @@ def capture_settings_screens(platform):
     row = move_to_row(platform, row, ROW_GLYPH)
     click(platform, "select")               # open the glyph door
     shot(platform, "settings-glyph-pack-list")
+    click(platform, "back")
+
+    row = move_to_row(platform, row, ROW_ABOUT)
+    click(platform, "select")               # open About
+    time.sleep(0.5)
+    shot(platform, "settings-about")
     click(platform, "back")
 
     click(platform, "back")  # back to the nav window

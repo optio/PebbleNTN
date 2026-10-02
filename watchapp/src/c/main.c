@@ -389,12 +389,12 @@ static void draw_strip_text(GContext *ctx, const char *text, GFont font, int16_t
 }
 
 // Build the strip's right-hand arrival readout for the current display mode (REQ-WATCH-014). Writes
-// the value into `out`, points `*label` at its small leading tag, and returns false when there is
-// nothing to show. ARRIVAL mode (the default) shows the phone's arrival-time string as "ETA 17:45";
+// the value into `out`, sets `*duration` when it is a countdown rather than a clock time (which picks
+// its small leading tag), and returns false when there is nothing to show. ARRIVAL mode (the default) shows the phone's arrival-time string as "ETA 17:45";
 // DURATION mode shows the time left until arrival as "IN 0:25", computed from the arrival epoch and
 // recomputed each minute by the strip's redraw. DURATION falls back to the arrival-time string when
 // the phone sent no arrival epoch (a rule that extracts no ETA), so the strip is never left blank.
-static bool format_eta_readout(char *out, size_t out_len, const char **label) {
+static bool format_eta_readout(char *out, size_t out_len, bool *duration) {
   if (settings_eta_mode() == ETA_MODE_DURATION) {
     int32_t total_min = -1;
     if (s_eta_epoch > 0) {
@@ -418,13 +418,13 @@ static bool format_eta_readout(char *out, size_t out_len, const char **label) {
     }
     if (total_min >= 0) {
       snprintf(out, out_len, "%d:%02d", (int)(total_min / 60), (int)(total_min % 60));
-      *label = "IN";
+      *duration = true;
       return true;
     }
   }
   if (s_secondary_buf[0] != '\0') {
     snprintf(out, out_len, "%s", s_secondary_buf);
-    *label = "ETA";
+    *duration = false;
     return true;
   }
   return false;
@@ -472,16 +472,40 @@ static void strip_update_proc(Layer *layer, GContext *ctx) {
     left_text = clock;
   }
   draw_strip_text(ctx, left_text, clock_font, pad, w / 2, h, GTextAlignmentLeft, hhmm_trim);
+  const int16_t clock_right = pad + strip_text_width(left_text, clock_font);
 
   // Right: the arrival estimate, large and right-aligned, with a small label just before it. Whether
-  // this is the arrival time ("ETA 17:45") or the remaining duration ("IN 0:25") is a user setting.
+  // this is the arrival time ("ETA at 17:45") or the remaining duration ("ETA in 0:25") is a user
+  // setting, and so is how the tag is written (#13).
   char eta_text[SECONDARY_TEXT_MAX + 1];
-  const char *eta_label = "ETA";
-  if (format_eta_readout(eta_text, sizeof(eta_text), &eta_label)) {
+  bool duration = false;
+  if (format_eta_readout(eta_text, sizeof(eta_text), &duration)) {
     const int16_t time_w = strip_text_width(eta_text, time_font);
     draw_strip_text(ctx, eta_text, time_font, w / 2, w / 2 - pad, h, GTextAlignmentRight, hhmm_trim);
     const int16_t label_right = w - pad - time_w - 4;  // 4px gap before the time
-    draw_strip_text(ctx, eta_label, label_font, pad, label_right - pad, h, GTextAlignmentRight, label_trim);
+    // The labelled tag ("ETA at") is wider. When it would run into the clock (a 144-wide screen, a
+    // long arrival string such as "5:45 PM"), stack it on two lines ("ETA" over "at"), which is no
+    // wider than the compact tag; only if even that does not fit, use the compact tag.
+    const int16_t room = label_right - clock_right - 4;
+    const bool labelled = settings_eta_label_style() == ETA_LABEL_LABELLED;
+    const char *tag = eta_label(duration, labelled);
+    const char *first;
+    const char *second;
+    eta_label_lines(duration, &first, &second);
+    const int16_t first_w = strip_text_width(first, label_font);
+    const int16_t second_w = strip_text_width(second, label_font);
+    const int16_t stack_w = first_w > second_w ? first_w : second_w;
+    if (labelled && strip_text_width(tag, label_font) > room && stack_w <= room) {
+      // Two lines in the strip's upper and lower halves.
+      draw_strip_text(ctx, first, label_font, pad, label_right - pad, h / 2, GTextAlignmentRight, label_trim - 1);
+      const GRect lower = GRect(pad, h / 2 - label_trim - 2, label_right - pad, h / 2 + label_trim + 2);
+      graphics_draw_text(ctx, second, label_font, lower, GTextOverflowModeFill, GTextAlignmentRight, NULL);
+    } else {
+      if (strip_text_width(tag, label_font) > room) {
+        tag = eta_label(duration, false);
+      }
+      draw_strip_text(ctx, tag, label_font, pad, label_right - pad, h, GTextAlignmentRight, label_trim);
+    }
   }
 }
 
@@ -882,7 +906,11 @@ static void on_settings_changed(void) {
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  settings_window_push(on_settings_changed);
+  const AboutInfo about = {
+    .app_version = APP_VERSION_STR,
+    .heard_from_phone = s_heard_from_phone,
+  };
+  settings_window_push(on_settings_changed, &about);
 }
 
 static void click_config_provider(void *context) {

@@ -23,7 +23,8 @@ All navigation shots render the same injected state — a right turn in 450 m on
 "Rue de la Loi", clock pinned to 12:35, arriving 25 minutes later at 13:00 — so
 only the setting under test differs between them. The arrival time and the
 arrival epoch are derived from one instant in the capture script, so the two ETA
-display modes ("ETA 13:00" and "IN 0:25") always agree.
+display modes ("ETA at 13:00" and "ETA in 0:25") always agree. On the 144-wide
+screens "ETA at" is stacked on two lines when it doesn't fit beside the clock.
 
 | File | Configuration |
 | ---- | ------------- |
@@ -34,17 +35,20 @@ display modes ("ETA 13:00" and "IN 0:25") always agree.
 | `main-swapped-arrow-left-inverted-red` | Swapped **and** inverted |
 | `main-glyph-pack-bold-green` / `-outline-green` | Glyph pack (classic is the default shot) |
 | `main-imperial-units-green` | Imperial units (450 m renders as 0.2 mi) |
-| `main-eta-time-to-arrival` | ETA display mode: countdown (`IN 0:25`) instead of arrival time (`ETA 13:00`) |
+| `main-eta-time-to-arrival` | ETA display mode: countdown (`ETA in 0:25`) instead of arrival time (`ETA at 13:00`) |
+| `main-eta-label-compact` | ETA label style: compact tag (`ETA 13:00`) |
+| `main-eta-label-compact-time-to-arrival` | Compact tag with the countdown (`IN 0:25`) |
 
 ## Settings screens
 
 | File | Screen |
 | ---- | ------ |
 | `settings-menu` | Top-level settings menu (SELECT from the navigation screen) |
-| `settings-menu-scrolled` | Same menu scrolled to Invert / Distance units / ETA display |
+| `settings-menu-scrolled` | Same menu scrolled to the last row (About) |
 | `settings-accent-colour-list` | Accent-colour sub-window, top of the list |
 | `settings-accent-colour-list-scrolled` | Accent-colour sub-window, scrolled |
 | `settings-glyph-pack-list` | Glyph-pack sub-window, with per-pack arrow previews |
+| `settings-about` | About: version, protocol, phone connection, install QR |
 
 ## Notes
 

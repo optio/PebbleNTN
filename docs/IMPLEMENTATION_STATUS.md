@@ -2,6 +2,30 @@
 
 _Last updated: 2026-10-01_
 
+## Watch: "ETA at" / "ETA in" labels, About screen with install QR (#13, #14, #48) (2026-10-02)
+
+- **ETA label (#13, REQ-WATCH-014):**
+  - New setting "ETA label". Its choices show the style itself: "ETA at / ETA in" (default) or
+    "ETA / IN". There are no "old"/"new" names.
+  - On 144-wide screens, "ETA at 13:00" doesn't fit beside a 24-hour clock, so the label is stacked
+    on two lines ("ETA" over "at"). The compact label is used only if even that doesn't fit, which
+    happens with a long arrival string like "5:45 PM" (which was already tight before).
+  - The label texts are in `eta_text.c` (`eta_label`, `eta_label_lines`) and are host-tested.
+- **About (#48, REQ-WATCH-020) with the install QR (#14):**
+  - A last settings row "About", whose subtitle is the version.
+  - It opens a black-on-white scrolling screen with: version, protocol, phone status (from the pure
+    unit `about_text.c`), "Install phone app" with the existing connection-hint QR, and the link
+    as text.
+  - It adds no new image. The install QR is reused rather than adding an F-Droid one: the
+    releases page links to F-Droid, and a second QR wouldn't fit the small screens.
+- The settings rows moved: ETA label is 6 and About is 10. `capture_screenshots.py` follows, with
+  new compact-label and About shots; the screenshots were regenerated.
+
+**Verified.** Watchapp unit tests; `pebble build` for all platforms. On the basalt, chalk, emery and
+diorite emulators: both labels in both ETA modes, the two-line label on 144-wide screens, the
+"5:45 PM" fallback, the settings rows, and the About screen top to bottom (round insets on chalk).
+`./scripts/test-all.sh`.
+
 ## Launcher subtitle on the watch (#15; REQ-WATCH-019) (2026-10-01)
 
 - When the watchapp closes it sets its **app glance**, the subtitle under its name in the launcher.
