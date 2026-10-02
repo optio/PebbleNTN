@@ -23,6 +23,15 @@ static void check_parse(const char *text, int expected) {
   check_int(label, eta_parse_clock_minutes(text), expected);
 }
 
+static void check_str(const char *what, const char *got, const char *want) {
+  if (strcmp(got, want) != 0) {
+    printf("  FAIL  %s: expected \"%s\", got \"%s\"\n", what, want, got);
+    failures++;
+  } else {
+    printf("  ok    %s == \"%s\"\n", what, got);
+  }
+}
+
 int main(void) {
   printf("eta_parse_clock_minutes — 24-hour\n");
   check_parse("14:35", 14 * 60 + 35);
@@ -60,6 +69,21 @@ int main(void) {
   check_int("23:50 -> 00:20 (wraps)", eta_minutes_until(20, 23 * 60 + 50), 30);
   check_int("23:59 -> 00:00 (wraps)", eta_minutes_until(0, 23 * 60 + 59), 1);
   check_int("longest wrap", eta_minutes_until(12 * 60 + 34, 12 * 60 + 35), 24 * 60 - 1);
+
+  printf("eta_label\n");
+  check_str("labelled arrival", eta_label(false, true), "ETA at");
+  check_str("labelled countdown", eta_label(true, true), "ETA in");
+  check_str("compact arrival", eta_label(false, false), "ETA");
+  check_str("compact countdown", eta_label(true, false), "IN");
+
+  printf("eta_label_lines\n");
+  const char *first;
+  const char *second;
+  eta_label_lines(false, &first, &second);
+  check_str("arrival, first line", first, "ETA");
+  check_str("arrival, second line", second, "at");
+  eta_label_lines(true, &first, &second);
+  check_str("countdown, second line", second, "in");
 
   if (failures != 0) {
     printf("\n%d assertion(s) FAILED\n", failures);

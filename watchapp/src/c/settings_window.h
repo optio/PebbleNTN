@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "about_window.h"
+
 // Push the settings menu. `on_change` is called whenever a setting changes so the navigation
-// window can re-apply the theme and redraw.
-void settings_window_push(void (*on_change)(void));
+// window can re-apply the theme and redraw; `about` is what its About row shows (#48).
+void settings_window_push(void (*on_change)(void), const AboutInfo *about);

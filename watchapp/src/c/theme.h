@@ -60,6 +60,15 @@ typedef enum {
   ETA_MODE_COUNT = 2,
 } EtaMode;
 
+// How the tag before the arrival readout is written (REQ-WATCH-014, #13). LABELLED, the default,
+// reads as a phrase ("ETA at 17:45", "ETA in 0:25"); COMPACT keeps the short tags ("ETA 17:45",
+// "IN 0:25"). If the labelled tag does not fit beside the clock, the strip uses the compact one.
+typedef enum {
+  ETA_LABEL_LABELLED = 0,
+  ETA_LABEL_COMPACT = 1,
+  ETA_LABEL_COUNT = 2,
+} EtaLabelStyle;
+
 // Built-in maneuver glyph packs (REQ-WATCH-012). Purely a render choice: the phone always sends the
 // same maneuver code; the pack only selects which bundled bitmap the watch draws for it.
 typedef enum {
@@ -141,6 +150,7 @@ const char *accent_name(AccentId id);
 const char *units_name(UnitsId id);
 const char *glyph_pack_name(GlyphPack id);
 const char *eta_mode_name(EtaMode id);
+const char *eta_label_style_name(EtaLabelStyle id);
 // Menu label for a backlight level. The label spells out what the level actually does ("3s after
 // update", "Until app closes") rather than a bare Low/Medium/High, which says nothing on its own.
 const char *backlight_mode_name(BacklightMode id);
@@ -154,6 +164,7 @@ bool settings_inverted(void);
 UnitsId settings_units(void);
 GlyphPack settings_glyph_pack(void);
 EtaMode settings_eta_mode(void);
+EtaLabelStyle settings_eta_label_style(void);
 BacklightMode settings_backlight(void);
 BacklightColorId settings_backlight_color(void);
 VibePatternId settings_vibe_pattern(void);
@@ -167,6 +178,7 @@ void settings_set_units(UnitsId id);
 void settings_set_glyph_pack(GlyphPack id);
 void settings_set_arrow_left(bool arrow_left);
 void settings_set_eta_mode(EtaMode id);
+void settings_set_eta_label_style(EtaLabelStyle id);
 void settings_set_backlight(BacklightMode id);
 void settings_set_backlight_color(BacklightColorId id);
 void settings_set_vibe_pattern(VibePatternId id);

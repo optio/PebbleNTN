@@ -65,3 +65,15 @@ int eta_minutes_until(int target_minutes, int now_minutes) {
   }
   return delta;
 }
+
+void eta_label_lines(bool duration, const char **first, const char **second) {
+  *first = "ETA";
+  *second = duration ? "in" : "at";
+}
+
+const char *eta_label(bool duration, bool labelled) {
+  if (labelled) {
+    return duration ? "ETA in" : "ETA at";
+  }
+  return duration ? "IN" : "ETA";
+}

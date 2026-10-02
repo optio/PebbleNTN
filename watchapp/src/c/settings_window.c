@@ -414,13 +414,16 @@ static void push_backlight_window(void) {
 #define ROW_COLOUR 3
 #define ROW_INVERT 4
 #define ROW_ETA 5
-#define ROW_ARROW 6
-#define ROW_GLYPH 7
-#define ROW_UNITS 8
-#define MAIN_ROW_COUNT 9
+#define ROW_ETA_LABEL 6
+#define ROW_ARROW 7
+#define ROW_GLYPH 8
+#define ROW_UNITS 9
+#define ROW_ABOUT 10
+#define MAIN_ROW_COUNT 11
 
 static Window *s_window;
 static MenuLayer *s_menu;
+static AboutInfo s_about;
 
 static uint16_t main_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
   return MAIN_ROW_COUNT;
@@ -452,6 +455,13 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
       break;
     case ROW_ETA:
       menu_cell_basic_draw(ctx, cell, "ETA display", eta_mode_name(settings_eta_mode()), NULL);
+      break;
+    case ROW_ETA_LABEL:
+      menu_cell_basic_draw(ctx, cell, "ETA label", eta_label_style_name(settings_eta_label_style()),
+                           NULL);
+      break;
+    case ROW_ABOUT:
+      menu_cell_basic_draw(ctx, cell, "About", s_about.app_version, NULL);
       break;
     case ROW_BACKLIGHT:
       menu_cell_basic_draw(ctx, cell, "Backlight", backlight_mode_name(settings_backlight()), NULL);
@@ -494,6 +504,15 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
       settings_set_eta_mode((EtaMode)((settings_eta_mode() + 1) % ETA_MODE_COUNT));
       menu_layer_reload_data(s_menu);
       notify_change();
+      break;
+    case ROW_ETA_LABEL:
+      settings_set_eta_label_style(
+          (EtaLabelStyle)((settings_eta_label_style() + 1) % ETA_LABEL_COUNT));
+      menu_layer_reload_data(s_menu);
+      notify_change();
+      break;
+    case ROW_ABOUT:
+      about_window_push(&s_about);
       break;
     case ROW_BACKLIGHT:
       // RGB hardware has a tint to pick as well, so the row opens a door; otherwise duration is the
@@ -551,8 +570,9 @@ static void main_unload(Window *window) {
   s_window = NULL;
 }
 
-void settings_window_push(void (*on_change)(void)) {
+void settings_window_push(void (*on_change)(void), const AboutInfo *about) {
   s_on_change = on_change;
+  s_about = *about;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
     .load = main_load,
