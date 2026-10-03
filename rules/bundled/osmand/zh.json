@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "osmand-zh-2026.10.4",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-10-04T00:00:00Z",
+  "publisher": "PebbleNTN maintainers",
+  "rules": [
+    {
+      "id": "osmand-roundabout-zh",
+      "enabled": true,
+      "priority": 190,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree. No locales: OsmAnd's own language can differ from the phone's, and Chinese can't collide with other languages. zh-rTW uses '向左急轉' for slight turns too, so those show as sharp.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "圓環|环岛|\\d+\\s*個?\\s*出口"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-uturn-zh",
+      "enabled": true,
+      "priority": 180,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "迴轉|掉頭|掉头|调头"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-zh",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "向右急[轉转]"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-left-zh",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "向左急[轉转]"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-zh",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "稍向右[轉转]|稍微右[轉转]|向右前方"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-zh",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "稍向左[轉转]|稍微左[轉转]|向左前方"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-zh",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "靠右"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-zh",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "靠左"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-zh",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "右[轉转]"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-zh",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "左[轉转]"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-continue-zh",
+      "enabled": true,
+      "priority": 50,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "直行"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-arrive-zh",
+      "enabled": true,
+      "priority": 40,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree. Lowest priority, so a turn always wins over an arrival word.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "抵達|抵达"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    }
+  ]
+}

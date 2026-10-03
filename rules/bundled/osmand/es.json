@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "osmand-es-2026.10.4",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-10-04T00:00:00Z",
+  "publisher": "PebbleNTN maintainers",
+  "rules": [
+    {
+      "id": "osmand-roundabout-es",
+      "enabled": true,
+      "priority": 190,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\brotonda\\b|\\btoma\\s+la\\s+(?:\\d+ª?\\s+salida|salida\\s+\\d+)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-uturn-es",
+      "enabled": true,
+      "priority": 180,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bcambia\\s+de\\s+sentido\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-es",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bfuerte\\s+a\\s+la\\s+derecha\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-left-es",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bfuerte\\s+a\\s+la\\s+izquierda\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-es",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bleve\\s+a\\s+la\\s+derecha\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-es",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bleve\\s+a\\s+la\\s+izquierda\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-es",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bmantente\\s+a\\s+la\\s+derecha\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-es",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bmantente\\s+a\\s+la\\s+izquierda\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-es",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bgira\\s+a\\s+la\\s+derecha\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-es",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bgira\\s+a\\s+la\\s+izquierda\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-continue-es",
+      "enabled": true,
+      "priority": 50,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\binicia\\s+en\\b|\\bcontin"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    },
+    {
+      "id": "osmand-arrive-es",
+      "enabled": true,
+      "priority": 40,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "From OsmAnd's instruction strings (res/values-es/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree. Lowest priority, so a turn always wins over an arrival word.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bhas\\s+llegado\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        }
+      }
+    }
+  ]
+}

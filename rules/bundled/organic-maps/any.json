@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "organic-maps-2026.07.1",
+  "rulesetVersion": "organic-maps-2026.10.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-30T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -12,7 +12,7 @@
       "packageNames": [
         "app.organicmaps"
       ],
-      "comment": "Organic Maps builds the same navigation notification as its CoMaps fork (verified in OM NavigationService.java: title = distToTurn, text = nextStreet, turn arrow = setLargeIcon(Bitmap) only). So maneuver is UNKNOWN on purpose — the watch shows distance + road with a neutral marker, not a fabricated arrow. Locale-agnostic: only the numeric distance is matched. Authored from the OM source; validate against a real Organic Maps capture. See rules/bundled/comaps/any.json.",
+      "comment": "Same notification as its CoMaps fork (OM NavigationService.java: title = distToTurn, text = nextStreet, arrow = setLargeIcon only), so maneuver is UNKNOWN on purpose. Locale-agnostic: only the leading number+unit title is matched. From the OM source; validate against a real capture (see comaps/any.json). Road line from text only (#57): a card with just a distance leaves it empty instead of repeating the distance.",
       "conditions": [
         {
           "field": "title",
@@ -32,8 +32,7 @@
         "primaryText": {
           "type": "firstNonEmpty",
           "fields": [
-            "text",
-            "title"
+            "text"
           ]
         }
       }

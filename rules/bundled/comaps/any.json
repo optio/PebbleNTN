@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "comaps-2026.07.1",
+  "rulesetVersion": "comaps-2026.10.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-30T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -13,7 +13,7 @@
         "app.comaps.google",
         "app.comaps.fdroid"
       ],
-      "comment": "CoMaps (Organic Maps fork): title = distance ('92 m'), text = road ('Kroonstraat'), and the turn DIRECTION is only an arrow icon, never text (real capture, 2026-07-30). Maneuver is UNKNOWN on purpose — the watch shows distance + road with a neutral marker, not a fabricated arrow. Locale-agnostic: only the numeric distance is matched. The leading number+unit title identifies a turn-by-turn notification; CoMaps' other notifications aren't titled with a bare distance.",
+      "comment": "CoMaps (Organic Maps fork): title = distance ('92 m'), text = road ('Kroonstraat'); the turn direction is only an arrow icon, never text (real capture, 2026-07-30). Maneuver is UNKNOWN on purpose: distance + road with a neutral marker, never a made-up arrow. Locale-agnostic: only the leading number+unit title is matched. Road line from text only (#57): a card with just a distance ('50 m') leaves it empty instead of repeating the distance.",
       "conditions": [
         {
           "field": "title",
@@ -33,8 +33,7 @@
         "primaryText": {
           "type": "firstNonEmpty",
           "fields": [
-            "text",
-            "title"
+            "text"
           ]
         }
       }

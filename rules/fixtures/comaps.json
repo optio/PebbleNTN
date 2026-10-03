@@ -29,6 +29,8 @@
 
     {"name": "non-navigation-rerouting", "source": "synthetic", "locale": "en", "packageName": "app.comaps.google",
       "snapshot": {"title": "Rerouting…", "text": "Kroonstraat"},
-      "expected": {"matched": false}}
+      "expected": {"matched": false}},
+    {"name": "distance-only-no-road", "source": "capture", "locale": "en-GB", "packageName": "app.comaps.google", "snapshot": {"title": "50 m"}, "comment": "Real shape from a shared Paris walking log (#57): only a distance, no road name. The road line stays empty instead of repeating '50 m'.", "expected": {"maneuver": "UNKNOWN", "distanceMeters": 50, "ruleId": "comaps-navigation-step", "noPrimaryText": true}},
+    {"name": "distance-and-road", "source": "synthetic", "locale": "en-GB", "packageName": "app.comaps.google", "snapshot": {"title": "5 m", "text": "Place de l'Hôtel de Ville"}, "comment": "With a road name, the road line is the road (#57).", "expected": {"maneuver": "UNKNOWN", "distanceMeters": 5, "ruleId": "comaps-navigation-step", "primaryText": "Place de l'Hôtel de Ville"}}
   ]
 }
