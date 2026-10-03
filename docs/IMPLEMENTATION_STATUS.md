@@ -2,6 +2,28 @@
 
 _Last updated: 2026-10-01_
 
+## CoMaps/Organic Maps road line (#57) and OsmAnd rules for fr, es, nl, pt, pl, zh (2026-10-04)
+
+- **#57:** `comaps-navigation-step` and `organic-maps-navigation-step` take the road line from `text`
+  only, so a distance-only card (`50 m`) no longer shows the distance twice. A new `noPrimaryText`
+  fixture expectation asserts this in the workbench and in the Kotlin CoMaps / Organic Maps tests.
+  This ships in the release after #58, so a user with an unchanged copy of the CoMaps rule
+  (fingerprinted at startup in v0.0.50) now gets the "official rule updated" notice.
+- **OsmAnd:** six new rulesets generated from OsmAnd's own instruction strings, like German (#61).
+  - French, Spanish, Dutch, Polish.
+  - Portuguese covers pt and pt-BR.
+  - One Chinese ruleset covers zh-rTW and zh-rCN, with no locales, because OsmAnd's own language
+    can differ from the phone's. zh-rTW reuses the sharp-turn text for slight turns, so those show
+    as sharp.
+- **Fixtures:** 129 new ones (16 instruction keys × 8 string files, plus Chinese on an English
+  phone). All pass in the workbench and in `OsmandRulesRegressionTest` on the JVM. The test loads
+  nine languages, and groups its arrive-last check by the id's language suffix.
+- **Regex portability:** `\b` is used only next to ASCII letters. The JVM's `\b` and `(?i)` are
+  ASCII-only, while Android ICU and Python are Unicode-aware.
+
+**Verified.** Workbench regression (Google Maps 104/104, CoMaps 9/9, Organic Maps 7/7, OsmAnd
+182/182), the Kotlin rule regression tests, `./scripts/test-all.sh`.
+
 ## OsmAnd German rules from a shared contribution; OsmAnd rules cross-checked with its strings (#61) (2026-10-04)
 
 - **Source of truth:** OsmAnd's notification shows its own instruction strings verbatim (the English

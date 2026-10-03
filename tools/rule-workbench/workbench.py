@@ -318,6 +318,9 @@ def check_fixture(result: dict | None, expected: dict) -> str | None:
     # "not checked", and some cards carry metres that must not be shown as the turn distance.
     if expected.get("noDistance") and result.get("distanceMeters") is not None:
         return f"distanceMeters: expected none, got {result['distanceMeters']!r}"
+    # `noPrimaryText: true` asserts an empty road line (#57: never repeat the distance there).
+    if expected.get("noPrimaryText") and result.get("primaryText") is not None:
+        return f"primaryText: expected none, got {result['primaryText']!r}"
     return None
 
 

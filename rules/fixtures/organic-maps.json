@@ -73,6 +73,8 @@
       "expected": {
         "matched": false
       }
-    }
+    },
+    {"name": "distance-only-no-road", "source": "synthetic", "locale": "en-GB", "packageName": "app.organicmaps", "snapshot": {"title": "50 m"}, "comment": "Same card layout as CoMaps (#57): only a distance, no road name. The road line stays empty instead of repeating '50 m'.", "expected": {"maneuver": "UNKNOWN", "distanceMeters": 50, "ruleId": "organic-maps-navigation-step", "noPrimaryText": true}},
+    {"name": "distance-and-road", "source": "synthetic", "locale": "en-GB", "packageName": "app.organicmaps", "snapshot": {"title": "5 m", "text": "Place de l'Hôtel de Ville"}, "comment": "With a road name, the road line is the road (#57).", "expected": {"maneuver": "UNKNOWN", "distanceMeters": 5, "ruleId": "organic-maps-navigation-step", "primaryText": "Place de l'Hôtel de Ville"}}
   ]
 }

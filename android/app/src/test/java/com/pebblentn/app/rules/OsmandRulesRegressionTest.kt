@@ -58,8 +58,8 @@ class OsmandRulesRegressionTest {
             ?: error("resource not found: $path")
 
     private val bundledRules: LayeredRules by lazy {
-        // Every bundled OsmAnd language; the engine picks by each fixture's locale (#16 added Italian, #61 German).
-        LayeredRules(bundled = listOf("en", "it", "de").flatMap { RulesetCodec.parse(resource("/rules/bundled/osmand/$it.json")).rules })
+        // Every bundled OsmAnd language; the engine picks by each fixture's locale (#16 Italian, #61 German, #57 fr/es/nl/pt/pl/zh).
+        LayeredRules(bundled = listOf("en", "it", "de", "fr", "es", "nl", "pt", "pl", "zh").flatMap { RulesetCodec.parse(resource("/rules/bundled/osmand/$it.json")).rules })
     }
 
     private val fixtures: List<Fixture> by lazy {
@@ -118,8 +118,9 @@ class OsmandRulesRegressionTest {
      */
     @Test
     fun arriveRanksBelowEveryManeuverRule() {
-        // Per language: each language's arrive rule against that language's maneuver rules.
-        for ((language, rules) in bundledRules.bundled.groupBy { it.locales.single() }) {
+        // Per language (the id's suffix; the Chinese rules have no locales): each language's arrive
+        // rule against that language's maneuver rules.
+        for ((language, rules) in bundledRules.bundled.groupBy { it.id.substringAfterLast('-') }) {
             val arrive = rules.single { it.id == "osmand-arrive-$language" }
             val lowestManeuver = rules.filterNot { it.id == arrive.id }.minOf { it.priority }
             assertTrue(

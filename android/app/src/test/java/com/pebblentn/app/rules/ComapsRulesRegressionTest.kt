@@ -34,6 +34,9 @@ class ComapsRulesRegressionTest {
         val distanceMeters: Int? = null,
         val ruleId: String? = null,
         val secondaryText: String? = null,
+        val primaryText: String? = null,
+        /** The road line must be empty (#57): a card with only a distance must not repeat it there. */
+        val noPrimaryText: Boolean = false,
     )
 
     @Serializable
@@ -106,6 +109,12 @@ class ComapsRulesRegressionTest {
             }
             fixture.expected.secondaryText?.let { expected ->
                 assertEquals("fixture '${fixture.name}' ETA", expected, result.instruction.secondaryText)
+            }
+            fixture.expected.primaryText?.let { expected ->
+                assertEquals("fixture '${fixture.name}' road line", expected, result.instruction.primaryText)
+            }
+            if (fixture.expected.noPrimaryText) {
+                assertEquals("fixture '${fixture.name}' road line must be empty", null, result.instruction.primaryText)
             }
         }
     }
