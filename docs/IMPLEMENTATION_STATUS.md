@@ -2,6 +2,26 @@
 
 _Last updated: 2026-10-01_
 
+## Google Maps walking "Walk towards", and "Rerouting" not counted as missing (#51) (2026-10-03)
+
+From a shared en-GB walking log: 63 of its 65 unrecognised cards were walking's "head towards" step.
+
+- **`google-maps-continue-en` and `-continue-distance-title-en`** now accept `walk` beside
+  `continue|head|go|proceed`. "Walk towards ‹street›" / "Walk east on ‹street›" → STRAIGHT, with no
+  distance (the title has none) and the ETA from "Arrive HH:MM". "Walk 7 min (500 m)" stays on
+  `google-maps-walk-overview-en`, because "walk" must be followed by towards/on/a direction. Ruleset
+  `google-maps-en-2026.10.3`.
+- **`ManeuverHeuristic`:** a card starting with "Rerouting" / "Recalculating" is not a direction.
+  Its blank "Arrive " line made it count towards the "Help add app support" prompt.
+- Fixtures: 3 captures with placeholder street names (walk towards, walk east on, rerouting).
+- **Not in this change:** the localized rulesets' walking verbs (French "Marchez vers…" and others)
+  need captures first.
+- **Checked against the log:** the "180 m · Turn right…" road lines in it predate the phone's update
+  to the #26 fix. Today's rules strip all 51 distinct titles.
+
+**Verified.** Workbench regression (Google Maps 104/104); `ManeuverHeuristicTest`;
+`./scripts/test-all.sh`.
+
 ## Watch: "ETA at" / "ETA in" labels, About screen with install QR (#13, #14, #48) (2026-10-02)
 
 - **ETA label (#13, REQ-WATCH-014):**

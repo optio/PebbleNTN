@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.10.1",
+  "rulesetVersion": "google-maps-en-2026.10.3",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -1250,7 +1250,7 @@
         {
           "field": "text",
           "operator": "regex",
-          "value": "(?i)\\b(continue|head|go|proceed)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"
+          "value": "(?i)\\b(continue|head|go|proceed|walk)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"
         }
       ],
       "output": {
@@ -1287,12 +1287,12 @@
       "locales": [
         "en"
       ],
-      "comment": "Covers the step Google Maps opens a route with: 'Head toward <road>' / 'Head east on <road>' (real capture, 2026-07-13).",
+      "comment": "Covers the step Google Maps opens a route with: 'Head toward <road>' / 'Head east on <road>' (real capture, 2026-07-13). Walking says 'Walk towards <road>' / 'Walk east on <road>' instead (#51, real capture, 2026-10); 'walk' needs towards/on/a direction next, so the 'Walk 7 min' overview card never matches here.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(continue|head|go|proceed)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"
+          "value": "(?i)\\b(continue|head|go|proceed|walk)\\s+(straight|on|onto|towards?|north|south|east|west|north-?east|north-?west|south-?east|south-?west)\\b"
         }
       ],
       "output": {
