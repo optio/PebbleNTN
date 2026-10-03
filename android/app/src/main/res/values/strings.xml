@@ -317,7 +317,7 @@
     <string name="rule_editor_discard">Discard</string>
     <string name="debug_create_rule">Create rule from this notification</string>
     <string name="rules_share_yours">Share your rules</string>
-    <string name="rules_share_yours_hint">Send your rules to the developers so they can become official for everyone.</string>
+    <string name="rules_share_yours_hint">Send your rules to the developers to review and merge into the official rules in a future version. Nothing is lost: once your rule is official, the app offers to remove your copy.</string>
     <!-- Leftovers of #28. -->
     <string name="rules_deleted">Rule deleted</string>
     <string name="undo">Undo</string>
@@ -347,4 +347,44 @@
     <string name="feedback_name_url" translatable="false">https://github.com/optio/PebbleNTN/discussions/45</string>
     <string name="feedback_email_subject">PebbleNTN feedback</string>
     <string name="feedback_email_body">Bug, idea or name suggestion:\n\n\n---\nPebbleNTN %1$s, Android %2$s</string>
+    <!-- User rules that override official rules (#58, REQ-ANDROID-016). -->
+    <string name="rules_override_banner_title">Official rules were updated</string>
+    <plurals name="rules_override_banner_body">
+        <item quantity="one">One of your rules overrides a newer official rule, so you\'re not getting its update.</item>
+        <item quantity="other">%d of your rules override newer official rules, so you\'re not getting their updates.</item>
+    </plurals>
+    <string name="rules_override_review">Review</string>
+    <string name="rules_override_identical">Same as the official rule %1$s. You can remove it and use the official one.</string>
+    <string name="rules_override_edited">Overrides the official rule %1$s (your edited copy).</string>
+    <string name="rules_override_updated">The official rule %1$s was updated since you copied it. Your copy still has the old version.</string>
+    <string name="rules_override_updated_edited">The official rule %1$s was updated since you copied and edited it.</string>
+    <string name="rules_override_differs">Overrides the official rule %1$s, and differs from it.</string>
+    <string name="rules_override_takes_over">Takes over notifications the official rule %1$s handles.</string>
+    <string name="rules_review_title">Your rules and official rules</string>
+    <string name="rules_review_intro">These rules of yours overlap official rules. Reverting removes only them; your other rules stay.</string>
+    <string name="rules_review_section_updated">Official rule is newer</string>
+    <string name="rules_review_section_other">Other overlapping rules</string>
+    <string name="rules_review_empty">None of your rules overlap official rules.</string>
+    <string name="rules_review_revert">Use the official rule</string>
+    <string name="rules_review_keep">Keep mine</string>
+    <string name="rules_review_compare">Compare</string>
+    <plurals name="rules_review_revert_all">
+        <item quantity="one">Revert the overlapping rule</item>
+        <item quantity="other">Revert all %d overlapping rules</item>
+    </plurals>
+    <string name="rules_revert_share_title">Share your rules first?</string>
+    <string name="rules_revert_share_message">Before reverting, you can send your rules to the developers. They\'ll review them and merge them into the official rules in a future version, so your custom behaviour isn\'t lost.</string>
+    <string name="rules_revert_share_first">Share first</string>
+    <string name="rules_revert_without_sharing">Revert without sharing</string>
+    <string name="rules_compare_title">Compare</string>
+    <string name="rules_compare_yours">Your rule</string>
+    <string name="rules_compare_official">Official rule</string>
+    <string name="rules_compare_hint">Highlighted lines differ.</string>
+    <string name="rules_compare_missing">The official rule is no longer included in the app.</string>
+    <string name="dashboard_rules_updated_title">Official rules updated</string>
+    <plurals name="dashboard_rules_updated_body">
+        <item quantity="one">One of your rules overrides a newer official rule.</item>
+        <item quantity="other">%d of your rules override newer official rules.</item>
+    </plurals>
+    <string name="dashboard_rules_updated_action">Review</string>
 </resources>

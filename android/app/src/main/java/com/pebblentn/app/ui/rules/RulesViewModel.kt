@@ -14,7 +14,12 @@ import com.pebblentn.app.rules.RulePreviewService
 import com.pebblentn.app.rules.RuleValidationResult
 import com.pebblentn.app.rules.RuleValidator
 import com.pebblentn.app.rules.RulesetCodec
+import com.pebblentn.app.data.RuleOverride
+import com.pebblentn.app.data.RuleOverrides
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -70,6 +75,41 @@ class RulesViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun clone(official: Rule): Job = viewModelScope.launch { userRuleRepository.cloneToUser(official) }
+
+    /**
+     * User rules that override official rules (#58), by user rule id: copies (identical, edited, or
+     * behind a newer official rule) and other rules that take over notifications an official rule
+     * handles, judged on recent captures.
+     */
+    val overrides: StateFlow<Map<String, RuleOverride>> =
+        combine(userRuleRepository.observeUserRules(), debugHistoryRepository.observeRecent(OVERRIDE_CAPTURES)) { rules, events ->
+            RuleOverrides.analyze(
+                userRules = rules,
+                official = officialRules,
+                captures = events.mapNotNull { it.snapshot },
+                locale = java.util.Locale.getDefault().toLanguageTag(),
+            ).associateBy { it.userRuleId }
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** Revert to the official rules: remove only these overlapping user rules (#58). */
+    fun revert(ruleIds: Collection<String>): Job = viewModelScope.launch { userRuleRepository.deleteAll(ruleIds) }
+
+    /** Keep this user rule despite the newer official rule; asked again when it changes once more. */
+    fun keepMine(override: RuleOverride): Job = viewModelScope.launch {
+        override.officialFingerprint?.let { userRuleRepository.keepMine(override.userRuleId, it) }
+    }
+
+    /** The user rule's and the official rule's JSON, for the Compare screen. */
+    suspend fun comparison(ruleId: String): Pair<String, String?>? {
+        val mine = userRuleRepository.getUserRule(ruleId) ?: return null
+        val officialId = overrides.value[ruleId]?.officialRuleIds?.firstOrNull() ?: mine.sourceRuleId ?: ruleId
+        // Both sides in the same canonical layout, so only real differences are highlighted.
+        val mineJson = runCatching { RulesetCodec.canonicalizeRule(RulesetCodec.parseRule(mine.canonicalJson)) }
+            .getOrDefault(mine.canonicalJson)
+        return mineJson to officialRule(officialId)?.let(RulesetCodec::canonicalizeRule)
+    }
 
     fun setEnabled(ruleId: String, enabled: Boolean): Job =
         viewModelScope.launch { userRuleRepository.setEnabled(ruleId, enabled) }
@@ -129,6 +169,9 @@ class RulesViewModel(
 
     companion object {
         private const val RECENT_CAPTURES = 20
+
+        /** Recent notifications checked for user rules that take over official ones. */
+        private const val OVERRIDE_CAPTURES = 200
 
         val NEW_RULE_TEMPLATE: String = """
             {

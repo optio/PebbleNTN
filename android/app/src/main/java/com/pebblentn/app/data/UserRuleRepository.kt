@@ -37,7 +37,12 @@ class UserRuleRepository(
     suspend fun getUserRule(ruleId: String): UserRule? = dao.getById(ruleId)?.let(::toDomain)
 
     /** Insert or update a user rule from its parsed form. */
-    suspend fun save(rule: Rule, sourceRuleId: String?, validationStatus: String = RuleValidationStatus.VALID) {
+    suspend fun save(
+        rule: Rule,
+        sourceRuleId: String?,
+        validationStatus: String = RuleValidationStatus.VALID,
+        sourceRuleHash: String? = null,
+    ) {
         val now = clock.nowMillis()
         val existing = dao.getById(rule.id)
         dao.upsert(
@@ -50,6 +55,8 @@ class UserRuleRepository(
                 createdAt = existing?.createdAt ?: now,
                 updatedAt = now,
                 validationStatus = validationStatus,
+                sourceRuleHash = sourceRuleHash ?: existing?.sourceRuleHash,
+                dismissedOfficialHash = existing?.dismissedOfficialHash,
             ),
         )
         refreshCache()
@@ -57,7 +64,35 @@ class UserRuleRepository(
 
     /** Clone an official rule into an editable, enabled user rule (user layer overrides bundled). */
     suspend fun cloneToUser(official: Rule) {
-        save(official.copy(enabled = true), sourceRuleId = official.id)
+        // Remember what was copied, so the app can tell when the official rule changes (#58).
+        save(official.copy(enabled = true), sourceRuleId = official.id, sourceRuleHash = RuleOverrides.fingerprint(official))
+    }
+
+    /**
+     * Copies made before copies were fingerprinted (#58): one that still equals its official rule is
+     * fingerprinted now, so a later change to the official rule is recognised as an update. One that
+     * already differs stays unknown, since it can't be told whether the user or the update changed it.
+     */
+    suspend fun backfillSourceHashes(official: List<Rule>) {
+        val officialById = official.associateBy { it.id }
+        for (entity in dao.getAll()) {
+            if (entity.sourceRuleHash != null) continue
+            val source = officialById[entity.sourceRuleId ?: entity.ruleId] ?: officialById[entity.ruleId] ?: continue
+            val rule = runCatching { RulesetCodec.parseRule(entity.canonicalJson) }.getOrNull() ?: continue
+            val theirs = RuleOverrides.fingerprint(source)
+            if (RuleOverrides.fingerprint(rule) == theirs) dao.setSourceRuleHash(entity.ruleId, theirs)
+        }
+    }
+
+    /** "Keep mine" (#58): hide the update notice for this rule until the official rule changes again. */
+    suspend fun keepMine(ruleId: String, officialFingerprint: String) {
+        dao.setDismissedOfficialHash(ruleId, officialFingerprint)
+    }
+
+    /** Revert to the official rules: remove the given user rules (only overlapping ones are offered). */
+    suspend fun deleteAll(ruleIds: Collection<String>) {
+        ruleIds.forEach { dao.deleteById(it) }
+        refreshCache()
     }
 
     suspend fun setEnabled(ruleId: String, enabled: Boolean) {
@@ -82,6 +117,8 @@ class UserRuleRepository(
                 createdAt = rule.updatedAt,
                 updatedAt = rule.updatedAt,
                 validationStatus = rule.validationStatus,
+                sourceRuleHash = rule.sourceRuleHash,
+                dismissedOfficialHash = rule.dismissedOfficialHash,
             ),
         )
         refreshCache()
@@ -98,6 +135,8 @@ class UserRuleRepository(
             enabled = entity.enabled,
             validationStatus = entity.validationStatus,
             updatedAt = entity.updatedAt,
+            sourceRuleHash = entity.sourceRuleHash,
+            dismissedOfficialHash = entity.dismissedOfficialHash,
         )
     }
 }

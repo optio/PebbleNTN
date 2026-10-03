@@ -91,6 +91,8 @@ fun DashboardScreen(
     monochrome: Boolean = false,
     onMonochromeChange: (Boolean) -> Unit = {},
     showFeedback: Boolean = false,
+    overriddenOfficialCount: Int = 0,
+    onReviewOverrides: () -> Unit = {},
     feedbackActions: FeedbackActions = FeedbackActions(),
     onGetWatchapp: () -> Unit = {},
     onConfirmWatchapp: () -> Unit = {},
@@ -147,6 +149,16 @@ fun DashboardScreen(
                     action = stringResource(R.string.dashboard_update_download),
                     onAction = onDownloadUpdate,
                     primary = true,
+                )
+            }
+            // Official rules were updated under rules of yours that override them (#58).
+            if (overriddenOfficialCount > 0) {
+                PromptCard(
+                    title = stringResource(R.string.dashboard_rules_updated_title),
+                    body = pluralStringResource(R.plurals.dashboard_rules_updated_body, overriddenOfficialCount, overriddenOfficialCount),
+                    action = stringResource(R.string.dashboard_rules_updated_action),
+                    onAction = onReviewOverrides,
+                    primary = false,
                 )
             }
             // Captures no rule could turn into directions: invite the user to share them (REQ-DEBUG-011).

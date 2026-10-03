@@ -18,4 +18,6 @@ data class UserRule(
     val enabled: Boolean,
     val validationStatus: String,
     val updatedAt: Long,
+    val sourceRuleHash: String? = null,
+    val dismissedOfficialHash: String? = null,
 )

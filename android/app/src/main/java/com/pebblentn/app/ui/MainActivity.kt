@@ -34,7 +34,9 @@ import com.pebblentn.app.ui.onboarding.OnboardingScreen
 import com.pebblentn.app.ui.onboarding.OnboardingViewModel
 import com.pebblentn.app.ui.rules.CaptureChoice
 import com.pebblentn.app.ui.rules.OfficialRuleScreen
+import com.pebblentn.app.ui.rules.RuleCompareScreen
 import com.pebblentn.app.ui.rules.RuleEditorScreen
+import com.pebblentn.app.ui.rules.RuleReviewScreen
 import com.pebblentn.app.ui.rules.RulesScreen
 import com.pebblentn.app.ui.rules.RulesViewModel
 import com.pebblentn.app.ui.share.ShareDiagnosticsScreen
@@ -127,6 +129,7 @@ class MainActivity : ComponentActivity() {
 
         NavHost(navController = navController, startDestination = "dashboard") {
             composable("dashboard") {
+                val overrides by rulesViewModel.overrides.collectAsState()
                 DashboardScreen(
                     accessGranted = true,
                     lastEligibleAtMillis = lastEligible,
@@ -163,6 +166,8 @@ class MainActivity : ComponentActivity() {
                         state = feedbackState,
                     ),
                     feedbackActions = feedbackActions(),
+                    overriddenOfficialCount = overrides.values.count { it.needsAttention },
+                    onReviewOverrides = { navController.navigate("rules-review") },
                 )
             }
             composable(
@@ -234,6 +239,7 @@ class MainActivity : ComponentActivity() {
                 arguments = listOf(navArgument("app") { type = NavType.StringType; nullable = true; defaultValue = null }),
             ) { entry ->
                 val userRules by rulesViewModel.userRules.collectAsState()
+                val overrides by rulesViewModel.overrides.collectAsState()
                 RulesScreen(
                     officialGroups = rulesViewModel.officialGroups,
                     userRules = userRules,
@@ -247,7 +253,33 @@ class MainActivity : ComponentActivity() {
                     onShareRules = { navController.navigate("share-diagnostics?mode=${ExportMode.RULES_ONLY.name}") },
                     onUndoDelete = { rulesViewModel.undoDelete() },
                     initialAppId = entry.arguments?.getString("app"),
+                    overrides = overrides,
+                    onReviewOverrides = { navController.navigate("rules-review") },
                 )
+            }
+            composable("rules-review") {
+                val userRules by rulesViewModel.userRules.collectAsState()
+                val overrides by rulesViewModel.overrides.collectAsState()
+                RuleReviewScreen(
+                    userRules = userRules,
+                    overrides = overrides,
+                    onRevert = { ids -> rulesViewModel.revert(ids) },
+                    onKeep = { rulesViewModel.keepMine(it) },
+                    onCompare = { id -> navController.navigate("rule-compare/$id") },
+                    onShareRules = { navController.navigate("share-diagnostics?mode=${ExportMode.RULES_ONLY.name}") },
+                    onBack = { navController.popBackStack() },
+                    appName = ::appName,
+                )
+            }
+            composable(
+                route = "rule-compare/{ruleId}",
+                arguments = listOf(navArgument("ruleId") { type = NavType.StringType }),
+            ) { entry ->
+                val ruleId = entry.arguments?.getString("ruleId").orEmpty()
+                val pair by androidx.compose.runtime.produceState<Pair<String, String?>?>(null, ruleId) {
+                    value = rulesViewModel.comparison(ruleId)
+                }
+                RuleCompareScreen(mine = pair?.first, official = pair?.second, onBack = { navController.popBackStack() })
             }
             composable(
                 route = "official-rule/{ruleId}",

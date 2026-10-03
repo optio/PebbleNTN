@@ -2,6 +2,45 @@
 
 _Last updated: 2026-10-01_
 
+## User rules that override official rules (#58; REQ-ANDROID-016) (2026-10-04)
+
+The trigger was a shared log: an unchanged copy of the official CoMaps rule (made with "Copy to my
+rules") would have kept the user on the old rule indefinitely, because user rules always win.
+
+- **Data (Room v5 → v6):** `user_rule` gets two columns.
+  - `sourceRuleHash`: the official rule's fingerprint when copied (SHA-256 of the canonical rule,
+    ignoring `enabled`).
+  - `dismissedOfficialHash`: records "Keep mine".
+  - `cloneToUser` records the fingerprint, and edits keep it. At startup,
+    `backfillSourceHashes` fingerprints older copies that still equal their official rule, so this
+    user's CoMaps copy will be flagged once #57 changes the official rule. **Ship #57 in a later
+    release than this**, otherwise the backfill records the already-changed version.
+- **`RuleOverrides` (pure):** per enabled user rule, one of: IDENTICAL, EDITED, OFFICIAL_UPDATED
+  (unchanged copy), OFFICIAL_UPDATED_EDITED, DIFFERS (older copy without fingerprint) or TAKES_OVER
+  (not a copy, but matches recent captures, the last 200, that an official rule would handle).
+  A rule needs attention when the official rule is newer and "Keep mine" wasn't chosen for that
+  version.
+- **UI:**
+  - a dashboard card and a Rules banner ("Official rules were updated…") when any rule needs
+    attention;
+  - a label on each overriding user rule;
+  - a review screen with Use the official rule, Keep mine (only for newer official rules), Compare,
+    and Revert all overlapping rules;
+  - a compare screen that highlights differing lines, with both sides canonicalised.
+- **Reverting** removes only the overlapping user rules, and first asks "Share your rules first?"
+  (Share first, which opens the rules-only share flow; Revert without sharing; Cancel).
+- **Sharing message:** "Send your rules to the developers to review and merge into the official rules
+  in a future version. Nothing is lost: once your rule is official, the app offers to remove your
+  copy." It appears on the Rules screen and in the review.
+- **Tests:** `RuleOverridesTest` (9), `UserRuleRepositoryTest` (+3), migration 5→6, and
+  `RuleReviewScreenTest` (3). The last is the first Robolectric Compose test, which added
+  `ui-test-junit4` to `testImplementation`.
+
+**Verified.** All 338 unit tests. On the emulator, with an outdated CoMaps copy planted in the
+database: the dashboard card, the Rules banner and label, the review, compare (only the changed
+line highlighted), and the share-first dialog. "Revert without sharing" removed only the CoMaps
+copy; an unrelated user rule stayed. `./scripts/test-all.sh`.
+
 ## Google Maps walking "Walk towards", and "Rerouting" not counted as missing (#51) (2026-10-03)
 
 From a shared en-GB walking log: 63 of its 65 unrecognised cards were walking's "head towards" step.

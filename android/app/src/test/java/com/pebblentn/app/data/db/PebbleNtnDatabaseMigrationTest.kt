@@ -70,4 +70,35 @@ class PebbleNtnDatabaseMigrationTest {
         }
         db.close()
     }
+
+    @Test
+    fun migrate5To6KeepsUserRulesAndAddsOverrideColumns() {
+        // --- A v5 database with every table, and one user rule. ---
+        val path = context.getDatabasePath(dbName)
+        path.parentFile?.mkdirs()
+        android.database.sqlite.SQLiteDatabase.openOrCreateDatabase(path, null).use { v5 ->
+            listOf(
+                "CREATE TABLE IF NOT EXISTS `supported_app_settings` (`appId` TEXT NOT NULL, `packageName` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `captureUnmatched` INTEGER NOT NULL, `firstSeenAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`appId`))",
+                "CREATE TABLE IF NOT EXISTS `notification_debug_event` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `eventTimestamp` INTEGER NOT NULL, `receivedTimestamp` INTEGER NOT NULL, `packageName` TEXT NOT NULL, `notificationKeyHash` TEXT NOT NULL, `notificationId` INTEGER NOT NULL, `tagHash` TEXT, `channelId` TEXT, `eventType` TEXT NOT NULL, `selectedSnapshotJson` TEXT NOT NULL, `activeRulesetVersions` TEXT, `matchedRuleId` TEXT, `extractionJson` TEXT, `traceJson` TEXT, `disposition` TEXT NOT NULL, `transportStatus` TEXT, `privacyClassification` TEXT NOT NULL)",
+                "CREATE TABLE IF NOT EXISTS `user_rule` (`ruleId` TEXT NOT NULL, `sourceRuleId` TEXT, `packageName` TEXT NOT NULL, `canonicalJson` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `validationStatus` TEXT NOT NULL, PRIMARY KEY(`ruleId`))",
+                "CREATE TABLE IF NOT EXISTS `navigation_state` (`id` INTEGER NOT NULL, `sessionId` INTEGER, `active` INTEGER NOT NULL, `normalizedStateJson` TEXT NOT NULL, `stateTimestampSeconds` INTEGER NOT NULL, `nextSessionId` INTEGER NOT NULL, `launchedSessionId` INTEGER, PRIMARY KEY(`id`))",
+                "CREATE TABLE IF NOT EXISTS `official_ruleset` (`version` TEXT NOT NULL, `source` TEXT NOT NULL, `schemaVersion` INTEGER NOT NULL, `signatureStatus` TEXT NOT NULL, `activationStatus` TEXT NOT NULL, `installedTimestamp` INTEGER NOT NULL, `payloadHash` TEXT NOT NULL, `canonicalJson` TEXT NOT NULL, PRIMARY KEY(`version`))",
+                "INSERT INTO user_rule VALUES ('comaps-navigation-step','comaps-navigation-step','app.comaps.google','{}',1,100,100,'VALID')",
+            ).forEach(v5::execSQL)
+            v5.version = 5
+        }
+
+        val db = Room.databaseBuilder(context, PebbleNtnDatabase::class.java, dbName)
+            .addMigrations(*PebbleNtnDatabase.ALL_MIGRATIONS)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val row = runBlocking { db.userRuleDao().getById("comaps-navigation-step") }!!
+            assertEquals("comaps-navigation-step", row.sourceRuleId)
+            assertEquals(null, row.sourceRuleHash)
+            assertEquals(null, row.dismissedOfficialHash)
+        } finally {
+            db.close()
+        }
+    }
 }
