@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "osmand-it-2026.10.1",
+  "rulesetVersion": "osmand-it-2026.10.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-10-01T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -16,12 +16,12 @@
       "locales": [
         "it"
       ],
-      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture.",
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture. Cross-checked against OsmAnd's strings (2026-10, #61): OsmAnd says 'Rotatoria: prendere la %d uscita' (route_roundabout), and the short forms 'Prendere la %d uscita', 'Prendi l'uscita %d', 'Prendi la %d uscita e tieni la sinistra' have no 'rotatoria'.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\brotond[ae]\\b"
+          "value": "(?i)\\brotond[ae]\\b|\\brotatoria\\b|\\bprend(?:i|ere)\\s+(?:la\\s+\\d+\\s+uscita|l['’]uscita\\s+\\d+)"
         }
       ],
       "output": {
@@ -96,7 +96,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:bruscamente|stretta)\\s+a\\s+destra\\b"
+          "value": "(?i)\\b(?:bruscamente|strett[ao])\\s+a\\s+destra\\b"
         }
       ],
       "output": {
@@ -117,7 +117,7 @@
           "stripLeadingDistance": true
         }
       },
-      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture."
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture. Cross-checked against OsmAnd's strings (2026-10, #61): OsmAnd says 'Svolta stretto a destra' (route_tshr); before this, sharp turns fell through to STRAIGHT."
     },
     {
       "id": "osmand-sharp-left-it",
@@ -134,7 +134,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:bruscamente|stretta)\\s+a\\s+sinistra\\b"
+          "value": "(?i)\\b(?:bruscamente|strett[ao])\\s+a\\s+sinistra\\b"
         }
       ],
       "output": {
@@ -155,7 +155,7 @@
           "stripLeadingDistance": true
         }
       },
-      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture."
+      "comment": "Authored from OsmAnd's Italian phrasing; validate against a real capture. Cross-checked against OsmAnd's strings (2026-10, #61): OsmAnd says 'Svolta stretto a sinistra' (route_tshl); before this, sharp turns fell through to STRAIGHT."
     },
     {
       "id": "osmand-slight-right-it",

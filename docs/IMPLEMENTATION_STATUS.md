@@ -2,6 +2,31 @@
 
 _Last updated: 2026-10-01_
 
+## OsmAnd German rules from a shared contribution; OsmAnd rules cross-checked with its strings (#61) (2026-10-04)
+
+- **Source of truth:** OsmAnd's notification shows its own instruction strings verbatim (the English
+  capture `200 m • Turn right and go` is `route_tr`). So every rule was checked against OsmAnd's
+  `res/values{,-de,-it}/strings.xml`: 16 keys (turns, sharp, slight, keep, head, U-turn, three
+  roundabout forms, roundabout+keep, arrival), each prefixed with a distance and run through the
+  rules.
+- **German (`osmand/de.json`, new, 12 rules):** adopted from a user's shared rules (rules-only
+  export, app 0.0.40). Their ids are kept, so #58 offers them removal of their copies. Changes:
+  - ARRIVE gains `angekommen` and moves to the bottom (40);
+  - the roundabout also matches a number followed by "Ausfahrt";
+  - the road line strips the distance;
+  - `locales: ["de"]`, no subText copy, and separate keep rules.
+
+  Result: 16/16.
+- **Italian:** 10/16 → 16/16. Sharp turns (`Svolta stretto a …`) used to fall through to STRAIGHT;
+  roundabouts gain `Rotatoria` and the short `uscita` forms.
+- **English:** 10/16 → 16/16. Adds `Turn sharply …`, `Head`, and the short `Take 2 exit` forms.
+- **Roundabout patterns** need a number before exit / Ausfahrt / uscita (or after "Prendi
+  l'uscita"), so a motorway "Take exit 23" stays a keep, not a roundabout (fixture guard).
+- Fixtures: 28 new, all synthetic. `OsmandRulesRegressionTest` loads `de`.
+
+**Verified.** Workbench regression (OsmAnd 53/53, Google Maps 104/104), OsmAnd regression test,
+`./scripts/test-all.sh`.
+
 ## User rules that override official rules (#58; REQ-ANDROID-016) (2026-10-04)
 
 The trigger was a shared log: an unchanged copy of the official CoMaps rule (made with "Copy to my
