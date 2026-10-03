@@ -15,11 +15,14 @@ package com.pebblentn.app.notification
  *   notification that happens to lack an ETA.
  *
  * It errs toward inclusion: a rare false positive just counts one extra capture, whereas excluding a
- * real gap would hide a missing rule/language.
+ * real gap would hide a missing rule/language. The one exception is a route status card such as
+ * "Rerouting...": it never carries a maneuver, but its "Arrive " line (with the time still blank)
+ * contains a maneuver word, so it would otherwise count as a missing rule (#51).
  */
 object ManeuverHeuristic {
 
     private val clock = Regex("""\b\d{1,2}:\d{2}\b""")
+    private val statusCard = Regex("""^\s*(rerouting|recalculating)\b""", RegexOption.IGNORE_CASE)
     private val word = Regex("""\p{L}+""")
 
     // Core direction/turn/roundabout/u-turn/arrive/continue words across the supported languages.
@@ -44,6 +47,7 @@ object ManeuverHeuristic {
 
     fun looksLikeManeuver(text: String?): Boolean {
         if (text.isNullOrBlank()) return false
+        if (statusCard.containsMatchIn(text)) return false
         if (clock.containsMatchIn(text)) return true
         return word.findAll(text.lowercase()).any { it.value in MANEUVER_WORDS }
     }

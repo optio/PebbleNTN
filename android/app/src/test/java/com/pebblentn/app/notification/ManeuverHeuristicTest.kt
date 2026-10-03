@@ -32,6 +32,16 @@ class ManeuverHeuristicTest {
     }
 
     @Test
+    fun routeStatusCardsAreNotManeuvers() {
+        // Real capture (#51): "Rerouting..." with a blank "Arrive " line, whose word "arrive" made it
+        // count as a missing rule.
+        assertFalse(ManeuverHeuristic.looksLikeManeuver("Rerouting... Arrive "))
+        assertFalse(ManeuverHeuristic.looksLikeManeuver("Recalculating route"))
+        // Only at the start: a street that merely contains the word is still judged normally.
+        assertTrue(ManeuverHeuristic.looksLikeManeuver("Turn left towards Rerouting Lane"))
+    }
+
+    @Test
     fun emptyOrNullIsNotManeuver() {
         assertFalse(ManeuverHeuristic.looksLikeManeuver(null))
         assertFalse(ManeuverHeuristic.looksLikeManeuver(""))
