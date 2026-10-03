@@ -202,6 +202,7 @@ class AppContainer(context: Context) {
             navigationController.restore()
             navigationController.start()
             enabledAppRepository.refreshCache()
+            userRuleRepository.backfillSourceHashes(bundledOfficialRules)
             userRuleRepository.refreshCache()
             // The dashboard's "last navigation notification" survives restarts via the debug history.
             debugHistoryRepository.observeRecent(LAST_ELIGIBLE_LOOKBACK).first()

@@ -56,6 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
+import com.pebblentn.app.data.RuleOverride
 import com.pebblentn.app.data.RuleValidationStatus
 import com.pebblentn.app.data.UserRule
 import com.pebblentn.app.rules.Rule
@@ -80,6 +81,8 @@ fun RulesScreen(
     onShareRules: () -> Unit = {},
     onUndoDelete: () -> Unit = {},
     initialAppId: String? = null,
+    overrides: Map<String, RuleOverride> = emptyMap(),
+    onReviewOverrides: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -118,13 +121,18 @@ fun RulesScreen(
         },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
+            // Official rules changed under rules of yours that override them (#58).
+            val attention = overrides.values.count { it.needsAttention }
+            if (attention > 0) {
+                OverrideNotice(attention, onReviewOverrides, Modifier.padding(16.dp))
+            }
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.rules_tab_official)) })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.rules_tab_user)) })
             }
             when (selectedTab) {
                 0 -> OfficialList(officialGroups, phoneLanguage, onOpenOfficial, initialAppId)
-                else -> UserList(userRules, onToggleUser, onEditUser, deleteWithUndo, appName, onShareRules)
+                else -> UserList(userRules, onToggleUser, onEditUser, deleteWithUndo, appName, onShareRules, overrides)
             }
         }
     }
@@ -349,6 +357,7 @@ private fun UserList(
     onDelete: (String) -> Unit,
     appName: (String) -> String,
     onShare: () -> Unit,
+    overrides: Map<String, RuleOverride> = emptyMap(),
 ) {
     if (rules.isEmpty()) {
         EmptyState(stringResource(R.string.rules_user_empty))
@@ -386,6 +395,13 @@ private fun UserList(
                     Switch(checked = rule.enabled, onCheckedChange = { onToggle(rule.ruleId, it) })
                 }
                 Text(appName(rule.packageName), style = MaterialTheme.typography.bodySmall)
+                overrides[rule.ruleId]?.let { override ->
+                    Text(
+                        overrideLabel(override),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (override.needsAttention) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (rule.validationStatus == RuleValidationStatus.INVALID) {
                     Text(stringResource(R.string.rules_invalid_badge), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                 }

@@ -101,4 +101,43 @@ class UserRuleRepositoryTest {
         assertEquals("official-r1", after.sourceRuleId)
         assertEquals(before.canonicalJson, after.canonicalJson)
     }
+
+    // ---- #58: overrides of official rules ----
+
+    @Test
+    fun cloneRecordsTheOfficialFingerprintAndEditsKeepIt() = runTest {
+        val official = rule("official")
+        repo.cloneToUser(official)
+        val fp = RuleOverrides.fingerprint(official)
+        assertEquals(fp, repo.getUserRule("official")!!.sourceRuleHash)
+
+        repo.save(official.copy(priority = 300), sourceRuleId = null) // edited in the editor
+        assertEquals(fp, repo.getUserRule("official")!!.sourceRuleHash)
+        assertEquals("official", repo.getUserRule("official")!!.sourceRuleId)
+    }
+
+    @Test
+    fun backfillFingerprintsOnlyOldCopiesThatStillEqualTheirOfficialRule() = runTest {
+        val official = rule("official")
+        repo.save(official, sourceRuleId = "official") // an old, unchanged copy (no fingerprint)
+        repo.save(rule("other", maneuver = "LEFT"), sourceRuleId = "official-other") // differs from its official
+        repo.save(rule("fresh"), sourceRuleId = null) // not a copy at all
+        repo.backfillSourceHashes(listOf(official, rule("official-other")))
+
+        assertEquals(RuleOverrides.fingerprint(official), repo.getUserRule("official")!!.sourceRuleHash)
+        assertNull(repo.getUserRule("other")!!.sourceRuleHash)
+        assertNull(repo.getUserRule("fresh")!!.sourceRuleHash)
+    }
+
+    @Test
+    fun keepMineIsStoredAndRevertRemovesOnlyTheGivenRules() = runTest {
+        repo.cloneToUser(rule("official"))
+        repo.save(rule("mine"), sourceRuleId = null)
+        repo.keepMine("official", "abc")
+        assertEquals("abc", repo.getUserRule("official")!!.dismissedOfficialHash)
+
+        repo.deleteAll(listOf("official"))
+        assertNull(repo.getUserRule("official"))
+        assertEquals(listOf("mine"), repo.userRulesSnapshot().map { it.id })
+    }
 }
