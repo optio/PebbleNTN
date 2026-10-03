@@ -1,0 +1,1 @@
+• OsmAnd German ruleset; OsmAnd rules cross-checked against OsmAnd's strings
