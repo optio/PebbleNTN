@@ -58,8 +58,8 @@ class OsmandRulesRegressionTest {
             ?: error("resource not found: $path")
 
     private val bundledRules: LayeredRules by lazy {
-        // Every bundled OsmAnd language; the engine picks by each fixture's locale (#16 added Italian).
-        LayeredRules(bundled = listOf("en", "it").flatMap { RulesetCodec.parse(resource("/rules/bundled/osmand/$it.json")).rules })
+        // Every bundled OsmAnd language; the engine picks by each fixture's locale (#16 added Italian, #61 German).
+        LayeredRules(bundled = listOf("en", "it", "de").flatMap { RulesetCodec.parse(resource("/rules/bundled/osmand/$it.json")).rules })
     }
 
     private val fixtures: List<Fixture> by lazy {

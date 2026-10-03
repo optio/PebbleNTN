@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "osmand-en-2026.10.4",
+  "rulesetVersion": "osmand-de-2026.10.4",
   "minimumAppVersionCode": 1,
-  "createdAt": "2026-08-05T00:00:00Z",
+  "createdAt": "2026-10-04T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
     {
-      "id": "osmand-roundabout-en",
+      "id": "osmand-roundabout-de",
       "enabled": true,
       "priority": 190,
       "packageNames": [
@@ -14,14 +14,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
-      "comment": "Authored from OsmAnd's English phrasing; validate against a real roundabout capture. Cross-checked against OsmAnd's strings (2026-10, #61): the short forms 'Take %d exit (and go)' and 'Take the %d exit and keep left/right' have no 'roundabout'. The number must come before 'exit', so a motorway 'Take exit 23' is not a roundabout.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Kreisverkehr: Nehmen Sie die %d Ausfahrt, dann' (route_roundabout) and the short forms without 'Kreisverkehr', 'Nehmen Sie die %d Ausfahrt' / '%d. Ausfahrt nehmen' / 'Die %d Ausfahrt nehmen und links halten'. A number before 'Ausfahrt' keeps a plain motorway 'Ausfahrt' out. Above the keep rules, so roundabout+keep stays a roundabout.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\broundabout\\b|\\btake\\s+(?:the\\s+)?\\d+\\s+exit\\b"
+          "value": "(?i)\\bKreisverkehr\\b|\\b\\d+\\.?\\s+Ausfahrt\\b"
         }
       ],
       "output": {
@@ -44,7 +44,7 @@
       }
     },
     {
-      "id": "osmand-uturn-en",
+      "id": "osmand-uturn-de",
       "enabled": true,
       "priority": 180,
       "packageNames": [
@@ -52,14 +52,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
-      "comment": "Authored from OsmAnd's English phrasing; validate against a real capture.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Wenden' (route_tu).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bu-?turn\\b"
+          "value": "(?i)\\b(?:wenden|umkehren|u-turn)\\b"
         }
       ],
       "output": {
@@ -82,7 +82,7 @@
       }
     },
     {
-      "id": "osmand-sharp-right-en",
+      "id": "osmand-sharp-right-de",
       "enabled": true,
       "priority": 170,
       "packageNames": [
@@ -90,13 +90,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf rechts abbiegen, dann' (route_tshr).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bsharp(?:ly)?\\s+right\\b"
+          "value": "(?i)\\bscharf\\s+rechts\\b"
         }
       ],
       "output": {
@@ -116,11 +117,10 @@
           ],
           "stripLeadingDistance": true
         }
-      },
-      "comment": "Cross-checked against OsmAnd's strings (2026-10, #61): OsmAnd says 'Turn sharply right and go' (route_tshr)."
+      }
     },
     {
-      "id": "osmand-sharp-left-en",
+      "id": "osmand-sharp-left-de",
       "enabled": true,
       "priority": 170,
       "packageNames": [
@@ -128,13 +128,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf links abbiegen, dann' (route_tshl).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bsharp(?:ly)?\\s+left\\b"
+          "value": "(?i)\\bscharf\\s+links\\b"
         }
       ],
       "output": {
@@ -154,11 +155,10 @@
           ],
           "stripLeadingDistance": true
         }
-      },
-      "comment": "Cross-checked against OsmAnd's strings (2026-10, #61): OsmAnd says 'Turn sharply left and go' (route_tshl)."
+      }
     },
     {
-      "id": "osmand-slight-right-en",
+      "id": "osmand-slight-right-de",
       "enabled": true,
       "priority": 160,
       "packageNames": [
@@ -166,13 +166,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb rechts abbiegen, dann' (route_tslr).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bslight(?:ly)?\\s+right\\b"
+          "value": "(?i)\\b(?:halb|leicht)\\s+rechts\\b"
         }
       ],
       "output": {
@@ -195,7 +196,7 @@
       }
     },
     {
-      "id": "osmand-slight-left-en",
+      "id": "osmand-slight-left-de",
       "enabled": true,
       "priority": 160,
       "packageNames": [
@@ -203,13 +204,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb links abbiegen, dann' (route_tsll).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bslight(?:ly)?\\s+left\\b"
+          "value": "(?i)\\b(?:halb|leicht)\\s+links\\b"
         }
       ],
       "output": {
@@ -232,7 +234,7 @@
       }
     },
     {
-      "id": "osmand-keep-right-en",
+      "id": "osmand-keep-right-de",
       "enabled": true,
       "priority": 120,
       "packageNames": [
@@ -240,13 +242,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts halten, dann' (route_kr). Keep is drawn as a slight turn, like osmand-keep-right-en.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bkeep\\s+right\\b"
+          "value": "(?i)\\brechts\\s+halten\\b"
         }
       ],
       "output": {
@@ -269,7 +272,7 @@
       }
     },
     {
-      "id": "osmand-keep-left-en",
+      "id": "osmand-keep-left-de",
       "enabled": true,
       "priority": 120,
       "packageNames": [
@@ -277,13 +280,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Links halten, dann' (route_kl). Keep is drawn as a slight turn, like osmand-keep-left-en.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bkeep\\s+left\\b"
+          "value": "(?i)\\blinks\\s+halten\\b"
         }
       ],
       "output": {
@@ -306,7 +310,7 @@
       }
     },
     {
-      "id": "osmand-turn-right-en",
+      "id": "osmand-turn-right-de",
       "enabled": true,
       "priority": 100,
       "packageNames": [
@@ -314,14 +318,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
-      "comment": "Capture-confirmed (2026-08, en). OsmAnd title format is '<distance> • Turn right and go ...'; distance is the leading number+unit.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts abbiegen, dann' (route_tr). Sharp, slight and keep rank higher, so only a plain right turn lands here.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bturn\\s+right\\b"
+          "value": "(?i)\\brechts\\b"
         }
       ],
       "output": {
@@ -344,7 +348,7 @@
       }
     },
     {
-      "id": "osmand-turn-left-en",
+      "id": "osmand-turn-left-de",
       "enabled": true,
       "priority": 100,
       "packageNames": [
@@ -352,14 +356,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
-      "comment": "Capture-confirmed (2026-08, en).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'links abbiegen, dann' (route_tl). Sharp, slight and keep rank higher, so only a plain left turn lands here.",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\bturn\\s+left\\b"
+          "value": "(?i)\\blinks\\b"
         }
       ],
       "output": {
@@ -382,7 +386,7 @@
       }
     },
     {
-      "id": "osmand-continue-en",
+      "id": "osmand-straight-de",
       "enabled": true,
       "priority": 50,
       "packageNames": [
@@ -390,14 +394,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
-      "comment": "Matches 'Go straight'/'Continue' only, never the bare 'and go' that ends every OsmAnd turn title. Cross-checked against OsmAnd's strings (2026-10, #61): the route start is 'Head' (route_head).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Geradeaus' (route_head).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:go\\s+straight|continue|head)\\b"
+          "value": "(?i)\\bgeradeaus\\b"
         }
       ],
       "output": {
@@ -420,7 +424,7 @@
       }
     },
     {
-      "id": "osmand-arrive-en",
+      "id": "osmand-arrive-de",
       "enabled": true,
       "priority": 40,
       "packageNames": [
@@ -428,14 +432,14 @@
         "net.osmand.plus"
       ],
       "locales": [
-        "en"
+        "de"
       ],
-      "comment": "Lowest priority, title only: the title carries the destination road name, so an explicit maneuver must win and only a maneuver-less title falls through to ARRIVE (same lesson as the localized Google Maps fix). Authored from OsmAnd phrasing; validate against a real arrival capture.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Sie sind angekommen.' (arrived_at_destination); 'Ziel erreicht' kept from the contribution. Lowest priority, so a turn always wins over an arrival word.",
       "conditions": [
         {
-          "field": "title",
+          "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:arrive|arrived|reached|destination)\\b"
+          "value": "(?i)\\b(?:angekommen|Ziel\\s+(?:ist\\s+)?erreicht)\\b"
         }
       ],
       "output": {
