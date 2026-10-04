@@ -115,13 +115,15 @@ def drive(h, scenario: dict, max_seconds: int | None) -> dict:
     else:
         raise RuntimeError(f"{app.app_id} would not start navigation")
     time.sleep(8)
-    tapped = apps.dismiss_first_run(h)
+    navigating = lambda: has_instruction(h, app)
+    tapped = apps.dismiss_first_run(h, done=navigating)
     if tapped:
         print(f"  dismissed first-run dialogs: {', '.join(tapped)}")
-        h.adb("emu", "geo", "fix", f"{origin[0]:.6f}", f"{origin[1]:.6f}")
-        app.start_navigation(h, route, scenario["mode"])
-        time.sleep(8)
-        apps.dismiss_first_run(h)
+        if not navigating():
+            h.adb("emu", "geo", "fix", f"{origin[0]:.6f}", f"{origin[1]:.6f}")
+            app.start_navigation(h, route, scenario["mode"])
+            time.sleep(8)
+            apps.dismiss_first_run(h, done=navigating)
 
     # Wait for the first real instruction: building a route (or indexing a freshly pushed map) takes a
     # while, and driving off before it exists captures nothing useful.
@@ -163,12 +165,17 @@ def wait_for_instructions(h, app, timeout: float = 150, retry=None, retry_after:
         if not retried and time.time() - start > retry_after:
             retry()
             retried = True
-        for rec in notifications.parse_dumpsys(h.shell("dumpsys notification --noredact", check=False), app.package):
-            if report.is_instruction(rec):
-                return True
-        apps.dismiss_first_run(h, attempts=1)
+        if has_instruction(h, app):
+            return True
+        apps.dismiss_first_run(h, attempts=1, done=lambda: has_instruction(h, app))
         time.sleep(4)
     return False
+
+
+def has_instruction(h, app) -> bool:
+    """Whether the app currently posts a navigation instruction."""
+    return any(report.is_instruction(rec)
+               for rec in notifications.parse_dumpsys(h.shell("dumpsys notification --noredact", check=False), app.package))
 
 
 def same_language(active: str, wanted: str) -> bool:
@@ -198,7 +205,7 @@ def warm_up(h, plan_scenarios: list[dict]) -> None:
                 break
             time.sleep(15)
         time.sleep(10)
-        tapped = apps.dismiss_first_run(h)
+        tapped = apps.dismiss_first_run(h, done=lambda: has_instruction(h, app))
         print(f"warm-up {sc['app']} {sc['mode']}: {'dismissed ' + ', '.join(tapped) if tapped else 'no first-run dialogs'}")
         app.stop(h)
 

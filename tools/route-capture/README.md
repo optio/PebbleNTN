@@ -78,8 +78,8 @@ cd tools/route-capture
 |---|---|---|
 | Google Maps | Preinstalled in the Play image (Android 17 ships 26.14; updating needs a Play sign-in) | `google.navigation:q=<lat>,<lon>&mode=d\|b\|w` |
 | OsmAnd | F-Droid (`net.osmand.plus`) | The route's region map (`routes/<id>.json` → `maps.osmand`, e.g. `Germany_berlin_europe_2`) is downloaded from download.osmand.net once (cached in the host's temp folder) and pushed into `/sdcard/Android/data/net.osmand.plus/files/`. Navigation: end any previous route (`osmand.api://stop_navigation`; OsmAnd resumes the last route on start), then `google.navigation:q=…&mode=d\|b\|w` and the route preview's **Start**. OsmAnd's own `osmand.api://navigate` didn't start anything. OsmAnd follows the Android system language. **Open point:** OsmAnd seems to ignore the intent's `mode`, so its bike and foot scenarios may run with the car profile (the instruction strings are the same across profiles) |
-| Organic Maps | GitHub release (`app.organicmaps.web`) | phase 3 |
-| CoMaps | Codeberg release (`app.comaps`) | phase 3 |
+| Organic Maps | GitHub release (`app.organicmaps.web`) | Maps come through the app, with the GPS at the route's origin: the first-run world overview map (its "Download <region>?" box ticked), then the region map a route request offers. Navigation: `om://route?sll=…&saddr=Start&dll=…&daddr=Destination&type=vehicle\|bicycle\|pedestrian`, sent to a stopped app (a running one ignores it), then the preview's **Start**, "plan from your current location?" → OK, and the one-time route disclaimer → Accept (positive buttons found by id, so any language works). The app follows the Android system language |
+| CoMaps | Codeberg release (`app.comaps`) | A fork of Organic Maps: the same driver with the `cm://` scheme |
 
 ## Known limits
 

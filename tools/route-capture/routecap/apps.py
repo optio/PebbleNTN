@@ -194,7 +194,7 @@ class OrganicMaps(App):
         rid = lambda name: f"{self.package}:id/{name}"
         host.shell(f"monkey -p {self.package} -c android.intent.category.LAUNCHER 1", check=False)
         deadline = time.time() + 900
-        requested = False
+        requested = 0.0  # when the route was last requested
         while time.time() < deadline:
             time.sleep(5)
             xml = screen(host)
@@ -214,14 +214,13 @@ class OrganicMaps(App):
                 # Only a negative button: "Unable to create route", seen right after a region map
                 # downloaded. A restarted app routes fine, so close it and ask again.
                 tap(host, hit)
-                host.shell(f"am force-stop {self.package}", check=False)
-                time.sleep(2)
                 self.start_navigation(host, route, "car")
                 continue
-            if not requested and ui.find_id(xml, [rid("my_position")]):
+            if time.time() - requested > 30 and ui.find_id(xml, [rid("my_position")]):
                 # The world map is in: ask for the route, which offers this region's map if missing.
+                # Asked again while no preview shows: a request sent while the app starts is dropped.
                 self.start_navigation(host, route, "car")
-                requested = True
+                requested = time.time()
         else:
             raise RuntimeError(f"{self.app_id}: no route preview after 15 min of map downloads")
         host.shell(f"am force-stop {self.package}", check=False)
@@ -229,6 +228,9 @@ class OrganicMaps(App):
     def start_navigation(self, host, route: dict, mode: str) -> bool:
         o, d = route["origin"], route["destination"]
         q = f"sll={o['lat']},{o['lon']}&saddr=Start&dll={d['lat']},{d['lon']}&daddr=Destination&type={self.TYPES[mode]}"
+        # The app ignores a route URL while it's open; it only acts on one that starts it.
+        host.shell(f"am force-stop {self.package}", check=False)
+        time.sleep(2)
         # Inside the double quotes the device shell takes "&" literally; escaping it would reach the app.
         out = host.shell(f'am start -a android.intent.action.VIEW -d "{self.scheme}://route?{q}" {self.package}', check=False)
         return "Error" not in out
@@ -255,10 +257,14 @@ def tap(host, hit) -> None:
     host.shell(f"input tap {x} {y}")
 
 
-def dismiss_first_run(host, attempts: int = 6) -> list[str]:
-    """Tap through first-run and consent dialogs by their button text; returns what was tapped."""
+def dismiss_first_run(host, attempts: int = 6, done=None) -> list[str]:
+    """Tap through first-run and consent dialogs by their button text; returns what was tapped.
+    Stops as soon as `done()` holds: once navigation runs, a stale dump can still show the route
+    preview's start button, and tapping its spot on the navigation screen ends navigation."""
     tapped = []
     for _ in range(attempts):
+        if done and done():
+            break
         xml = screen(host)
         hit = ui.find_id(xml, FIRST_RUN_IDS) or ui.find(xml, FIRST_RUN_LABELS)
         if not hit:
