@@ -30,7 +30,7 @@ cd tools/route-capture
 ./routecap.py setup                      # SDK tools, emulator, Android 17 Play image, AVD PebbleNTN_Capture_API_37 (idempotent)
 ./routecap.py fetch-routes               # cache each route's track per mode under routes/cache/ (committed)
 ./routecap.py install osmand comaps      # optional: latest builds of the open-source apps (phase 3 drives them)
-./routecap.py run scenarios/phase1.json  # boot, drive every scenario, write out/<timestamp>/{run.json,report.md}
+./routecap.py run scenarios/phase1.json  # boot, drive every scenario, write out/<timestamp>/{run.json,report.md}; run.json is saved after every scenario
 ./routecap.py run scenarios/phase1.json --publish     # ... and create/update the GitHub issue
 ./routecap.py report out/<timestamp>/run.json --publish  # re-evaluate a saved run with today's rules
 ```
@@ -61,7 +61,15 @@ cd tools/route-capture
 
 **What counts as missed:** a card no rule matched *and* that looks like a direction by the app's own check (`ManeuverHeuristic`: an ETA clock time or a maneuver word, and not "Rerouting…"; its word list is read from the Kotlin source). Others, like "Starting navigation…", are listed as "not counted".
 
-**Failed scenarios** (the system language didn't switch; no instruction appeared after starting; nothing was captured; or only status cards like "Navigation", meaning navigation didn't really run) are left out of the report and the issue, so a harness problem can't file wrong "missing rule" reports.
+**Failed scenarios** (the system language didn't switch; no instruction appeared after starting; nothing was captured; or only status cards like "Navigation", meaning navigation didn't really run) are left out of the report and the issue, so a harness problem can't file wrong "missing rule" reports. If the emulator stops responding, the plan stops and the scenarios that ran are still reported.
+
+**Long plans: one language per run.** After about 1.5 hours of Organic Maps the emulator's system services crash (`Can't find service: input`) and every later scenario fails. Twice it happened at the sixth scenario. Running one language (one city) per invocation, without `--keep-emulator`, cold-boots it between cities:
+
+```sh
+for l in en-GB fr-FR nl-NL de-DE it-IT es-ES; do ./routecap.py run scenarios/organic-maps-m3.json --only "\.$l\." --publish; done
+```
+
+**Cards a fixture already settles.** An unmatched card that a `matched: false` fixture in `rules/fixtures/<app>.json` describes (same fields, numbers aside) is listed as "left unshown on purpose", not as unrecognised. That's checked again on the issue's stored examples at every publish, so adding such a fixture clears the issue without rerunning anything.
 
 ## Plans and routes
 

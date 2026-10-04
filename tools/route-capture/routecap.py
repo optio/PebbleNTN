@@ -257,7 +257,10 @@ def cmd_run(args) -> int:
     run_dir = OUT_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir.mkdir(parents=True, exist_ok=True)
     try:
-        warm_up(h, plan["scenarios"])
+        try:
+            warm_up(h, plan["scenarios"])
+        except Exception as e:  # the scenarios retry what the warm-up couldn't do
+            print(f"warm-up failed: {type(e).__name__}: {e}"[:300])
         for scenario in plan["scenarios"]:
             print(f"scenario {scenario['id']}")
             try:
