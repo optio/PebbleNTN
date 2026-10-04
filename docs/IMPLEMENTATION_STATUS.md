@@ -2,6 +2,20 @@
 
 _Last updated: 2026-10-01_
 
+## Google Maps walking "Take the pedestrian crossing" (#56) (2026-10-04)
+
+- **New rules:** `google-maps-take-the-en` (priority 55) and its classic-layout twin
+  `-distance-title-en` (56). Walking steps "Take the pedestrian crossing" are captured; the same
+  family (crosswalk, zebra crossing, stairs/steps, footbridge, underpass, lift/elevator, escalator)
+  is synthetic. They map to STRAIGHT, with the distance, the road line without the distance, and the
+  ETA from `Arrive HH:MM`. Ruleset `google-maps-en-2026.10.4`.
+- **Placement:** just above "continue", below every turn, keep, lane and roundabout rule. Fixtures
+  guard that "take the 2nd exit" stays a roundabout, and "…, then turn left" stays a left turn.
+- **Paris log replay:** all 20 distinct unrecognised titles now match (19 by this rule, 1 by #51).
+
+**Verified.** Workbench regression (Google Maps 110/110), `GoogleMapsRulesRegressionTest`,
+`./scripts/test-all.sh`.
+
 ## Alternative builds of CoMaps, Organic Maps and OsmAnd detected (#54) (2026-10-04)
 
 The trigger was user feedback: "PebbleNTN detects CoMaps if it is installed via the Play Store, but

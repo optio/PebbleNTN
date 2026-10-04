@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.10.3",
+  "rulesetVersion": "google-maps-en-2026.10.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -1209,6 +1209,96 @@
         "maneuver": {
           "type": "literal",
           "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-take-the-distance-title-en",
+      "enabled": true,
+      "priority": 56,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-take-the-en: title is the bare distance ('50 m'), text the instruction, so the road line comes from text (#56). One priority step above the base rule.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\btake\\s+the\\s+(?:pedestrian\\s+crossing|crosswalk|zebra\\s+crossing|stairs|steps|footbridge|pedestrian\\s+bridge|underpass|pedestrian\\s+tunnel|elevator|lift|escalator)\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-take-the-en",
+      "enabled": true,
+      "priority": 55,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Walking steps 'Take the pedestrian crossing' (real capture, en-GB, Android 17, 2026-10, #56) and the same family (crosswalk, stairs, footbridge, underpass, lift/elevator, escalator; synthetic, validate against captures): straight on with the distance and ETA. Just above google-maps-continue-en and below every turn, keep, lane and roundabout rule, so a turn word still wins and 'Take the 2nd exit' stays a roundabout.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\btake\\s+the\\s+(?:pedestrian\\s+crossing|crosswalk|zebra\\s+crossing|stairs|steps|footbridge|pedestrian\\s+bridge|underpass|pedestrian\\s+tunnel|elevator|lift|escalator)\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
         },
         "distanceMeters": {
           "type": "distance",
