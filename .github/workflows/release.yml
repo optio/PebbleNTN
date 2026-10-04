@@ -21,6 +21,8 @@ on:
       - "**/*.md"
       - "docs/**"
       - "fdroid/**" # F-Droid submission recipe/docs; not part of the app build
+      - "tools/**" # maintainer tools (rule-workbench, route-capture): no app or watchapp change, so no release
+      - "scripts/test-all.sh" # the local test runner; ships nothing
   workflow_dispatch:
     inputs:
       bump:

@@ -140,6 +140,13 @@ class ReportTest(unittest.TestCase):
         self.assertEqual([], report.unrecognised(state))
         self.assertEqual(2, len(state["notDirections"]["s1"]))
 
+    def test_fallback_matches_are_listed_for_review(self):
+        approach = {"packageName": "com.google.android.apps.maps", "title": "90 m · tipi! Cinquantenaire", "subText": "Arrive 3:37 AM"}
+        state = report.evaluate(self.run_with([approach]))
+        self.assertEqual(1, state["scenarios"]["s1"]["matched"])
+        self.assertEqual("google-maps-destination-approach-en", state["fallback"]["s1"][0]["rule"])
+        self.assertIn("Recognised only by a fallback rule", report.markdown("Google Maps", state))
+
     def test_maneuver_words_come_from_the_app(self):
         self.assertIn("turn", report.MANEUVER_WORDS)
         self.assertIn("rechtsaf", report.MANEUVER_WORDS)

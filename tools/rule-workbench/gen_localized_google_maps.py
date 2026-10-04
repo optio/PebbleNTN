@@ -36,6 +36,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO_ROOT / "rules" / "bundled" / "google-maps"
 PACKAGE = "com.google.android.apps.maps"
 RULESET_DATE = "2026.10.1"
+# Languages added later carry their own date, so regenerating doesn't bump the others' versions.
+RULESET_DATES = {"pt": "2026.10.4", "pl": "2026.10.4"}
 
 # Per language: the regex fragments. `turn_*` are full "to the side" phrases; `right`/`left` are the
 # bare direction tokens used by the sharp/slight/keep refinements; the rest are keyword alternations.
@@ -111,15 +113,56 @@ LANGS = {
         "straight": r"rechtdoor|vervolg|volg|ga\s+richting|rijd\s+door|neem\s+de",
         "arrive": r"aangekomen|bestemming",
     },
+    # pt and pl (#66): the turn / continue / slight phrasings are captured by the route-capture harness
+    # (Google Maps 26.14, Android 17, 2026-10-04): "Vire à esquerda na …", "Siga em direção à …",
+    # "Continue para …", "Curva suave à direita para permanecer na …"; "Skręć w lewo w …",
+    # "Skręć łagodnie w prawo, pozostając na …", "Kontynuuj wzdłuż …", "Kieruj się w stronę …".
+    # The others follow Google Maps' usual wording and need captures.
+    # Patterns that start or end with a non-ASCII letter are marked RAW (used as written): Java's \b
+    # is ASCII-only on the JVM but Unicode-aware on Android and in Python, so \b next to ł or ć would
+    # behave differently between the engines.
+    "pt": {
+        "name": "Portuguese",
+        "turn_right": r"(?:vire|dobre|curva)\s+à\s+direita\b",
+        "turn_left": r"(?:vire|dobre|curva)\s+à\s+esquerda\b",
+        "right": r"direita",
+        "left": r"esquerda",
+        "roundabout": r"RAW:\b(?:rotunda|rotat\S*ria)\b",
+        "uturn": r"retorno|invers\S*o\s+de\s+marcha",
+        "sharp": r"acentuad[ao]|fechad[ao]|bruscamente",
+        "slight": r"suave|ligeiramente|levemente",
+        "keep": r"mantenha-se|mantenha|permane\S*a|fique",
+        "straight": r"continue|siga|prossiga|em\s+frente",
+        "arrive": r"cheg|destino",
+    },
+    "pl": {
+        "name": "Polish",
+        "turn_right": r"\bskr\S*\s+w\s+prawo\b",
+        "turn_left": r"\bskr\S*\s+w\s+lewo\b",
+        "right": r"prawo|prawej|prawa",
+        "left": r"lewo|lewej|lewa",
+        "roundabout": r"rondo|rondzie|ronda",
+        "uturn": r"RAW:\bzawr",
+        "sharp": r"ostro",
+        "slight": r"RAW:(?:lekko\b|agodnie\b)",
+        "keep": r"trzymaj|zjed\S*\s+na",
+        "straight": r"kontynuuj|prosto|kieruj",
+        "arrive": r"dotar|celu|miejsce\s+docelowe",
+    },
 }
 
 # Clock time at the end of subText — the arrival ETA, language-independent.
 ETA_PATTERN = r"(?i)(\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?)\s*$"
 
 
+def kw(pattern: str) -> str:
+    """A keyword alternation wrapped in word boundaries, unless marked RAW: (used as written)."""
+    return pattern[4:] if pattern.startswith("RAW:") else rf"\b(?:{pattern})\b"
+
+
 def both(mods: str, direction: str) -> str:
     """Order-independent 'contains a modifier AND the direction' regex."""
-    return rf"(?i)(?=.*\b(?:{mods})\b)(?=.*\b(?:{direction})\b)"
+    return rf"(?i)(?=.*{kw(mods)})(?=.*\b(?:{direction})\b)"
 
 
 def output(maneuver: str, with_distance: bool = True) -> dict:
@@ -150,8 +193,8 @@ def rule(rid, priority, field, value, maneuver, with_distance=True, comment=None
 def build(lang: str, k: dict) -> dict:
     # Listed in evaluation (descending priority) order.
     rules = [
-        rule(f"google-maps-roundabout-{lang}", 190, "combinedText", rf"(?i)\b(?:{k['roundabout']})\b", "ROUNDABOUT"),
-        rule(f"google-maps-uturn-{lang}", 180, "combinedText", rf"(?i)\b(?:{k['uturn']})\b", "UTURN_LEFT"),
+        rule(f"google-maps-roundabout-{lang}", 190, "combinedText", rf"(?i){kw(k['roundabout'])}", "ROUNDABOUT"),
+        rule(f"google-maps-uturn-{lang}", 180, "combinedText", rf"(?i){kw(k['uturn'])}", "UTURN_LEFT"),
         rule(f"google-maps-sharp-right-{lang}", 170, "combinedText", both(k["sharp"], k["right"]), "SHARP_RIGHT"),
         rule(f"google-maps-sharp-left-{lang}", 170, "combinedText", both(k["sharp"], k["left"]), "SHARP_LEFT"),
         rule(f"google-maps-slight-right-{lang}", 160, "combinedText", both(k["slight"], k["right"]), "SLIGHT_RIGHT"),
@@ -160,7 +203,7 @@ def build(lang: str, k: dict) -> dict:
         rule(f"google-maps-keep-left-{lang}", 120, "combinedText", both(k["keep"], k["left"]), "SLIGHT_LEFT"),
         rule(f"google-maps-turn-right-{lang}", 100, "combinedText", rf"(?i){k['turn_right']}", "RIGHT"),
         rule(f"google-maps-turn-left-{lang}", 100, "combinedText", rf"(?i){k['turn_left']}", "LEFT"),
-        rule(f"google-maps-continue-{lang}", 50, "combinedText", rf"(?i)\b(?:{k['straight']})\b", "STRAIGHT"),
+        rule(f"google-maps-continue-{lang}", 50, "combinedText", rf"(?i){kw(k['straight'])}", "STRAIGHT"),
         rule(f"google-maps-arrive-{lang}", 40, "title", rf"(?i)\b(?:{k['arrive']})", "ARRIVE",
              with_distance=False,
              comment="Title only: the ETA in subText often carries the localized 'arrive' word, so "
@@ -172,7 +215,7 @@ def build(lang: str, k: dict) -> dict:
     ]
     return {
         "schemaVersion": 1,
-        "rulesetVersion": f"google-maps-{lang}-{RULESET_DATE}",
+        "rulesetVersion": f"google-maps-{lang}-{RULESET_DATES.get(lang, RULESET_DATE)}",
         "minimumAppVersionCode": 1,
         "createdAt": "2026-07-28T00:00:00Z",
         "publisher": "PebbleNTN maintainers",
@@ -181,6 +224,10 @@ def build(lang: str, k: dict) -> dict:
 
 
 def main() -> None:
+    import sys
+    if len(sys.argv) > 1:  # no options: running it always regenerates every language
+        print(__doc__)
+        return
     for lang, k in LANGS.items():
         path = OUT_DIR / f"{lang}.json"
         path.write_text(json.dumps(build(lang, k), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

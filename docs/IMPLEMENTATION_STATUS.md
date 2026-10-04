@@ -2,6 +2,30 @@
 
 _Last updated: 2026-10-01_
 
+## Google Maps Portuguese and Polish, destination-approach card (#66) (2026-10-04)
+
+Everything here comes from the route-capture harness's first findings (#55, #66).
+
+- **`google-maps/pt.json` and `pl.json`** (12 rules each), from `gen_localized_google_maps.py`.
+  - Captured: turns ("Vire à esquerda na", "Skręć w prawo w"), continue ("Continue para",
+    "Kontynuuj wzdłuż"), head ("Siga em direção à", "Kieruj się w stronę"), and slight ("Curva
+    suave à direita", "Skręć łagodnie w prawo").
+  - Roundabout, U-turn, sharp, keep and arrive follow Google's usual wording and are synthetic.
+  - The generator gained `RAW:` patterns for words that start or end with a non-ASCII letter (the
+    JVM's `\b` is ASCII-only), per-language ruleset dates, and no longer regenerates when given
+    an argument.
+- **`google-maps-destination-approach-en`** (priority 30, English only): near the destination,
+  Google Maps shows the place name as the step (`90 m · tipi! Cinquantenaire - …`). It maps to
+  ARRIVE with the distance. It's a fallback, so the harness report lists every card it matched
+  for review.
+- **Release workflow:** `tools/**` and `scripts/test-all.sh` are in `paths-ignore`, so a
+  tools-only merge doesn't release.
+- **Re-evaluated harness runs:** pt-BR + pl-PL 210/210 (was 0/210), en-US 199/200 (the remaining
+  card is "Rerouting…", not a direction). #66 is cleared.
+
+**Verified.** Workbench regression (Google Maps 132/132), `GoogleMapsRulesRegressionTest` (now
+loads pt and pl), the harness unit tests (21), `./scripts/test-all.sh`.
+
 ## Route-capture regression harness, phase 1 (#55) (2026-10-04)
 
 `tools/route-capture/` (see its README) drives navigation apps along synthetic routes in an emulator,

@@ -1445,6 +1445,49 @@
           ]
         }
       }
+    },
+    {
+      "id": "google-maps-destination-approach-en",
+      "enabled": true,
+      "priority": 30,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Final approach: near the destination Google Maps shows the place name as the step, '90 m · tipi! Cinquantenaire - …' (route-capture harness, Google Maps 26.14, Android 17, 2026-10, #66). ARRIVE with the distance to it. A fallback: it matches any '<distance> · …' title no other rule took, so it is the lowest priority, English only until other languages are captured, and the harness report lists every card it matched for review, so an unknown phrasing can't hide behind it.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*·\\s*\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
     }
   ]
 }
