@@ -11,7 +11,9 @@
       "priority": 190,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -49,7 +51,9 @@
       "priority": 180,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -87,7 +91,9 @@
       "priority": 170,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -125,7 +131,9 @@
       "priority": 170,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -163,7 +171,9 @@
       "priority": 160,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -201,7 +211,9 @@
       "priority": 160,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -239,7 +251,9 @@
       "priority": 120,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -277,7 +291,9 @@
       "priority": 120,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -315,7 +331,9 @@
       "priority": 100,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -353,7 +371,9 @@
       "priority": 100,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -391,7 +411,9 @@
       "priority": 50,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"
@@ -429,7 +451,9 @@
       "priority": 40,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "locales": [
         "de"

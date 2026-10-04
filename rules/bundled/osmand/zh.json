@@ -11,7 +11,9 @@
       "priority": 190,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree. No locales: OsmAnd's own language can differ from the phone's, and Chinese can't collide with other languages. zh-rTW uses '向左急轉' for slight turns too, so those show as sharp.",
       "conditions": [
@@ -46,7 +48,9 @@
       "priority": 180,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -81,7 +85,9 @@
       "priority": 170,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -116,7 +122,9 @@
       "priority": 170,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -151,7 +159,9 @@
       "priority": 160,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -186,7 +196,9 @@
       "priority": 160,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -221,7 +233,9 @@
       "priority": 120,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -256,7 +270,9 @@
       "priority": 120,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -291,7 +307,9 @@
       "priority": 100,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -326,7 +344,9 @@
       "priority": 100,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -361,7 +381,9 @@
       "priority": 50,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree.",
       "conditions": [
@@ -396,7 +418,9 @@
       "priority": 40,
       "packageNames": [
         "net.osmand",
-        "net.osmand.plus"
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
       ],
       "comment": "From OsmAnd's instruction strings (res/values-zh-rTW and values-zh-rCN/strings.xml, 2026-10-04; #61, #57), which its notification shows verbatim. Synthetic until captured. \\b only next to ASCII letters, so JVM, Android and workbench agree. Lowest priority, so a turn always wins over an arrival word.",
       "conditions": [

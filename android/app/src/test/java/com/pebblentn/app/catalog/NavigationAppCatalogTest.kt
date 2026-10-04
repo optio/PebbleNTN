@@ -46,9 +46,14 @@ class NavigationAppCatalogTest {
             "com.waze" to "waze",
             "net.osmand" to "osmand",
             "net.osmand.plus" to "osmand",
+            "net.osmand.dev" to "osmand", // OsmAnd Nightly (#54)
+            "net.osmand.huawei" to "osmand",
             "app.organicmaps" to "organic-maps",
+            "app.organicmaps.web" to "organic-maps", // GitHub release build (#54)
             "app.comaps.google" to "comaps",
             "app.comaps.fdroid" to "comaps",
+            "app.comaps" to "comaps", // Codeberg/GitHub release and IzzyOnDroid build (#54)
+            "app.comaps.huawei" to "comaps",
             "com.mapswithme.maps.pro" to "maps-me",
             "cz.seznam.mapy" to "mapy-com",
             "com.autonavi.minimap" to "amap",
@@ -85,6 +90,33 @@ class NavigationAppCatalogTest {
         for (app in catalog.apps) {
             val hasRules = app.packageNames.any { it in packagesWithRules }
             assertEquals("${app.appId}: hasOfficialRules must match the bundled rules", hasRules, app.hasOfficialRules)
+        }
+    }
+
+    /**
+     * Each bundled ruleset lives in `rules/bundled/<appId>/`, and every rule in it must list exactly
+     * that app's catalog packages. Alternative builds (GitHub, IzzyOnDroid, nightly, AppGallery) use
+     * other package names; one added to the catalog but not to a ruleset was detected yet never
+     * matched (#54). This fails as soon as one place is forgotten.
+     */
+    @Test
+    fun everyBundledRuleCoversExactlyItsAppsPackages() {
+        val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
+        val bundledDir = java.io.File(javaClass.getResource("/rules/bundled")!!.toURI())
+        val appDirs = bundledDir.listFiles()!!.filter { it.isDirectory }
+        assertTrue(appDirs.isNotEmpty())
+        for (dir in appDirs) {
+            val app = catalog.apps.firstOrNull { it.appId == dir.name }
+            assertNotNull("rules/bundled/${dir.name} has no catalog entry with that appId", app)
+            for (file in dir.listFiles()!!.filter { it.extension == "json" }) {
+                for (rule in com.pebblentn.app.rules.RulesetCodec.parse(file.readText()).rules) {
+                    assertEquals(
+                        "${dir.name}/${file.name} ${rule.id}: packageNames must equal the catalog's",
+                        app!!.packageNames.toSet(),
+                        rule.packageNames.toSet(),
+                    )
+                }
+            }
         }
     }
 

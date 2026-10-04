@@ -11,7 +11,9 @@
       "priority": 100,
       "packageNames": [
         "app.comaps.google",
-        "app.comaps.fdroid"
+        "app.comaps.fdroid",
+        "app.comaps",
+        "app.comaps.huawei"
       ],
       "comment": "CoMaps (Organic Maps fork): title = distance ('92 m'), text = road ('Kroonstraat'); the turn direction is only an arrow icon, never text (real capture, 2026-07-30). Maneuver is UNKNOWN on purpose: distance + road with a neutral marker, never a made-up arrow. Locale-agnostic: only the leading number+unit title is matched. Road line from text only (#57): a card with just a distance ('50 m') leaves it empty instead of repeating the distance.",
       "conditions": [

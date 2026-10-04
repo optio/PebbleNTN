@@ -10,7 +10,8 @@
       "enabled": true,
       "priority": 100,
       "packageNames": [
-        "app.organicmaps"
+        "app.organicmaps",
+        "app.organicmaps.web"
       ],
       "comment": "Same notification as its CoMaps fork (OM NavigationService.java: title = distToTurn, text = nextStreet, arrow = setLargeIcon only), so maneuver is UNKNOWN on purpose. Locale-agnostic: only the leading number+unit title is matched. From the OM source; validate against a real capture (see comaps/any.json). Road line from text only (#57): a card with just a distance leaves it empty instead of repeating the distance.",
       "conditions": [

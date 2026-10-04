@@ -2,6 +2,27 @@
 
 _Last updated: 2026-10-01_
 
+## Alternative builds of CoMaps, Organic Maps and OsmAnd detected (#54) (2026-10-04)
+
+The trigger was user feedback: "PebbleNTN detects CoMaps if it is installed via the Play Store, but
+not from GitHub or F-Droid." The direct-download builds use other package names; the audit is in
+#54.
+
+- **New package names**, added to the catalog, every ruleset of the app, and the manifest's
+  `<queries>`:
+  - CoMaps: `app.comaps` (Codeberg/GitHub release and the IzzyOnDroid repo; checked with `aapt2`
+    on the release APK) and `app.comaps.huawei`.
+  - Organic Maps: `app.organicmaps.web` (GitHub release; checked with `aapt2`).
+  - OsmAnd: `net.osmand.dev` (OsmAnd Nightly) and `net.osmand.huawei`.
+- **Drift guard** `NavigationAppCatalogTest.everyBundledRuleCoversExactlyItsAppsPackages`: every
+  rule in `rules/bundled/<appId>/` must list exactly that app's catalog packages. It's verified to
+  fail when a package is left out of one ruleset. `scripts/validate_catalog.py` already checked the
+  catalog against the manifest.
+- Fixtures: one per new package; the catalog test locks the package → app mapping.
+
+**Verified.** Catalog validation (25 packages in `<queries>`); workbench regression (CoMaps 11/11,
+Organic Maps 8/8, OsmAnd 184/184); the catalog and rule tests; `./scripts/test-all.sh`.
+
 ## CoMaps/Organic Maps road line (#57) and OsmAnd rules for fr, es, nl, pt, pl, zh (2026-10-04)
 
 - **#57:** `comaps-navigation-step` and `organic-maps-navigation-step` take the road line from `text`
