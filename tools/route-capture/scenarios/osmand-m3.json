@@ -1,0 +1,150 @@
+{
+  "id": "osmand-m3",
+  "description": "Milestone 3 of #55: OsmAnd by car, bike and foot in English, French, Dutch, German, Italian and Spanish, each in a city of that language, on the region map pushed from OsmAnd's server (about 1.4 GB in total, cached).",
+  "scenarios": [
+    {
+      "id": "osmand.en-GB.car.london-centre",
+      "app": "osmand",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "london-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.en-GB.bike.london-centre",
+      "app": "osmand",
+      "locale": "en-GB",
+      "mode": "bike",
+      "route": "london-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.en-GB.foot.london-centre",
+      "app": "osmand",
+      "locale": "en-GB",
+      "mode": "foot",
+      "route": "london-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "osmand.fr-FR.car.paris-centre",
+      "app": "osmand",
+      "locale": "fr-FR",
+      "mode": "car",
+      "route": "paris-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.fr-FR.bike.paris-centre",
+      "app": "osmand",
+      "locale": "fr-FR",
+      "mode": "bike",
+      "route": "paris-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.fr-FR.foot.paris-centre",
+      "app": "osmand",
+      "locale": "fr-FR",
+      "mode": "foot",
+      "route": "paris-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "osmand.nl-NL.car.amsterdam-centre",
+      "app": "osmand",
+      "locale": "nl-NL",
+      "mode": "car",
+      "route": "amsterdam-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.nl-NL.bike.amsterdam-centre",
+      "app": "osmand",
+      "locale": "nl-NL",
+      "mode": "bike",
+      "route": "amsterdam-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.nl-NL.foot.amsterdam-centre",
+      "app": "osmand",
+      "locale": "nl-NL",
+      "mode": "foot",
+      "route": "amsterdam-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "osmand.de-DE.car.berlin-centre",
+      "app": "osmand",
+      "locale": "de-DE",
+      "mode": "car",
+      "route": "berlin-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.de-DE.bike.berlin-centre",
+      "app": "osmand",
+      "locale": "de-DE",
+      "mode": "bike",
+      "route": "berlin-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.de-DE.foot.berlin-centre",
+      "app": "osmand",
+      "locale": "de-DE",
+      "mode": "foot",
+      "route": "berlin-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "osmand.it-IT.car.milan-centre",
+      "app": "osmand",
+      "locale": "it-IT",
+      "mode": "car",
+      "route": "milan-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.it-IT.bike.milan-centre",
+      "app": "osmand",
+      "locale": "it-IT",
+      "mode": "bike",
+      "route": "milan-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.it-IT.foot.milan-centre",
+      "app": "osmand",
+      "locale": "it-IT",
+      "mode": "foot",
+      "route": "milan-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "osmand.es-ES.car.madrid-centre",
+      "app": "osmand",
+      "locale": "es-ES",
+      "mode": "car",
+      "route": "madrid-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.es-ES.bike.madrid-centre",
+      "app": "osmand",
+      "locale": "es-ES",
+      "mode": "bike",
+      "route": "madrid-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "osmand.es-ES.foot.madrid-centre",
+      "app": "osmand",
+      "locale": "es-ES",
+      "mode": "foot",
+      "route": "madrid-centre",
+      "maxSeconds": 300
+    }
+  ]
+}

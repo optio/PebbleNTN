@@ -55,12 +55,13 @@ cd tools/route-capture
 1. **Prepare the app:** grant location and notification permissions, and set the **Android system language** to the scenario's locale. Google Maps 26.x ignores a per-app language (`cmd locale set-app-locales`). Play images can't be rooted, so `device/SetSystemLocale` runs via `app_process` as the shell user. That user holds `CHANGE_CONFIGURATION` and `WRITE_SETTINGS` (the harness allows the `WRITE_SETTINGS` app-op for `com.android.shell`). It updates the persistent configuration like *Settings → System → Languages* does, and the harness checks the result with `am get-config`. After the run, the language goes back to English.
 2. **Start navigation:** put the GPS at the route's origin (`emu geo fix`), then start navigation by deep link. A fresh image needs about a minute before Google Maps accepts the intent, so it retries.
 3. **First-run dialogs:** tap through them by button text (sign-in "Skip", "OK", "Dismiss", …).
+3b. **Wait for the first instruction** (up to 150 s, still tapping dialogs; navigation is requested again after a minute): building the route, or loading a large freshly pushed map after the language switch restarted the app, takes a while.
 4. **Drive:** feed one GPS fix per second along the track, at the mode's speed (car 11 m/s, bike 5, foot 1.6). Every second, read `dumpsys notification --noredact` and keep each distinct card (title, text, subText, bigText, plus template and channel).
 5. **Stop** the app. The report groups unrecognised cards by **shape** (numbers and the road name abstracted), with an example, a count, and the scenarios where they appeared.
 
 **What counts as missed:** a card no rule matched *and* that looks like a direction by the app's own check (`ManeuverHeuristic`: an ETA clock time or a maneuver word, and not "Rerouting…"; its word list is read from the Kotlin source). Others, like "Starting navigation…", are listed as "not counted".
 
-**Failed scenarios** (the system language didn't switch, or nothing was captured because navigation never started) are left out of the report and the issue, so a harness problem can't file wrong "missing rule" reports.
+**Failed scenarios** (the system language didn't switch; no instruction appeared after starting; nothing was captured; or only status cards like "Navigation", meaning navigation didn't really run) are left out of the report and the issue, so a harness problem can't file wrong "missing rule" reports.
 
 ## Plans and routes
 
@@ -68,6 +69,7 @@ cd tools/route-capture
 |---|---|
 | `scenarios/phase1.json` | Google Maps, en-US, car, Brussels |
 | `scenarios/google-maps-new-languages.json` | Google Maps, pt-BR and pl-PL, car, Brussels (discovery) |
+| `scenarios/osmand-m3.json` | OsmAnd × car / bike / foot × the same six languages and cities (milestone 3); about 1.4 GB of region maps on the first run |
 | `scenarios/google-maps-m2.json` | Google Maps × car / bike / foot × en-GB (London), fr-FR (Paris), nl-NL (Amsterdam), de-DE (Berlin), it-IT (Milan), es-ES (Madrid); 18 scenarios. Each has a `maxSeconds` cap (car and bike 7 min, foot 5 min), and the whole plan takes about 2 h, so run it in parts with `--only` |
 
 ## Apps
@@ -75,7 +77,7 @@ cd tools/route-capture
 | App | Source of the build | Driver |
 |---|---|---|
 | Google Maps | Preinstalled in the Play image (Android 17 ships 26.14; updating needs a Play sign-in) | `google.navigation:q=<lat>,<lon>&mode=d\|b\|w` |
-| OsmAnd | F-Droid (`net.osmand.plus`) | phase 3 |
+| OsmAnd | F-Droid (`net.osmand.plus`) | The route's region map (`routes/<id>.json` → `maps.osmand`, e.g. `Germany_berlin_europe_2`) is downloaded from download.osmand.net once (cached in the host's temp folder) and pushed into `/sdcard/Android/data/net.osmand.plus/files/`. Navigation: end any previous route (`osmand.api://stop_navigation`; OsmAnd resumes the last route on start), then `google.navigation:q=…&mode=d\|b\|w` and the route preview's **Start**. OsmAnd's own `osmand.api://navigate` didn't start anything. OsmAnd follows the Android system language. **Open point:** OsmAnd seems to ignore the intent's `mode`, so its bike and foot scenarios may run with the car profile (the instruction strings are the same across profiles) |
 | Organic Maps | GitHub release (`app.organicmaps.web`) | phase 3 |
 | CoMaps | Codeberg release (`app.comaps`) | phase 3 |
 

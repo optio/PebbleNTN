@@ -1,7 +1,7 @@
 {
   "id": "paris-centre",
   "city": "Paris",
-  "description": "Place de la R\u00e9publique to Place de la Bastille through the Marais.",
+  "description": "Place de la République to Place de la Bastille through the Marais.",
   "origin": {
     "lat": 48.8674,
     "lon": 2.3636
@@ -14,5 +14,8 @@
     "car",
     "bike",
     "foot"
-  ]
+  ],
+  "maps": {
+    "osmand": "France_ile-de-france_europe_2"
+  }
 }

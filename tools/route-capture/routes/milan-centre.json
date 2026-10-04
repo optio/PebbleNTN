@@ -14,5 +14,8 @@
     "car",
     "bike",
     "foot"
-  ]
+  ],
+  "maps": {
+    "osmand": "Italy_lombardia_europe_2"
+  }
 }
