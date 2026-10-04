@@ -97,6 +97,10 @@ class App:
         host.shell(f"am force-stop {self.package}", check=False)
         return active
 
+    def storage(self) -> str:
+        """The app's external files folder, where its offline maps live."""
+        return f"/sdcard/Android/data/{self.package}/files"
+
     def provision(self, host, route: dict) -> None:
         """Make sure the device has what navigating `route` needs (offline maps); default: nothing."""
 
@@ -126,9 +130,6 @@ class OsmAnd(App):
 
     app_id, package, source = "osmand", "net.osmand.plus", FDroid("net.osmand.plus")
     MAP_URL = "https://download.osmand.net/download?standard=yes&file={name}.obf.zip"
-
-    def storage(self) -> str:
-        return f"/sdcard/Android/data/{self.package}/files"
 
     def provision(self, host, route: dict) -> None:
         name = route.get("maps", {}).get("osmand")
@@ -188,6 +189,13 @@ class OrganicMaps(App):
         the device, the map a route request offers (the dialog's positive button is "Download").
         Done once the route preview shows its start button. Any language works: buttons are found
         by resource id."""
+        if getattr(self, "_region_of", None) != route["id"]:
+            # A new city: drop the other cities' region maps first (World*.mwm stays), or a few of
+            # them fill the emulator's storage, which hung it mid-run.
+            host.shell(f"am force-stop {self.package}", check=False)
+            host.shell(f"for f in {self.storage()}/*/*.mwm; do case $(basename \"$f\") in World*) ;; *) rm \"$f\";; esac; done",
+                       check=False)
+            self._region_of = route["id"]
         o = route["origin"]
         host.adb("emu", "geo", "fix", str(o["lon"]), str(o["lat"]))
         time.sleep(2)

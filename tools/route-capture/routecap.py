@@ -254,6 +254,8 @@ def cmd_run(args) -> int:
         "image": args.avd,
         "scenarios": [],
     }
+    run_dir = OUT_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
+    run_dir.mkdir(parents=True, exist_ok=True)
     try:
         warm_up(h, plan["scenarios"])
         for scenario in plan["scenarios"]:
@@ -263,12 +265,18 @@ def cmd_run(args) -> int:
             except Exception as e:  # one broken scenario must not lose the others' results
                 print(f"  FAILED: {type(e).__name__}: {e}"[:300])
                 run["scenarios"].append({**scenario, "failed": f"{type(e).__name__}: {str(e)[:200]}", "captures": []})
+                if not h.booted():
+                    print("emulator lost: stopping the plan; `routecap.py report` can publish what ran")
+                    break
+            # Saved after every scenario, so a crash keeps what already ran.
+            (run_dir / "run.json").write_text(json.dumps(run, indent=1, ensure_ascii=False) + "\n")
     finally:
-        h.set_system_locale("en-US")
-        if not args.keep_emulator:
-            h.stop_emulator()
-    run_dir = OUT_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
-    run_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            h.set_system_locale("en-US")
+            if not args.keep_emulator:
+                h.stop_emulator()
+        except Exception as e:  # a dead emulator must not cost the report
+            print(f"cleanup failed: {type(e).__name__}: {e}"[:300])
     return write_report(run, run_dir, args.publish)
 
 
