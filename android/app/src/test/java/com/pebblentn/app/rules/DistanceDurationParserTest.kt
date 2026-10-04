@@ -71,6 +71,14 @@ class DistanceDurationParserTest {
     }
 
     @Test
+    fun frenchImperialFeetAreRecognised() {
+        // "500 pi · Continuer sur …": Google Maps in French with imperial units (#69).
+        assertEquals(152, DistanceParser.parseMeters("500 pi · Continuer sur Bd Beaumarchais"))
+        assertEquals("Continuer sur Bd Beaumarchais", DistanceParser.stripLeadingDistance("500 pi · Continuer sur Bd Beaumarchais"))
+        assertEquals(null, DistanceParser.parseMeters("Rue Pigalle")) // a bare word starting with "pi" is no unit
+    }
+
+    @Test
     fun chineseUnitsAreRecognised() {
         // #17: zh-TW Google Maps writes 公尺 (metres) and 公里 (kilometres); zh-CN uses 米 and 千米.
         assertEquals(0, DistanceParser.parseMeters("0 公尺"))

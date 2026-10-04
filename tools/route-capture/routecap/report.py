@@ -18,7 +18,6 @@ import workbench  # noqa: E402
 HEURISTIC_KT = REPO_ROOT / "android/app/src/main/java/com/pebblentn/app/notification/ManeuverHeuristic.kt"
 _CLOCK = re.compile(r"\b\d{1,2}:\d{2}\b")
 _WORD = re.compile(r"[^\W\d_]+")
-_STATUS = re.compile(r"^\s*(rerouting|recalculating)\b", re.I)
 
 
 def _maneuver_words() -> frozenset[str]:
@@ -29,7 +28,16 @@ def _maneuver_words() -> frozenset[str]:
     return frozenset(re.findall(r'"([^"]+)"', block))
 
 
+def _status_card() -> re.Pattern:
+    """The app's route-status-card pattern ("Rerouting..."), read from ManeuverHeuristic.kt."""
+    source = HEURISTIC_KT.read_text(encoding="utf-8")
+    start = source.index("statusCard")
+    call = source[start:source.index("RegexOption", start)]
+    return re.compile("".join(re.findall(r'"""(.*?)"""', call, re.S)), re.I)  # parts joined by +
+
+
 MANEUVER_WORDS = _maneuver_words()
+_STATUS = _status_card()
 
 
 def looks_like_direction(capture: dict) -> bool:

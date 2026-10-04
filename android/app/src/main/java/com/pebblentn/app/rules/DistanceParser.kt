@@ -26,7 +26,7 @@ object DistanceParser {
         Pattern.compile(
             "(?i)(\\d+(?:[.,]\\d+)?)\\s*" +
                 "(?:(kilometres|kilometers|kilometre|kilometer|km" +
-                "|miles|mile|mi|feet|foot|ft|yards|yard|yd" +
+                "|miles|mile|mi|feet|foot|ft|pi|yards|yard|yd" +
                 "|metres|meters|metre|meter|m)\\b|(公里|千米|公尺|米))",
         )
 
@@ -39,7 +39,7 @@ object DistanceParser {
 
     private val LEADING_DISTANCE: Pattern = Pattern.compile(
         "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*" +
-            "(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft|yards|yard|yd" +
+            "(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft|pi|yards|yard|yd" +
             "|metres|meters|metre|meter|m)\\s*[·•|]\\s*",
     )
 
@@ -50,7 +50,7 @@ object DistanceParser {
         val meters = when ((matcher.group(2) ?: matcher.group(3))?.lowercase()) {
             "km", "kilometer", "kilometers", "kilometre", "kilometres", "公里", "千米" -> number * 1000.0
             "mi", "mile", "miles" -> number * 1609.344
-            "ft", "foot", "feet" -> number * 0.3048
+            "ft", "foot", "feet", "pi" -> number * 0.3048 // "pi" = pieds: French with imperial units (#69)
             "yd", "yard", "yards" -> number * 0.9144
             else -> number // metre / metres / meter / meters / m / 公尺 / 米
         }

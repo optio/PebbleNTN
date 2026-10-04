@@ -37,6 +37,10 @@ class ManeuverHeuristicTest {
         // count as a missing rule.
         assertFalse(ManeuverHeuristic.looksLikeManeuver("Rerouting... Arrive "))
         assertFalse(ManeuverHeuristic.looksLikeManeuver("Recalculating route"))
+        // Captured by the route-capture harness (#69): French and Italian rerouting, waiting for GPS.
+        assertFalse(ManeuverHeuristic.looksLikeManeuver("Calcul du nouvel itinéraire… Arrivée à "))
+        assertFalse(ManeuverHeuristic.looksLikeManeuver("Rielaborazione percorso... Arrivo: "))
+        assertFalse(ManeuverHeuristic.looksLikeManeuver("Waiting for location... Arrive "))
         // Only at the start: a street that merely contains the word is still judged normally.
         assertTrue(ManeuverHeuristic.looksLikeManeuver("Turn left towards Rerouting Lane"))
     }

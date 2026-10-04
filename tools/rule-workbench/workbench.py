@@ -154,7 +154,7 @@ def combined_text(snap: dict) -> str:
 
 
 LEADING_DISTANCE = re.compile(
-    r"^\s*\d+(?:[.,]\d+)?\s*(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft"
+    r"^\s*\d+(?:[.,]\d+)?\s*(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft|pi"
     r"|yards|yard|yd|metres|meters|metre|meter|m)\s*[·•|]\s*",
     re.IGNORECASE,
 )
@@ -207,7 +207,7 @@ def parse_distance(text: str):
     m = re.search(
         r"(\d+(?:[.,]\d+)?)\s*"
         r"(?:(kilometres|kilometers|kilometre|kilometer|km"
-        r"|miles|mile|mi|feet|foot|ft|yards|yard|yd"
+        r"|miles|mile|mi|feet|foot|ft|pi|yards|yard|yd"
         r"|metres|meters|metre|meter|m)\b|(公里|千米|公尺|米))",
         text,
         re.IGNORECASE,
@@ -220,7 +220,7 @@ def parse_distance(text: str):
         meters = num * 1000
     elif unit in ("mi", "mile", "miles"):
         meters = num * 1609.344
-    elif unit in ("ft", "foot", "feet"):
+    elif unit in ("ft", "foot", "feet", "pi"):
         meters = num * 0.3048
     elif unit in ("yd", "yard", "yards"):
         meters = num * 0.9144
