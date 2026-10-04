@@ -179,6 +179,19 @@ def merge(old: dict | None, new: dict) -> dict:
     return merged
 
 
+def reclassify(state: dict, app_id: str) -> dict:
+    """Move stored unrecognised shapes that a `matched: false` fixture now pins into "known", so a
+    fixture added after a run takes effect on the issue without rerunning every scenario."""
+    known = known_unmatched(app_id)
+    state.setdefault("known", {})
+    for sid, entries in state["shapes"].items():
+        keep = []
+        for e in entries:
+            (state["known"].setdefault(sid, []) if is_known_unmatched(e["example"], known) else keep).append(e)
+        state["shapes"][sid] = keep
+    return state
+
+
 def unrecognised(state: dict) -> list[dict]:
     """Unrecognised shapes across all scenarios: count, one example, and where they appeared."""
     out: "OrderedDict[str, dict]" = OrderedDict()

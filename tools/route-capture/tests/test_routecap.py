@@ -164,6 +164,14 @@ class ReportTest(unittest.TestCase):
         self.assertEqual(1, state["known"]["s"][0]["count"])
         self.assertIn("Left unshown on purpose", report.markdown("OsmAnd", state))
 
+    def test_stored_shapes_a_fixture_now_pins_move_to_known(self):
+        state = {"scenarios": {}, "shapes": {"s": [{"shape": "x", "count": 3, "example": {"title": "0 m • "}},
+                                                    {"shape": "y", "count": 1, "example": {"title": "Turn sideways"}}]},
+                 "notDirections": {}, "fallback": {}}
+        report.reclassify(state, "osmand")
+        self.assertEqual(["y"], [e["shape"] for e in state["shapes"]["s"]])
+        self.assertEqual(3, state["known"]["s"][0]["count"])
+
     def test_a_distance_led_title_counts_as_an_instruction_whatever_its_words(self):
         self.assertTrue(report.is_instruction({"title": "200 m • Avancez"}))
         self.assertTrue(report.is_instruction({"title": "300 m • Volg"}))
