@@ -1,0 +1,8 @@
+{
+  "id": "google-maps-new-languages",
+  "description": "Discovery: Google Maps in languages without bundled rules yet (Portuguese, Polish), by car. Run with --max-seconds to sample the start of the route.",
+  "scenarios": [
+    {"id": "google-maps.pt-BR.car.brussels-centre", "app": "google-maps", "locale": "pt-BR", "mode": "car", "route": "brussels-centre"},
+    {"id": "google-maps.pl-PL.car.brussels-centre", "app": "google-maps", "locale": "pl-PL", "mode": "car", "route": "brussels-centre"}
+  ]
+}

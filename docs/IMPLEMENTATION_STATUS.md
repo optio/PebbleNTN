@@ -2,6 +2,40 @@
 
 _Last updated: 2026-10-01_
 
+## Route-capture regression harness, phase 1 (#55) (2026-10-04)
+
+`tools/route-capture/` (see its README) drives navigation apps along synthetic routes in an emulator,
+records their notifications, checks them with the rule-workbench engine, and with `--publish`
+creates or updates one GitHub issue per app (label `route-capture`) with the missed card shapes.
+
+- **Host:** from WSL, the Android 17 Play emulator runs on Windows (WHPX) and is driven with
+  `adb.exe`; native Linux with KVM uses the local SDK (untested). `routecap.py setup` installs the
+  SDK tools, emulator and image and creates `PebbleNTN_Capture_API_37`; it is idempotent and stops
+  adb before SDK installs, since a running adb server locks `adb.exe`.
+- **Apps:** a Google Maps driver (`google.navigation:` intent, first-run dialogs tapped by text in
+  an English warm-up). Installers exist for OsmAnd (F-Droid), Organic Maps (GitHub) and CoMaps
+  (Codeberg); their drivers are phase 3.
+- **Routes:** `brussels-centre` (car / bike / foot), with tracks from routing.openstreetmap.de
+  cached in the repo. GPS is fed at 1 Hz at the mode's speed, and `dumpsys notification` is read
+  each second.
+- **Language:** Google Maps 26.x ignores per-app languages, so the harness sets the **system**
+  language without root. `device/SetSystemLocale` runs via `app_process` as the shell user, with
+  the `WRITE_SETTINGS` app-op allowed and an explicit `com.android.shell` attribution, and the
+  result is checked with `am get-config`.
+- **Report:**
+  - unrecognised cards are grouped by shape (numbers and road names abstracted);
+  - only cards that look like directions by the app's own `ManeuverHeuristic` count (the word list
+    is read from the Kotlin source);
+  - failed scenarios (language not applied, nothing captured) are left out.
+- **Issue:** the state is merged per scenario across runs and hidden in the issue body, so plans
+  never erase each other's findings.
+- **Runs:**
+  - English car route: 196/200 recognised on Google Maps 26.14. Google Maps posted the
+    **ProgressStyle** card, after manual tests had only shown the classic card.
+  - New finding: the destination-approach card `90 m · <place name>` has no rule.
+  - Portuguese and Polish samples: 0/210 recognised, 15 shapes, now in #66.
+- **Tests:** 20 unit tests, in `scripts/test-all.sh`.
+
 ## Google Maps walking "Take the pedestrian crossing" (#56) (2026-10-04)
 
 - **New rules:** `google-maps-take-the-en` (priority 55) and its classic-layout twin

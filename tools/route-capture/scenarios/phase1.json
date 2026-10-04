@@ -1,0 +1,7 @@
+{
+  "id": "phase1",
+  "description": "Phase 1 of #55: one Google Maps car route in English, end to end.",
+  "scenarios": [
+    {"id": "google-maps.en-US.car.brussels-centre", "app": "google-maps", "locale": "en-US", "mode": "car", "route": "brussels-centre"}
+  ]
+}
