@@ -83,21 +83,29 @@ def shape(capture: dict) -> str:
     return f"title «{title}» · text {text} · subText «{sub}» · {capture.get('template') or '-'}"
 
 
+# Fallback rules match a card shape loosely (e.g. any "<distance> · …" title near the destination), so
+# what they match is listed for review: an unknown phrasing must not hide behind them.
+FALLBACK_RULES = ("google-maps-destination-approach-",)
+
+
 def evaluate(run: dict) -> dict:
     """The run as a report state: per scenario, its counts and its unrecognised / not-a-direction
     card shapes. States merge per scenario id (see merge), so an issue can keep the latest result of
     every scenario across runs."""
     rules_by_app: dict[str, list] = {}
-    state = {"scenarios": {}, "shapes": {}, "notDirections": {}}
+    state = {"scenarios": {}, "shapes": {}, "notDirections": {}, "fallback": {}}
     for sc in run["scenarios"]:
         rules = rules_by_app.setdefault(sc["app"], bundled_rules(sc["app"]))
         matched = 0
-        buckets = {"shapes": OrderedDict(), "notDirections": OrderedDict()}
+        buckets = {"shapes": OrderedDict(), "notDirections": OrderedDict(), "fallback": OrderedDict()}
         for cap in sc["captures"]:
             result = workbench.evaluate(snapshot(cap), rules, sc["locale"])
             cap["matchedRuleId"] = result["ruleId"] if result else None
             if result:
                 matched += 1
+                if result["ruleId"].startswith(FALLBACK_RULES):
+                    entry = buckets["fallback"].setdefault(shape(cap), {"shape": shape(cap), "count": 0, "example": snapshot(cap), "rule": result["ruleId"]})
+                    entry["count"] += 1
                 continue
             bucket = buckets["shapes" if looks_like_direction(cap) else "notDirections"]
             entry = bucket.setdefault(shape(cap), {"shape": shape(cap), "count": 0, "example": snapshot(cap)})
@@ -109,12 +117,13 @@ def evaluate(run: dict) -> dict:
         }
         state["shapes"][sc["id"]] = list(buckets["shapes"].values())
         state["notDirections"][sc["id"]] = list(buckets["notDirections"].values())
+        state["fallback"][sc["id"]] = list(buckets["fallback"].values())
     return state
 
 
 def merge(old: dict | None, new: dict) -> dict:
     """`old` updated with `new`: scenarios in `new` replace those with the same id; others stay."""
-    merged = {k: dict((old or {}).get(k, {})) for k in ("scenarios", "shapes", "notDirections")}
+    merged = {k: dict((old or {}).get(k, {})) for k in ("scenarios", "shapes", "notDirections", "fallback")}
     for k in merged:
         merged[k].update(new.get(k, {}))
     return merged
@@ -150,6 +159,10 @@ def markdown(app_name: str, state: dict) -> str:
         titles = sorted({e["example"].get("title") or "" for e in ignored})
         lines += ["", f"Not counted: {sum(e['count'] for e in ignored)} notification(s) that aren't directions, "
                   f"by the app's own check ({', '.join('`' + t + '`' for t in titles[:5])})."]
+    fallback = [e for sid in sorted(state.get("fallback", {})) for e in state["fallback"][sid]]
+    if fallback:
+        lines += ["", "Recognised only by a fallback rule, worth a look (an unknown phrasing would land here too): "
+                  + "; ".join(f"{e['count']}× `{e['example'].get('title')}` ({e['rule']})" for e in fallback[:10]) + "."]
     lines += ["", f"## Unrecognised card shapes ({len(shapes)})", ""]
     if not shapes:
         lines.append("None: every captured notification that looks like a direction matched a rule.")
