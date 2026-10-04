@@ -1,0 +1,18 @@
+{
+  "id": "madrid-centre",
+  "city": "Madrid",
+  "description": "Puerta del Sol to the Retiro park through the centre.",
+  "origin": {
+    "lat": 40.4169,
+    "lon": -3.7035
+  },
+  "destination": {
+    "lat": 40.4153,
+    "lon": -3.6845
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ]
+}

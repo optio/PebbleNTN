@@ -16,13 +16,20 @@ package com.pebblentn.app.notification
  *
  * It errs toward inclusion: a rare false positive just counts one extra capture, whereas excluding a
  * real gap would hide a missing rule/language. The one exception is a route status card such as
- * "Rerouting...": it never carries a maneuver, but its "Arrive " line (with the time still blank)
- * contains a maneuver word, so it would otherwise count as a missing rule (#51).
+ * "Rerouting..." or "Waiting for location...": it never carries a maneuver, but its "Arrive " line
+ * (with the time still blank) contains a maneuver word, so it would otherwise count as a missing
+ * rule (#51). Captured: English, French ("Calcul du nouvel itinéraire…") and Italian ("Rielaborazione
+ * percorso...") (#69); the other languages follow Google Maps' usual wording.
  */
 object ManeuverHeuristic {
 
     private val clock = Regex("""\b\d{1,2}:\d{2}\b""")
-    private val statusCard = Regex("""^\s*(rerouting|recalculating)\b""", RegexOption.IGNORE_CASE)
+    private val statusCard = Regex(
+        """^\s*(?:rerouting|recalculating|waiting for location|calcul du nouvel itin|rielaborazione percorso|ricalcolo|""" +
+            """route wird neu berechnet|neue route wird berechnet|recalculando|calculando nueva ruta|""" +
+            """route opnieuw berekenen|nieuwe route berekenen|wyznaczanie nowej trasy)""",
+        RegexOption.IGNORE_CASE,
+    )
     private val word = Regex("""\p{L}+""")
 
     // Core direction/turn/roundabout/u-turn/arrive/continue words across the supported languages.

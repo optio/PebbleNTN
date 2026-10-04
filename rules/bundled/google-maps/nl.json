@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-nl-2026.10.1",
+  "rulesetVersion": "google-maps-nl-2026.10.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-28T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -103,7 +103,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:scherp)\\b)(?=.*\\b(?:rechts)\\b)"
+          "value": "(?i)(?=.*\\b(?:scherpe?)\\b)(?=.*\\b(?:rechts)\\b)"
         }
       ],
       "output": {
@@ -145,7 +145,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:scherp)\\b)(?=.*\\b(?:links)\\b)"
+          "value": "(?i)(?=.*\\b(?:scherpe?)\\b)(?=.*\\b(?:links)\\b)"
         }
       ],
       "output": {
@@ -187,7 +187,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:flauwe|licht)\\b)(?=.*\\b(?:rechts)\\b)"
+          "value": "(?i)(?=.*\\b(?:flauwe|licht|iets)\\b)(?=.*\\b(?:rechts)\\b)"
         }
       ],
       "output": {
@@ -229,7 +229,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)(?=.*\\b(?:flauwe|licht)\\b)(?=.*\\b(?:links)\\b)"
+          "value": "(?i)(?=.*\\b(?:flauwe|licht|iets)\\b)(?=.*\\b(?:links)\\b)"
         }
       ],
       "output": {
@@ -439,13 +439,56 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:rechtdoor|vervolg|volg|ga\\s+richting|rijd\\s+door|neem\\s+de)\\b"
+          "value": "(?i)\\b(?:rechtdoor|vervolg|volg|ga\\s+richting|rijd\\s+door|neem\\s+de|fiets|loop|rijd|weg\\s+vervolgen)\\b"
         }
       ],
       "output": {
         "maneuver": {
           "type": "literal",
           "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-destination-approach-nl",
+      "enabled": true,
+      "priority": 30,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "nl"
+      ],
+      "comment": "Final approach: near the destination Google Maps shows the place name as the step ('130 m · Aventuras pa tiesos', '160 m · Castello Sforzesco'; route-capture harness, #69). A fallback for any '<distance> · …' title no other rule took: lowest priority, and the harness report lists what it matched for review.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|pi|yd)\\s*·\\s*\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
         },
         "distanceMeters": {
           "type": "distance",

@@ -192,12 +192,17 @@ class GoogleMapsRulesRegressionTest {
         for (lang in locales - "en") {
             val rules = RulesetCodec.parse(resource("/rules/bundled/google-maps/$lang.json")).rules
             val arrive = rules.single { it.id == "google-maps-arrive-$lang" }
-            val lowestManeuver = rules.filterNot { it.id == arrive.id }.minOf { it.priority }
+            // The destination-approach fallback (#69) is an ARRIVE rule too, deliberately lower still.
+            val approach = rules.singleOrNull { it.id == "google-maps-destination-approach-$lang" }
+            val lowestManeuver = rules.filterNot { it.id == arrive.id || it.id == approach?.id }.minOf { it.priority }
             assertTrue(
                 "google-maps-arrive-$lang (priority ${arrive.priority}) must rank below every " +
                     "maneuver rule (lowest is $lowestManeuver)",
                 arrive.priority < lowestManeuver,
             )
+            approach?.let {
+                assertTrue("${it.id} must be the lowest-priority rule", rules.all { r -> r.id == it.id || r.priority > it.priority })
+            }
         }
     }
 }

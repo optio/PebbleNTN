@@ -147,7 +147,8 @@ class ReportTest(unittest.TestCase):
         self.assertEqual("google-maps-destination-approach-en", state["fallback"]["s1"][0]["rule"])
         self.assertIn("Recognised only by a fallback rule", report.markdown("Google Maps", state))
 
-    def test_maneuver_words_come_from_the_app(self):
+    def test_maneuver_words_and_status_cards_come_from_the_app(self):
+        self.assertTrue(report._STATUS.search("Rerouting..."))
         self.assertIn("turn", report.MANEUVER_WORDS)
         self.assertIn("rechtsaf", report.MANEUVER_WORDS)
 

@@ -468,6 +468,49 @@
       }
     },
     {
+      "id": "google-maps-destination-approach-pt",
+      "enabled": true,
+      "priority": 30,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "pt"
+      ],
+      "comment": "Final approach: near the destination Google Maps shows the place name as the step ('130 m · Aventuras pa tiesos', '160 m · Castello Sforzesco'; route-capture harness, #69). A fallback for any '<distance> · …' title no other rule took: lowest priority, and the harness report lists what it matched for review.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|pi|yd)\\s*·\\s*\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
+          "group": 1
+        }
+      }
+    },
+    {
       "id": "google-maps-arrive-pt",
       "enabled": true,
       "priority": 40,

@@ -1,0 +1,18 @@
+{
+  "id": "london-centre",
+  "city": "London",
+  "description": "Trafalgar Square to the British Museum through Westminster and Bloomsbury.",
+  "origin": {
+    "lat": 51.508,
+    "lon": -0.1281
+  },
+  "destination": {
+    "lat": 51.5194,
+    "lon": -0.127
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ]
+}

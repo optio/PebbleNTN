@@ -1,0 +1,18 @@
+{
+  "id": "berlin-centre",
+  "city": "Berlin",
+  "description": "Alexanderplatz to the Brandenburg Gate through Mitte.",
+  "origin": {
+    "lat": 52.5219,
+    "lon": 13.4132
+  },
+  "destination": {
+    "lat": 52.5163,
+    "lon": 13.3777
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ]
+}

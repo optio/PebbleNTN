@@ -2,6 +2,41 @@
 
 _Last updated: 2026-10-01_
 
+## Route-capture milestone 2 and its findings (#55, #69) (2026-10-04)
+
+**Harness:**
+- `scenarios/google-maps-m2.json`: Google Maps × car / bike / foot × en-GB (London), fr-FR (Paris),
+  nl-NL (Amsterdam), de-DE (Berlin), it-IT (Milan), es-ES (Madrid), with six new routes and cached
+  tracks.
+- Per-scenario `maxSeconds`, `--only REGEX`, and a warm-up that starts every travel mode: a first
+  bike route has its own dialog, which in French made the Paris bike scenario fail.
+- The status-card pattern is read from `ManeuverHeuristic.kt`, like the word list.
+
+**Rule and app fixes for #69,** from the milestone-2 captures:
+- **Generator:**
+  - nl: "Scherpe bocht" (sharp), "draait iets naar links" (slight), "Fiets/Loop/Rijd …", "Weg
+    vervolgen" (continue);
+  - fr: "Prendre la direction de", "Aller vers", "Continuer sur";
+  - de: "(Auf …) nach Südosten / Nordwesten";
+  - es: "Cruza por el paso de peatones";
+  - it: "A Largo Cairoli, prendi la 1ª uscita" (roundabout).
+- **Destination-approach fallback** in every generated language: the place-name step was seen in
+  English, Spanish and Italian.
+- **Distance unit "pi" (pieds):** Google Maps in French with imperial units, in the Kotlin parser
+  (search and strip) and the workbench mirror.
+- **`ManeuverHeuristic` status cards:** captured "Calcul du nouvel itinéraire…", "Rielaborazione
+  percorso...", "Waiting for location...", plus the other languages' rerouting texts (synthetic).
+  They count as "not a direction", in Debug history as in the harness.
+- **16 capture fixtures.** `GoogleMapsRulesRegressionTest`'s arrive ordering now allows the lower
+  approach fallback, and checks that it's the lowest.
+
+**Result:** all 18 scenarios run (5 needed a rerun after the warm-up fix). One card is left in #69,
+a title that's only the place name ("Castello Sforzesco", no distance). It's left alone on purpose:
+matching it would make any title without a turn word an arrival.
+
+**Verified.** Workbench regression (Google Maps 148/148), the Kotlin parser / rule / heuristic tests,
+the harness unit tests (21), `./scripts/test-all.sh`.
+
 ## Google Maps Portuguese and Polish, destination-approach card (#66) (2026-10-04)
 
 Everything here comes from the route-capture harness's first findings (#55, #66).

@@ -37,7 +37,7 @@ OUT_DIR = REPO_ROOT / "rules" / "bundled" / "google-maps"
 PACKAGE = "com.google.android.apps.maps"
 RULESET_DATE = "2026.10.1"
 # Languages added later carry their own date, so regenerating doesn't bump the others' versions.
-RULESET_DATES = {"pt": "2026.10.4", "pl": "2026.10.4"}
+RULESET_DATES = {lang: "2026.10.4" for lang in ("it", "fr", "es", "de", "nl", "pt", "pl")}
 
 # Per language: the regex fragments. `turn_*` are full "to the side" phrases; `right`/`left` are the
 # bare direction tokens used by the sharp/slight/keep refinements; the rest are keyword alternations.
@@ -48,7 +48,7 @@ LANGS = {
         "turn_left": r"\ba\s+sinistra\b",
         "right": r"destra",
         "left": r"sinistra",
-        "roundabout": r"rotonda|rotatoria",
+        "roundabout": r"rotonda|rotatoria|prendi\s+la\s+\d+\S*\s+uscita",
         "uturn": r"inversione|inverti\s+la\s+marcia",
         "sharp": r"netta|brusca|decisa|stretta|secca",
         "slight": r"leggermente",
@@ -68,7 +68,7 @@ LANGS = {
         "sharp": r"serré|serrée|franchement|prononcé|prononcée",
         "slight": r"légèrement|legerement",
         "keep": r"serrez|restez|maintenez",
-        "straight": r"tout\s+droit|continuez|poursuivez|dirigez-vous|prenez\s+la\s+direction",
+        "straight": r"tout\s+droit|continuez|poursuivez|dirigez-vous|prenez\s+la\s+direction|prendre\s+la\s+direction|aller\s+vers|allez\s+vers|continuer",
         "arrive": r"arriv|destination",
     },
     "es": {
@@ -82,7 +82,7 @@ LANGS = {
         "sharp": r"bruscamente|brusca|cerrada|cerrado|pronunciad",
         "slight": r"ligeramente|leve",
         "keep": r"mantente|mantén|manten|sigue\s+por\s+la",
-        "straight": r"todo\s+recto|sigue\s+recto|recto|continúa|continua|dirígete|dirigete|ve\s+hacia",
+        "straight": r"todo\s+recto|sigue\s+recto|recto|continúa|continua|dirígete|dirigete|ve\s+hacia|cruza|cruce",
         "arrive": r"llega|destino",
     },
     "de": {
@@ -96,7 +96,7 @@ LANGS = {
         "sharp": r"scharf",
         "slight": r"leicht",
         "keep": r"halten|halte",
-        "straight": r"geradeaus|weiter\s+geradeaus|weiter\s+auf|richtung|immer\s+geradeaus",
+        "straight": r"geradeaus|weiter\s+geradeaus|weiter\s+auf|richtung|immer\s+geradeaus|nach\s+(?:nord|s\S*d|ost|west)\S*",
         "arrive": r"ziel|angekommen|erreicht",
     },
     "nl": {
@@ -107,10 +107,10 @@ LANGS = {
         "left": r"links",
         "roundabout": r"rotonde",
         "uturn": r"keer\s+om|omkeren|u-?bocht",
-        "sharp": r"scherp",
-        "slight": r"flauwe|licht",
+        "sharp": r"scherpe?",
+        "slight": r"flauwe|licht|iets",
         "keep": r"aanhouden|houd",
-        "straight": r"rechtdoor|vervolg|volg|ga\s+richting|rijd\s+door|neem\s+de",
+        "straight": r"rechtdoor|vervolg|volg|ga\s+richting|rijd\s+door|neem\s+de|fiets|loop|rijd|weg\s+vervolgen",
         "arrive": r"aangekomen|bestemming",
     },
     # pt and pl (#66): the turn / continue / slight phrasings are captured by the route-capture harness
@@ -150,6 +150,9 @@ LANGS = {
         "arrive": r"dotar|celu|miejsce\s+docelowe",
     },
 }
+
+# A '<distance> · …' title, for the destination-approach fallback.
+APPROACH = r"(?i)^\s*\d+(?:[.,]\d+)?\s*(?:km|m|mi|ft|pi|yd)\s*·\s*\S"
 
 # Clock time at the end of subText — the arrival ETA, language-independent.
 ETA_PATTERN = r"(?i)(\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?)\s*$"
@@ -204,6 +207,11 @@ def build(lang: str, k: dict) -> dict:
         rule(f"google-maps-turn-right-{lang}", 100, "combinedText", rf"(?i){k['turn_right']}", "RIGHT"),
         rule(f"google-maps-turn-left-{lang}", 100, "combinedText", rf"(?i){k['turn_left']}", "LEFT"),
         rule(f"google-maps-continue-{lang}", 50, "combinedText", rf"(?i){kw(k['straight'])}", "STRAIGHT"),
+        rule(f"google-maps-destination-approach-{lang}", 30, "title", APPROACH, "ARRIVE",
+             comment="Final approach: near the destination Google Maps shows the place name as the step "
+                     "('130 m · Aventuras pa tiesos', '160 m · Castello Sforzesco'; route-capture harness, "
+                     "#69). A fallback for any '<distance> · …' title no other rule took: lowest priority, "
+                     "and the harness report lists what it matched for review."),
         rule(f"google-maps-arrive-{lang}", 40, "title", rf"(?i)\b(?:{k['arrive']})", "ARRIVE",
              with_distance=False,
              comment="Title only: the ETA in subText often carries the localized 'arrive' word, so "

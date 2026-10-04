@@ -1,0 +1,18 @@
+{
+  "id": "milan-centre",
+  "city": "Milan",
+  "description": "Piazza del Duomo to Castello Sforzesco through the old town.",
+  "origin": {
+    "lat": 45.4642,
+    "lon": 9.19
+  },
+  "destination": {
+    "lat": 45.4705,
+    "lon": 9.1793
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ]
+}

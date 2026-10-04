@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-it-2026.10.1",
+  "rulesetVersion": "google-maps-it-2026.10.4",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-28T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -19,7 +19,7 @@
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:rotonda|rotatoria)\\b"
+          "value": "(?i)\\b(?:rotonda|rotatoria|prendi\\s+la\\s+\\d+\\S*\\s+uscita)\\b"
         }
       ],
       "output": {
@@ -446,6 +446,49 @@
         "maneuver": {
           "type": "literal",
           "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)\\s*$",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-destination-approach-it",
+      "enabled": true,
+      "priority": 30,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "it"
+      ],
+      "comment": "Final approach: near the destination Google Maps shows the place name as the step ('130 m · Aventuras pa tiesos', '160 m · Castello Sforzesco'; route-capture harness, #69). A fallback for any '<distance> · …' title no other rule took: lowest priority, and the harness report lists what it matched for review.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|pi|yd)\\s*·\\s*\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ARRIVE"
         },
         "distanceMeters": {
           "type": "distance",

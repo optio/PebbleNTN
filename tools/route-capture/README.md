@@ -35,7 +35,7 @@ cd tools/route-capture
 ./routecap.py report out/<timestamp>/run.json --publish  # re-evaluate a saved run with today's rules
 ```
 
-`run` options: `--max-seconds N` (drive only the first N seconds of each route), `--keep-emulator`.
+`run` options: `--max-seconds N` (drive only the first N seconds of each route; a scenario's own `maxSeconds` applies otherwise), `--only REGEX` (scenario ids, e.g. `'en-GB|fr-FR'`), `--keep-emulator`.
 
 ## Files
 
@@ -51,7 +51,7 @@ cd tools/route-capture
 
 ## How a scenario runs
 
-0. **Warm-up** (once per run, in English): start each app and tap through its first-run dialogs, so they never appear in a scenario's language, where the harness doesn't know the button labels.
+0. **Warm-up** (once per run, in English): start each app **in every travel mode the plan uses** and tap through its first-run dialogs, so they never appear in a scenario's language, where the harness doesn't know the button labels. Modes have their own one-time dialogs: a first bike route showed one.
 1. **Prepare the app:** grant location and notification permissions, and set the **Android system language** to the scenario's locale. Google Maps 26.x ignores a per-app language (`cmd locale set-app-locales`). Play images can't be rooted, so `device/SetSystemLocale` runs via `app_process` as the shell user. That user holds `CHANGE_CONFIGURATION` and `WRITE_SETTINGS` (the harness allows the `WRITE_SETTINGS` app-op for `com.android.shell`). It updates the persistent configuration like *Settings → System → Languages* does, and the harness checks the result with `am get-config`. After the run, the language goes back to English.
 2. **Start navigation:** put the GPS at the route's origin (`emu geo fix`), then start navigation by deep link. A fresh image needs about a minute before Google Maps accepts the intent, so it retries.
 3. **First-run dialogs:** tap through them by button text (sign-in "Skip", "OK", "Dismiss", …).
@@ -61,6 +61,14 @@ cd tools/route-capture
 **What counts as missed:** a card no rule matched *and* that looks like a direction by the app's own check (`ManeuverHeuristic`: an ETA clock time or a maneuver word, and not "Rerouting…"; its word list is read from the Kotlin source). Others, like "Starting navigation…", are listed as "not counted".
 
 **Failed scenarios** (the system language didn't switch, or nothing was captured because navigation never started) are left out of the report and the issue, so a harness problem can't file wrong "missing rule" reports.
+
+## Plans and routes
+
+| Plan | Scenarios |
+|---|---|
+| `scenarios/phase1.json` | Google Maps, en-US, car, Brussels |
+| `scenarios/google-maps-new-languages.json` | Google Maps, pt-BR and pl-PL, car, Brussels (discovery) |
+| `scenarios/google-maps-m2.json` | Google Maps × car / bike / foot × en-GB (London), fr-FR (Paris), nl-NL (Amsterdam), de-DE (Berlin), it-IT (Milan), es-ES (Madrid); 18 scenarios. Each has a `maxSeconds` cap (car and bike 7 min, foot 5 min), and the whole plan takes about 2 h, so run it in parts with `--only` |
 
 ## Apps
 

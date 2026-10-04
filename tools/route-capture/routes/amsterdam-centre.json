@@ -1,0 +1,18 @@
+{
+  "id": "amsterdam-centre",
+  "city": "Amsterdam",
+  "description": "Centraal Station to Museumplein along the canal ring.",
+  "origin": {
+    "lat": 52.3791,
+    "lon": 4.9003
+  },
+  "destination": {
+    "lat": 52.3579,
+    "lon": 4.8814
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ]
+}

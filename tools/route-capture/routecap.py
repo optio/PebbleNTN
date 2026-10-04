@@ -94,8 +94,9 @@ def drive(h, scenario: dict, max_seconds: int | None) -> dict:
     app = apps.APPS[scenario["app"]]
     route = load_route(scenario["route"])
     track = geo.walk(geo.load_track(ROUTES_DIR, route["id"], scenario["mode"]), geo.SPEEDS[scenario["mode"]])
-    if max_seconds:
-        track = track[:max_seconds]
+    limit = max_seconds or scenario.get("maxSeconds")
+    if limit:
+        track = track[:limit]
     active = app.prepare(h, scenario["locale"])
     if not same_language(active, scenario["locale"]):
         print(f"  FAILED: system language is {active!r}, not {scenario['locale']}")
@@ -144,20 +145,24 @@ def same_language(active: str, wanted: str) -> bool:
     return active.split("-")[0].lower() == wanted.split("-")[0].lower()
 
 
-def warm_up(h, app_ids: set[str]) -> None:
-    """In English, start each app once and dismiss its first-run dialogs, so they never show up in a
-    scenario's language, where the harness doesn't know the button labels."""
-    for app_id in sorted(app_ids):
+def warm_up(h, app_modes: set[tuple[str, str]]) -> None:
+    """In English, start each app once per travel mode and dismiss its first-run dialogs, so they
+    never show up in a scenario's language, where the harness doesn't know the button labels.
+    Modes have their own one-time dialogs (a first bike route, for example)."""
+    prepared = set()
+    for app_id, mode in sorted(app_modes):
         app = apps.APPS[app_id]
-        app.prepare(h, "en-US")
+        if app_id not in prepared:
+            app.prepare(h, "en-US")
+            prepared.add(app_id)
         h.adb("emu", "geo", "fix", "4.352500", "50.846700")
         for _ in range(10):
-            if app.start_navigation(h, {"lat": 50.84, "lon": 4.392}, "car"):
+            if app.start_navigation(h, {"lat": 50.84, "lon": 4.392}, mode):
                 break
             time.sleep(15)
         time.sleep(8)
         tapped = apps.dismiss_first_run(h)
-        print(f"warm-up {app_id}: {'dismissed ' + ', '.join(tapped) if tapped else 'no first-run dialogs'}")
+        print(f"warm-up {app_id} {mode}: {'dismissed ' + ', '.join(tapped) if tapped else 'no first-run dialogs'}")
         app.stop(h)
 
 
@@ -189,6 +194,12 @@ def write_report(run: dict, run_dir: Path, publish: bool) -> int:
 
 def cmd_run(args) -> int:
     plan = json.loads(Path(args.scenarios).read_text())
+    if args.only:
+        import re
+        plan["scenarios"] = [s for s in plan["scenarios"] if re.search(args.only, s["id"])]
+        if not plan["scenarios"]:
+            print(f"no scenario id matches {args.only!r}")
+            return 1
     h = hostmod.detect()
     boot(h, args.avd)
     run = {
@@ -200,7 +211,7 @@ def cmd_run(args) -> int:
         "scenarios": [],
     }
     try:
-        warm_up(h, {s["app"] for s in plan["scenarios"]})
+        warm_up(h, {(s["app"], s["mode"]) for s in plan["scenarios"]})
         for scenario in plan["scenarios"]:
             print(f"scenario {scenario['id']}")
             run["scenarios"].append(drive(h, scenario, args.max_seconds))
@@ -227,6 +238,7 @@ def main() -> int:
     s = sub.add_parser("run"); s.add_argument("scenarios"); s.add_argument("--avd", default=AVD)
     s.add_argument("--publish", action="store_true", help="create/update the GitHub issue per app")
     s.add_argument("--keep-emulator", action="store_true"); s.add_argument("--max-seconds", type=int)
+    s.add_argument("--only", help="run only scenarios whose id matches this regex, e.g. 'en-GB|fr-FR'")
     s.set_defaults(func=cmd_run)
     s = sub.add_parser("report"); s.add_argument("run"); s.add_argument("--publish", action="store_true"); s.set_defaults(func=cmd_report)
     args = p.parse_args()

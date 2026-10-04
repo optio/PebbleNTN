@@ -1,0 +1,18 @@
+{
+  "id": "paris-centre",
+  "city": "Paris",
+  "description": "Place de la R\u00e9publique to Place de la Bastille through the Marais.",
+  "origin": {
+    "lat": 48.8674,
+    "lon": 2.3636
+  },
+  "destination": {
+    "lat": 48.8532,
+    "lon": 2.3691
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ]
+}
