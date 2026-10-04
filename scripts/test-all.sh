@@ -22,6 +22,9 @@ echo "==> Rule schema validation"
 echo "==> Rule regression (rule-workbench)"
 python3 "$REPO_ROOT/tools/rule-workbench/workbench.py" regression
 
+echo "==> Route-capture harness unit tests"
+python3 -m unittest discover -s "$REPO_ROOT/tools/route-capture/tests"
+
 echo "==> Android unit tests + lint"
 "$REPO_ROOT/android/gradlew" -p "$REPO_ROOT/android" test lint
 

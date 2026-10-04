@@ -1,0 +1,8 @@
+{
+  "id": "brussels-centre",
+  "city": "Brussels",
+  "description": "Grand-Place area to Parc du Cinquantenaire through the centre: several turns, a long straight, about 4 km by car.",
+  "origin": {"lat": 50.8467, "lon": 4.3525},
+  "destination": {"lat": 50.8400, "lon": 4.3920},
+  "modes": ["car", "bike", "foot"]
+}
