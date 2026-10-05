@@ -63,7 +63,7 @@ cd tools/route-capture
 
 **Failed scenarios** (the system language didn't switch; no instruction appeared after starting; nothing was captured; or only status cards like "Navigation", meaning navigation didn't really run) are left out of the report and the issue, so a harness problem can't file wrong "missing rule" reports. If the emulator stops responding, the plan stops and the scenarios that ran are still reported.
 
-**Long plans: one language per run.** After about 1.5 hours of Organic Maps the emulator's system services crash (`Can't find service: input`) and every later scenario fails. Twice it happened at the sixth scenario. Running one language (one city) per invocation, without `--keep-emulator`, cold-boots it between cities:
+**Emulator storage.** The capture image's data partition is 7.7 GB. Organic Maps and CoMaps keep every map they download, and accepting "download maps along the route" can pull in neighbouring regions too (Belgium and northern France for Amsterdam). The full storage then made Android's system services crash mid-run (`Can't find service: input`). The maps belong to the app, so the shell can't delete them, and the driver resets the app (`pm clear`) whenever the city changes instead. Running one language per invocation still works:
 
 ```sh
 for l in en-GB fr-FR nl-NL de-DE it-IT es-ES; do ./routecap.py run scenarios/organic-maps-m3.json --only "\.$l\." --publish; done

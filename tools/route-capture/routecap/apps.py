@@ -190,11 +190,13 @@ class OrganicMaps(App):
         Done once the route preview shows its start button. Any language works: buttons are found
         by resource id."""
         if getattr(self, "_region_of", None) != route["id"]:
-            # A new city: drop the other cities' region maps first (World*.mwm stays), or a few of
-            # them fill the emulator's storage, which hung it mid-run.
-            host.shell(f"am force-stop {self.package}", check=False)
-            host.shell(f"for f in {self.storage()}/*/*.mwm; do case $(basename \"$f\") in World*) ;; *) rm \"$f\";; esac; done",
-                       check=False)
+            # A new city: reset the app, dropping every map it downloaded. The maps belong to the app,
+            # so the shell can't delete them one by one, and accepting "download maps along the route"
+            # can pull in whole neighbouring regions: kept, they filled the emulator's storage, which
+            # then crashed mid-run. The first run (world map, disclaimer) is handled below and later.
+            host.shell(f"pm clear {self.package}", check=False)
+            for perm in ("ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "POST_NOTIFICATIONS"):
+                host.shell(f"pm grant {self.package} android.permission.{perm}", check=False)
             self._region_of = route["id"]
         o = route["origin"]
         host.adb("emu", "geo", "fix", str(o["lon"]), str(o["lat"]))
