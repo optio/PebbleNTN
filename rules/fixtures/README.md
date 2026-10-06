@@ -95,3 +95,13 @@ shows that turn. A middle lane is neither left nor right, and falls through to c
 - `subText` ETA is captured but not yet surfaced to the watch (`NavigationInstruction` has
   `secondaryText`/`etaEpochSeconds`; no rule fills them and the watchapp does not render them).
 - Roundabout/u-turn/merge phrasing across app versions is still synthetic-only.
+
+## Arrows that are only an icon: `iconDrawable` (#74)
+
+CoMaps, Organic Maps and Google Maps' classic card put the turn only in the notification's large
+icon. The app compares that icon, on the phone, with the navigation app's own turn drawables and
+records the matched drawable's **name** in the snapshot's `iconDrawable` field (`ic_turn_left`,
+`maneuver_turn_normal_right`, …), never the image (REQ-SEC-003). Rules turn it into a maneuver with
+a `maneuverMap` on `iconDrawable`; that mapping is also what tells the app which drawables to compare
+with. A fixture sets `iconDrawable` in its snapshot as the app would; a snapshot without it is a card
+whose icon didn't match, and keeps the rule's default (UNKNOWN).

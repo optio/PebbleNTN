@@ -16,6 +16,7 @@ object SnapshotFields {
         "channelId" -> snapshot.channelId
         "template" -> snapshot.template
         "combinedText" -> snapshot.combinedText
+        "iconDrawable" -> snapshot.iconDrawable
         else -> null
     }?.let(::normalizeSpaces)
 

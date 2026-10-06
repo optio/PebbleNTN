@@ -13,9 +13,10 @@ import org.junit.Test
  *
  * CoMaps (an Organic Maps fork) structures its navigation notification differently from Google Maps:
  * the title is the distance to the next turn ("92 m"), the text is the road ("Kroonstraat"), and the
- * turn DIRECTION is only a graphical arrow icon — never text (real capture, 2026-07-30). The ruleset
- * therefore emits maneuver = UNKNOWN on purpose and recovers only the distance and road; these tests
- * pin that behavior and guard the title-distance gate against matching non-navigation notifications.
+ * turn DIRECTION is only a graphical arrow icon — never text (real capture, 2026-07-30). The app
+ * matches that icon against CoMaps' own turn drawables and passes the drawable's name as
+ * `iconDrawable` (#74); the ruleset maps it to a maneuver and stays UNKNOWN without a match. These
+ * tests pin that mapping and guard the title-distance gate against non-navigation notifications.
  */
 class ComapsRulesRegressionTest {
 
@@ -25,6 +26,8 @@ class ComapsRulesRegressionTest {
         val text: String? = null,
         val subText: String? = null,
         val bigText: String? = null,
+        /** The large icon's matched drawable (#74), as the app's icon recognizer sets it. */
+        val iconDrawable: String? = null,
     )
 
     @Serializable
@@ -83,6 +86,7 @@ class ComapsRulesRegressionTest {
                 text = fixture.snapshot.text,
                 subText = fixture.snapshot.subText,
                 bigText = fixture.snapshot.bigText,
+                iconDrawable = fixture.snapshot.iconDrawable,
             )
             val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
 

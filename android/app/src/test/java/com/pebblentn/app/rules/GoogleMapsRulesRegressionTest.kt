@@ -21,6 +21,8 @@ class GoogleMapsRulesRegressionTest {
         val text: String? = null,
         val subText: String? = null,
         val bigText: String? = null,
+        /** The large icon's matched drawable (#74), as the app's icon recognizer sets it. */
+        val iconDrawable: String? = null,
     )
 
     @Serializable
@@ -70,7 +72,8 @@ class GoogleMapsRulesRegressionTest {
 
     private val bundledRules: LayeredRules by lazy {
         LayeredRules(
-            bundled = locales.flatMap { lang ->
+            // any.json: the language-independent rules (the classic card's icon step, #74).
+            bundled = (locales + "any").flatMap { lang ->
                 RulesetCodec.parse(resource("/rules/bundled/google-maps/$lang.json")).rules
             },
         )
@@ -96,6 +99,7 @@ class GoogleMapsRulesRegressionTest {
                 text = fixture.snapshot.text,
                 subText = fixture.snapshot.subText,
                 bigText = fixture.snapshot.bigText,
+                iconDrawable = fixture.snapshot.iconDrawable,
             )
             val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
 

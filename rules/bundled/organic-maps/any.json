@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "organic-maps-2026.10.4",
+  "rulesetVersion": "organic-maps-2026.10.7",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-30T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -13,7 +13,7 @@
         "app.organicmaps",
         "app.organicmaps.web"
       ],
-      "comment": "Same notification as its CoMaps fork (OM NavigationService.java: title = distToTurn, text = nextStreet, arrow = setLargeIcon only), so maneuver is UNKNOWN on purpose. Locale-agnostic: only the leading number+unit title is matched. From the OM source; validate against a real capture (see comaps/any.json). Road line from text only (#57): a card with just a distance leaves it empty instead of repeating the distance.",
+      "comment": "Same notification as its CoMaps fork (title = distance, text = road, arrow = large icon only). The app matches the icon against the app's own turn drawables (iconDrawable, #74); this map makes it a maneuver, UNKNOWN without a match. Locale-agnostic. Road line from text only (#57).",
       "conditions": [
         {
           "field": "title",
@@ -23,8 +23,24 @@
       ],
       "output": {
         "maneuver": {
-          "type": "literal",
-          "value": "UNKNOWN"
+          "type": "maneuverMap",
+          "field": "iconDrawable",
+          "mapping": {
+            "ic_turn_straight": "STRAIGHT",
+            "ic_turn_right": "RIGHT",
+            "ic_turn_right_sharp": "SHARP_RIGHT",
+            "ic_turn_right_slight": "SLIGHT_RIGHT",
+            "ic_turn_left": "LEFT",
+            "ic_turn_left_sharp": "SHARP_LEFT",
+            "ic_turn_left_slight": "SLIGHT_LEFT",
+            "ic_turn_uleft": "UTURN_LEFT",
+            "ic_turn_uright": "UTURN_RIGHT",
+            "ic_turn_round": "ROUNDABOUT",
+            "ic_turn_finish": "ARRIVE",
+            "ic_exit_highway_to_left": "SLIGHT_LEFT",
+            "ic_exit_highway_to_right": "SLIGHT_RIGHT"
+          },
+          "default": "UNKNOWN"
         },
         "distanceMeters": {
           "type": "distance",

@@ -1,6 +1,55 @@
 # Implementation Status
 
-_Last updated: 2026-10-05_
+_Last updated: 2026-10-07_
+
+## Arrows from the notification icon: CoMaps, Organic Maps, Google Maps' classic card (#74) (2026-10-07)
+
+These cards carry the turn only in their large icon, so the watch showed UNKNOWN. #59's
+investigation found each app draws a fixed set of turn drawables whose resource names survive the
+release builds.
+
+**App:**
+- **`notification/icon/`:**
+  - `IconMatcher` (pure): alpha masks at 32×32, mean absolute difference, best maneuver against best
+    *other* maneuver. It needs a distance ≤ 24 and a margin ≥ 8; otherwise NoMatch, which stays
+    UNKNOWN.
+  - `AppIconReferences`: renders the app's own drawables by name through `createPackageContext`,
+    cached per package, version, density and candidate set.
+  - `IconCandidates`: the drawable → maneuver table comes from the rules, from `maneuverMap`
+    extractors on the new field `iconDrawable`. A package without such a rule has its icon never
+    read.
+  - `RuleDrivenLargeIconRecognizer`: ties these together.
+- **Snapshot:** new fields `iconDrawable` (the drawable name, readable by rules) and `iconMatch`
+  (debug diagnostic). Snapshots are stored as JSON, so no migration. Built on the serial processing
+  queue, not the main thread.
+- **REQ-SEC-003 amended:** the large icon may be read transiently, only for packages whose rules map
+  icons, only to compare it with the app's own drawables. Only the drawable name and a diagnostic
+  are kept; the image is never stored, serialized, exported or sent. `Database.md` and
+  `PRIVACY_REVIEW.md` updated, manifest refreshed.
+
+**Rules:**
+- `comaps/any.json` and `organic-maps/any.json`: the 13 `ic_turn_*` / `ic_exit_highway_*`
+  drawables map to maneuvers (highway exits are slight turns), with UNKNOWN as the default.
+- New `google-maps/any.json` (no locales): `google-maps-icon-step`, priority 35, for a bare-distance
+  title plus a matched icon. It maps the 64 `maneuver_*` drawables (roundabout exits → ROUNDABOUT,
+  destination → ARRIVE, forks / keeps / merges → slight turns). It ranks below every text rule.
+- **Fixtures:** 10 CoMaps, 4 Organic Maps, 7 Google Maps (classic card in en / zh-TW / de, text beats
+  icon, no icon → no match, the ProgressStyle card unaffected). The workbench needed no change (it
+  reads any field); the Kotlin regression tests gained the field, and Google Maps loads `any.json`.
+
+**Verified on the route-capture emulator** with the debug build and its debug history:
+- **CoMaps, London, 420 and 560 dpi:** 369 cards, every one matched correctly (left 1.1–1.4,
+  arrival 0.5–4.4, roundabout 2.2–2.4; next maneuver 41 or more).
+- **Google Maps:** right / left / arrival / departure / roundabout exit matched what the card's text
+  says (distance 2.8–6.6, next maneuver 25 or more).
+- **Cost:** median 0.8 ms per notification, at most 5 ms. The first one per app version renders the
+  references (about 320 ms for Google Maps' 64, on the emulator, off the main thread).
+
+**Not verified:** Google Maps' classic card itself; the emulator only produces the ProgressStyle
+card. Its icon is very likely the same; a real log's `iconMatch` will confirm it.
+
+**Tests:** `IconMatcherTest` (9), `IconCandidatesTest` (4), `NotificationSnapshotFactoryTest` (+5),
+the four rule regression tests, the workbench regression, `./scripts/test-all.sh`.
 
 ## Route-capture milestone 3: OsmAnd, Organic Maps, CoMaps (#55) (2026-10-05)
 

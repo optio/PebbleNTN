@@ -12,9 +12,8 @@ import org.junit.Test
  *
  * Organic Maps builds the identical navigation notification to its CoMaps fork (verified in OM's
  * NavigationService.java): title = distance-to-turn, text = road, and the turn direction is only a
- * graphical arrow icon — never text. The ruleset therefore emits maneuver = UNKNOWN on purpose and
- * recovers only distance + road. Fixtures are synthetic (no real OM capture yet); see
- * rules/fixtures/organic-maps.json.
+ * graphical arrow icon — never text. The maneuver comes from the icon's matched drawable
+ * (`iconDrawable`, #74) and stays UNKNOWN without a match. See rules/fixtures/organic-maps.json.
  */
 class OrganicMapsRulesRegressionTest {
 
@@ -24,6 +23,8 @@ class OrganicMapsRulesRegressionTest {
         val text: String? = null,
         val subText: String? = null,
         val bigText: String? = null,
+        /** The large icon's matched drawable (#74), as the app's icon recognizer sets it. */
+        val iconDrawable: String? = null,
     )
 
     @Serializable
@@ -82,6 +83,7 @@ class OrganicMapsRulesRegressionTest {
                 text = fixture.snapshot.text,
                 subText = fixture.snapshot.subText,
                 bigText = fixture.snapshot.bigText,
+                iconDrawable = fixture.snapshot.iconDrawable,
             )
             val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
 

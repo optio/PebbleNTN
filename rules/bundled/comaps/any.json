@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "comaps-2026.10.4",
+  "rulesetVersion": "comaps-2026.10.7",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-30T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -15,7 +15,7 @@
         "app.comaps",
         "app.comaps.huawei"
       ],
-      "comment": "CoMaps (Organic Maps fork): title = distance ('92 m'), text = road ('Kroonstraat'); the turn direction is only an arrow icon, never text (real capture, 2026-07-30). Maneuver is UNKNOWN on purpose: distance + road with a neutral marker, never a made-up arrow. Locale-agnostic: only the leading number+unit title is matched. Road line from text only (#57): a card with just a distance ('50 m') leaves it empty instead of repeating the distance.",
+      "comment": "CoMaps: title = distance ('92 m'), text = road; the turn is only the large icon, never text. The app matches the icon against CoMaps' own turn drawables and puts the drawable name in iconDrawable (#74); this map makes it a maneuver, UNKNOWN without a match. Locale-agnostic. Road line from text only (#57).",
       "conditions": [
         {
           "field": "title",
@@ -25,8 +25,24 @@
       ],
       "output": {
         "maneuver": {
-          "type": "literal",
-          "value": "UNKNOWN"
+          "type": "maneuverMap",
+          "field": "iconDrawable",
+          "mapping": {
+            "ic_turn_straight": "STRAIGHT",
+            "ic_turn_right": "RIGHT",
+            "ic_turn_right_sharp": "SHARP_RIGHT",
+            "ic_turn_right_slight": "SLIGHT_RIGHT",
+            "ic_turn_left": "LEFT",
+            "ic_turn_left_sharp": "SHARP_LEFT",
+            "ic_turn_left_slight": "SLIGHT_LEFT",
+            "ic_turn_uleft": "UTURN_LEFT",
+            "ic_turn_uright": "UTURN_RIGHT",
+            "ic_turn_round": "ROUNDABOUT",
+            "ic_turn_finish": "ARRIVE",
+            "ic_exit_highway_to_left": "SLIGHT_LEFT",
+            "ic_exit_highway_to_right": "SLIGHT_RIGHT"
+          },
+          "default": "UNKNOWN"
         },
         "distanceMeters": {
           "type": "distance",
