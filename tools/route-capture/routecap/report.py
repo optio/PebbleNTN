@@ -40,6 +40,20 @@ MANEUVER_WORDS = _maneuver_words()
 _STATUS = _status_card()
 
 
+_DISTANCE = r"^\s*\d+(?:[.,]\d+)?\s*(?:km|m|mi|ft|pi|yd|公尺|公里|米|千米)"
+_DISTANCE_TITLE = re.compile(_DISTANCE + r"\s*[·•]\s*\S", re.I)
+_DISTANCE_ONLY = re.compile(_DISTANCE + r"\s*$", re.I)
+
+
+def is_instruction(capture: dict) -> bool:
+    """Navigation has really started: a direction-like card, or one whose title leads with a
+    distance and an instruction ("200 m • Avancez"), or is only a distance above a road line
+    (Organic Maps / CoMaps: "1.1 km" / "Glinkastraße"), whatever its words."""
+    title = (capture.get("title") or "").replace("\u00a0", " ")
+    return (looks_like_direction(capture) or bool(_DISTANCE_TITLE.search(title))
+            or (bool(_DISTANCE_ONLY.search(title)) and bool((capture.get("text") or "").strip())))
+
+
 def looks_like_direction(capture: dict) -> bool:
     """Mirror of the app's ManeuverHeuristic: an unmatched card counts as a missing rule only if it
     plausibly carries a turn instruction (an ETA clock time or a maneuver word, and not a route
@@ -96,16 +110,43 @@ def shape(capture: dict) -> str:
 FALLBACK_RULES = ("google-maps-destination-approach-",)
 
 
+# A report state's parts, each keyed by scenario id. "known" holds unmatched cards a fixture pins as
+# deliberately unshown.
+STATE_KEYS = ("scenarios", "shapes", "notDirections", "fallback", "known")
+
+
+def _numberless(value) -> str:
+    return re.sub(r"\d+(?:[.,]\d+)?", "N", (value or "").replace("\u00a0", " "))
+
+
+def known_unmatched(app_id: str) -> list[dict]:
+    """The snapshots of the app's `matched: false` fixtures (rules/fixtures/<app>.json): cards
+    deliberately left unshown, like OsmAnd's "0 m • " at the maneuver point."""
+    path = REPO_ROOT / "rules" / "fixtures" / f"{app_id}.json"
+    if not path.exists():
+        return []
+    return [f["snapshot"] for f in json.loads(path.read_text())["fixtures"]
+            if f.get("expected", {}).get("matched") is False and f.get("snapshot")]
+
+
+def is_known_unmatched(capture: dict, known: list[dict]) -> bool:
+    """Whether a fixture already pins this card as unmatched: every field the fixture sets equals the
+    capture's, numbers aside (so "0 m • " covers "40 m • " too)."""
+    return any(all(_numberless(capture.get(k)) == _numberless(v) for k, v in snap.items()) for snap in known)
+
+
 def evaluate(run: dict) -> dict:
     """The run as a report state: per scenario, its counts and its unrecognised / not-a-direction
     card shapes. States merge per scenario id (see merge), so an issue can keep the latest result of
     every scenario across runs."""
     rules_by_app: dict[str, list] = {}
-    state = {"scenarios": {}, "shapes": {}, "notDirections": {}, "fallback": {}}
+    known_by_app: dict[str, list] = {}
+    state = {k: {} for k in STATE_KEYS}
     for sc in run["scenarios"]:
         rules = rules_by_app.setdefault(sc["app"], bundled_rules(sc["app"]))
+        known = known_by_app.setdefault(sc["app"], known_unmatched(sc["app"]))
         matched = 0
-        buckets = {"shapes": OrderedDict(), "notDirections": OrderedDict(), "fallback": OrderedDict()}
+        buckets = {k: OrderedDict() for k in STATE_KEYS if k != "scenarios"}
         for cap in sc["captures"]:
             result = workbench.evaluate(snapshot(cap), rules, sc["locale"])
             cap["matchedRuleId"] = result["ruleId"] if result else None
@@ -115,7 +156,9 @@ def evaluate(run: dict) -> dict:
                     entry = buckets["fallback"].setdefault(shape(cap), {"shape": shape(cap), "count": 0, "example": snapshot(cap), "rule": result["ruleId"]})
                     entry["count"] += 1
                 continue
-            bucket = buckets["shapes" if looks_like_direction(cap) else "notDirections"]
+            kind = ("notDirections" if not looks_like_direction(cap)
+                    else "known" if is_known_unmatched(cap, known) else "shapes")
+            bucket = buckets[kind]
             entry = bucket.setdefault(shape(cap), {"shape": shape(cap), "count": 0, "example": snapshot(cap)})
             entry["count"] += 1
         state["scenarios"][sc["id"]] = {
@@ -123,18 +166,30 @@ def evaluate(run: dict) -> dict:
             "appVersion": sc.get("appVersion"), "total": len(sc["captures"]), "matched": matched,
             "run": run["startedAt"], "android": run.get("android"), "image": run.get("image"),
         }
-        state["shapes"][sc["id"]] = list(buckets["shapes"].values())
-        state["notDirections"][sc["id"]] = list(buckets["notDirections"].values())
-        state["fallback"][sc["id"]] = list(buckets["fallback"].values())
+        for k, bucket in buckets.items():
+            state[k][sc["id"]] = list(bucket.values())
     return state
 
 
 def merge(old: dict | None, new: dict) -> dict:
     """`old` updated with `new`: scenarios in `new` replace those with the same id; others stay."""
-    merged = {k: dict((old or {}).get(k, {})) for k in ("scenarios", "shapes", "notDirections", "fallback")}
+    merged = {k: dict((old or {}).get(k, {})) for k in STATE_KEYS}
     for k in merged:
         merged[k].update(new.get(k, {}))
     return merged
+
+
+def reclassify(state: dict, app_id: str) -> dict:
+    """Move stored unrecognised shapes that a `matched: false` fixture now pins into "known", so a
+    fixture added after a run takes effect on the issue without rerunning every scenario."""
+    known = known_unmatched(app_id)
+    state.setdefault("known", {})
+    for sid, entries in state["shapes"].items():
+        keep = []
+        for e in entries:
+            (state["known"].setdefault(sid, []) if is_known_unmatched(e["example"], known) else keep).append(e)
+        state["shapes"][sid] = keep
+    return state
 
 
 def unrecognised(state: dict) -> list[dict]:
@@ -167,6 +222,11 @@ def markdown(app_name: str, state: dict) -> str:
         titles = sorted({e["example"].get("title") or "" for e in ignored})
         lines += ["", f"Not counted: {sum(e['count'] for e in ignored)} notification(s) that aren't directions, "
                   f"by the app's own check ({', '.join('`' + t + '`' for t in titles[:5])})."]
+    known = [e for sid in sorted(state.get("known", {})) for e in state["known"][sid]]
+    if known:
+        titles = sorted({e["example"].get("title") or "" for e in known})
+        lines += ["", f"Left unshown on purpose: {sum(e['count'] for e in known)} notification(s) a rule fixture already "
+                  f"pins as unmatched ({', '.join('`' + t + '`' for t in titles[:5])})."]
     fallback = [e for sid in sorted(state.get("fallback", {})) for e in state["fallback"][sid]]
     if fallback:
         lines += ["", "Recognised only by a fallback rule, worth a look (an unknown phrasing would land here too): "

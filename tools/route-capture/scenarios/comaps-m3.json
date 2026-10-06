@@ -1,0 +1,150 @@
+{
+  "id": "comaps-m3",
+  "description": "Milestone 3 of #55: CoMaps by car, bike and foot in English, French, Dutch, German, Italian and Spanish, each in a city of that language. The app downloads its own maps (world overview, then each region a route request offers).",
+  "scenarios": [
+    {
+      "id": "comaps.en-GB.car.london-centre",
+      "app": "comaps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "london-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.en-GB.bike.london-centre",
+      "app": "comaps",
+      "locale": "en-GB",
+      "mode": "bike",
+      "route": "london-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.en-GB.foot.london-centre",
+      "app": "comaps",
+      "locale": "en-GB",
+      "mode": "foot",
+      "route": "london-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "comaps.fr-FR.car.paris-centre",
+      "app": "comaps",
+      "locale": "fr-FR",
+      "mode": "car",
+      "route": "paris-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.fr-FR.bike.paris-centre",
+      "app": "comaps",
+      "locale": "fr-FR",
+      "mode": "bike",
+      "route": "paris-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.fr-FR.foot.paris-centre",
+      "app": "comaps",
+      "locale": "fr-FR",
+      "mode": "foot",
+      "route": "paris-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "comaps.nl-NL.car.amsterdam-centre",
+      "app": "comaps",
+      "locale": "nl-NL",
+      "mode": "car",
+      "route": "amsterdam-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.nl-NL.bike.amsterdam-centre",
+      "app": "comaps",
+      "locale": "nl-NL",
+      "mode": "bike",
+      "route": "amsterdam-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.nl-NL.foot.amsterdam-centre",
+      "app": "comaps",
+      "locale": "nl-NL",
+      "mode": "foot",
+      "route": "amsterdam-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "comaps.de-DE.car.berlin-centre",
+      "app": "comaps",
+      "locale": "de-DE",
+      "mode": "car",
+      "route": "berlin-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.de-DE.bike.berlin-centre",
+      "app": "comaps",
+      "locale": "de-DE",
+      "mode": "bike",
+      "route": "berlin-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.de-DE.foot.berlin-centre",
+      "app": "comaps",
+      "locale": "de-DE",
+      "mode": "foot",
+      "route": "berlin-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "comaps.it-IT.car.milan-centre",
+      "app": "comaps",
+      "locale": "it-IT",
+      "mode": "car",
+      "route": "milan-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.it-IT.bike.milan-centre",
+      "app": "comaps",
+      "locale": "it-IT",
+      "mode": "bike",
+      "route": "milan-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.it-IT.foot.milan-centre",
+      "app": "comaps",
+      "locale": "it-IT",
+      "mode": "foot",
+      "route": "milan-centre",
+      "maxSeconds": 300
+    },
+    {
+      "id": "comaps.es-ES.car.madrid-centre",
+      "app": "comaps",
+      "locale": "es-ES",
+      "mode": "car",
+      "route": "madrid-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.es-ES.bike.madrid-centre",
+      "app": "comaps",
+      "locale": "es-ES",
+      "mode": "bike",
+      "route": "madrid-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "comaps.es-ES.foot.madrid-centre",
+      "app": "comaps",
+      "locale": "es-ES",
+      "mode": "foot",
+      "route": "madrid-centre",
+      "maxSeconds": 300
+    }
+  ]
+}

@@ -97,6 +97,7 @@ def drive(h, scenario: dict, max_seconds: int | None) -> dict:
     limit = max_seconds or scenario.get("maxSeconds")
     if limit:
         track = track[:limit]
+    app.provision(h, route)
     active = app.prepare(h, scenario["locale"])
     if not same_language(active, scenario["locale"]):
         print(f"  FAILED: system language is {active!r}, not {scenario['locale']}")
@@ -108,19 +109,28 @@ def drive(h, scenario: dict, max_seconds: int | None) -> dict:
     # A freshly booted image needs a minute before the app accepts the navigation intent; first-run
     # dialogs then sit in front of navigation, so dismiss them and ask again.
     for _ in range(10):
-        if app.start_navigation(h, route["destination"], scenario["mode"]):
+        if app.start_navigation(h, route, scenario["mode"]):
             break
         time.sleep(15)
     else:
         raise RuntimeError(f"{app.app_id} would not start navigation")
     time.sleep(8)
-    tapped = apps.dismiss_first_run(h)
+    navigating = lambda: has_instruction(h, app)
+    tapped = apps.dismiss_first_run(h, done=navigating)
     if tapped:
         print(f"  dismissed first-run dialogs: {', '.join(tapped)}")
-        h.adb("emu", "geo", "fix", f"{origin[0]:.6f}", f"{origin[1]:.6f}")
-        app.start_navigation(h, route["destination"], scenario["mode"])
-        time.sleep(8)
-        apps.dismiss_first_run(h)
+        if not navigating():
+            h.adb("emu", "geo", "fix", f"{origin[0]:.6f}", f"{origin[1]:.6f}")
+            app.start_navigation(h, route, scenario["mode"])
+            time.sleep(8)
+            apps.dismiss_first_run(h, done=navigating)
+
+    # Wait for the first real instruction: building a route (or indexing a freshly pushed map) takes a
+    # while, and driving off before it exists captures nothing useful.
+    if not wait_for_instructions(h, app, retry=lambda: app.start_navigation(h, route, scenario["mode"])):
+        app.stop(h)
+        print("  FAILED: no navigation instructions after starting")
+        return {**scenario, "failed": "no navigation instructions after starting", "systemLocale": active, "captures": []}
 
     captures, seen = [], set()
     for tick, (lon, lat) in enumerate(track):
@@ -137,32 +147,66 @@ def drive(h, scenario: dict, max_seconds: int | None) -> dict:
     result = {**scenario, "appVersion": app.version(h), "seconds": len(track), "systemLocale": active, "captures": captures}
     if not captures:
         result["failed"] = "no notifications: navigation did not start"
+    elif not any(report.is_instruction(c) for c in captures):
+        result["failed"] = "no direction-like notification: navigation did not really run"
+    if result.get("failed"):
         print(f"  FAILED: {result['failed']}")
     return result
+
+
+def wait_for_instructions(h, app, timeout: float = 150, retry=None, retry_after: float = 60) -> bool:
+    """Until the app posts an instruction, tapping first-run dialogs meanwhile. After `retry_after`
+    seconds without one, `retry` (start navigation again) runs once: after a language switch the app
+    restarts and may still be loading a large offline map when the first request arrives."""
+    start = time.time()
+    deadline = start + timeout
+    retried = retry is None
+    while time.time() < deadline:
+        if not retried and time.time() - start > retry_after:
+            retry()
+            retried = True
+        if has_instruction(h, app):
+            return True
+        apps.dismiss_first_run(h, attempts=1, done=lambda: has_instruction(h, app))
+        time.sleep(4)
+    return False
+
+
+def has_instruction(h, app) -> bool:
+    """Whether the app currently posts a navigation instruction."""
+    return any(report.is_instruction(rec)
+               for rec in notifications.parse_dumpsys(h.shell("dumpsys notification --noredact", check=False), app.package))
 
 
 def same_language(active: str, wanted: str) -> bool:
     return active.split("-")[0].lower() == wanted.split("-")[0].lower()
 
 
-def warm_up(h, app_modes: set[tuple[str, str]]) -> None:
-    """In English, start each app once per travel mode and dismiss its first-run dialogs, so they
-    never show up in a scenario's language, where the harness doesn't know the button labels.
-    Modes have their own one-time dialogs (a first bike route, for example)."""
-    prepared = set()
-    for app_id, mode in sorted(app_modes):
-        app = apps.APPS[app_id]
-        if app_id not in prepared:
+def warm_up(h, plan_scenarios: list[dict]) -> None:
+    """In English, start each app once per travel mode (on the first route the plan uses with it) and
+    dismiss its first-run dialogs, so they never show up in a scenario's language, where the harness
+    doesn't know the button labels. Modes have their own one-time dialogs (a first bike route)."""
+    done, prepared = set(), set()
+    for sc in plan_scenarios:
+        key = (sc["app"], sc["mode"])
+        if key in done:
+            continue
+        done.add(key)
+        app = apps.APPS[sc["app"]]
+        route = load_route(sc["route"])
+        app.provision(h, route)
+        if sc["app"] not in prepared:
             app.prepare(h, "en-US")
-            prepared.add(app_id)
-        h.adb("emu", "geo", "fix", "4.352500", "50.846700")
+            prepared.add(sc["app"])
+        o = route["origin"]
+        h.adb("emu", "geo", "fix", f"{o['lon']:.6f}", f"{o['lat']:.6f}")
         for _ in range(10):
-            if app.start_navigation(h, {"lat": 50.84, "lon": 4.392}, mode):
+            if app.start_navigation(h, route, sc["mode"]):
                 break
             time.sleep(15)
-        time.sleep(8)
-        tapped = apps.dismiss_first_run(h)
-        print(f"warm-up {app_id} {mode}: {'dismissed ' + ', '.join(tapped) if tapped else 'no first-run dialogs'}")
+        time.sleep(10)
+        tapped = apps.dismiss_first_run(h, done=lambda: has_instruction(h, app))
+        print(f"warm-up {sc['app']} {sc['mode']}: {'dismissed ' + ', '.join(tapped) if tapped else 'no first-run dialogs'}")
         app.stop(h)
 
 
@@ -210,17 +254,32 @@ def cmd_run(args) -> int:
         "image": args.avd,
         "scenarios": [],
     }
-    try:
-        warm_up(h, {(s["app"], s["mode"]) for s in plan["scenarios"]})
-        for scenario in plan["scenarios"]:
-            print(f"scenario {scenario['id']}")
-            run["scenarios"].append(drive(h, scenario, args.max_seconds))
-    finally:
-        h.set_system_locale("en-US")
-        if not args.keep_emulator:
-            h.stop_emulator()
     run_dir = OUT_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        try:
+            warm_up(h, plan["scenarios"])
+        except Exception as e:  # the scenarios retry what the warm-up couldn't do
+            print(f"warm-up failed: {type(e).__name__}: {e}"[:300])
+        for scenario in plan["scenarios"]:
+            print(f"scenario {scenario['id']}")
+            try:
+                run["scenarios"].append(drive(h, scenario, args.max_seconds))
+            except Exception as e:  # one broken scenario must not lose the others' results
+                print(f"  FAILED: {type(e).__name__}: {e}"[:300])
+                run["scenarios"].append({**scenario, "failed": f"{type(e).__name__}: {str(e)[:200]}", "captures": []})
+                if not h.booted():
+                    print("emulator lost: stopping the plan; `routecap.py report` can publish what ran")
+                    break
+            # Saved after every scenario, so a crash keeps what already ran.
+            (run_dir / "run.json").write_text(json.dumps(run, indent=1, ensure_ascii=False) + "\n")
+    finally:
+        try:
+            h.set_system_locale("en-US")
+            if not args.keep_emulator:
+                h.stop_emulator()
+        except Exception as e:  # a dead emulator must not cost the report
+            print(f"cleanup failed: {type(e).__name__}: {e}"[:300])
     return write_report(run, run_dir, args.publish)
 
 

@@ -1,6 +1,49 @@
 # Implementation Status
 
-_Last updated: 2026-10-01_
+_Last updated: 2026-10-05_
+
+## Route-capture milestone 3: OsmAnd, Organic Maps, CoMaps (#55) (2026-10-05)
+
+**Harness (tools only, no app change, no release):**
+- **OsmAnd driver:** region maps downloaded from download.osmand.net, cached on the host and
+  pushed; only the current city's map is kept. Navigation uses the `google.navigation` intent after
+  `osmand.api://stop_navigation` (OsmAnd's own `navigate` URL did nothing).
+- **Organic Maps / CoMaps drivers:** `om://` / `cm://route?…`. Maps come through the app itself:
+  the world overview map, then the region a route request offers. A running app ignores the URL,
+  so it's sent to a stopped app. Only the current city's maps are kept.
+- **Buttons by resource id** (route-preview Start, the dialog's positive button), so every
+  language works.
+- **Robustness:**
+  - wait for the first instruction, with one retry;
+  - scenarios that never start, or capture only status cards, count as failed;
+  - first-run taps stop once navigation runs (a stale preview button ended navigation);
+  - `run.json` saved after each scenario;
+  - a dead emulator stops the plan but keeps the report;
+  - a failed warm-up no longer ends the run.
+- **Report:** unmatched cards that a `matched: false` fixture already pins are "left unshown on
+  purpose", also re-checked on the issue's stored state at publish.
+- **Plans:** `osmand-m3`, `organic-maps-m3`, `comaps-m3`: 6 languages × car / bike / foot in a city
+  of each language.
+
+**Results:**
+
+| App | Scenarios run | Cards | Recognised | Outcome |
+|---|---|---|---|---|
+| OsmAnd | 18/18 | about 600 | every direction card | Only `0 m • ` unmatched, deliberately (fixture), so #71 closed |
+| Organic Maps | 14/18 | 2,747 | 2,747 | Nothing to file |
+| CoMaps | 16/18 | 2,819 | 2,819 | Nothing to file |
+
+Organic Maps and CoMaps cards are a distance and a road with no words, so language doesn't matter.
+
+**Known limits:**
+- After about 1.5 h of Organic Maps the emulator's system services crash, so long plans run one
+  language per invocation.
+- Paris on foot fails at times in all three apps.
+- Amsterdam in Organic Maps crashed the emulator.
+- OsmAnd seems to ignore the intent's travel mode (its instruction strings are the same per
+  profile).
+
+**Verified.** The harness unit tests (25) and `./scripts/test-all.sh`.
 
 ## Route-capture milestone 2 and its findings (#55, #69) (2026-10-04)
 

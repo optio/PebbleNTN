@@ -30,5 +30,16 @@ def find(xml: str, labels: list[str]) -> tuple[str, tuple[int, int]] | None:
     return None
 
 
+def find_id(xml: str, ids: list[str]) -> tuple[str, tuple[int, int]] | None:
+    """The first node with one of these resource ids (in id order); unlike button text, an id is
+    the same in every language."""
+    all_nodes = nodes(xml)
+    for rid in ids:
+        for n in all_nodes:
+            if n.get("resource-id") == rid and "center" in n:
+                return rid, n["center"]
+    return None
+
+
 def texts(xml: str) -> list[str]:
     return [n["text"] for n in nodes(xml) if n.get("text")]

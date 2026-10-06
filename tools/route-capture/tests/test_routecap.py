@@ -59,6 +59,12 @@ class NotificationsTest(unittest.TestCase):
 
 
 class UiTest(unittest.TestCase):
+    def test_finds_by_resource_id_whatever_the_language(self):
+        xml = ('<hierarchy><node text="" resource-id="net.osmand.plus:id/start_button" bounds="[541,2211][1080,2337]" />'
+               '<node text="Démarrer" resource-id="net.osmand.plus:id/start_button_descr" bounds="[541,2211][1080,2337]" /></hierarchy>')
+        self.assertEqual(("net.osmand.plus:id/start_button", (810, 2274)), ui.find_id(xml, ["net.osmand.plus:id/start_button"]))
+        self.assertIsNone(ui.find_id(xml, ["other:id/x"]))
+
     def test_finds_by_text_or_content_desc_in_label_order(self):
         self.assertEqual(("Skip", (880, 136)), ui.find(UI_XML, ["Skip", "Got it"]))
         self.assertEqual(("Got it", (850, 1750)), ui.find(UI_XML, ["Got it"]))
@@ -146,6 +152,33 @@ class ReportTest(unittest.TestCase):
         self.assertEqual(1, state["scenarios"]["s1"]["matched"])
         self.assertEqual("google-maps-destination-approach-en", state["fallback"]["s1"][0]["rule"])
         self.assertIn("Recognised only by a fallback rule", report.markdown("Google Maps", state))
+
+    def test_a_card_a_fixture_pins_as_unmatched_is_known_not_unrecognised(self):
+        known = report.known_unmatched("osmand")
+        self.assertTrue(report.is_known_unmatched({"title": "0 m • ", "bigText": "1.3 mi • 17 min • 15:20 • 0 mph"}, known))
+        self.assertFalse(report.is_known_unmatched({"title": "200 m • Turn left"}, known))
+        run = {"startedAt": "t", "scenarios": [{"id": "s", "app": "osmand", "locale": "en", "mode": "car", "route": "r",
+               "captures": [{"packageName": "net.osmand.plus", "title": "0 m • ", "bigText": "1.3 mi • 17 min • 15:20 • 0 mph"}]}]}
+        state = report.evaluate(run)
+        self.assertEqual([], report.unrecognised(state))
+        self.assertEqual(1, state["known"]["s"][0]["count"])
+        self.assertIn("Left unshown on purpose", report.markdown("OsmAnd", state))
+
+    def test_stored_shapes_a_fixture_now_pins_move_to_known(self):
+        state = {"scenarios": {}, "shapes": {"s": [{"shape": "x", "count": 3, "example": {"title": "0 m • "}},
+                                                    {"shape": "y", "count": 1, "example": {"title": "Turn sideways"}}]},
+                 "notDirections": {}, "fallback": {}}
+        report.reclassify(state, "osmand")
+        self.assertEqual(["y"], [e["shape"] for e in state["shapes"]["s"]])
+        self.assertEqual(3, state["known"]["s"][0]["count"])
+
+    def test_a_distance_led_title_counts_as_an_instruction_whatever_its_words(self):
+        self.assertTrue(report.is_instruction({"title": "200 m • Avancez"}))
+        self.assertTrue(report.is_instruction({"title": "300 m • Volg"}))
+        self.assertFalse(report.is_instruction({"title": "Navigation"}))
+        self.assertFalse(report.is_instruction({"title": "0 m • "}))
+        self.assertTrue(report.is_instruction({"title": "1.1\u00a0km", "text": "Glinkastraße"}))
+        self.assertFalse(report.is_instruction({"title": "1.1 km", "text": ""}))
 
     def test_maneuver_words_and_status_cards_come_from_the_app(self):
         self.assertTrue(report._STATUS.search("Rerouting..."))

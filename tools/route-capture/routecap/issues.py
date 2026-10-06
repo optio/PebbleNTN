@@ -76,7 +76,7 @@ def publish(app_id: str, app_name: str, run_state: dict, started_at: str, dry_ru
     from . import report  # local import: report pulls in the rule engine
 
     existing = None if dry_run else find_open_issue(app_id)
-    merged = report.merge(decode_state(existing["body"]) if existing else None, run_state)
+    merged = report.reclassify(report.merge(decode_state(existing["body"]) if existing else None, run_state), app_id)
     remaining = len(report.unrecognised(merged))
     action = decide(existing, remaining)
     if dry_run:

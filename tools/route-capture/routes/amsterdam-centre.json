@@ -14,5 +14,8 @@
     "car",
     "bike",
     "foot"
-  ]
+  ],
+  "maps": {
+    "osmand": "Netherlands_noord-holland_europe_2"
+  }
 }

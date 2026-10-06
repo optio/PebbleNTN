@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Route-capture icon probe (#59): saves navigation apps' notification icons for analysis. Never shipped. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.pebblentn.iconprobe">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" />
+    <!-- Package visibility (Android 11+), to render the apps' own turn drawables. -->
+    <queries>
+        <package android:name="app.comaps" />
+        <package android:name="app.organicmaps.web" />
+        <package android:name="app.organicmaps" />
+        <package android:name="com.google.android.apps.maps" />
+    </queries>
+    <application android:label="Icon probe">
+        <service android:name=".ProbeListener" android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

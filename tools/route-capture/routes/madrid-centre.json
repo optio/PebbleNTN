@@ -14,5 +14,8 @@
     "car",
     "bike",
     "foot"
-  ]
+  ],
+  "maps": {
+    "osmand": "Spain_madrid_europe_2"
+  }
 }

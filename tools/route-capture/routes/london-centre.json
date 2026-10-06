@@ -14,5 +14,8 @@
     "car",
     "bike",
     "foot"
-  ]
+  ],
+  "maps": {
+    "osmand": "Gb_england_greater-london_europe_2"
+  }
 }
