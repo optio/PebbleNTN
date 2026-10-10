@@ -1,0 +1,9 @@
+• OsmAnd German road after "dann" and remaining distance
+• read multi-line notification extras
+• show the arrow for CoMaps, Organic Maps and Google Maps' classic card
+• icon probe for #59; reset map apps per city
+• a failed warm-up no longer ends the run
+• survive a lost emulator; keep one region's maps
+• fixtures added after a run take effect on the issue
+• Organic Maps runs every scenario
+• milestone 3 drivers for OsmAnd, Organic Maps and CoMaps
