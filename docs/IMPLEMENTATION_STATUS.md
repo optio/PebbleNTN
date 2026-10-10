@@ -1,6 +1,49 @@
 # Implementation Status
 
-_Last updated: 2026-10-05_
+_Last updated: 2026-10-10_
+
+## OsmAnd German: road after "dann", remaining distance (#76) (2026-10-10)
+
+A set of 28 custom German OsmAnd rules (a rules-only export, 0.0.57, de-DE) merged into
+`rules/bundled/osmand/de.json`, now 29 rules.
+
+**From the custom rules:**
+- **Remaining route distance** as the secondary line on every rule, from bigText's summary line
+  (`2,9 km • 13 min • 19:00 • 0 km/h` → `2,9 km`).
+- **`-street` variants** per turn type (left / right, slight, sharp, keep), one priority step up.
+  OsmAnd cuts the title at ", dann"; bigText's first line goes on with the next road and its length
+  (`rechts abbiegen, dann B 1 Grunerstraße 400 m`), so the road line shows `B 1 Grunerstraße`.
+- **`-then` variants:** the whole line when only a distance follows ("rechts abbiegen, dann 9 m").
+- **`osmand-roundabout-street-de`:** `2 Ausfahrt L 33 nach Erftstadt`.
+- **U-turn anchored after the title's bullet,** so the town Wenden in a road line can't trigger it.
+
+**Kept from the bundled rules:**
+- **Conditions and packages:** the broader conditions checked against OsmAnd's strings (#61) and
+  all four packages (#54); the export was based on an older copy.
+- **`osmand-straight-de` and `osmand-arrive-de`:** the export's `osmand-continue-de` is the same
+  rule as `osmand-straight-de`.
+
+**Simplified:** the custom road patterns fitted the text into the watch's 64 bytes inside each
+regex (≤ 60 characters and ≤ 4 umlauts, else 32 characters at a word boundary). The merged rules
+capture the whole road and the app fits it instead.
+
+**App fix found on the way:**
+- **The bug:** `ProtocolCodec` limited text to 64 UTF-16 characters, but the watch's buffers are
+  64 bytes (road line) and 24 bytes (secondary line), and it copies bytes. A road with umlauts was
+  cut mid-character.
+- **The fix:** `fitText` now fits UTF-8 bytes on whole characters, backs off to a word boundary
+  in the second half, and appends "…".
+
+**Harness:** `notifications.parse_dumpsys` dropped multi-line extras, and OsmAnd's bigText is two
+lines. It now reads a value to its closing parenthesis.
+
+**Verified:**
+- A German OsmAnd route-capture in Berlin: 114 cards. The merged rules give the road after "dann"
+  and the remaining distance (e.g. `25 m • rechts abbiegen, dann` → `B 2 B 5 Alexanderstraße`,
+  `3,3 km`).
+- 11 new fixtures (5 from that capture).
+- Workbench regression (OsmAnd 195/195), `OsmandRulesRegressionTest`, `ProtocolCodecTest` (+3),
+  the harness tests (26), `./scripts/test-all.sh`.
 
 ## Route-capture milestone 3: OsmAnd, Organic Maps, CoMaps (#55) (2026-10-05)
 
