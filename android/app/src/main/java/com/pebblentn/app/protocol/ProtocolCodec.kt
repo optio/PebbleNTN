@@ -12,8 +12,13 @@ import com.pebblentn.app.core.ReducerEvent
  */
 object ProtocolCodec {
 
-    /** Maximum UTF-16 length for text fields sent to the watch; longer strings are truncated. */
-    const val MAX_TEXT_CHARS = 64
+    /**
+     * The watch's text buffers, in UTF-8 bytes (`PRIMARY_TEXT_MAX` / `SECONDARY_TEXT_MAX` in
+     * watchapp/src/c/main.c). Longer text is shortened here, on whole characters, because the watch
+     * copies bytes and would cut an "ä" or "ß" in half (#76).
+     */
+    const val MAX_PRIMARY_BYTES = 64
+    const val MAX_SECONDARY_BYTES = 24
 
     fun encodeState(state: NavigationState, flags: Int, appVersion: String): AppMessage {
         val builder = AppMessage.builder()
@@ -28,8 +33,8 @@ object ProtocolCodec {
                     .putInt(Protocol.Keys.EVENT, Protocol.Events.NAVIGATION_UPDATE)
                     .putInt(Protocol.Keys.MANEUVER, i.maneuver.code)
                     .putInt(Protocol.Keys.DISTANCE_METERS, i.distanceMeters)
-                    .putString(Protocol.Keys.PRIMARY_TEXT, limitText(i.primaryText))
-                    .putString(Protocol.Keys.SECONDARY_TEXT, limitText(i.secondaryText))
+                    .putString(Protocol.Keys.PRIMARY_TEXT, fitText(i.primaryText, MAX_PRIMARY_BYTES))
+                    .putString(Protocol.Keys.SECONDARY_TEXT, fitText(i.secondaryText, MAX_SECONDARY_BYTES))
                     .putInt(Protocol.Keys.STOPS_REMAINING, i.stopsRemaining)
                     .putInt(Protocol.Keys.ETA_EPOCH_SECONDS, i.etaEpochSeconds?.let(::toInt32))
                     .putInt(Protocol.Keys.STATE_TIMESTAMP_SECONDS, toInt32(state.stateTimestampSeconds))
@@ -78,13 +83,48 @@ object ProtocolCodec {
         }
     }
 
-    private fun limitText(text: String?): String? {
-        if (text == null || text.length <= MAX_TEXT_CHARS) return text
-        var end = MAX_TEXT_CHARS
-        // Do not split a surrogate pair at the cut point.
-        if (Character.isHighSurrogate(text[end - 1])) end -= 1
-        return text.substring(0, end)
+    /**
+     * [text] within [maxBytes] of UTF-8. Too long: cut on a whole character, back to the last word
+     * boundary when one is in the second half (a road ends on a word, not "Bundesstr"), trailing
+     * separators dropped, and "…" appended so the cut shows.
+     */
+    fun fitText(text: String?, maxBytes: Int): String? {
+        if (text == null || utf8Length(text) <= maxBytes) return text
+        val budget = maxBytes - utf8Length(ELLIPSIS)
+        var end = 0
+        var bytes = 0
+        while (end < text.length) {
+            val cp = text.codePointAt(end)
+            val size = utf8Length(cp)
+            if (bytes + size > budget) break
+            bytes += size
+            end += Character.charCount(cp)
+        }
+        var cut = text.substring(0, end)
+        val space = cut.lastIndexOf(' ')
+        if (space >= cut.length / 2) cut = cut.substring(0, space)
+        return cut.trimEnd(' ', ',', ';', ':', '-', '–', '/', '(') + ELLIPSIS
     }
+
+    private fun utf8Length(s: String): Int {
+        var n = 0
+        var i = 0
+        while (i < s.length) {
+            val cp = s.codePointAt(i)
+            n += utf8Length(cp)
+            i += Character.charCount(cp)
+        }
+        return n
+    }
+
+    private fun utf8Length(cp: Int): Int = when {
+        cp < 0x80 -> 1
+        cp < 0x800 -> 2
+        cp < 0x10000 -> 3
+        else -> 4
+    }
+
+    private const val ELLIPSIS = "…"
 
     /** Clamp a Long (epoch/timestamp seconds) into the int32 wire range instead of overflowing. */
     private fun toInt32(value: Long): Int = value.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
