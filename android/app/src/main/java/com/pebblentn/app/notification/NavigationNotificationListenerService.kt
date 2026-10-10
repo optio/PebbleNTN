@@ -12,8 +12,11 @@ import com.pebblentn.app.PebbleNtnApplication
  */
 class NavigationNotificationListenerService : NotificationListenerService() {
 
+    private val container
+        get() = (application as PebbleNtnApplication).container
+
     private val dispatcher: NotificationDispatcher
-        get() = (application as PebbleNtnApplication).container.notificationDispatcher
+        get() = container.notificationDispatcher
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -26,7 +29,7 @@ class NavigationNotificationListenerService : NotificationListenerService() {
         // allowlisted, so content is never read for a disabled package (REQ-ANDROID-003).
         dispatcher.onPosted(sbn.packageName) {
             PostedNotification(
-                snapshot = NotificationSnapshotFactory.create(sbn),
+                snapshot = NotificationSnapshotFactory.create(sbn, container.largeIconRecognizer),
                 notificationKey = sbn.key,
                 tag = sbn.tag,
                 receivedAtMillis = System.currentTimeMillis(),

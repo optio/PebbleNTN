@@ -2,22 +2,26 @@ package com.pebblentn.app.notification
 
 import android.app.Notification
 import android.service.notification.StatusBarNotification
+import com.pebblentn.app.notification.icon.IconMatch
+import com.pebblentn.app.notification.icon.LargeIconRecognizer
 
 /**
  * Builds a [NotificationSnapshot] from a notification by reading only the documented selected
- * extras. It never touches actions, content/PendingIntents, RemoteViews, icons or unlisted extras
- * (REQ-SEC-003). Callers must have already passed the package allowlist before invoking this.
+ * extras. It never touches actions, content/PendingIntents, RemoteViews or unlisted extras, and reads
+ * the large icon only through [LargeIconRecognizer], which keeps nothing but a drawable name
+ * (REQ-SEC-003, #74). Callers must have already passed the package allowlist before invoking this.
  */
 object NotificationSnapshotFactory {
 
-    fun create(sbn: StatusBarNotification): NotificationSnapshot =
-        create(sbn.packageName, sbn.id, sbn.postTime, sbn.notification)
+    fun create(sbn: StatusBarNotification, iconRecognizer: LargeIconRecognizer? = null): NotificationSnapshot =
+        create(sbn.packageName, sbn.id, sbn.postTime, sbn.notification, iconRecognizer)
 
     fun create(
         packageName: String,
         notificationId: Int,
         postTimeMillis: Long,
         notification: Notification,
+        iconRecognizer: LargeIconRecognizer? = null,
     ): NotificationSnapshot {
         val extras = notification.extras
         fun str(key: String): String? = extras?.getCharSequence(key)?.toString()?.takeIf { it.isNotEmpty() }
@@ -40,6 +44,12 @@ object NotificationSnapshotFactory {
             infoText = str(Notification.EXTRA_INFO_TEXT),
             progress = int(Notification.EXTRA_PROGRESS),
             progressMax = int(Notification.EXTRA_PROGRESS_MAX),
-        )
+        ).withIcon(runCatching { iconRecognizer?.recognize(packageName, notification) }.getOrNull())
+    }
+
+    private fun NotificationSnapshot.withIcon(match: IconMatch?): NotificationSnapshot = when (match) {
+        null -> this
+        is IconMatch.Matched -> copy(iconDrawable = match.drawable, iconMatch = match.diagnostic)
+        is IconMatch.NoMatch -> copy(iconMatch = match.diagnostic)
     }
 }

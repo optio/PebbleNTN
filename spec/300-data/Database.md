@@ -62,4 +62,4 @@ Default debug retention is 500 eligible events. The user may select 50, 100, 500
 
 ## Privacy
 
-Only enabled-package events enter the database. Notification keys and tags are hashed when their literal values are not needed. PendingIntents, actions, RemoteViews, icons, contact identifiers and arbitrary bundles are never serialized.
+Only enabled-package events enter the database. Notification keys and tags are hashed when their literal values are not needed. PendingIntents, actions, RemoteViews, icon images, contact identifiers and arbitrary bundles are never serialized. For apps whose rules map icons, the snapshot JSON carries only the matched turn drawable's name (`iconDrawable`) and a match diagnostic (`iconMatch`), never the image (REQ-SEC-003).

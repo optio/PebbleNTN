@@ -103,6 +103,10 @@ class AppContainer(context: Context) {
         )
     }
 
+    /** Recognises the maneuver in large icons for apps whose rules map icons (#74). */
+    val largeIconRecognizer: com.pebblentn.app.notification.icon.LargeIconRecognizer =
+        com.pebblentn.app.notification.icon.RuleDrivenLargeIconRecognizer(appContext, ruleRepository::current)
+
     /** Bundled official rules, for the Rules screen's official tab. */
     val bundledOfficialRules: List<Rule> get() = assetRuleRepository.current().bundled
 

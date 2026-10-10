@@ -2,6 +2,9 @@ package com.pebblentn.app.notification
 
 import android.app.Notification
 import android.os.Bundle
+import com.pebblentn.app.notification.icon.IconMatch
+import com.pebblentn.app.notification.icon.LargeIconRecognizer
+import com.pebblentn.app.rules.SnapshotFields
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -101,5 +104,55 @@ class NotificationSnapshotFactoryTest {
         assertNull(snap.subText)
         assertNull(snap.bigText)
         assertNull(snap.whenTimeMillis)
+    }
+
+    @Test
+    fun aMatchedLargeIconBecomesOnlyADrawableName() {
+        val recognizer = LargeIconRecognizer { _, _ -> IconMatch.Matched("ic_turn_left", "LEFT", 0.0, 42.5) }
+        val n = notification { putCharSequence(Notification.EXTRA_TITLE, "150 m") }
+        val snap = NotificationSnapshotFactory.create("app.comaps", 1, 0L, n, recognizer)
+
+        assertEquals("ic_turn_left", snap.iconDrawable)
+        assertEquals("ic_turn_left 0.0 (next maneuver 42.5)", snap.iconMatch)
+        assertEquals("ic_turn_left", SnapshotFields.resolve(snap, "iconDrawable"))
+        // The drawable name is not text content: it stays out of combinedText.
+        assertFalse(snap.combinedText.contains("ic_turn_left"))
+    }
+
+    @Test
+    fun anUnmatchedIconLeavesOnlyADiagnostic() {
+        val recognizer = LargeIconRecognizer { _, _ -> IconMatch.NoMatch("ambiguous: a 10.0 vs b 12.0") }
+        val snap = NotificationSnapshotFactory.create("app.comaps", 1, 0L, notification(), recognizer)
+        assertNull(snap.iconDrawable)
+        assertEquals("no match: ambiguous: a 10.0 vs b 12.0", snap.iconMatch)
+    }
+
+    @Test
+    fun noRecognizerOrAPackageWithoutIconRulesLeavesBothFieldsEmpty() {
+        val skipped = NotificationSnapshotFactory.create("com.waze", 1, 0L, notification(), LargeIconRecognizer { _, _ -> null })
+        val none = NotificationSnapshotFactory.create("com.waze", 1, 0L, notification())
+        for (snap in listOf(skipped, none)) {
+            assertNull(snap.iconDrawable)
+            assertNull(snap.iconMatch)
+        }
+    }
+
+    @Test
+    fun aFailingRecognizerNeverBreaksTheSnapshot() {
+        val broken = LargeIconRecognizer { _, _ -> error("bitmap gone") }
+        val n = notification { putCharSequence(Notification.EXTRA_TITLE, "150 m") }
+        val snap = NotificationSnapshotFactory.create("app.comaps", 1, 0L, n, broken)
+        assertEquals("150 m", snap.title)
+        assertNull(snap.iconDrawable)
+    }
+
+    @Test
+    fun theSerializedSnapshotHoldsNoImageData() {
+        val recognizer = LargeIconRecognizer { _, _ -> IconMatch.Matched("ic_turn_left", "LEFT", 0.0, null) }
+        val snap = NotificationSnapshotFactory.create("app.comaps", 1, 0L, notification(), recognizer)
+        val json = Json.encodeToString(NotificationSnapshot.serializer(), snap)
+        // Only the name and the diagnostic: no bitmap, pixels or icon object.
+        assertTrue(json.contains("\"iconDrawable\":\"ic_turn_left\""))
+        assertFalse(json.contains("Bitmap") || json.contains("Icon("))
     }
 }

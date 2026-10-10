@@ -100,14 +100,45 @@ class ProtocolCodecTest {
 
     @Test
     fun longTextIsTruncatedToLimit() {
-        val long = "x".repeat(ProtocolCodec.MAX_TEXT_CHARS + 50)
+        val long = "x".repeat(ProtocolCodec.MAX_PRIMARY_BYTES + 50)
         val state = NavigationState.Navigating(
             sessionId = 1,
             instruction = NavigationInstruction(maneuver = Maneuver.LEFT, primaryText = long),
             stateTimestampSeconds = 0,
         )
         val text = ProtocolCodec.encodeState(state, 0, appVersion).stringOrNull(Protocol.Keys.PRIMARY_TEXT)!!
-        assertTrue(text.length <= ProtocolCodec.MAX_TEXT_CHARS)
+        assertTrue(text.toByteArray(Charsets.UTF_8).size <= ProtocolCodec.MAX_PRIMARY_BYTES)
+    }
+
+    @Test
+    fun textIsFittedInUtf8BytesOnWholeCharacters() {
+        // 64 characters but more than 64 bytes: the watch copies bytes and would split the last "ä" (#76).
+        val road = "Bundesstraße 51 Richtung Köln-Mülheim über Bergisch Gladbach Süd"
+        val fitted = ProtocolCodec.fitText(road, ProtocolCodec.MAX_PRIMARY_BYTES)!!
+        assertTrue(fitted.toByteArray(Charsets.UTF_8).size <= ProtocolCodec.MAX_PRIMARY_BYTES)
+        // Cut back to a word boundary, with "…" to show the cut.
+        assertEquals("Bundesstraße 51 Richtung Köln-Mülheim über Bergisch…", fitted)
+    }
+
+    @Test
+    fun fittingKeepsShortTextAndNeverSplitsASurrogatePair() {
+        assertEquals("Torstraße", ProtocolCodec.fitText("Torstraße", ProtocolCodec.MAX_PRIMARY_BYTES))
+        assertEquals(null, ProtocolCodec.fitText(null, ProtocolCodec.MAX_PRIMARY_BYTES))
+        val emoji = "🚗".repeat(30) // 4 bytes each, no spaces
+        val fitted = ProtocolCodec.fitText(emoji, ProtocolCodec.MAX_SECONDARY_BYTES)!!
+        assertTrue(fitted.toByteArray(Charsets.UTF_8).size <= ProtocolCodec.MAX_SECONDARY_BYTES)
+        assertEquals("🚗".repeat(5) + "…", fitted)
+    }
+
+    @Test
+    fun secondaryTextUsesTheWatchsSmallerBuffer() {
+        val state = NavigationState.Navigating(
+            sessionId = 1,
+            instruction = NavigationInstruction(maneuver = Maneuver.LEFT, secondaryText = "noch 12,4 km bis zum Ziel über die Autobahn"),
+            stateTimestampSeconds = 0,
+        )
+        val text = ProtocolCodec.encodeState(state, 0, appVersion).stringOrNull(Protocol.Keys.SECONDARY_TEXT)!!
+        assertTrue(text, text.toByteArray(Charsets.UTF_8).size <= ProtocolCodec.MAX_SECONDARY_BYTES)
     }
 
     @Test

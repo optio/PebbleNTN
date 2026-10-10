@@ -58,6 +58,26 @@ class NotificationsTest(unittest.TestCase):
         self.assertEqual(2, len(notifications.parse_dumpsys(DUMPSYS)))
 
 
+    def test_a_multi_line_value_is_read_to_its_closing_parenthesis(self):
+        dump = (
+            "  NotificationRecord(0x1: pkg=net.osmand.plus user=0 id=1 importance=2 key=k: Notification(channel=nav))\n"
+            "                android.title=String (80 m • links abbiegen, dann)\n"
+            "                android.bigText=String (links abbiegen, dann Torstraße 200 m\n"
+            "1,4 km • 6 min • 17:45 • 0 km/h)\n"
+            "                android.template=String (android.app.Notification$BigTextStyle)\n"
+            "  NotificationRecord(0x2: pkg=net.osmand.plus user=0 id=2 importance=2 key=k2: Notification(channel=nav))\n"
+            "                android.bigText=String (never closed\n"
+            "second line\n"
+            "                android.title=String (Next)\n")
+        first, second = notifications.parse_dumpsys(dump, "net.osmand.plus")
+        self.assertEqual("links abbiegen, dann Torstraße 200 m\n1,4 km • 6 min • 17:45 • 0 km/h", first["bigText"])
+        self.assertEqual("80 m • links abbiegen, dann", first["title"])
+        self.assertEqual("BigTextStyle", first["template"])
+        # An unclosed value stops at the next extra, which is still read.
+        self.assertEqual("never closed\nsecond line", second["bigText"])
+        self.assertEqual("Next", second["title"])
+
+
 class UiTest(unittest.TestCase):
     def test_finds_by_resource_id_whatever_the_language(self):
         xml = ('<hierarchy><node text="" resource-id="net.osmand.plus:id/start_button" bounds="[541,2211][1080,2337]" />'

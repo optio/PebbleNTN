@@ -1,10 +1,54 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "osmand-de-2026.10.4",
+  "rulesetVersion": "osmand-de-2026.10.10",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-10-04T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
+    {
+      "id": "osmand-roundabout-street-de",
+      "enabled": true,
+      "priority": 191,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-roundabout-de one step above it: road line '2 Ausfahrt L 33 nach Erftstadt' from bigText, so the exit number and the direction show together; the app fits it to the watch's 64 bytes. Only when a road follows 'Ausfahrt'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\bnehmen\\s+sie\\s+die\\s+\\d+\\.?\\s+ausfahrt\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)\\bnehmen\\s+sie\\s+die\\s+(\\d+\\.?\\s+ausfahrt\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))[^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
     {
       "id": "osmand-roundabout-de",
       "enabled": true,
@@ -42,6 +86,12 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -58,12 +108,12 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Wenden' (route_tu).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Wenden' (route_tu). Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
-          "field": "combinedText",
+          "field": "title",
           "operator": "regex",
-          "value": "(?i)\\b(?:wenden|umkehren|u-turn)\\b"
+          "value": "(?i)•\\s*(?:wenden|umkehren|u-turn)\\b"
         }
       ],
       "output": {
@@ -82,13 +132,19 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
     {
-      "id": "osmand-sharp-right-de",
+      "id": "osmand-sharp-left-street-de",
       "enabled": true,
-      "priority": 170,
+      "priority": 171,
       "packageNames": [
         "net.osmand",
         "net.osmand.plus",
@@ -98,12 +154,100 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf rechts abbiegen, dann' (route_tshr).",
+      "comment": "Variant of osmand-sharp-left-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
       "conditions": [
         {
-          "field": "combinedText",
+          "field": "bigText",
           "operator": "regex",
-          "value": "(?i)\\bscharf\\s+rechts\\b"
+          "value": "(?i)\\bscharf\\s+links\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-left-then-de",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-sharp-left-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\bscharf\\s+links\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-street-de",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-sharp-right-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\bscharf\\s+rechts\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
         }
       ],
       "output": {
@@ -116,12 +260,60 @@
           "field": "combinedText"
         },
         "primaryText": {
-          "type": "firstNonEmpty",
-          "fields": [
-            "title",
-            "text"
-          ],
-          "stripLeadingDistance": true
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-then-de",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-sharp-right-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\bscharf\\s+rechts\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -138,7 +330,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf links abbiegen, dann' (route_tshl).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf links abbiegen, dann' (route_tshl). Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -162,13 +354,19 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
     {
-      "id": "osmand-slight-right-de",
+      "id": "osmand-sharp-right-de",
       "enabled": true,
-      "priority": 160,
+      "priority": 170,
       "packageNames": [
         "net.osmand",
         "net.osmand.plus",
@@ -178,18 +376,18 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb rechts abbiegen, dann' (route_tslr).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf rechts abbiegen, dann' (route_tshr). Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\b(?:halb|leicht)\\s+rechts\\b"
+          "value": "(?i)\\bscharf\\s+rechts\\b"
         }
       ],
       "output": {
         "maneuver": {
           "type": "literal",
-          "value": "SLIGHT_RIGHT"
+          "value": "SHARP_RIGHT"
         },
         "distanceMeters": {
           "type": "distance",
@@ -202,6 +400,188 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-street-de",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-slight-left-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\b(?:halb|leicht)\\s+links\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-then-de",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-slight-left-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\b(?:halb|leicht)\\s+links\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-street-de",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-slight-right-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\b(?:halb|leicht)\\s+rechts\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-then-de",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-slight-right-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\b(?:halb|leicht)\\s+rechts\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -218,7 +598,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb links abbiegen, dann' (route_tsll).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb links abbiegen, dann' (route_tsll). Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -242,13 +622,19 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
     {
-      "id": "osmand-keep-right-de",
+      "id": "osmand-slight-right-de",
       "enabled": true,
-      "priority": 120,
+      "priority": 160,
       "packageNames": [
         "net.osmand",
         "net.osmand.plus",
@@ -258,12 +644,12 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts halten, dann' (route_kr). Keep is drawn as a slight turn, like osmand-keep-right-en.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb rechts abbiegen, dann' (route_tslr). Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\brechts\\s+halten\\b"
+          "value": "(?i)\\b(?:halb|leicht)\\s+rechts\\b"
         }
       ],
       "output": {
@@ -282,6 +668,188 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-street-de",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-keep-left-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\blinks\\s+halten\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-then-de",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-keep-left-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\blinks\\s+halten\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-street-de",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-keep-right-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\brechts\\s+halten\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-then-de",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-keep-right-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\brechts\\s+halten\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -298,7 +866,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Links halten, dann' (route_kl). Keep is drawn as a slight turn, like osmand-keep-left-en.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Links halten, dann' (route_kl). Keep is drawn as a slight turn, like osmand-keep-left-en. Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -322,13 +890,19 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
     {
-      "id": "osmand-turn-right-de",
+      "id": "osmand-keep-right-de",
       "enabled": true,
-      "priority": 100,
+      "priority": 120,
       "packageNames": [
         "net.osmand",
         "net.osmand.plus",
@@ -338,18 +912,18 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts abbiegen, dann' (route_tr). Sharp, slight and keep rank higher, so only a plain right turn lands here.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts halten, dann' (route_kr). Keep is drawn as a slight turn, like osmand-keep-right-en. Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
           "operator": "regex",
-          "value": "(?i)\\brechts\\b"
+          "value": "(?i)\\brechts\\s+halten\\b"
         }
       ],
       "output": {
         "maneuver": {
           "type": "literal",
-          "value": "RIGHT"
+          "value": "SLIGHT_RIGHT"
         },
         "distanceMeters": {
           "type": "distance",
@@ -362,6 +936,188 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-street-de",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-turn-left-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\blinks\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-then-de",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-turn-left-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\blinks\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-street-de",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-turn-right-de one step above it: OsmAnd cuts the title at ', dann'; bigText's first line goes on with the next road and its length ('rechts abbiegen, dann B 1 Grunerstraße 400 m'), so the road line shows that road. The app fits it to the watch's 64 bytes. Only when a road follows 'dann'. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\brechts\\b[^\\n]*?,\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$)).+?\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-then-de",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-turn-right-de one step above it, for a bigText line with only a distance after 'dann' ('rechts abbiegen, dann 9 m'): shows that whole line instead of the cut title. Exclusive with the -street variant, which needs a road. Shared custom rules (#76).",
+      "conditions": [
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)\\brechts\\b[^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([^\\n]*?,\\s*dann\\s+[\\d.,]+\\s*k?m)\\s*$",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -378,7 +1134,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'links abbiegen, dann' (route_tl). Sharp, slight and keep rank higher, so only a plain left turn lands here.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'links abbiegen, dann' (route_tl). Sharp, slight and keep rank higher, so only a plain left turn lands here. Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -402,6 +1158,58 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-de",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts abbiegen, dann' (route_tr). Sharp, slight and keep rank higher, so only a plain right turn lands here. Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\brechts\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -418,7 +1226,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Geradeaus' (route_head).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Geradeaus' (route_head). Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -442,6 +1250,12 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     },
@@ -458,7 +1272,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Sie sind angekommen.' (arrived_at_destination); 'Ziel erreicht' kept from the contribution. Lowest priority, so a turn always wins over an arrival word.",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Sie sind angekommen.' (arrived_at_destination); 'Ziel erreicht' kept from the contribution. Lowest priority, so a turn always wins over an arrival word. Secondary line: the remaining route distance from bigText's summary line (#76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -478,6 +1292,12 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "group": 1
         }
       }
     }
