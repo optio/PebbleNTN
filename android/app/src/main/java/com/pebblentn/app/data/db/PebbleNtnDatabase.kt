@@ -23,7 +23,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NavigationStateEntity::class,
         OfficialRulesetEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class PebbleNtnDatabase : RoomDatabase() {
@@ -132,7 +132,17 @@ abstract class PebbleNtnDatabase : RoomDatabase() {
             }
         }
 
+        /** Records the PebbleNTN and navigation-app versions with each debug event (#84). */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `appVersionName` TEXT")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `appVersionCode` INTEGER")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `sourceAppVersionName` TEXT")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `sourceAppVersionCode` INTEGER")
+            }
+        }
+
         val ALL_MIGRATIONS: Array<Migration> =
-            arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+            arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
     }
 }

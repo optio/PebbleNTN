@@ -2,12 +2,19 @@ package com.pebblentn.app.export
 
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.data.DebugEventType
+import com.pebblentn.app.data.EventVersions
 import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.rules.Condition
 import com.pebblentn.app.rules.ConditionOperator
 import com.pebblentn.app.rules.LiteralExtractor
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleOutput
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -72,5 +79,44 @@ class ExportBuilderTest {
     @Test
     fun metadataRecordsMode() {
         assertTrue(build(ExportMode.FULL).contains("\"mode\": \"FULL\""))
+    }
+
+    @Test
+    fun eachEventCarriesTheVersionsItWasRecordedWith() {
+        val recorded = event.copy(
+            versions = EventVersions(
+                appVersionName = "0.0.59",
+                appVersionCode = 59,
+                sourceAppVersionName = "26.40.01",
+                sourceAppVersionCode = 1_234_567,
+                rulesetVersions = "google-maps-any-2026.10.7,google-maps-de-2026.10.1",
+            ),
+        )
+        for (mode in listOf(ExportMode.PRIVACY_SAFE, ExportMode.FULL)) {
+            val root = Json.parseToJsonElement(
+                builder.build(mode, emptyList(), listOf(recorded), appVersion = "0.0.60", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z", appVersionCode = 60),
+            ).jsonObject
+            val metadata = root.getValue("metadata").jsonObject
+            assertEquals(2L, metadata.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals(60L, metadata.getValue("appVersionCode").jsonPrimitive.long)
+            // Version strings are not personal data: privacy-safe keeps them unredacted.
+            val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject
+            assertEquals("0.0.59", versions.getValue("appVersion").jsonPrimitive.content)
+            assertEquals(59L, versions.getValue("appVersionCode").jsonPrimitive.long)
+            assertEquals("26.40.01", versions.getValue("sourceAppVersion").jsonPrimitive.content)
+            assertEquals(1_234_567L, versions.getValue("sourceAppVersionCode").jsonPrimitive.long)
+            assertEquals(
+                listOf("google-maps-any-2026.10.7", "google-maps-de-2026.10.1"),
+                versions.getValue("rulesetVersions").jsonArray.map { it.jsonPrimitive.content },
+            )
+        }
+    }
+
+    @Test
+    fun eventsFromBeforeVersionsWereStoredExportNullVersions() {
+        val root = Json.parseToJsonElement(build(ExportMode.PRIVACY_SAFE)).jsonObject
+        val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject
+        assertEquals("null", versions.getValue("sourceAppVersion").toString())
+        assertTrue(versions.getValue("rulesetVersions").jsonArray.isEmpty())
     }
 }

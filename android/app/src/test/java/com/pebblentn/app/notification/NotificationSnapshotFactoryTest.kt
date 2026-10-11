@@ -138,12 +138,21 @@ class NotificationSnapshotFactoryTest {
     }
 
     @Test
-    fun aFailingRecognizerNeverBreaksTheSnapshot() {
+    fun aFailingRecognizerNeverBreaksTheSnapshotAndSaysWhy() {
         val broken = LargeIconRecognizer { _, _ -> error("bitmap gone") }
         val n = notification { putCharSequence(Notification.EXTRA_TITLE, "150 m") }
         val snap = NotificationSnapshotFactory.create("app.comaps", 1, 0L, n, broken)
         assertEquals("150 m", snap.title)
         assertNull(snap.iconDrawable)
+        // #83: a failure leaves a diagnostic in the log instead of nothing.
+        assertEquals("no match: error: IllegalStateException: bitmap gone", snap.iconMatch)
+    }
+
+    @Test
+    fun aLongErrorMessageIsCut() {
+        val broken = LargeIconRecognizer { _, _ -> throw IllegalArgumentException("x".repeat(500)) }
+        val snap = NotificationSnapshotFactory.create("app.comaps", 1, 0L, notification { }, broken)
+        assertEquals("no match: error: IllegalArgumentException: " + "x".repeat(120), snap.iconMatch)
     }
 
     @Test

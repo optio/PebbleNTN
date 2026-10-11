@@ -19,11 +19,15 @@ class AssetRuleRepository(
     private val onParseError: (String, Throwable) -> Unit = { _, _ -> },
 ) : RuleRepository {
 
-    private val bundled: List<Rule> by lazy { loadBundled() }
+    private val rulesets: List<Ruleset> by lazy { loadBundled() }
+    private val bundled: List<Rule> by lazy { rulesets.flatMap { it.rules } }
 
     override fun current(): LayeredRules = LayeredRules(bundled = bundled)
 
-    private fun loadBundled(): List<Rule> {
+    /** The versions of the bundled rulesets holding a rule for [packageName] (recorded per debug event, #84). */
+    fun rulesetVersions(packageName: String): List<String> = rulesetVersionsFor(rulesets, packageName)
+
+    private fun loadBundled(): List<Ruleset> {
         val assets = context.assets
         // Bundled rulesets are organized by app then language (rules/bundled/<app>/<language>.json),
         // so the asset tree must be walked recursively — AssetManager.list() returns immediate
@@ -32,7 +36,7 @@ class AssetRuleRepository(
         return files.flatMap { path ->
             runCatching {
                 val text = assets.open(path).bufferedReader().use { it.readText() }
-                RulesetCodec.parse(text).rules
+                listOf(RulesetCodec.parse(text))
             }.getOrElse { error ->
                 onParseError(path, error)
                 emptyList()
@@ -57,7 +61,11 @@ class AssetRuleRepository(
         return results
     }
 
-    private companion object {
-        const val BUNDLED_DIR = "rules/bundled"
+    companion object {
+        private const val BUNDLED_DIR = "rules/bundled"
+
+        /** The versions of the [rulesets] that hold at least one rule for [packageName], in load order. */
+        fun rulesetVersionsFor(rulesets: List<Ruleset>, packageName: String): List<String> =
+            rulesets.filter { set -> set.rules.any { packageName in it.packageNames } }.map { it.rulesetVersion }
     }
 }

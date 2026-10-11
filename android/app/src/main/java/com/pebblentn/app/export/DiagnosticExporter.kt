@@ -29,6 +29,7 @@ class DiagnosticExporter(
     private val debugHistory: DebugHistoryRepository,
     private val userRules: UserRuleRepository,
     private val appVersion: String,
+    private val appVersionCode: Long? = null,
     private val builder: ExportBuilder = ExportBuilder(),
     private val androidRelease: String = Build.VERSION.RELEASE ?: "unknown",
     private val now: () -> String = { Instant.now().toString() },
@@ -45,6 +46,7 @@ class DiagnosticExporter(
             androidRelease = androidRelease,
             exportedAt = now(),
             locale = locale(),
+            appVersionCode = appVersionCode,
         )
     }
 
@@ -72,6 +74,7 @@ class DiagnosticExporter(
             androidRelease = androidRelease,
             exportedAt = exportedAt,
             locale = localeTag,
+            appVersionCode = appVersionCode,
         )
 
         fun fits(json: String): Boolean = json.toByteArray(Charsets.UTF_8).size <= maxBytes

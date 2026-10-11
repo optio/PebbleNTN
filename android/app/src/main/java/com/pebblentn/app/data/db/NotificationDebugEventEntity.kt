@@ -9,7 +9,8 @@ import androidx.room.PrimaryKey
  * Only enabled-package events reach this table (REQ-DEBUG-002). Notification keys and tags are
  * stored as hashes, never in the clear; content is limited to the selected snapshot JSON. Fields
  * populated by the rule engine and transport (matchedRuleId, extraction/trace JSON, ruleset
- * versions, transport status) are nullable and filled in from M4 onward.
+ * versions, transport status) are nullable and filled in from M4 onward. The PebbleNTN and
+ * navigation-app versions (#84) are nullable: rows recorded before schema v7 have none.
  */
 @Entity(tableName = "notification_debug_event")
 data class NotificationDebugEventEntity(
@@ -30,4 +31,10 @@ data class NotificationDebugEventEntity(
     val disposition: String,
     val transportStatus: String?,
     val privacyClassification: String,
+    /** PebbleNTN's version when the event was recorded (#84); null on rows from before v7. */
+    val appVersionName: String? = null,
+    val appVersionCode: Long? = null,
+    /** The navigation app's version when the event was recorded (#84); null when unknown. */
+    val sourceAppVersionName: String? = null,
+    val sourceAppVersionCode: Long? = null,
 )

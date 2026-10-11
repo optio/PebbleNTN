@@ -64,7 +64,17 @@ class AppContainer(context: Context) {
 
     val enabledAppRepository = EnabledAppRepository(database.appEnablementDao(), catalog)
 
-    val debugHistoryRepository = DebugHistoryRepository(database.debugEventDao())
+    private val assetRuleRepository = AssetRuleRepository(appContext)
+
+    val debugHistoryRepository = DebugHistoryRepository(
+        database.debugEventDao(),
+        versions = com.pebblentn.app.data.SystemEventVersionsProvider(
+            appContext,
+            appVersionName = com.pebblentn.app.BuildConfig.VERSION_NAME,
+            appVersionCode = com.pebblentn.app.BuildConfig.VERSION_CODE.toLong(),
+            rulesetVersions = assetRuleRepository::rulesetVersions,
+        ),
+    )
 
     val processingQueue = SerialProcessingQueue(applicationScope)
 
@@ -85,8 +95,6 @@ class AppContainer(context: Context) {
     private val ruleEngine = RuleEngine()
 
     val userRuleRepository = UserRuleRepository(database.userRuleDao())
-
-    private val assetRuleRepository = AssetRuleRepository(appContext)
 
     // Remote official rules are OFF by default in the initial version (spec/000-overview.md).
     // Maintainers embed the official Ed25519 public key(s) here before enabling remote updates.
@@ -116,6 +124,7 @@ class AppContainer(context: Context) {
         debugHistory = debugHistoryRepository,
         userRules = userRuleRepository,
         appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
+        appVersionCode = com.pebblentn.app.BuildConfig.VERSION_CODE.toLong(),
     )
 
     val diagnosticShareManager = DiagnosticShareManager(appContext)

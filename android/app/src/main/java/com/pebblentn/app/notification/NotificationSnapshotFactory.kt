@@ -44,8 +44,19 @@ object NotificationSnapshotFactory {
             infoText = str(Notification.EXTRA_INFO_TEXT),
             progress = int(Notification.EXTRA_PROGRESS),
             progressMax = int(Notification.EXTRA_PROGRESS_MAX),
-        ).withIcon(runCatching { iconRecognizer?.recognize(packageName, notification) }.getOrNull())
+        ).withIcon(recognizeIcon(iconRecognizer, packageName, notification))
     }
+
+    /**
+     * The recognizer's result. A failure is kept as a diagnostic rather than dropped, so a shared log
+     * says why no arrow was found (#83); the exception's type and message carry no notification content.
+     */
+    internal fun recognizeIcon(recognizer: LargeIconRecognizer?, packageName: String, notification: Notification): IconMatch? =
+        runCatching { recognizer?.recognize(packageName, notification) }.getOrElse { error ->
+            IconMatch.NoMatch("error: ${error.javaClass.simpleName}${error.message?.let { ": " + it.take(MAX_ERROR_MESSAGE) }.orEmpty()}")
+        }
+
+    private const val MAX_ERROR_MESSAGE = 120
 
     private fun NotificationSnapshot.withIcon(match: IconMatch?): NotificationSnapshot = when (match) {
         null -> this

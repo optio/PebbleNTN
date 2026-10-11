@@ -20,16 +20,38 @@ enum class ExportMode {
 
 @Serializable
 data class ExportMetadata(
-    val schemaVersion: Int = 1,
+    /** 2 adds [appVersionCode] and the per-event versions (#84). */
+    val schemaVersion: Int = SCHEMA_VERSION,
     val mode: String,
     val exportedAt: String,
+    /** PebbleNTN's version at export time; each event also carries the version that recorded it. */
     val appVersion: String,
+    val appVersionCode: Long? = null,
     val androidRelease: String,
     /**
      * The device UI language tag (e.g. "it-IT"). Google Maps localizes its notifications, so this
      * tells a maintainer which language's rules a shared log can improve (spec/300-data/ExportFormat).
      */
     val locale: String = "und",
+) {
+    companion object {
+        const val SCHEMA_VERSION = 2
+    }
+}
+
+/**
+ * The versions an event was recorded with (#84): PebbleNTN, the navigation app (its notification
+ * texts, layouts and drawables change between releases) and the bundled rulesets that hold rules for
+ * it. Version strings are not personal data, so they are kept in privacy-safe exports. Null on events
+ * recorded before the app stored them.
+ */
+@Serializable
+data class ExportedVersions(
+    val appVersion: String? = null,
+    val appVersionCode: Long? = null,
+    val sourceAppVersion: String? = null,
+    val sourceAppVersionCode: Long? = null,
+    val rulesetVersions: List<String> = emptyList(),
 )
 
 /**
@@ -51,6 +73,7 @@ data class ExportedEvent(
     val eventType: String,
     val disposition: String,
     val matchedRuleId: String? = null,
+    val versions: ExportedVersions = ExportedVersions(),
     val watchOutput: ExportedWatchOutput? = null,
     val snapshot: NotificationSnapshot? = null,
 )
@@ -79,11 +102,13 @@ class ExportBuilder(
         androidRelease: String,
         exportedAt: String,
         locale: String = "und",
+        appVersionCode: Long? = null,
     ): String {
         val metadata = ExportMetadata(
             mode = mode.name,
             exportedAt = exportedAt,
             appVersion = appVersion,
+            appVersionCode = appVersionCode,
             androidRelease = androidRelease,
             locale = locale,
         )
@@ -113,6 +138,15 @@ class ExportBuilder(
             eventType = event.eventType.name,
             disposition = event.disposition,
             matchedRuleId = event.matchedRuleId,
+            versions = event.versions.let {
+                ExportedVersions(
+                    appVersion = it.appVersionName,
+                    appVersionCode = it.appVersionCode,
+                    sourceAppVersion = it.sourceAppVersionName,
+                    sourceAppVersionCode = it.sourceAppVersionCode,
+                    rulesetVersions = it.rulesetVersions?.split(',')?.filter(String::isNotBlank).orEmpty(),
+                )
+            },
             watchOutput = watchOutput,
             snapshot = snapshot,
         )

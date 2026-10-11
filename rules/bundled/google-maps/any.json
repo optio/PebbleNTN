@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-any-2026.10.7",
+  "rulesetVersion": "google-maps-any-2026.10.11",
   "minimumAppVersionCode": 1,
-  "createdAt": "2026-10-07T00:00:00Z",
+  "createdAt": "2026-10-11T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
     {
@@ -12,16 +12,12 @@
       "packageNames": [
         "com.google.android.apps.maps"
       ],
-      "comment": "Classic card: title = bare distance, text = road, no turn word; the turn is only the large icon (#59). The app matches it against Google Maps' maneuver_* drawables (iconDrawable, #74). Language-independent. Below every text rule, above the destination-approach fallback (30). ETA: the only clock time in subText.",
+      "comment": "Classic card: title = bare distance, text = road, no turn word; the turn is only the large icon (#59). The app matches it against Google Maps' maneuver_* drawables (iconDrawable, #74). Without a matched icon the card still shows distance, road and ETA with the fallback arrow (UNKNOWN), not nothing (#83). Language-independent. Below every text rule, above the destination-approach fallback (30). ETA: the only clock time in subText.",
       "conditions": [
         {
           "field": "title",
           "operator": "regex",
           "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd|pi|公里|公尺|米)\\s*$"
-        },
-        {
-          "field": "iconDrawable",
-          "operator": "exists"
         }
       ],
       "output": {

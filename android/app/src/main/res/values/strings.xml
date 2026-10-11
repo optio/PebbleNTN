@@ -125,6 +125,11 @@
     <string name="debug_field_bigtext">Big text</string>
     <string name="debug_field_category">Category</string>
     <string name="debug_field_channel">Channel</string>
+    <string name="debug_field_icon_drawable">Icon</string>
+    <string name="debug_field_icon_match">Icon match</string>
+    <string name="debug_field_pebblentn_version">PebbleNTN version</string>
+    <string name="debug_field_source_app_version">Navigation app version</string>
+    <string name="debug_field_rulesets">Rulesets</string>
     <string name="debug_not_found">This event is no longer available.</string>
     <string name="debug_watch_output">Sent to watch</string>
     <string name="debug_watch_none">Nothing sent — no rule matched this notification.</string>

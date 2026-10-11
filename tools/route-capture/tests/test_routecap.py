@@ -141,16 +141,27 @@ class ReportTest(unittest.TestCase):
 
     CLASSIC = {"packageName": "com.google.android.apps.maps", "title": "70 m", "text": "Coudenberg",
                "subText": "10 min · 3.2 km · 12:36 AM ETA", "template": "BigTextStyle"}
+    # A direction-looking card no rule knows (an invented maneuver word).
+    UNRECOGNISED = {"packageName": "com.google.android.apps.maps", "title": "Zigzag onto Coudenberg", "text": "70 m",
+                    "subText": "10 min · 3.2 km · 12:36 AM ETA", "template": "BigTextStyle"}
 
     def test_counts_recognised_and_groups_unrecognised_shapes(self):
-        classic2 = dict(self.CLASSIC, title="60 m", text="Rue Ducale")
+        other = dict(self.UNRECOGNISED, title="Zigzag onto Rue Ducale", text="60 m")
         turn = {"packageName": "com.google.android.apps.maps", "title": "300 m · Turn left onto Bd Ney", "subText": "Arrive 20:26"}
-        state = report.evaluate(self.run_with([self.CLASSIC, classic2, turn]))
+        state = report.evaluate(self.run_with([self.UNRECOGNISED, other, turn]))
         self.assertEqual((3, 1), (state["scenarios"]["s1"]["total"], state["scenarios"]["s1"]["matched"]))
         shapes = report.unrecognised(state)
         self.assertEqual(1, len(shapes), "same layout, different numbers and road: one shape")
         self.assertEqual(2, shapes[0]["count"])
-        self.assertIn("«N m»", shapes[0]["shape"])
+        self.assertIn("«Zigzag onto …»", shapes[0]["shape"])
+
+    def test_a_classic_card_without_an_icon_is_recognised_with_the_fallback_arrow_and_listed(self):
+        # #83: the harness reads no icons, so the classic card matches with UNKNOWN and is listed for review.
+        state = report.evaluate(self.run_with([self.CLASSIC, dict(self.CLASSIC, title="60 m", text="Rue Ducale")]))
+        self.assertEqual(2, state["scenarios"]["s1"]["matched"])
+        self.assertEqual([], report.unrecognised(state))
+        self.assertEqual("google-maps-icon-step", state["fallback"]["s1"][0]["rule"])
+        self.assertEqual(2, state["fallback"]["s1"][0]["count"])
 
     def test_road_names_are_abstracted_so_steps_group_by_instruction(self):
         self.assertEqual("Vire à esquerda na …", report.instruction("Vire à esquerda na Rue de l'Hôpital/Gasthuisstraat"))
@@ -206,8 +217,8 @@ class ReportTest(unittest.TestCase):
         self.assertIn("rechtsaf", report.MANEUVER_WORDS)
 
     def test_merging_keeps_other_scenarios_and_replaces_the_rerun_one(self):
-        polish = report.evaluate(self.run_with([dict(self.CLASSIC)], sid="pl", locale="pl-PL", started="run 1"))
-        english = report.evaluate(self.run_with([dict(self.CLASSIC)], sid="en", started="run 1"))
+        polish = report.evaluate(self.run_with([dict(self.UNRECOGNISED)], sid="pl", locale="pl-PL", started="run 1"))
+        english = report.evaluate(self.run_with([dict(self.UNRECOGNISED)], sid="en", started="run 1"))
         merged = report.merge(report.merge(None, polish), english)
         self.assertEqual({"pl", "en"}, set(merged["scenarios"]))
         fixed = report.evaluate(self.run_with([], sid="en", started="run 2"))
@@ -216,7 +227,7 @@ class ReportTest(unittest.TestCase):
         self.assertEqual(["pl"], report.unrecognised(merged)[0]["scenarios"], "Polish findings survive an English-only run")
 
     def test_markdown_lists_scenarios_and_shapes(self):
-        state = report.evaluate(self.run_with([dict(self.CLASSIC)]))
+        state = report.evaluate(self.run_with([dict(self.UNRECOGNISED)]))
         md = report.markdown("Google Maps", state)
         self.assertIn("| `s1` | en-US | car | r | 26.14 | 2026-10-04 12:00 UTC (Android 17) | 1 | 0 |", md)
         self.assertIn("1×", md)
@@ -241,7 +252,7 @@ class IssuesTest(unittest.TestCase):
         self.assertIsNone(issues.decode_state("no state here"))
 
     def test_dry_run_publishes_nothing(self):
-        state = report.evaluate(ReportTest().run_with([dict(ReportTest.CLASSIC)]))
+        state = report.evaluate(ReportTest().run_with([dict(ReportTest.UNRECOGNISED)]))
         self.assertEqual("create (dry run)", issues.publish("google-maps", "Google Maps", state, "t", dry_run=True))
 
 

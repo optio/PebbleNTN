@@ -106,8 +106,14 @@ def shape(capture: dict) -> str:
 
 
 # Fallback rules match a card shape loosely (e.g. any "<distance> · …" title near the destination), so
-# what they match is listed for review: an unknown phrasing must not hide behind them.
+# what they match is listed for review: an unknown phrasing must not hide behind them. A match with
+# the fallback arrow (UNKNOWN) is listed too: the harness reads no icons, so Google Maps' classic card
+# lands there (#83), and so would a card a rule recognises without knowing the turn.
 FALLBACK_RULES = ("google-maps-destination-approach-",)
+
+
+def is_fallback(result: dict) -> bool:
+    return result["ruleId"].startswith(FALLBACK_RULES) or result.get("maneuver") == "UNKNOWN"
 
 
 # A report state's parts, each keyed by scenario id. "known" holds unmatched cards a fixture pins as
@@ -152,7 +158,7 @@ def evaluate(run: dict) -> dict:
             cap["matchedRuleId"] = result["ruleId"] if result else None
             if result:
                 matched += 1
-                if result["ruleId"].startswith(FALLBACK_RULES):
+                if is_fallback(result):
                     entry = buckets["fallback"].setdefault(shape(cap), {"shape": shape(cap), "count": 0, "example": snapshot(cap), "rule": result["ruleId"]})
                     entry["count"] += 1
                 continue

@@ -21,13 +21,15 @@
 - channel ID
 - event type
 - selected raw snapshot JSON
-- active ruleset versions
+- active ruleset versions: the bundled rulesets holding rules for the package, comma-separated (REQ-DEBUG-012)
 - matched rule ID
 - extraction JSON
 - trace JSON
 - disposition
 - transport status
 - privacy classification
+- PebbleNTN version name and code, nullable (schema v7, REQ-DEBUG-012)
+- source navigation app version name and code, nullable (schema v7, REQ-DEBUG-012)
 
 ### `user_rule`
 - rule ID primary key
