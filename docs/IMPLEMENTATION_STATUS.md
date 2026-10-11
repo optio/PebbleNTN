@@ -12,7 +12,8 @@ the install receiver ignored uninstalls.
 - **Rows are kept** so the on/off choice returns with a reinstall; `AppEnablement.installed`
   says whether the app was installed at the last discovery.
 - **Navigation apps screen:** Installed lists installed apps only; an uninstalled one is listed
-  first under Also supported, labelled "No longer installed".
+  under Also supported like any app that isn't installed, in its usual order (directions first,
+  then alphabetical), without a label.
 - **Dashboard:** counts installed apps only.
 - **Receiver:** `ACTION_PACKAGE_FULLY_REMOVED` re-runs discovery (`PACKAGE_REMOVED` also fires
   during an update). Discovery also runs when PebbleNTN returns to the foreground.

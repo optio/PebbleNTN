@@ -31,12 +31,13 @@ class SetupProgressTest {
     }
 
     @Test
-    fun anAppThatWasInstalledBeforeComesFirstAmongTheNotInstalled() {
+    fun anUninstalledAppIsListedInItsAlphabeticalPlace() {
         val catalog = NavigationAppCatalog.parse(
             javaClass.getResourceAsStream("/catalog/navigation-apps.json")!!.bufferedReader().use { it.readText() },
         )
-        val list = supportedNotInstalled(catalog, installedAppIds = setOf("google-maps"), noLongerInstalledAppIds = setOf("amap"))
-        assertEquals("amap", list.first().appId)
-        assertEquals(1, list.count { it.appId == "amap" })
+        // #88: Amap was installed before; it is listed like any app that isn't installed.
+        val captureOnly = supportedNotInstalled(catalog, installedAppIds = setOf("google-maps")).filterNot { it.hasOfficialRules }
+        assertTrue(captureOnly.any { it.appId == "amap" })
+        assertEquals(captureOnly.sortedBy { it.displayName.lowercase() }, captureOnly)
     }
 }

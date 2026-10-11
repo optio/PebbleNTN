@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** An uninstalled app is listed as no longer installed, not hidden and not shown as installed. */
+/** An uninstalled app is listed under "Also supported" like any other, not under Installed (#88). */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w411dp-h891dp")
 class NavigationAppsScreenTest {
@@ -41,18 +41,17 @@ class NavigationAppsScreenTest {
     private fun entry(id: String, name: String) = NavigationAppEntry(id, name, listOf("pkg.$id"), false, true, true)
 
     @Test
-    fun anUninstalledAppIsLabelledNoLongerInstalled() {
+    fun anUninstalledAppIsListedUnderAlsoSupportedWithoutALabel() {
         compose.setContent {
             NavigationAppsScreen(
                 apps = listOf(AppEnablement("osmand", "OsmAnd", listOf("net.osmand"), enabled = true, captureOnly = true)),
                 onToggle = { _, _ -> },
                 onBack = {},
                 notInstalled = listOf(entry("amap", "Amap (Gaode)"), entry("baidu", "Baidu Maps")),
-                noLongerInstalled = setOf("amap"),
             )
         }
+        compose.onNodeWithText("Also supported").assertExists()
         compose.onNodeWithText("Amap (Gaode)").assertExists()
-        // Only Amap carries the label; Baidu was never installed.
-        compose.onAllNodesWithText("No longer installed").assertCountEquals(1)
+        compose.onAllNodesWithText("No longer installed").assertCountEquals(0)
     }
 }

@@ -225,8 +225,7 @@ class MainActivity : ComponentActivity() {
                 val navigationApps by container.enabledAppRepository.observeEnablement()
                     .collectAsState(initial = emptyList())
                 // An uninstalled app keeps its row; it is listed with the apps that aren't installed.
-                val (installedApps, uninstalledApps) = navigationApps.partition { it.installed }
-                val noLongerInstalled = uninstalledApps.map { it.appId }.toSet()
+                val installedApps = navigationApps.filter { it.installed }
                 NavigationAppsScreen(
                     apps = installedApps,
                     onToggle = ::setNavigationAppEnabled,
@@ -234,9 +233,7 @@ class MainActivity : ComponentActivity() {
                     notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(
                         container.catalog,
                         installedApps.map { it.appId }.toSet(),
-                        noLongerInstalled,
                     ),
-                    noLongerInstalled = noLongerInstalled,
                     onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
                     onViewRules = { appId -> navController.navigate("rules?app=$appId") },
                     languagesByApp = rulesViewModel.languagesByApp,
