@@ -235,6 +235,9 @@ private fun TechnicalDetails(event: DebugEvent) {
     event.snapshot?.let { snap ->
         Field(stringResource(R.string.debug_field_category), snap.category)
         Field(stringResource(R.string.debug_field_channel), snap.channelId)
+        // What the large-icon recognizer made of the icon (#74, #83).
+        Field(stringResource(R.string.debug_field_icon_drawable), snap.iconDrawable)
+        Field(stringResource(R.string.debug_field_icon_match), snap.iconMatch)
     }
     // The versions it was recorded with (#84); absent on events from before they were stored.
     Field(stringResource(R.string.debug_field_pebblentn_version), versionLabel(event.versions.appVersionName, event.versions.appVersionCode))

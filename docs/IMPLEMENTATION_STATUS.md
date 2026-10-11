@@ -2,6 +2,30 @@
 
 _Last updated: 2026-10-11_
 
+## Google Maps classic card: no blank watch without an icon match (#83) (2026-10-11)
+
+**Finding:** a user's privacy-safe export (German, Android 15) had 500 Google Maps classic cards,
+all unmatched and all with `iconMatch` null, so the watch stayed blank for the whole drive.
+- **Not R8:** a minified release build (made debuggable locally, not committed) on the capture
+  emulator recognised Google Maps 26.14's icons (`maneuver_on_ramp_normal_left 3.1`, …), and
+  recorded the #84 versions per event correctly.
+- **The drive predates v0.0.59:** it was recorded on 2026-10-11 12:06–12:21 UTC, after v0.0.58 but
+  before v0.0.59 (15:56), so on 0.0.58 or older; the export only names the version at export time.
+  #84 now records the version per event, so the next log will say.
+
+**Changes:**
+- **Fallback arrow:** `google-maps-icon-step` no longer requires `iconDrawable`. A classic card
+  without a matched icon shows distance, road and ETA with the fallback glyph (UNKNOWN), as
+  CoMaps and Organic Maps already do (`google-maps-any-2026.10.11`).
+- **Failures are kept:** an exception in the recognizer becomes the diagnostic
+  `error: <type>: <message>` (message cut at 120 characters) instead of nothing.
+- **Event detail:** the technical details show the matched icon and the match diagnostic.
+- **Fixtures:** `classic-no-icon-no-match` became `classic-no-icon-fallback-arrow`; two German
+  classic cards from the export (redacted, NBSP kept) added.
+
+**Not done:** collapsing near-identical unmatched events so a full drive fits the 500-event
+history; left for later.
+
 ## Versions recorded per debug event (#84; REQ-DEBUG-012) (2026-10-11)
 
 **Why:** a shared log (#83) couldn't be tied to the Google Maps build it came from, and the export
