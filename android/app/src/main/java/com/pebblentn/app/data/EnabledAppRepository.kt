@@ -6,7 +6,8 @@ import com.pebblentn.app.core.EpochClock
 import com.pebblentn.app.data.db.AppEnablementDao
 import com.pebblentn.app.data.db.SupportedAppSettingsEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 
 /**
  * Owns which navigation apps are enabled, and answers the allowlist question for the listener.
@@ -28,15 +29,24 @@ class EnabledAppRepository(
 
     override fun isEnabled(packageName: String): Boolean = packageName in enabledPackages
 
+    /**
+     * The catalog packages installed at the last [syncInstalledApps]; null before the first one. A
+     * row outlives its app on purpose (the user's choice returns with a reinstall); the settings UI
+     * lists such an app as no longer installed.
+     */
+    private val installedPackages = MutableStateFlow<Set<String>?>(null)
+
     /** Snapshot of the currently enabled package names (for diagnostics/tests). */
     val enabledPackageSnapshot: Set<String> get() = enabledPackages
 
     /**
      * Ensure every installed catalog app has a settings row, defaulting to its catalog
      * `defaultEnabled` on first discovery (REQ-ANDROID-004). Existing rows are left untouched so a
-     * user's later choice is never overwritten. Non-installed apps get no row.
+     * user's later choice is never overwritten. Non-installed apps get no row, and an uninstalled
+     * app keeps its row and is reported with `installed = false`.
      */
     suspend fun syncInstalledApps(installedPackages: Set<String>) {
+        this.installedPackages.value = installedPackages
         val now = clock.nowMillis()
         for (entry in catalog.apps) {
             if (entry.packageNames.any { it in installedPackages }) {
@@ -70,9 +80,12 @@ class EnabledAppRepository(
             .toSet()
     }
 
-    /** Stored, enablement for catalog apps that have been discovered, for the settings UI. */
+    /**
+     * Stored enablement of the discovered catalog apps, each marked installed or not, for the
+     * settings UI. Before the first sync every app counts as installed, as nothing is known yet.
+     */
     fun observeEnablement(): Flow<List<AppEnablement>> =
-        dao.observeAll().map { rows ->
+        combine(dao.observeAll(), installedPackages) { rows, installed ->
             val byAppId = rows.associateBy { it.appId }
             catalog.apps.mapNotNull { entry ->
                 val row = byAppId[entry.appId] ?: return@mapNotNull null
@@ -82,6 +95,7 @@ class EnabledAppRepository(
                     packageNames = entry.packageNames,
                     enabled = row.enabled,
                     captureOnly = entry.captureOnly,
+                    installed = installed == null || entry.packageNames.any { it in installed },
                 )
             }
         }

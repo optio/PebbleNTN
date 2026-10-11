@@ -29,4 +29,15 @@ class SetupProgressTest {
         assertEquals(listOf("comaps", "organic-maps", "osmand"), withDirections)
         assertTrue("then capture-only apps", list.drop(withDirections.size).none { it.hasOfficialRules })
     }
+
+    @Test
+    fun anUninstalledAppIsListedInItsAlphabeticalPlace() {
+        val catalog = NavigationAppCatalog.parse(
+            javaClass.getResourceAsStream("/catalog/navigation-apps.json")!!.bufferedReader().use { it.readText() },
+        )
+        // #88: Amap was installed before; it is listed like any app that isn't installed.
+        val captureOnly = supportedNotInstalled(catalog, installedAppIds = setOf("google-maps")).filterNot { it.hasOfficialRules }
+        assertTrue(captureOnly.any { it.appId == "amap" })
+        assertEquals(captureOnly.sortedBy { it.displayName.lowercase() }, captureOnly)
+    }
 }

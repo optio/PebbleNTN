@@ -2,6 +2,25 @@
 
 _Last updated: 2026-10-11_
 
+## Uninstalled navigation apps listed as no longer installed (#88) (2026-10-11)
+
+**Bug:** Amap, uninstalled, still showed under Installed (no icon, switch on), and the dashboard
+counted it. Discovery creates a settings row per installed catalog app and never revisits it;
+the install receiver ignored uninstalls.
+
+**Fix:**
+- **Rows are kept** so the on/off choice returns with a reinstall; `AppEnablement.installed`
+  says whether the app was installed at the last discovery.
+- **Navigation apps screen:** Installed lists installed apps only; an uninstalled one is listed
+  under Also supported like any app that isn't installed, in its usual order (directions first,
+  then alphabetical), without a label.
+- **Dashboard:** counts installed apps only.
+- **Receiver:** `ACTION_PACKAGE_FULLY_REMOVED` re-runs discovery (`PACKAGE_REMOVED` also fires
+  during an update). Discovery also runs when PebbleNTN returns to the foreground.
+
+**Tests:** repository (not installed, choice kept on reinstall, any package keeps it installed),
+receiver, catalog order, `NavigationAppsScreenTest` (Compose).
+
 ## Debug history groups repeated notifications; retention 1000 (#86; REQ-DEBUG-013) (2026-10-11)
 
 **Why:** in #83's log, 500 events held a quarter of an hour of driving. Google Maps reposts its

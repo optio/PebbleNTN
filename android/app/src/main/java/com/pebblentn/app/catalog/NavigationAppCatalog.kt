@@ -72,7 +72,8 @@ data class NavigationAppCatalog(
 
 /**
  * Supported apps that aren't installed, for the navigation-apps screen (#28): apps with directions
- * first, then by name. PebbleNTN's own debug fixture app is never offered.
+ * first, then by name. An uninstalled app is listed like any other (#88). PebbleNTN's own debug
+ * fixture app is never offered.
  */
 fun supportedNotInstalled(catalog: NavigationAppCatalog, installedAppIds: Set<String>): List<NavigationAppEntry> =
     catalog.apps

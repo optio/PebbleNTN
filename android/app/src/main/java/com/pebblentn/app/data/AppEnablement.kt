@@ -11,4 +11,6 @@ data class AppEnablement(
     val packageNames: List<String>,
     val enabled: Boolean,
     val captureOnly: Boolean,
+    /** False once the app is uninstalled: its row (and the user's choice) is kept for a reinstall. */
+    val installed: Boolean = true,
 )
