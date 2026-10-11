@@ -1,5 +1,6 @@
 package com.pebblentn.app.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -37,4 +38,14 @@ data class NotificationDebugEventEntity(
     /** The navigation app's version when the event was recorded (#84); null when unknown. */
     val sourceAppVersionName: String? = null,
     val sourceAppVersionCode: Long? = null,
+    /**
+     * Consecutive repeats of the same card (#86): the grouping key ([com.pebblentn.app.data.DebugEventGrouping]),
+     * how many notifications the row stands for, and the latest one's times and snapshot. The row's own
+     * timestamps and snapshot are the first occurrence. Null / 1 on rows from before schema v8.
+     */
+    val groupKey: String? = null,
+    @ColumnInfo(defaultValue = "1") val occurrences: Int = 1,
+    val lastEventTimestamp: Long? = null,
+    val lastReceivedTimestamp: Long? = null,
+    val lastSnapshotJson: String? = null,
 )

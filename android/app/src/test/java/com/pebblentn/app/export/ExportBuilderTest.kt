@@ -97,7 +97,7 @@ class ExportBuilderTest {
                 builder.build(mode, emptyList(), listOf(recorded), appVersion = "0.0.60", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z", appVersionCode = 60),
             ).jsonObject
             val metadata = root.getValue("metadata").jsonObject
-            assertEquals(2L, metadata.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals(3L, metadata.getValue("schemaVersion").jsonPrimitive.long)
             assertEquals(60L, metadata.getValue("appVersionCode").jsonPrimitive.long)
             // Version strings are not personal data: privacy-safe keeps them unredacted.
             val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject
@@ -118,5 +118,38 @@ class ExportBuilderTest {
         val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject
         assertEquals("null", versions.getValue("sourceAppVersion").toString())
         assertTrue(versions.getValue("rulesetVersions").jsonArray.isEmpty())
+    }
+
+    @Test
+    fun aGroupedEventExportsItsCountTimesAndRedactedLatestExample() {
+        val grouped = event.copy(
+            eventTimestampMillis = 1_000,
+            occurrences = 37,
+            lastEventTimestampMillis = 90_000,
+            lastReceivedTimestampMillis = 90_010,
+            lastSnapshot = event.snapshot!!.copy(text = "In 100 m onto Oak Avenue"),
+        )
+        val safe = Json.parseToJsonElement(
+            builder.build(ExportMode.PRIVACY_SAFE, emptyList(), listOf(grouped), appVersion = "0.0.61", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z"),
+        ).jsonObject.getValue("events").jsonArray.single().jsonObject
+        assertEquals(37L, safe.getValue("occurrences").jsonPrimitive.long)
+        assertEquals(1_000L, safe.getValue("firstSeenMillis").jsonPrimitive.long)
+        assertEquals(90_000L, safe.getValue("lastSeenMillis").jsonPrimitive.long)
+        val lastText = safe.getValue("lastSnapshot").jsonObject.getValue("text").jsonPrimitive.content
+        assertFalse("the latest example is redacted like the first", lastText.contains("Oak"))
+        assertTrue(lastText.contains("100 m"))
+
+        val full = Json.parseToJsonElement(
+            builder.build(ExportMode.FULL, emptyList(), listOf(grouped), appVersion = "0.0.61", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z"),
+        ).jsonObject.getValue("events").jsonArray.single().jsonObject
+        assertEquals("In 100 m onto Oak Avenue", full.getValue("lastSnapshot").jsonObject.getValue("text").jsonPrimitive.content)
+    }
+
+    @Test
+    fun aSingleEventExportsOneOccurrenceSeenOnce() {
+        val single = Json.parseToJsonElement(build(ExportMode.PRIVACY_SAFE)).jsonObject.getValue("events").jsonArray.single().jsonObject
+        assertEquals(1L, single.getValue("occurrences").jsonPrimitive.long)
+        assertEquals(single.getValue("firstSeenMillis"), single.getValue("lastSeenMillis"))
+        assertEquals("null", single.getValue("lastSnapshot").toString())
     }
 }

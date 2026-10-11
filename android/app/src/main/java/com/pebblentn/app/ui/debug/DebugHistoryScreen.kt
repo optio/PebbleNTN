@@ -238,11 +238,23 @@ private fun DebugEventRow(event: DebugEvent, appName: String, onClick: () -> Uni
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val timeFormat = DateFormat.getTimeInstance(DateFormat.SHORT)
+            val first = timeFormat.format(Date(event.receivedTimestampMillis))
+            // A grouped event (#86) spans from its first to its latest occurrence.
+            val time = event.lastReceivedTimestampMillis?.let {
+                stringResource(R.string.debug_time_range, first, timeFormat.format(Date(it)))
+            } ?: first
             Text(
-                text = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(event.receivedTimestampMillis)),
+                text = time,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
+            if (event.occurrences > 1) {
+                Text(
+                    text = stringResource(R.string.debug_occurrences_short, event.occurrences),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
             StatusBadge(event)
         }
         // Its own line, so a long app name never gets squeezed between the time and the badge.

@@ -30,7 +30,7 @@ Processing SHALL be serialized per application process and SHALL not block the m
 The app SHALL be event-driven and SHALL NOT poll notification state, Pebble connection, or GPS continuously.
 
 ## REQ-ANDROID-008 — Debug retention
-Default eligible-event retention SHALL be 500 with configurable limits and delete-all.
+Default eligible-event retention SHALL be 1000 events with configurable limits and delete-all. The limit counts stored events; consecutive repeats of the same card are one event (REQ-DEBUG-013).
 
 ## REQ-ANDROID-009 — Settings
 Settings SHALL include per-app enablement, auto-launch, return-to-watchface, vibration, optional backlight, retention and export privacy default.

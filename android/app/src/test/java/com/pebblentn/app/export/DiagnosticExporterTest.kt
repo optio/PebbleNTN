@@ -91,7 +91,7 @@ class DiagnosticExporterTest {
                         packageName = "com.waze",
                         notificationId = 500_000 + i,
                         title = "Turn right",
-                        text = "onto Some Street $i",
+                        text = "onto Some Street " + ('A' + i / 26) + ('A' + i % 26), // distinct cards: digits alone would group (#86)
                     ),
                     notificationKey = "k$i",
                     tag = null,

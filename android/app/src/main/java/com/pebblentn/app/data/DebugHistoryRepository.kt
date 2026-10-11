@@ -28,10 +28,14 @@ class DebugHistoryRepository(
     @Volatile
     var retentionLimit: Int = DEFAULT_RETENTION
 
+    /** How many events an export can hold: the retention, or all of them when unlimited. */
+    val exportLimit: Int get() = retentionLimit.takeIf { it > 0 } ?: Int.MAX_VALUE
+
     /** Record an eligible post, optionally with the rule [evaluation] that ran against it. */
     suspend fun recordPosted(event: PostedNotification, evaluation: RuleEvaluation? = null): Long {
         val snapshot = event.snapshot
         val recorded = runCatching { versions.forPackage(snapshot.packageName) }.getOrDefault(EventVersions())
+        val disposition = dispositionFor(evaluation, snapshot)
         val entity = NotificationDebugEventEntity(
             eventTimestamp = snapshot.postTimeMillis,
             receivedTimestamp = event.receivedAtMillis,
@@ -50,15 +54,17 @@ class DebugHistoryRepository(
             traceJson = evaluation?.let {
                 json.encodeToString(ListSerializer(RuleTraceEntry.serializer()), it.trace)
             },
-            disposition = dispositionFor(evaluation, snapshot),
+            disposition = disposition,
             transportStatus = null,
             privacyClassification = PrivacyClassification.RAW,
             appVersionName = recorded.appVersionName,
             appVersionCode = recorded.appVersionCode,
             sourceAppVersionName = recorded.sourceAppVersionName,
             sourceAppVersionCode = recorded.sourceAppVersionCode,
+            groupKey = DebugEventGrouping.key(snapshot, disposition, evaluation?.matchedRuleId, recorded),
         )
-        return dao.insertAndTrim(entity, retentionLimit)
+        // A repeat of the latest event's card only counts one more occurrence (#86).
+        return dao.insertOrGroup(entity, retentionLimit)
     }
 
     /**
@@ -98,6 +104,9 @@ class DebugHistoryRepository(
         val instruction = entity.extractionJson?.let {
             runCatching { json.decodeFromString(NavigationInstruction.serializer(), it) }.getOrNull()
         }
+        val lastSnapshot = entity.lastSnapshotJson?.let {
+            runCatching { json.decodeFromString(NotificationSnapshot.serializer(), it) }.getOrNull()
+        }
         val trace = entity.traceJson?.let {
             runCatching { json.decodeFromString(ListSerializer(RuleTraceEntry.serializer()), it) }.getOrNull()
         }.orEmpty()
@@ -119,12 +128,16 @@ class DebugHistoryRepository(
                 sourceAppVersionCode = entity.sourceAppVersionCode,
                 rulesetVersions = entity.activeRulesetVersions,
             ),
+            occurrences = entity.occurrences,
+            lastEventTimestampMillis = entity.lastEventTimestamp,
+            lastReceivedTimestampMillis = entity.lastReceivedTimestamp,
+            lastSnapshot = lastSnapshot,
         )
     }
 
     companion object {
         const val UNLIMITED = 0
-        const val DEFAULT_RETENTION = 500
+        const val DEFAULT_RETENTION = 1000
         const val DEFAULT_PAGE = 200
 
         /** Retention choices offered in settings (REQ-ANDROID-008). */

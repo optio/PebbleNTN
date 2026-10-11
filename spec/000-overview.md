@@ -38,7 +38,7 @@ The watch does not parse Android notifications and does not calculate routes.
 - Users may disable any app.
 - Google Maps has official parsing rules initially.
 - Organic Maps, OsmAnd, HERE WeGo, and Waze may be listed for capture-only mode when installed; no correct extraction is claimed until official rules exist.
-- Debug retention defaults to 500 eligible notification events.
+- Debug retention defaults to 1000 eligible notification events; consecutive repeats of the same card count as one.
 - Automatic watchapp launch on navigation-session start is enabled.
 - Automatic return to watchface when navigation ends is enabled.
 - Automatic remote rule checks are disabled in the initial public version.

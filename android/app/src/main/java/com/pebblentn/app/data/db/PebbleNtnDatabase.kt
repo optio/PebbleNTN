@@ -23,7 +23,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NavigationStateEntity::class,
         OfficialRulesetEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class PebbleNtnDatabase : RoomDatabase() {
@@ -142,7 +142,18 @@ abstract class PebbleNtnDatabase : RoomDatabase() {
             }
         }
 
+        /** Groups consecutive repeats of the same card into one debug event (#86). */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `groupKey` TEXT")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `occurrences` INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `lastEventTimestamp` INTEGER")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `lastReceivedTimestamp` INTEGER")
+                db.execSQL("ALTER TABLE `notification_debug_event` ADD COLUMN `lastSnapshotJson` TEXT")
+            }
+        }
+
         val ALL_MIGRATIONS: Array<Migration> =
-            arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
     }
 }

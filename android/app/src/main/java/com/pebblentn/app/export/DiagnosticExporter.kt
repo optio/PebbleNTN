@@ -37,7 +37,7 @@ class DiagnosticExporter(
 ) {
     suspend fun build(mode: ExportMode): String {
         val rules = userRules.observeUserRules().first().mapNotNull { it.rule }
-        val events = if (mode == ExportMode.RULES_ONLY) emptyList() else debugHistory.observeRecent().first()
+        val events = if (mode == ExportMode.RULES_ONLY) emptyList() else debugHistory.observeRecent(debugHistory.exportLimit).first()
         return builder.build(
             mode = mode,
             userRules = rules,
@@ -61,7 +61,7 @@ class DiagnosticExporter(
         val allEvents = when {
             mode == ExportMode.RULES_ONLY -> emptyList()
             onlyEventId != null -> listOfNotNull(debugHistory.getById(onlyEventId))
-            else -> debugHistory.observeRecent(DebugHistoryRepository.DEFAULT_RETENTION).first()
+            else -> debugHistory.observeRecent(debugHistory.exportLimit).first()
         }
         val exportedAt = now()
 

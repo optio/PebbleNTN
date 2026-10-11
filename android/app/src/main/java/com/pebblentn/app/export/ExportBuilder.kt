@@ -20,7 +20,7 @@ enum class ExportMode {
 
 @Serializable
 data class ExportMetadata(
-    /** 2 adds [appVersionCode] and the per-event versions (#84). */
+    /** 2 adds [appVersionCode] and the per-event versions (#84); 3 the grouped occurrences (#86). */
     val schemaVersion: Int = SCHEMA_VERSION,
     val mode: String,
     val exportedAt: String,
@@ -35,7 +35,7 @@ data class ExportMetadata(
     val locale: String = "und",
 ) {
     companion object {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 3
     }
 }
 
@@ -74,8 +74,17 @@ data class ExportedEvent(
     val disposition: String,
     val matchedRuleId: String? = null,
     val versions: ExportedVersions = ExportedVersions(),
+    /**
+     * Consecutive notifications of the same card, grouped into this event (#86): how many, when the
+     * first and the latest were posted, and the latest one ([snapshot] is the first). [lastSnapshot]
+     * is null when it occurred once.
+     */
+    val occurrences: Int = 1,
+    val firstSeenMillis: Long? = null,
+    val lastSeenMillis: Long? = null,
     val watchOutput: ExportedWatchOutput? = null,
     val snapshot: NotificationSnapshot? = null,
+    val lastSnapshot: NotificationSnapshot? = null,
 )
 
 @Serializable
@@ -122,6 +131,7 @@ class ExportBuilder(
 
     private fun toExported(event: DebugEvent, redact: Boolean): ExportedEvent {
         val snapshot = event.snapshot?.let { if (redact) redactor.redact(it) else it }
+        val lastSnapshot = event.lastSnapshot?.let { if (redact) redactor.redact(it) else it }
         // The maneuver and distance are already normalized (no free text), so they survive
         // redaction; the road text came from the notification and must not.
         val watchOutput = event.instruction?.let {
@@ -147,8 +157,12 @@ class ExportBuilder(
                     rulesetVersions = it.rulesetVersions?.split(',')?.filter(String::isNotBlank).orEmpty(),
                 )
             },
+            occurrences = event.occurrences,
+            firstSeenMillis = event.eventTimestampMillis,
+            lastSeenMillis = event.lastEventTimestampMillis ?: event.eventTimestampMillis,
             watchOutput = watchOutput,
             snapshot = snapshot,
+            lastSnapshot = lastSnapshot,
         )
     }
 }
