@@ -28,7 +28,7 @@ Privacy-safe export replaces:
 
 It preserves structural tokens, units, punctuation and anonymized placeholders so maintainers can write rules.
 
-## Versions (schema 2)
+## Versions (schema 2+)
 
 `metadata` carries `schemaVersion` (2), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
 
@@ -43,3 +43,7 @@ It preserves structural tokens, units, punctuation and anonymized placeholders s
 ```
 
 The navigation app's version ties a log to the build whose notification texts, layouts and drawables it shows; the per-event PebbleNTN version matters because the history survives app updates. Version strings are not personal data and are kept unredacted in privacy-safe exports. Events recorded before schema 2 have null versions and an empty ruleset list.
+
+## Grouped occurrences (schema 3)
+
+Consecutive repeats of the same card are one event (REQ-DEBUG-013). Each event carries `occurrences` (1 when it occurred once), `firstSeenMillis` and `lastSeenMillis` (the first and latest post times), and `lastSnapshot`, the latest notification (null when it occurred once). `snapshot` stays the first notification. In privacy-safe mode `lastSnapshot` is redacted exactly like `snapshot`. An export includes as many events as the debug retention keeps (all of them when unlimited), still trimmed to the newest events that fit the 10 MB attachment cap.

@@ -30,6 +30,10 @@
 - privacy classification
 - PebbleNTN version name and code, nullable (schema v7, REQ-DEBUG-012)
 - source navigation app version name and code, nullable (schema v7, REQ-DEBUG-012)
+- group key, occurrence count (default 1), latest event and received timestamps, latest snapshot JSON (schema v8, REQ-DEBUG-013)
+
+#### Grouping (REQ-DEBUG-013)
+A new event whose group key equals the most recently updated event's key is not inserted: that event's occurrence count is incremented and its latest timestamps and snapshot are replaced, in one transaction. The key is a SHA-256 of the package, channel, category and template, the text fields with every number replaced by `N`, the matched icon and the icon-match diagnostic (numbers replaced), the disposition and matched rule, and the PebbleNTN, navigation-app and ruleset versions. Only consecutive repeats group. Events order and trim by their latest received time.
 
 ### `user_rule`
 - rule ID primary key
@@ -60,7 +64,7 @@
 
 ## Retention
 
-Default debug retention is 500 eligible events. The user may select 50, 100, 500, 1,000, or unlimited with a warning. Retention cleanup occurs transactionally after insert and through periodic maintenance.
+Default debug retention is 1,000 eligible events. The user may select 50, 100, 500, 1,000, or unlimited with a warning. Consecutive repeats of the same card are one event (see grouping below), so the limit counts distinct cards in a row, not raw notifications. Retention cleanup occurs transactionally after insert and through periodic maintenance.
 
 ## Privacy
 

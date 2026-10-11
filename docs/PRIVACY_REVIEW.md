@@ -34,7 +34,7 @@ verified in code. It complements the normative requirements in `requirements/REQ
   disabled for that run and traced (`ConditionEvaluatorTest`, `RuleEngineTest`).
 - **Bounded rules per package**: `RuleEngine.MAX_RULES_PER_PACKAGE = 500`
   (`RuleEngineTest.evaluationIsBoundedByMaxRulesPerPackage`).
-- **Bounded debug retention** (REQ-ANDROID-008): default 500, transactional trim.
+- **Bounded debug retention** (REQ-ANDROID-008): default 1000 events (consecutive repeats of a card are one event, #86), transactional trim.
 
 ## Residual items (tracked)
 

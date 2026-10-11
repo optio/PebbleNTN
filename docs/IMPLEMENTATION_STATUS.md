@@ -2,6 +2,34 @@
 
 _Last updated: 2026-10-11_
 
+## Debug history groups repeated notifications; retention 1000 (#86; REQ-DEBUG-013) (2026-10-11)
+
+**Why:** in #83's log, 500 events held a quarter of an hour of driving. Google Maps reposts its
+card every few seconds with a new distance: 406 of the 500 were distinct, but only 22 once numbers
+are ignored. The export was also capped at 500 events (`buildCapped`) or 200 (`build`), whatever
+the retention.
+
+**Android:**
+- **Grouping:** `DebugEventGrouping.key` hashes the package, channel, category, template, the
+  text fields with numbers replaced, the icon result (numbers replaced), the disposition and
+  matched rule, and the #84 versions. `DebugEventDao.insertOrGroup` adds one occurrence to the
+  latest event when the key matches, keeping the first snapshot and the latest one, in one
+  transaction. Only consecutive repeats group; a change of unit ("2,6 km" → "900 m") starts a new
+  event.
+- **Room v8** (`MIGRATION_7_8`): `groupKey`, `occurrences` (default 1), `lastEventTimestamp`,
+  `lastReceivedTimestamp`, `lastSnapshotJson`. Ordering and trimming use the latest received time.
+- **Retention:** the default goes from 500 to 1000 events; the limit counts events (groups).
+- **Export schema 3:** `occurrences`, `firstSeenMillis`, `lastSeenMillis`, `lastSnapshot`
+  (redacted like `snapshot`). Both export paths follow the retention.
+- **UI:** the history row shows the time span and "×N"; the detail shows the count, last seen and
+  the latest title, text, sub text and big text.
+
+**Note:** the dashboard's "share to help" count now counts unmatched events, that is groups.
+
+**Spec:** REQ-DEBUG-013, REQ-ANDROID-008 (1000), `Database.md`, `ExportFormat.md`,
+`000-overview.md`, `PRIVACY_REVIEW.md`; manifest refreshed.
+`docs/PebbleNTN-Consolidated-Spec.md` is a July snapshot and was left as is.
+
 ## Google Maps classic card: no blank watch without an icon match (#83) (2026-10-11)
 
 **Finding:** a user's privacy-safe export (German, Android 15) had 500 Google Maps classic cards,

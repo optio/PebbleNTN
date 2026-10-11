@@ -232,6 +232,22 @@ private fun TechnicalDetails(event: DebugEvent) {
         stringResource(R.string.debug_field_received),
         DateFormat.getDateTimeInstance().format(Date(event.receivedTimestampMillis)),
     )
+    // Consecutive repeats of the same card grouped into this event (#86): the latest one's fields.
+    if (event.occurrences > 1) {
+        Field(
+            stringResource(R.string.debug_field_occurrences),
+            pluralStringResource(R.plurals.debug_occurrences, event.occurrences, event.occurrences),
+        )
+        event.lastReceivedTimestampMillis?.let {
+            Field(stringResource(R.string.debug_field_last_seen), DateFormat.getDateTimeInstance().format(Date(it)))
+        }
+        event.lastSnapshot?.let { last ->
+            Field(stringResource(R.string.debug_field_latest_title), last.title)
+            Field(stringResource(R.string.debug_field_latest_text), last.text)
+            Field(stringResource(R.string.debug_field_latest_subtext), last.subText)
+            Field(stringResource(R.string.debug_field_latest_bigtext), last.bigText)
+        }
+    }
     event.snapshot?.let { snap ->
         Field(stringResource(R.string.debug_field_category), snap.category)
         Field(stringResource(R.string.debug_field_channel), snap.channelId)

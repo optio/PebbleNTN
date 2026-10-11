@@ -125,6 +125,14 @@
     <string name="debug_field_bigtext">Big text</string>
     <string name="debug_field_category">Category</string>
     <string name="debug_field_channel">Channel</string>
+    <string name="debug_time_range">%1$s – %2$s</string>
+    <string name="debug_occurrences_short">×%1$d</string>
+    <string name="debug_field_occurrences">Repeated</string>
+    <string name="debug_field_last_seen">Last seen</string>
+    <string name="debug_field_latest_title">Latest title</string>
+    <string name="debug_field_latest_text">Latest text</string>
+    <string name="debug_field_latest_subtext">Latest sub text</string>
+    <string name="debug_field_latest_bigtext">Latest big text</string>
     <string name="debug_field_icon_drawable">Icon</string>
     <string name="debug_field_icon_match">Icon match</string>
     <string name="debug_field_pebblentn_version">PebbleNTN version</string>
@@ -284,6 +292,10 @@
     <string name="debug_filter_empty">No events match these filters.</string>
     <string name="debug_today">Today</string>
     <string name="debug_yesterday">Yesterday</string>
+    <plurals name="debug_occurrences">
+        <item quantity="one">Seen %1$d time in a row</item>
+        <item quantity="other">Seen %1$d times in a row</item>
+    </plurals>
     <plurals name="debug_day_count">
         <item quantity="one">%1$d event</item>
         <item quantity="other">%1$d events</item>

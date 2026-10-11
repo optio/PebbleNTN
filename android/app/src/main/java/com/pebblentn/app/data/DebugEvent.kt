@@ -50,4 +50,13 @@ data class DebugEvent(
     val trace: List<RuleTraceEntry> = emptyList(),
     /** The PebbleNTN, navigation-app and ruleset versions it was recorded with (#84). */
     val versions: EventVersions = EventVersions(),
+    /**
+     * How many consecutive notifications of the same card this event stands for (#86). The event's
+     * own timestamps and [snapshot] are the first; the `last*` fields are the latest, null when it
+     * occurred once.
+     */
+    val occurrences: Int = 1,
+    val lastEventTimestampMillis: Long? = null,
+    val lastReceivedTimestampMillis: Long? = null,
+    val lastSnapshot: NotificationSnapshot? = null,
 )

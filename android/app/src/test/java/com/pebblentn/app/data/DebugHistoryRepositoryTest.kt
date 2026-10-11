@@ -44,6 +44,9 @@ class DebugHistoryRepositoryTest {
             receivedAtMillis = at,
         )
 
+    /** A different card per index: digits would group (#86), letters don't. */
+    private fun distinctTitle(i: Int) = "Turn " + ('A' + i / 26) + ('A' + i % 26)
+
     @Test
     fun storesAndReadsBackSnapshot() = runTest {
         repo.recordPosted(event("com.google.android.apps.maps", at = 100, title = "Turn left"))
@@ -82,6 +85,70 @@ class DebugHistoryRepositoryTest {
     }
 
     @Test
+    fun consecutiveRepeatsOfACardBecomeOneEventWithACount() = runTest {
+        val first = repo.recordPosted(event("com.google.android.apps.maps", at = 10, title = "300 m"))
+        val second = repo.recordPosted(event("com.google.android.apps.maps", at = 20, title = "200 m"))
+        val third = repo.recordPosted(event("com.google.android.apps.maps", at = 30, title = "100 m"))
+        assertEquals(first, second)
+        assertEquals(first, third)
+        assertEquals(1, repo.count())
+        val grouped = repo.getById(first)!!
+        assertEquals(3, grouped.occurrences)
+        // The event keeps its first notification and adds the latest.
+        assertEquals("300 m", grouped.snapshot?.title)
+        assertEquals(10L, grouped.receivedTimestampMillis)
+        assertEquals("100 m", grouped.lastSnapshot?.title)
+        assertEquals(30L, grouped.lastReceivedTimestampMillis)
+        assertEquals(30L, grouped.lastEventTimestampMillis)
+    }
+
+    @Test
+    fun aSingleEventHasNoLatestExample() = runTest {
+        val id = repo.recordPosted(event("com.waze", at = 1))
+        val single = repo.getById(id)!!
+        assertEquals(1, single.occurrences)
+        assertNull(single.lastSnapshot)
+        assertNull(single.lastReceivedTimestampMillis)
+    }
+
+    @Test
+    fun aRepeatAfterAnotherCardIsNotGrouped() = runTest {
+        repo.recordPosted(event("com.google.android.apps.maps", at = 10, title = "Turn left"))
+        repo.recordPosted(event("com.google.android.apps.maps", at = 20, title = "Turn right"))
+        repo.recordPosted(event("com.google.android.apps.maps", at = 30, title = "Turn left"))
+        assertEquals(3, repo.count())
+        assertEquals(listOf(1, 1, 1), repo.observeRecent().first().map { it.occurrences })
+    }
+
+    @Test
+    fun aGroupedEventSortsByItsLatestOccurrence() = runTest {
+        repo.recordPosted(event("com.google.android.apps.maps", at = 10, title = "300 m"))
+        repo.recordPosted(event("com.waze", at = 20, title = "Turn left"))
+        // Another Google Maps card arrives later than Waze's: a new event, newest first.
+        repo.recordPosted(event("com.google.android.apps.maps", at = 30, title = "Keep right"))
+        repo.recordPosted(event("com.google.android.apps.maps", at = 40, title = "Keep right"))
+        val order = repo.observeRecent().first().map { it.snapshot?.title to it.occurrences }
+        assertEquals(listOf("Keep right" to 2, "Turn left" to 1, "300 m" to 1), order)
+    }
+
+    @Test
+    fun retentionCountsEventsNotNotifications() = runTest {
+        repo.retentionLimit = 2
+        repeat(5) { i -> repo.recordPosted(event("com.waze", at = i.toLong(), title = "$i m")) } // one card, 5×
+        repo.recordPosted(event("com.waze", at = 10, title = "Turn left"))
+        assertEquals(2, repo.count())
+        assertEquals(listOf(1, 5), repo.observeRecent().first().map { it.occurrences })
+    }
+
+    @Test
+    fun theDefaultRetentionIs1000AndTheExportFollowsIt() {
+        assertEquals(1000, repo.retentionLimit)
+        assertEquals(1000, repo.exportLimit)
+        repo.retentionLimit = DebugHistoryRepository.UNLIMITED
+        assertEquals(Int.MAX_VALUE, repo.exportLimit)
+    }
+
+    @Test
     fun keyAndTagAreStoredHashedNotRaw() = runTest {
         val id = repo.recordPosted(event("com.waze", at = 1, key = "raw-key-123", tag = "raw-tag-abc"))
         val entity = db.debugEventDao().getById(id)!!
@@ -99,7 +166,7 @@ class DebugHistoryRepositoryTest {
     @Test
     fun retentionTrimsOldestBeyondLimit() = runTest {
         repo.retentionLimit = 3
-        repeat(6) { i -> repo.recordPosted(event("com.waze", at = i.toLong())) }
+        repeat(6) { i -> repo.recordPosted(event("com.waze", at = i.toLong(), title = distinctTitle(i))) }
 
         assertEquals(3, repo.count())
         // Newest three (received at 3,4,5) survive; oldest are trimmed.
@@ -110,7 +177,7 @@ class DebugHistoryRepositoryTest {
     @Test
     fun unlimitedRetentionKeepsEverything() = runTest {
         repo.retentionLimit = DebugHistoryRepository.UNLIMITED
-        repeat(10) { i -> repo.recordPosted(event("com.waze", at = i.toLong())) }
+        repeat(10) { i -> repo.recordPosted(event("com.waze", at = i.toLong(), title = distinctTitle(i))) }
         assertEquals(10, repo.count())
     }
 
@@ -135,9 +202,9 @@ class DebugHistoryRepositoryTest {
 
     @Test
     fun nonManeuverCapturesAreNotCountedAsUnmatched() = runTest {
-        // Two real turn instructions (default title "Turn right")...
-        repo.recordPosted(event("com.google.android.apps.maps", at = 1))
-        repo.recordPosted(event("com.google.android.apps.maps", at = 2))
+        // Two real turn instructions...
+        repo.recordPosted(event("com.google.android.apps.maps", at = 1, title = "Turn right"))
+        repo.recordPosted(event("com.google.android.apps.maps", at = 2, title = "Turn left"))
         // ...and two road-name updates that carry no maneuver — the noise that floods real logs.
         repo.recordPosted(event("com.google.android.apps.maps", at = 3, title = "A184"))
         repo.recordPosted(event("com.google.android.apps.maps", at = 4, title = "High Street"))
@@ -149,8 +216,8 @@ class DebugHistoryRepositoryTest {
 
     @Test
     fun deleteByIdAndDeleteAll() = runTest {
-        val id = repo.recordPosted(event("com.waze", at = 1))
-        repo.recordPosted(event("com.waze", at = 2))
+        val id = repo.recordPosted(event("com.waze", at = 1, title = "Turn right"))
+        repo.recordPosted(event("com.waze", at = 2, title = "Turn left"))
         repo.deleteById(id)
         assertEquals(1, repo.count())
         repo.deleteAll()
@@ -159,9 +226,9 @@ class DebugHistoryRepositoryTest {
 
     @Test
     fun recentAreOrderedNewestFirst() = runTest {
-        repo.recordPosted(event("com.waze", at = 10))
-        repo.recordPosted(event("com.waze", at = 30))
-        repo.recordPosted(event("com.waze", at = 20))
+        repo.recordPosted(event("com.waze", at = 10, title = "Turn right"))
+        repo.recordPosted(event("com.waze", at = 30, title = "Turn left"))
+        repo.recordPosted(event("com.waze", at = 20, title = "Keep left"))
         val times = repo.observeRecent().first().map { it.receivedTimestampMillis }
         assertEquals(listOf(30L, 20L, 10L), times)
     }
