@@ -56,6 +56,8 @@ fun NavigationAppsScreen(
     onBack: () -> Unit,
     /** Supported apps that aren't installed (#28), and how to get one by package name. */
     notInstalled: List<NavigationAppEntry> = emptyList(),
+    /** Of those, the apps that were installed before and have been uninstalled: labelled as such. */
+    noLongerInstalled: Set<String> = emptySet(),
     onGetApp: (String) -> Unit = {},
     /** Open an app's official rules, pre-filtered (#28); only offered for apps with rules. */
     onViewRules: (String) -> Unit = {},
@@ -114,7 +116,12 @@ fun NavigationAppsScreen(
                     )
                 }
                 items(notInstalled, key = { "supported-${it.appId}" }) { entry ->
-                    SupportedAppRow(entry, languagesByApp[entry.appId].orEmpty(), onGet = { onGetApp(entry.packageNames.first()) })
+                    SupportedAppRow(
+                        entry,
+                        languagesByApp[entry.appId].orEmpty(),
+                        noLongerInstalled = entry.appId in noLongerInstalled,
+                        onGet = { onGetApp(entry.packageNames.first()) },
+                    )
                     HorizontalDivider()
                 }
             }
@@ -134,11 +141,17 @@ private fun SectionTitle(text: String) {
 
 /** A supported app that isn't installed: what PebbleNTN does with it, and a link to get it. */
 @Composable
-private fun SupportedAppRow(entry: NavigationAppEntry, languages: List<String>, onGet: () -> Unit) {
+private fun SupportedAppRow(entry: NavigationAppEntry, languages: List<String>, noLongerInstalled: Boolean, onGet: () -> Unit) {
     val action = stringResource(R.string.navigation_apps_get, entry.displayName)
     ListItem(
         modifier = Modifier.clickable(role = Role.Button, onClickLabel = action, onClick = onGet),
         headlineContent = { Text(entry.displayName) },
+        // An app that was installed before: say so, so it isn't mistaken for one never set up.
+        overlineContent = if (noLongerInstalled) {
+            { Text(stringResource(R.string.navigation_apps_no_longer_installed)) }
+        } else {
+            null
+        },
         supportingContent = {
             Text(
                 if (entry.hasOfficialRules && languages.isNotEmpty()) {

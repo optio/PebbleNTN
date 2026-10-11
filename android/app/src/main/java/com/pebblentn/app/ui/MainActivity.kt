@@ -150,8 +150,8 @@ class MainActivity : ComponentActivity() {
                     autoLaunch = autoLaunch,
                     onAutoLaunchChange = container::setWatchAutoLaunch,
                     lastSentToWatch = watchStatus.lastSent.takeIf { watchStatus.navigating },
-                    enabledAppCount = discoveredApps.count { it.enabled },
-                    installedAppCount = discoveredApps.size,
+                    enabledAppCount = discoveredApps.count { it.enabled && it.installed },
+                    installedAppCount = discoveredApps.count { it.installed },
                     officialRuleCount = container.bundledOfficialRules.size,
                     userRuleCount = userRuleCount,
                     watchappInstalled = watchappInstalled,
@@ -224,11 +224,19 @@ class MainActivity : ComponentActivity() {
             composable("navigation-apps") {
                 val navigationApps by container.enabledAppRepository.observeEnablement()
                     .collectAsState(initial = emptyList())
+                // An uninstalled app keeps its row; it is listed with the apps that aren't installed.
+                val (installedApps, uninstalledApps) = navigationApps.partition { it.installed }
+                val noLongerInstalled = uninstalledApps.map { it.appId }.toSet()
                 NavigationAppsScreen(
-                    apps = navigationApps,
+                    apps = installedApps,
                     onToggle = ::setNavigationAppEnabled,
                     onBack = { navController.popBackStack() },
-                    notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(container.catalog, navigationApps.map { it.appId }.toSet()),
+                    notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(
+                        container.catalog,
+                        installedApps.map { it.appId }.toSet(),
+                        noLongerInstalled,
+                    ),
+                    noLongerInstalled = noLongerInstalled,
                     onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
                     onViewRules = { appId -> navController.navigate("rules?app=$appId") },
                     languagesByApp = rulesViewModel.languagesByApp,

@@ -29,4 +29,14 @@ class SetupProgressTest {
         assertEquals(listOf("comaps", "organic-maps", "osmand"), withDirections)
         assertTrue("then capture-only apps", list.drop(withDirections.size).none { it.hasOfficialRules })
     }
+
+    @Test
+    fun anAppThatWasInstalledBeforeComesFirstAmongTheNotInstalled() {
+        val catalog = NavigationAppCatalog.parse(
+            javaClass.getResourceAsStream("/catalog/navigation-apps.json")!!.bufferedReader().use { it.readText() },
+        )
+        val list = supportedNotInstalled(catalog, installedAppIds = setOf("google-maps"), noLongerInstalledAppIds = setOf("amap"))
+        assertEquals("amap", list.first().appId)
+        assertEquals(1, list.count { it.appId == "amap" })
+    }
 }

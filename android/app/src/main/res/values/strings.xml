@@ -320,6 +320,7 @@
     <string name="setup_step_todo">Step %1$d, to do</string>
     <string name="navigation_apps_installed">Installed</string>
     <string name="navigation_apps_also_supported">Also supported</string>
+    <string name="navigation_apps_no_longer_installed">No longer installed</string>
     <string name="navigation_apps_also_supported_hint">Install one of these and PebbleNTN picks it up automatically.</string>
     <string name="navigation_apps_directions">Turn-by-turn directions</string>
     <string name="navigation_apps_get">Get %1$s</string>

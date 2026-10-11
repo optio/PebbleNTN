@@ -33,6 +33,12 @@ class NavigationAppInstallReceiverTest {
     }
 
     @Test
+    fun uninstallingACatalogAppTriggersDiscovery() {
+        receiver.onReceive(context, packageIntent(Intent.ACTION_PACKAGE_FULLY_REMOVED, "net.osmand.plus"))
+        assertEquals(1, discoveries)
+    }
+
+    @Test
     fun otherAppsAndOtherActionsAreIgnored() {
         receiver.onReceive(context, packageIntent(Intent.ACTION_PACKAGE_ADDED, "com.example.game"))
         receiver.onReceive(context, packageIntent(Intent.ACTION_PACKAGE_REMOVED, "net.osmand.plus"))
@@ -44,6 +50,7 @@ class NavigationAppInstallReceiverTest {
         val filter = NavigationAppInstallReceiver.intentFilter()
         assertTrue(filter.hasAction(Intent.ACTION_PACKAGE_ADDED))
         assertTrue(filter.hasAction(Intent.ACTION_PACKAGE_REPLACED))
+        assertTrue(filter.hasAction(Intent.ACTION_PACKAGE_FULLY_REMOVED))
         assertTrue(filter.hasDataScheme("package"))
     }
 

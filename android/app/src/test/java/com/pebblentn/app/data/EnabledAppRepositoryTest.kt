@@ -99,4 +99,28 @@ class EnabledAppRepositoryTest {
         assertFalse(enablement.getValue("google-maps").captureOnly)
         assertTrue(enablement.getValue("waze").captureOnly)
     }
+
+    @Test
+    fun anUninstalledAppIsReportedNotInstalledAndKeepsItsChoiceForAReinstall() = runTest {
+        repo.syncInstalledApps(setOf("com.google.android.apps.maps", "com.waze"))
+        repo.setEnabled("waze", false)
+
+        repo.syncInstalledApps(setOf("com.google.android.apps.maps")) // Waze uninstalled
+        val listed = repo.observeEnablement().first().associateBy { it.appId }
+        assertEquals(setOf("google-maps", "waze"), listed.keys)
+        assertTrue(listed.getValue("google-maps").installed)
+        assertFalse("listed as not installed, not hidden", listed.getValue("waze").installed)
+
+        repo.syncInstalledApps(setOf("com.google.android.apps.maps", "com.waze")) // reinstalled
+        val waze = repo.observeEnablement().first().single { it.appId == "waze" }
+        assertTrue(waze.installed)
+        assertFalse("the user's choice survives the reinstall", waze.enabled)
+    }
+
+    @Test
+    fun anAppStaysInstalledWhileAnyOfItsPackagesIs() = runTest {
+        repo.syncInstalledApps(setOf("net.osmand", "net.osmand.plus"))
+        repo.syncInstalledApps(setOf("net.osmand.plus"))
+        assertTrue(repo.observeEnablement().first().single { it.appId == "osmand" }.installed)
+    }
 }

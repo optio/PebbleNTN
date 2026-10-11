@@ -7,8 +7,8 @@ import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 
 /**
- * Re-runs navigation-app discovery when a catalog app is installed or updated while PebbleNTN is
- * running (REQ-ANDROID-004). Discovery otherwise only runs when the notification listener connects,
+ * Re-runs navigation-app discovery when a catalog app is installed, updated or uninstalled while
+ * PebbleNTN is running (REQ-ANDROID-004); an uninstalled app then leaves the navigation-apps list. Discovery otherwise only runs when the notification listener connects,
  * at process start, so a navigation app installed later stayed unknown, and its notifications were
  * dropped by the allowlist, until PebbleNTN was restarted.
  *
@@ -33,7 +33,8 @@ class NavigationAppInstallReceiver(
     }
 
     companion object {
-        private val ACTIONS = setOf(Intent.ACTION_PACKAGE_ADDED, Intent.ACTION_PACKAGE_REPLACED)
+        // FULLY_REMOVED, not REMOVED: REMOVED also fires midway through an update.
+        private val ACTIONS = setOf(Intent.ACTION_PACKAGE_ADDED, Intent.ACTION_PACKAGE_REPLACED, Intent.ACTION_PACKAGE_FULLY_REMOVED)
 
         fun intentFilter(): IntentFilter = IntentFilter().apply {
             ACTIONS.forEach(::addAction)

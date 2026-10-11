@@ -71,11 +71,20 @@ data class NavigationAppCatalog(
 }
 
 /**
- * Supported apps that aren't installed, for the navigation-apps screen (#28): apps with directions
- * first, then by name. PebbleNTN's own debug fixture app is never offered.
+ * Supported apps that aren't installed, for the navigation-apps screen (#28): apps that were
+ * installed before ([noLongerInstalledAppIds]) first, then apps with directions, then by name.
+ * PebbleNTN's own debug fixture app is never offered.
  */
-fun supportedNotInstalled(catalog: NavigationAppCatalog, installedAppIds: Set<String>): List<NavigationAppEntry> =
+fun supportedNotInstalled(
+    catalog: NavigationAppCatalog,
+    installedAppIds: Set<String>,
+    noLongerInstalledAppIds: Set<String> = emptySet(),
+): List<NavigationAppEntry> =
     catalog.apps
         .filter { it.appId !in installedAppIds }
         .filterNot { entry -> entry.packageNames.all { it.startsWith("com.pebblentn.") } }
-        .sortedWith(compareByDescending<NavigationAppEntry> { it.hasOfficialRules }.thenBy { it.displayName.lowercase() })
+        .sortedWith(
+            compareByDescending<NavigationAppEntry> { it.appId in noLongerInstalledAppIds }
+                .thenByDescending { it.hasOfficialRules }
+                .thenBy { it.displayName.lowercase() },
+        )
