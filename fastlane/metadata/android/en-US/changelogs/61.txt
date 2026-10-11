@@ -1,0 +1,1 @@
+• group repeated notifications; keep 1000 events
