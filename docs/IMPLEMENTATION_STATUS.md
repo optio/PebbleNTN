@@ -117,7 +117,7 @@ with a stdlib RFB client, plus a `check` walk-through with screenshots. #12 can 
   everywhere, the launcher included, so system touch navigation is off. It has no Settings app to
   turn it back on, and the firmware console didn't answer on any serial port. The QEMU touch device
   itself is present and receives input. So the check script now never wipes.
-- **Open:** the hardware check on a Pebble Time 2, which is #53's acceptance anyway.
+- **Hardware check passed:** confirmed working on a Pebble Time 2 (2026-10-11), #53's acceptance.
 
 The watchapp builds for every platform; `./scripts/test-all.sh` passes.
 
