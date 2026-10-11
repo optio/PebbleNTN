@@ -1,0 +1,2 @@
+• classic card shows distance and road without an icon match
+• record the PebbleNTN and navigation-app versions per event
