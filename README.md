@@ -6,8 +6,8 @@
 [![CodeQL](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml/badge.svg)](https://github.com/optio/PebbleNTN/actions/workflows/codeql.yml)
 ![GitHub License](https://img.shields.io/github/license/optio/PebbleNTN)
 [![Release](https://img.shields.io/github/v/release/optio/PebbleNTN.svg?style=flat\&color=2CB44C)](https://github.com/optio/PebbleNTN/releases/latest)
-[![GitHub Downloads Latest Release](https://img.shields.io/github/downloads/optio/PebbleNTN/latest/total)](https://github.com/optio/PebbleNTN/releases/latest)
 [![GitHub Downloads](https://img.shields.io/github/downloads/optio/PebbleNTN/total?color=2CB44C)](https://github.com/optio/PebbleNTN/releases)
+[![GitHub Downloads Latest Release](https://img.shields.io/github/downloads/optio/PebbleNTN/latest/total)](https://github.com/optio/PebbleNTN/releases/latest)
 
 
 
