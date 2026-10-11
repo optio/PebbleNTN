@@ -236,6 +236,18 @@ private fun TechnicalDetails(event: DebugEvent) {
         Field(stringResource(R.string.debug_field_category), snap.category)
         Field(stringResource(R.string.debug_field_channel), snap.channelId)
     }
+    // The versions it was recorded with (#84); absent on events from before they were stored.
+    Field(stringResource(R.string.debug_field_pebblentn_version), versionLabel(event.versions.appVersionName, event.versions.appVersionCode))
+    Field(stringResource(R.string.debug_field_source_app_version), versionLabel(event.versions.sourceAppVersionName, event.versions.sourceAppVersionCode))
+    Field(stringResource(R.string.debug_field_rulesets), event.versions.rulesetVersions?.replace(",", "\n"))
+}
+
+/** "0.0.59 (59)", the name alone, or null when neither is known. */
+internal fun versionLabel(name: String?, code: Long?): String? = when {
+    name != null && code != null -> "$name ($code)"
+    name != null -> name
+    code != null -> code.toString()
+    else -> null
 }
 
 @Composable

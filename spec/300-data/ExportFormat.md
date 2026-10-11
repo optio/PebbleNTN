@@ -27,3 +27,19 @@ Privacy-safe export replaces:
 - exact timestamps if user selects coarse-time mode.
 
 It preserves structural tokens, units, punctuation and anonymized placeholders so maintainers can write rules.
+
+## Versions (schema 2)
+
+`metadata` carries `schemaVersion` (2), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
+
+```json
+"versions": {
+  "appVersion": "0.0.60",
+  "appVersionCode": 60,
+  "sourceAppVersion": "26.40.01",
+  "sourceAppVersionCode": 1234567,
+  "rulesetVersions": ["google-maps-any-2026.10.7", "google-maps-de-2026.10.1"]
+}
+```
+
+The navigation app's version ties a log to the build whose notification texts, layouts and drawables it shows; the per-event PebbleNTN version matters because the history survives app updates. Version strings are not personal data and are kept unredacted in privacy-safe exports. Events recorded before schema 2 have null versions and an empty ruleset list.

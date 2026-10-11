@@ -48,4 +48,6 @@ data class DebugEvent(
      * author can see exactly why a given notification produced this watch output.
      */
     val trace: List<RuleTraceEntry> = emptyList(),
+    /** The PebbleNTN, navigation-app and ruleset versions it was recorded with (#84). */
+    val versions: EventVersions = EventVersions(),
 )

@@ -22,6 +22,7 @@ import kotlinx.serialization.json.Json
 class DebugHistoryRepository(
     private val dao: DebugEventDao,
     private val json: Json = Json,
+    private val versions: EventVersionsProvider = EventVersionsProvider.NONE,
 ) {
     /** Current retention bound; [UNLIMITED] disables trimming. Default is [DEFAULT_RETENTION]. */
     @Volatile
@@ -30,6 +31,7 @@ class DebugHistoryRepository(
     /** Record an eligible post, optionally with the rule [evaluation] that ran against it. */
     suspend fun recordPosted(event: PostedNotification, evaluation: RuleEvaluation? = null): Long {
         val snapshot = event.snapshot
+        val recorded = runCatching { versions.forPackage(snapshot.packageName) }.getOrDefault(EventVersions())
         val entity = NotificationDebugEventEntity(
             eventTimestamp = snapshot.postTimeMillis,
             receivedTimestamp = event.receivedAtMillis,
@@ -40,7 +42,7 @@ class DebugHistoryRepository(
             channelId = snapshot.channelId,
             eventType = DebugEventType.POSTED.name,
             selectedSnapshotJson = json.encodeToString(NotificationSnapshot.serializer(), snapshot),
-            activeRulesetVersions = null,
+            activeRulesetVersions = recorded.rulesetVersions,
             matchedRuleId = evaluation?.matchedRuleId,
             extractionJson = evaluation?.instruction?.let {
                 json.encodeToString(NavigationInstruction.serializer(), it)
@@ -51,6 +53,10 @@ class DebugHistoryRepository(
             disposition = dispositionFor(evaluation, snapshot),
             transportStatus = null,
             privacyClassification = PrivacyClassification.RAW,
+            appVersionName = recorded.appVersionName,
+            appVersionCode = recorded.appVersionCode,
+            sourceAppVersionName = recorded.sourceAppVersionName,
+            sourceAppVersionCode = recorded.sourceAppVersionCode,
         )
         return dao.insertAndTrim(entity, retentionLimit)
     }
@@ -106,6 +112,13 @@ class DebugHistoryRepository(
             disposition = entity.disposition,
             instruction = instruction,
             trace = trace,
+            versions = EventVersions(
+                appVersionName = entity.appVersionName,
+                appVersionCode = entity.appVersionCode,
+                sourceAppVersionName = entity.sourceAppVersionName,
+                sourceAppVersionCode = entity.sourceAppVersionCode,
+                rulesetVersions = entity.activeRulesetVersions,
+            ),
         )
     }
 

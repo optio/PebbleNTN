@@ -1,6 +1,27 @@
 # Implementation Status
 
-_Last updated: 2026-10-10_
+_Last updated: 2026-10-11_
+
+## Versions recorded per debug event (#84; REQ-DEBUG-012) (2026-10-11)
+
+**Why:** a shared log (#83) couldn't be tied to the Google Maps build it came from, and the export
+named only PebbleNTN's version at export time, although the history survives app updates.
+
+**Android:**
+- **Per event:** `notification_debug_event` gains PebbleNTN's and the navigation app's version name
+  and code (Room v7, `MIGRATION_6_7`, nullable for older rows). The unused `activeRulesetVersions`
+  column now holds the bundled rulesets that have rules for the package.
+- **Source:** `SystemEventVersionsProvider` reads the navigation app's version from the package
+  manager (visible through `<queries>`); `AssetRuleRepository.rulesetVersions` keeps each bundled
+  ruleset's version. A failing lookup still records the event, without versions.
+- **Export schema 2:** `metadata.appVersionCode`, and a `versions` object on every event, kept
+  unredacted in privacy-safe exports (not personal data).
+- **Event detail:** the technical details show the three versions.
+
+**Spec:** REQ-DEBUG-012; `Database.md`, `ExportFormat.md`, `PRIVACY_REVIEW.md`; manifest refreshed.
+
+**Tests:** migration 6→7, repository round trip and failing lookup, export per mode,
+`RulesetVersionsTest`.
 
 ## Touch in the watchapp's settings menus (#53) (2026-10-10)
 

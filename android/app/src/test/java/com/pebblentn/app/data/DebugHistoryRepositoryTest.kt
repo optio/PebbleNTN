@@ -54,6 +54,34 @@ class DebugHistoryRepositoryTest {
     }
 
     @Test
+    fun recordsTheVersionsPerEventAndReadsThemBack() = runTest {
+        val versioned = DebugHistoryRepository(
+            db.debugEventDao(),
+            versions = EventVersionsProvider { pkg ->
+                EventVersions("0.0.60", 60, "26.40.01", 1_234_567, if (pkg == "com.google.android.apps.maps") "google-maps-any-2026.10.7" else null)
+            },
+        )
+        val id = versioned.recordPosted(event("com.google.android.apps.maps", at = 5))
+        val entity = db.debugEventDao().getById(id)!!
+        assertEquals("0.0.60", entity.appVersionName)
+        assertEquals(60L, entity.appVersionCode)
+        assertEquals("26.40.01", entity.sourceAppVersionName)
+        assertEquals(1_234_567L, entity.sourceAppVersionCode)
+        assertEquals("google-maps-any-2026.10.7", entity.activeRulesetVersions)
+        assertEquals(
+            EventVersions("0.0.60", 60, "26.40.01", 1_234_567, "google-maps-any-2026.10.7"),
+            versioned.getById(id)!!.versions,
+        )
+    }
+
+    @Test
+    fun aFailingVersionLookupStillRecordsTheEvent() = runTest {
+        val failing = DebugHistoryRepository(db.debugEventDao(), versions = EventVersionsProvider { error("boom") })
+        val id = failing.recordPosted(event("com.waze", at = 6))
+        assertEquals(EventVersions(), failing.getById(id)!!.versions)
+    }
+
+    @Test
     fun keyAndTagAreStoredHashedNotRaw() = runTest {
         val id = repo.recordPosted(event("com.waze", at = 1, key = "raw-key-123", tag = "raw-tag-abc"))
         val entity = db.debugEventDao().getById(id)!!
