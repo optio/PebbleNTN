@@ -1,6 +1,25 @@
 # Implementation Status
 
-_Last updated: 2026-10-11_
+_Last updated: 2026-10-12_
+
+## AGP 8.13.2 and Gradle 8.13: R8 reads Kotlin 2.3 metadata (#91) (2026-10-12)
+
+**Why:** release builds warned "R8: An error occurred when parsing kotlin metadata". Kotlin 2.3
+needs R8 8.13.19+ (developer.android.com/build/kotlin-support); AGP 8.10.0 bundled R8 8.10.21
+(Kotlin 2.2).
+
+**Versions (newest stable compatible, per the selection policy):**
+- **AGP 8.10.0 → 8.13.2:** newest stable 8.x; its R8 supports Kotlin 2.3. AGP 9 is a larger
+  migration (built-in Kotlin, new DSL defaults) and is left for later.
+- **Gradle 8.11.1 → 8.13:** the minimum for AGP 8.13; the wrapper was regenerated with
+  `./gradlew wrapper` and pins `distributionSha256Sum`.
+
+**Verification:**
+- `assembleRelease` shows no R8 metadata warning and no new warnings; `./scripts/test-all.sh`
+  passes.
+- **Emulator smoke test:** a minified build (made debuggable locally, not committed), German
+  Google Maps for 120 s. Rules matched and icons were recognised (`maneuver_on_ramp_normal_right`,
+  …), no crashes. The #86 grouping stored the 72 notifications as 14 events.
 
 ## Uninstalled navigation apps listed as no longer installed (#88) (2026-10-11)
 
