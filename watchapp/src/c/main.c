@@ -23,6 +23,7 @@
 #include "generated/protocol.h"
 #include "glance_text.h"
 #include "settings_window.h"
+#include "panel_layout.h"
 #include "stops_text.h"
 #include "theme.h"
 
@@ -281,34 +282,16 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   const int16_t inset = 0;
 #endif
 
-  // The maneuver glyph takes a third of the width in one corner of the band; the distance fills the
-  // other two thirds (which is what lets "12.3" stay large). Which corner the arrow lives in is a
-  // user setting (REQ-WATCH-011); the distance always sits opposite it, hugging the outer edge.
+  // The distance's font is chosen as before: the largest that fits two thirds of the band, which is
+  // what lets "12.3" stay large. The arrow and the measured text are then placed as one group with
+  // even spacing (panel_layout, #80); which side the arrow is on is a user setting (REQ-WATCH-011),
+  // and the text is aligned towards the outer edge.
   const bool arrow_left = settings_arrow_left();
   const int16_t cw = w - 2 * inset;
   const int16_t column = cw / 3;
-  const int16_t glyph_x = inset + (arrow_left ? 0 : (cw - column));
   const int16_t dist_x = inset + (arrow_left ? column : 0);
   const int16_t dist_w = cw - column;
   const GTextAlignment dist_align = arrow_left ? GTextAlignmentRight : GTextAlignmentLeft;
-
-  // graphics_draw_bitmap_in_rect crops (and tiles) rather than scales, so the glyph is drawn at its
-  // own size, centred in its column — anything else silently cuts the arrow in half.
-  if (bmp != NULL) {
-    const GSize glyph_size = gbitmap_get_bounds(bmp).size;
-    // A glyph wider than its column would spill past the inset (and, on round, into the bezel).
-    int16_t gx = glyph_x + (column - glyph_size.w) / 2;
-    if (gx < inset) {
-      gx = inset;
-    } else if (gx + glyph_size.w > w - inset) {
-      gx = w - inset - glyph_size.w;
-    }
-    const GRect glyph_rect = GRect(gx, content_y + (content_h - glyph_size.h) / 2,
-                                   glyph_size.w, glyph_size.h);
-    graphics_context_set_compositing_mode(ctx, prepare_glyph(bmp, theme));
-    graphics_draw_bitmap_in_rect(ctx, bmp, glyph_rect);
-    graphics_context_set_compositing_mode(ctx, GCompOpAssign);
-  }
 
   char value[12];
   char unit[8];
@@ -318,9 +301,7 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   } else {
     format_distance(s_distance_meters, value, sizeof(value), unit, sizeof(unit));
   }
-  if (value[0] == '\0') {
-    return;
-  }
+  const bool has_text = value[0] != '\0';
 
   static const char *const kValueFonts[] = {
     FONT_KEY_BITHAM_42_BOLD,
@@ -332,11 +313,31 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   GFont value_font = fit_font(value, fit_box, GTextOverflowModeFill, kValueFonts, ARRAY_LENGTH(kValueFonts));
   // Unit is bigger than before (was GOTHIC_18) and steps up again on the large display.
   GFont unit_font = fonts_get_system_font(large ? FONT_KEY_GOTHIC_28_BOLD : FONT_KEY_GOTHIC_24_BOLD);
+  const GSize value_size = graphics_text_layout_get_content_size(
+      value, value_font, fit_box, GTextOverflowModeFill, dist_align);
+  const GSize unit_size = graphics_text_layout_get_content_size(
+      unit, unit_font, fit_box, GTextOverflowModeFill, dist_align);
+  // The text block is as wide as its wider line (+2 so the measured width never clips a pixel).
+  const int16_t text_w = has_text ? (value_size.w > unit_size.w ? value_size.w : unit_size.w) + 2 : 0;
+  const int16_t glyph_w = (bmp != NULL) ? gbitmap_get_bounds(bmp).size.w : 0;
+  const PanelLayout layout = panel_layout(inset, cw, glyph_w, text_w, arrow_left);
 
-  const int16_t value_h = graphics_text_layout_get_content_size(
-      value, value_font, fit_box, GTextOverflowModeFill, dist_align).h;
-  const int16_t unit_h = graphics_text_layout_get_content_size(
-      unit, unit_font, fit_box, GTextOverflowModeFill, dist_align).h;
+  // graphics_draw_bitmap_in_rect crops (and tiles) rather than scales, so the glyph is drawn at its
+  // own size — anything else silently cuts the arrow in half.
+  if (bmp != NULL) {
+    const GSize glyph_size = gbitmap_get_bounds(bmp).size;
+    const GRect glyph_rect = GRect(layout.glyph_x, content_y + (content_h - glyph_size.h) / 2,
+                                   glyph_size.w, glyph_size.h);
+    graphics_context_set_compositing_mode(ctx, prepare_glyph(bmp, theme));
+    graphics_draw_bitmap_in_rect(ctx, bmp, glyph_rect);
+    graphics_context_set_compositing_mode(ctx, GCompOpAssign);
+  }
+
+  if (!has_text) {
+    return;
+  }
+  const int16_t value_h = value_size.h;
+  const int16_t unit_h = unit_size.h;
 
   // Stack the number and its unit as one block and centre it vertically so the number lines up with
   // the arrow, with no wasted gap. Both fonts report a box taller than the visible glyphs (roughly a
@@ -354,9 +355,9 @@ static void panel_update_proc(Layer *layer, GContext *ctx) {
   const int16_t unit_y = block_top + num_visible - unit_pad / 2;
 
   graphics_context_set_text_color(ctx, theme.panel_fg);
-  graphics_draw_text(ctx, value, value_font, GRect(dist_x + 6, value_y, dist_w - 12, value_h),
+  graphics_draw_text(ctx, value, value_font, GRect(layout.text_x, value_y, text_w, value_h),
                      GTextOverflowModeFill, dist_align, NULL);
-  graphics_draw_text(ctx, unit, unit_font, GRect(dist_x + 6, unit_y, dist_w - 12, unit_h),
+  graphics_draw_text(ctx, unit, unit_font, GRect(layout.text_x, unit_y, text_w, unit_h),
                      GTextOverflowModeFill, dist_align, NULL);
 }
 

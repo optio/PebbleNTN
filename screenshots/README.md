@@ -35,6 +35,7 @@ screens "ETA at" is stacked on two lines when it doesn't fit beside the clock.
 | `main-swapped-arrow-left-inverted-red` | Swapped **and** inverted |
 | `main-glyph-pack-bold-green` / `-outline-green` | Glyph pack (classic is the default shot) |
 | `main-imperial-units-green` | Imperial units (450 m renders as 0.2 mi) |
+| `main-short-distance-green-arrow-right` / `main-short-distance-swapped-arrow-left-green` | A short distance (80 m), where the even spacing of arrow and distance shows (#80) |
 | `main-eta-time-to-arrival` | ETA display mode: countdown (`ETA in 0:25`) instead of arrival time (`ETA at 13:00`) |
 | `main-eta-label-compact` | ETA label style: compact tag (`ETA 13:00`) |
 | `main-eta-label-compact-time-to-arrival` | Compact tag with the countdown (`IN 0:25`) |

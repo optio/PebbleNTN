@@ -2,6 +2,25 @@
 
 _Last updated: 2026-10-12_
 
+## Navigation screen: arrow and distance evenly spaced (#80) (2026-10-12)
+
+**Bug:** on the Pebble 2 a short distance ("80 m") sat against one edge and the arrow against the
+other, with a wide gap between them. The arrow was centred in a fixed third and the distance
+aligned to the opposite edge, whatever its width.
+
+**Watchapp:**
+- **`panel_layout`** (new pure unit, host-tested): places arrow and text as one group with three
+  equal spaces (outer edge, between, outer edge); a lone arrow or lone text is centred; content
+  wider than the band is clamped.
+- **`panel_update_proc`:** the font is still the largest that fits two thirds of the band (long
+  values stay large); the value and unit are measured and the wider line sets the text width.
+  Arrow side (REQ-WATCH-011) and the round inset are kept.
+
+**Screenshots:** regenerated for every platform. New short-distance shots (80 m, arrow right and
+left) show the spacing; `capture_screenshots.py` takes a distance per update.
+
+**Spec:** `WatchUI.md` describes the even spacing; manifest refreshed.
+
 ## AGP 8.13.2 and Gradle 8.13: R8 reads Kotlin 2.3 metadata (#91) (2026-10-12)
 
 **Why:** release builds warned "R8: An error occurred when parsing kotlin metadata". Kotlin 2.3
