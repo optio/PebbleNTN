@@ -978,6 +978,13 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 static void init(void) {
   settings_load();
 
+#if defined(PBL_PLATFORM_EMERY)
+  // Touch watches (Pebble Time 2): opt into the system touch bridge, so the settings menus, their
+  // sub-lists and About scroll, select and go back by touch, like the watch's own menus. It takes
+  // effect only while touch navigation is on in the watch's system settings (REQ-WATCH-021, #53).
+  app_touch_navigation_enable(true);
+#endif
+
   app_message_register_inbox_received(inbox_received_handler);
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
@@ -987,6 +994,11 @@ static void init(void) {
     .unload = window_unload,
   });
   window_set_click_config_provider(s_window, click_config_provider);
+#if defined(PBL_PLATFORM_EMERY)
+  // Not on the navigation screen: there the bridge maps a swipe right to BACK, which would close the
+  // app mid-route on a stray sleeve or raindrop (#53). Navigation-screen gestures are #12's.
+  window_set_touch_bridge_disabled(s_window, true);
+#endif
   window_stack_push(s_window, true);
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);

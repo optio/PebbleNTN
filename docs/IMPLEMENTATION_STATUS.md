@@ -2,6 +2,33 @@
 
 _Last updated: 2026-10-10_
 
+## Touch in the watchapp's settings menus (#53) (2026-10-10)
+
+**Watchapp:**
+- **Opt-in on emery (Pebble Time 2):** `app_touch_navigation_enable(true)` in `init()`. The system
+  touch bridge then makes the settings menu, its sub-lists and About scroll, select and go back by
+  touch, while the watch's system touch navigation is on and only then. The watchapp adds no touch
+  switch and handles no touch events itself.
+- **Navigation window opts out:** `window_set_touch_bridge_disabled(s_window, true)`. The bridge
+  maps a right swipe to BACK, which would close the app mid-route. Navigation-screen gestures
+  are #12.
+- **REQ-WATCH-021** added; manifest refreshed.
+
+**Tooling:** `watchapp/tools/touch_emulator.py` sends taps and swipes to the emery emulator over VNC
+with a stdlib RFB client, plus a `check` walk-through with screenshots. #12 can reuse it.
+
+**Verification:**
+- **Earlier emulator test:** #53's own emulator test of this exact change (two calls, same
+  windows) passed: menu scroll, tap-to-highlight, tap-to-activate, swipe-right back, About scroll,
+  and the navigation screen staying open.
+- **This rerun was blocked:** after a `pebble wipe`, the SDK 4.33.1 emulator ignores touch
+  everywhere, the launcher included, so system touch navigation is off. It has no Settings app to
+  turn it back on, and the firmware console didn't answer on any serial port. The QEMU touch device
+  itself is present and receives input. So the check script now never wipes.
+- **Open:** the hardware check on a Pebble Time 2, which is #53's acceptance anyway.
+
+The watchapp builds for every platform; `./scripts/test-all.sh` passes.
+
 ## OsmAnd German: road after "dann", remaining distance (#76) (2026-10-10)
 
 A set of 28 custom German OsmAnd rules (a rules-only export, 0.0.57, de-DE) merged into
