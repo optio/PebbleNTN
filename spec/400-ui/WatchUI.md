@@ -16,7 +16,10 @@
 
 - A coloured **panel** across the top holds the maneuver arrow and the distance side by side. The
   arrow occupies one top corner (top-right by default; the corner is a user setting, REQ-WATCH-011)
-  and the distance sits opposite it, with its unit stacked under the number. The panel is sized to
+  and the distance sits opposite it, with its unit stacked under the number. Arrow and distance are
+  spaced evenly as one group — the same space at both outer edges and between them, from the
+  distance's measured width — so a short distance doesn't leave a wide gap in the middle (#80). The
+  distance's font is still the largest that fits two thirds of the width. The panel is sized to
   hug the arrow rather than a fixed fraction of the screen, so little vertical space is wasted.
 - A **status strip** below the panel carries the watch clock on the left and the arrival estimate on
   the right — the watch stays a watch while navigating. The arrival estimate has two display modes

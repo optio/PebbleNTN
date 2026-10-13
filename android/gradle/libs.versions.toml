@@ -3,8 +3,8 @@
 # the declared Android baseline (minSdk 31, compileSdk 36). Rationale for each pin is
 # recorded in docs/IMPLEMENTATION_STATUS.md.
 [versions]
-# Gradle wrapper is pinned separately in gradle/wrapper/gradle-wrapper.properties (8.11.1).
-agp = "8.10.0"                      # compileSdk 36; min AGP for KSP 2.3.10; pairs with Gradle 8.11.1
+# Gradle wrapper is pinned separately in gradle/wrapper/gradle-wrapper.properties (8.13).
+agp = "8.13.2"                      # compileSdk 36; bundles R8 for Kotlin 2.3 metadata (8.10 warned); needs Gradle 8.13
 kotlin = "2.3.10"                   # bundles the Compose compiler plugin; must be >= PebbleKit 2's
                                     # metadata (built with Kotlin 2.3.x), or kspKotlin fails
                                     # "incompatible metadata: binary 2.3.0, expected 2.1.0".

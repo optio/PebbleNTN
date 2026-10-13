@@ -61,7 +61,7 @@ CLOCK = "12:35:00"
 ETA_MINUTES = 25
 
 
-def nav_message():
+def nav_message(distance=450):
     """The navigation state injected before every screenshot (protocol.h keys).
 
     The arrival epoch and the arrival-time string are both derived from one
@@ -78,7 +78,7 @@ def nav_message():
         datetime.date.today(), datetime.time.fromisoformat(CLOCK))
     arrival = pinned + datetime.timedelta(minutes=ETA_MINUTES)
     return [
-        "--int", "0=1", "3=6", "4=450", "10=0", f"7={int(arrival.timestamp())}",
+        "--int", "0=1", "3=6", f"4={distance}", "10=0", f"7={int(arrival.timestamp())}",
         "--string", "5=Rue de la Loi", f"6={arrival.strftime('%H:%M')}",
     ]
 
@@ -110,6 +110,13 @@ MAIN_SHOTS = [
     ("main-eta-time-to-arrival", {"eta_duration": True}),
     ("main-eta-label-compact", {"eta_compact": True}),
     ("main-eta-label-compact-time-to-arrival", {"eta_compact": True, "eta_duration": True}),
+]
+
+# A short distance, where the spacing between the arrow and the distance shows most (#80).
+SHORT_DISTANCE = 80
+SHORT_DISTANCE_SHOTS = [
+    ("main-short-distance-green-arrow-right", {}),
+    ("main-short-distance-swapped-arrow-left-green", {"arrow_left": True}),
 ]
 
 
@@ -273,8 +280,8 @@ def capture_settings_screens(platform):
     click(platform, "back")  # back to the nav window
 
 
-def send_nav_update(platform):
-    pebble(platform, "send-app-message", *nav_message())
+def send_nav_update(platform, distance=450):
+    pebble(platform, "send-app-message", *nav_message(distance))
     time.sleep(0.5)
 
 
@@ -298,6 +305,14 @@ def capture_platform(platform):
         target.update(overrides)
         apply_settings(platform, state, target)
         masks[name] = clock_mask(shot(platform, name), platform)
+
+    send_nav_update(platform, SHORT_DISTANCE)
+    for name, overrides in SHORT_DISTANCE_SHOTS:
+        target = dict(DEFAULTS)
+        target.update(overrides)
+        apply_settings(platform, state, target)
+        shot(platform, name)
+    send_nav_update(platform)
 
     repair_clock_outliers(platform, state, masks)
     subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
