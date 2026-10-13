@@ -84,6 +84,14 @@ static GColor legible_over(GColor background) {
 #endif
 }
 
+GColor accent_swatch(AccentId id) {
+  return accent_color(id);
+}
+
+GColor accent_swatch_text(AccentId id) {
+  return legible_over(accent_color(id));
+}
+
 // The status strip is a shade of the accent, so the panel reads as one block. On a colour watch
 // that means one step darker per channel; on black-and-white there is nothing to darken.
 static GColor shade_of(GColor color) {

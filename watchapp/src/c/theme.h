@@ -147,6 +147,10 @@ typedef struct {
 Theme theme_current(void);
 
 const char *accent_name(AccentId id);
+// The accent's own colour and the text colour that reads on it, for previewing a colour in the
+// accent menu (#81).
+GColor accent_swatch(AccentId id);
+GColor accent_swatch_text(AccentId id);
 const char *units_name(UnitsId id);
 const char *glyph_pack_name(GlyphPack id);
 const char *eta_mode_name(EtaMode id);
