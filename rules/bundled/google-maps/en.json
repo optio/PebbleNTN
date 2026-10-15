@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.10.4",
+  "rulesetVersion": "google-maps-en-2026.10.16",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -37,7 +37,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         },
         "stopsRemaining": {
@@ -82,7 +82,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -155,7 +155,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "text",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -202,7 +202,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -244,7 +244,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -291,7 +291,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -333,7 +333,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -380,7 +380,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -422,7 +422,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -469,7 +469,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -511,7 +511,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -558,7 +558,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -600,7 +600,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -647,7 +647,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -689,7 +689,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -736,7 +736,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -778,7 +778,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -825,7 +825,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -867,7 +867,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -914,7 +914,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -956,7 +956,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1003,7 +1003,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1045,7 +1045,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1092,7 +1092,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1135,7 +1135,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1182,7 +1182,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1225,7 +1225,367 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-take-exit-left-distance-title-en",
+      "enabled": true,
+      "priority": 88,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-take-exit-left-en: title is the bare distance ('350 m'), text the instruction. One priority step above the base rule so the road line takes the instruction, not the distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\btake\\s+(?:the\\s+)?exit\\b.*\\bon\\s+the\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-take-exit-left-en",
+      "enabled": true,
+      "priority": 87,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Motorway exit on the left: 'Take exit 12 on the left toward <road>'. One step above google-maps-take-exit-en, which assumes the usual right-hand exit. Synthetic, from the right-hand form in a real capture (#95).",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\btake\\s+(?:the\\s+)?exit\\b.*\\bon\\s+the\\s+left\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-take-exit-distance-title-en",
+      "enabled": true,
+      "priority": 86,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-take-exit-en: title is the bare distance ('350 m'), text the instruction. One priority step above the base rule so the road line takes the instruction, not the distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\btake\\s+(?:the\\s+)?exit\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-take-exit-en",
+      "enabled": true,
+      "priority": 85,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Motorway exit: '0.7 mi · Take exit 425 toward <road>' (real capture, en-US, Android 17, 2026-10, #95); the destination-approach fallback showed it as ARRIVE before. Right-hand unless 'on the left' (google-maps-take-exit-left-en). Below lane (90), turn (100) and keep (120), so their side wins; roundabout (190) keeps 'take the 2nd exit'. Distance from the title only: a title-less classic card's subText holds the trip total.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\btake\\s+(?:the\\s+)?exit\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-merge-distance-title-en",
+      "enabled": true,
+      "priority": 81,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-merge-en: title is the bare distance ('350 m'), text the instruction. One priority step above the base rule so the road line takes the instruction, not the distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bmerge\\s+onto\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-merge-en",
+      "enabled": true,
+      "priority": 80,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Highway merge: '350 ft · Merge onto I-35E' (real capture, en-US, Android 17, 2026-10, #95). Before this rule the destination-approach fallback showed it as ARRIVE. The card doesn't say the side, so straight on. Below the lane rules (90): 'Use the left lane to merge onto <road>' stays SLIGHT_LEFT.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bmerge\\s+onto\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-exit-parking-distance-title-en",
+      "enabled": true,
+      "priority": 79,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Classic layout of google-maps-exit-parking-en: title is the bare distance ('350 m'), text the instruction. One priority step above the base rule so the road line takes the instruction, not the distance.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*$"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bexit\\s+the\\s+parking\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text",
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-exit-parking-en",
+      "enabled": true,
+      "priority": 78,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "The step a route opens with when starting from a car park: 'Exit the parking lot toward <road>' (real capture, en-US, Android 17, 2026-10, #95). Straight on, like 'Head toward <road>'.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bexit\\s+the\\s+parking\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1272,7 +1632,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1315,7 +1675,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1362,7 +1722,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1405,7 +1765,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
@@ -1420,7 +1780,7 @@
       "locales": [
         "en"
       ],
-      "comment": "Google Maps' classic (non-ProgressStyle) layout splits the step: title = distance ('220 m'), text = a bare 'toward <road>' with no leading verb, so google-maps-continue-en (needs head/continue/go/proceed) misses it and en-CA/en-GB drivers saw nothing (real captures, 2026-07-30). A bare heading is continue-straight. Distance comes from the title ONLY: when the title is absent, combinedText's first number+unit is the trip total in subText ('166 km').",
+      "comment": "Classic layout: title = distance ('220 m'), text = a bare 'toward <road>' with no verb, so google-maps-continue-en misses it (real captures, 2026-07-30). A bare heading is continue-straight. Distance from the title ONLY: without a title, combinedText's first number+unit is the trip total in subText ('166 km'). ETA from the classic subText '28 min · 12 km · 23:14 ETA' (#95).",
       "conditions": [
         {
           "field": "text",
@@ -1443,6 +1803,12 @@
             "text",
             "title"
           ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
         }
       }
     },
@@ -1456,12 +1822,12 @@
       "locales": [
         "en"
       ],
-      "comment": "Final approach: near the destination Google Maps shows the place name as the step, '90 m · tipi! Cinquantenaire - …' (route-capture harness, Google Maps 26.14, Android 17, 2026-10, #66). ARRIVE with the distance to it. A fallback: it matches any '<distance> · …' title no other rule took, so it is the lowest priority, English only until other languages are captured, and the harness report lists every card it matched for review, so an unknown phrasing can't hide behind it.",
+      "comment": "Final approach: near the destination Google Maps shows the place name as the step, '90 m · <place>' (route-capture harness, Android 17, 2026-10, #66). ARRIVE with the distance. A fallback, so lowest priority and English only. A step starting with a maneuver verb ('Take exit …', 'Merge onto …') is excluded: before #95 an unknown verb landed here and showed the arrival flag on the motorway; now it stays unmatched and shows in diagnostics.",
       "conditions": [
         {
           "field": "title",
           "operator": "regex",
-          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*·\\s*\\S"
+          "value": "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*(?:km|m|mi|ft|yd)\\s*·\\s*(?!(?:take|merge|exit|turn|keep|head|continue|go|proceed|drive|walk|slight|sharp|make|use|follow|stay)\\b)\\S"
         }
       ],
       "output": {
@@ -1484,7 +1850,7 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "subText",
-          "pattern": "(?i)\\barrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
         }
       }
