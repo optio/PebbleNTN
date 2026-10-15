@@ -47,7 +47,8 @@ screens "ETA at" is stacked on two lines when it doesn't fit beside the clock.
 | `settings-menu` | Top-level settings menu (SELECT from the navigation screen) |
 | `settings-menu-scrolled` | Same menu scrolled to the last row (About) |
 | `settings-accent-colour-list` | Accent-colour sub-window, top of the list |
-| `settings-accent-colour-list-scrolled` | Accent-colour sub-window, scrolled |
+| `settings-accent-colour-list-scrolled` | Accent-colour sub-window, scrolled; the focused row is drawn in its colour (#81) |
+| `settings-accent-colour-list-white` | Accent-colour sub-window on White: the focused row is framed (#81) |
 | `settings-glyph-pack-list` | Glyph-pack sub-window, with per-pack arrow previews |
 | `settings-about` | About: version, protocol, phone connection, install QR |
 

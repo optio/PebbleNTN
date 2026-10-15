@@ -55,9 +55,26 @@ static void colour_header(GContext *ctx, const Layer *cell, uint16_t section, vo
   draw_menu_header(ctx, cell, "Accent colour");
 }
 
+// The highlighted row is drawn in its own colour (#81), so scrolling the list previews each accent.
+// Colour watches only: on black-and-white the list is just Black and White, and the stock highlight
+// keeps the focused row distinguishable.
 static void colour_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
   const AccentId accent = accent_for_row(index->row);
   const bool active = (accent == settings_accent());
+#ifdef PBL_COLOR
+  if (menu_cell_layer_is_highlighted(cell)) {
+    const GRect bounds = layer_get_bounds(cell);
+    graphics_context_set_fill_color(ctx, accent_swatch(accent));
+    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+    if (accent == ACCENT_WHITE) {
+      // White on the white list would hide the focus; frame it.
+      graphics_context_set_stroke_color(ctx, GColorBlack);
+      graphics_context_set_stroke_width(ctx, 2);
+      graphics_draw_rect(ctx, grect_inset(bounds, GEdgeInsets(1)));
+    }
+    graphics_context_set_text_color(ctx, accent_swatch_text(accent));
+  }
+#endif
   menu_cell_basic_draw(ctx, cell, accent_name(accent), active ? "Selected" : NULL, NULL);
 }
 

@@ -264,6 +264,9 @@ def capture_settings_screens(platform):
     shot(platform, "settings-accent-colour-list")
     click(platform, "down", 8)
     shot(platform, "settings-accent-colour-list-scrolled")
+    if platform != "aplite":  # colour watches: the white row's focus frame (#81)
+        click(platform, "down", ACCENT["white"] - 8)
+        shot(platform, "settings-accent-colour-list-white")
     click(platform, "back")
 
     row = move_to_row(platform, row, ROW_GLYPH)

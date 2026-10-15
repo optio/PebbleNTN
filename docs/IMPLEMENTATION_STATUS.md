@@ -1,6 +1,19 @@
 # Implementation Status
 
-_Last updated: 2026-10-12_
+_Last updated: 2026-10-14_
+
+## Accent-colour menu previews each colour (#81) (2026-10-14)
+
+**Watchapp:** on colour watches the focused row of the accent list is filled with that accent and
+its text uses the same luminance rule as the navigation panel (`accent_swatch`,
+`accent_swatch_text` in theme.c), so scrolling previews each colour. The white row is framed, as
+white on the white list would hide the focus. Black-and-white watches keep the stock highlight
+(their list is Black and White only).
+
+**Spec:** REQ-WATCH-011 amended; manifest refreshed.
+
+**Screenshots:** regenerated for every platform; new `settings-accent-colour-list-white` shot.
+Checked: green with white text, cyan with black text, white framed, on all three sizes.
 
 ## Navigation screen: arrow and distance evenly spaced (#80) (2026-10-12)
 
