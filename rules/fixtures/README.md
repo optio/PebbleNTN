@@ -94,7 +94,7 @@ shows that turn. A middle lane is neither left nor right, and falls through to c
   Android 16's `ProgressStyle` template is not yet established.
 - `subText` ETA is captured but not yet surfaced to the watch (`NavigationInstruction` has
   `secondaryText`/`etaEpochSeconds`; no rule fills them and the watchapp does not render them).
-- Roundabout/u-turn/merge phrasing across app versions is still synthetic-only.
+- Roundabout and u-turn phrasing across app versions is still synthetic-only (merge and motorway exits are captured, #95).
 
 ## Arrows that are only an icon: `iconDrawable` (#74)
 
@@ -105,3 +105,19 @@ records the matched drawable's **name** in the snapshot's `iconDrawable` field (
 a `maneuverMap` on `iconDrawable`; that mapping is also what tells the app which drawables to compare
 with. A fixture sets `iconDrawable` in its snapshot as the app would; a snapshot without it is a card
 whose icon didn't match, and keeps the rule's default (UNKNOWN).
+
+## What two drives in the US and Taiwan taught us (#95, 2026-10)
+
+- **Motorway steps fell into the destination fallback.** On the ProgressStyle card,
+  `0.7 mi · Take exit 425 toward …` and `350 ft · Merge onto I-35E` matched no maneuver rule and
+  landed in `google-maps-destination-approach-en`, which showed the arrival flag in the middle of
+  the motorway. They now have their own rules (`take-exit`, `take-exit-left`, `merge`,
+  `exit-parking`), and the fallback skips any step that starts with a maneuver verb, so an
+  unknown verb stays unmatched (`unknown-verb-is-not-a-destination`) and shows up in diagnostics.
+- **The first classic card of a step has no title.** The distance only arrives with the next
+  update, but the icon is already there. `google-maps-icon-step-no-distance` uses it, without a
+  distance; status cards carry no icon and still match nothing.
+- **The classic card's ETA reads `<n> min · <dist> · 07:40 ETA`**, not `Arrive 07:40`. The
+  English ETA pattern takes both.
+- Still open: a ProgressStyle card whose title is only the destination name, without a distance,
+  is left unmatched, because a bare title can be anything.

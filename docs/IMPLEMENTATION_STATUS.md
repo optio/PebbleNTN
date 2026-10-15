@@ -1,6 +1,45 @@
 # Implementation Status
 
-_Last updated: 2026-10-14_
+_Last updated: 2026-10-16_
+
+## Google Maps: motorway exits and merges, title-less classic cards, classic ETA (#95) (2026-10-16)
+
+**Input:** two full diagnostics exports, both Google Maps, phone locale en-US.
+- **US drive:** ProgressStyle card, Android 17, 74 unmatched. It was recorded before v0.0.60, so
+  the events carry no versions.
+- **Taiwan drive:** classic card, Android 12, Google Maps 26.42, app 0.0.64, 9 unmatched. Maps
+  switches between Traditional Chinese and English.
+
+Both were replayed through the current rules with the workbench engine, and the findings are in
+#95, sanitized.
+
+**Rules (`google-maps-en-2026.10.16`, `google-maps-any-2026.10.16`):**
+- **New English rules:**
+  - `take-exit` (SLIGHT_RIGHT);
+  - `take-exit-left` (`on the left`, SLIGHT_LEFT);
+  - `merge` (`merge onto`, STRAIGHT);
+  - `exit-parking` (`exit the parking lot`, STRAIGHT).
+
+  Each comes in two variants: the ProgressStyle card and the classic card with a distance title.
+  They sit below the lane, turn and keep rules, so those keep their side.
+- **Before this:** the exits and merges matched the destination-approach fallback and showed
+  **ARRIVE** on the motorway.
+- **Destination-approach:** the fallback now skips any step that starts with a maneuver verb, so
+  an unknown verb stays unmatched and shows in diagnostics.
+- **`google-maps-icon-step-no-distance` (any):** the first classic card of a step has no title.
+  This rule takes the arrow from the matched icon, with no distance. Status cards carry no icon, so
+  they still match nothing.
+- **English ETA:** the pattern also reads the classic `… · 07:40 ETA`. `toward-en` gains an ETA.
+- **Left open:** a ProgressStyle title that holds only the destination name, with no distance,
+  stays unmatched.
+
+**Replay with the new rules:**
+- **US drive:** every unmatched maneuver card is now matched: 64 of 74. The 10 left are 7 cards
+  with the destination name alone and 3 "Rerouting..." cards from before #51.
+- **Taiwan drive:** 9 of 9 matched, and no previously matched card changed.
+
+**Tests:** 17 new fixtures (captures and synthetic); 13 of them fail on the old rules. The
+workbench regression passes 174/174, and `GoogleMapsRulesRegressionTest` passes.
 
 ## Accent-colour menu previews each colour (#81) (2026-10-14)
 

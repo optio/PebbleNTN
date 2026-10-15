@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-any-2026.10.11",
+  "rulesetVersion": "google-maps-any-2026.10.16",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-10-11T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -95,6 +95,114 @@
         "distanceMeters": {
           "type": "distance",
           "field": "title"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "text"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-icon-step-no-distance",
+      "enabled": true,
+      "priority": 34,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "comment": "The first classic card of a step has no title yet (text = road); the distance comes with the next update. Nothing matched it, so the watch kept the previous arrow (real capture, Android 12, 2026-10, #95). Same icon map as google-maps-icon-step, no distance (subText's is the trip total). Needs a matched icon, so 'Rerouting...' and 'Starting navigation…' (no icon) still match nothing. Text rules ('toward …', '前往…') sit above.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "notExists"
+        },
+        {
+          "field": "text",
+          "operator": "exists"
+        },
+        {
+          "field": "iconDrawable",
+          "operator": "exists"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "maneuverMap",
+          "field": "iconDrawable",
+          "mapping": {
+            "maneuver_depart": "STRAIGHT",
+            "maneuver_destination": "ARRIVE",
+            "maneuver_destination_left": "ARRIVE",
+            "maneuver_destination_right": "ARRIVE",
+            "maneuver_destination_straight": "ARRIVE",
+            "maneuver_fork_left": "SLIGHT_LEFT",
+            "maneuver_fork_right": "SLIGHT_RIGHT",
+            "maneuver_keep_left": "SLIGHT_LEFT",
+            "maneuver_keep_right": "SLIGHT_RIGHT",
+            "maneuver_merge": "STRAIGHT",
+            "maneuver_merge_left": "SLIGHT_LEFT",
+            "maneuver_merge_right": "SLIGHT_RIGHT",
+            "maneuver_name_change": "STRAIGHT",
+            "maneuver_off_ramp_keep_left": "SLIGHT_LEFT",
+            "maneuver_off_ramp_keep_right": "SLIGHT_RIGHT",
+            "maneuver_off_ramp_normal_left": "LEFT",
+            "maneuver_off_ramp_normal_right": "RIGHT",
+            "maneuver_off_ramp_sharp_left": "SHARP_LEFT",
+            "maneuver_off_ramp_sharp_right": "SHARP_RIGHT",
+            "maneuver_off_ramp_slight_left": "SLIGHT_LEFT",
+            "maneuver_off_ramp_slight_right": "SLIGHT_RIGHT",
+            "maneuver_off_ramp_u_turn_left": "UTURN_LEFT",
+            "maneuver_off_ramp_u_turn_right": "UTURN_RIGHT",
+            "maneuver_on_ramp_keep_left": "SLIGHT_LEFT",
+            "maneuver_on_ramp_keep_right": "SLIGHT_RIGHT",
+            "maneuver_on_ramp_normal_left": "LEFT",
+            "maneuver_on_ramp_normal_right": "RIGHT",
+            "maneuver_on_ramp_sharp_left": "SHARP_LEFT",
+            "maneuver_on_ramp_sharp_right": "SHARP_RIGHT",
+            "maneuver_on_ramp_slight_left": "SLIGHT_LEFT",
+            "maneuver_on_ramp_slight_right": "SLIGHT_RIGHT",
+            "maneuver_on_ramp_u_turn_left": "UTURN_LEFT",
+            "maneuver_on_ramp_u_turn_right": "UTURN_RIGHT",
+            "maneuver_roundabout_enter_and_exit_ccw": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_normal_left": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_normal_right": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_sharp_left": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_sharp_right": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_slight_left": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_slight_right": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_straight": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_ccw_u_turn": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_normal_left": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_normal_right": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_sharp_left": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_sharp_right": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_slight_left": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_slight_right": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_straight": "ROUNDABOUT",
+            "maneuver_roundabout_enter_and_exit_cw_u_turn": "ROUNDABOUT",
+            "maneuver_roundabout_enter_ccw": "ROUNDABOUT",
+            "maneuver_roundabout_enter_cw": "ROUNDABOUT",
+            "maneuver_roundabout_exit_ccw": "ROUNDABOUT",
+            "maneuver_roundabout_exit_cw": "ROUNDABOUT",
+            "maneuver_straight": "STRAIGHT",
+            "maneuver_turn_normal_left": "LEFT",
+            "maneuver_turn_normal_right": "RIGHT",
+            "maneuver_turn_sharp_left": "SHARP_LEFT",
+            "maneuver_turn_sharp_right": "SHARP_RIGHT",
+            "maneuver_turn_slight_left": "SLIGHT_LEFT",
+            "maneuver_turn_slight_right": "SLIGHT_RIGHT",
+            "maneuver_u_turn_left": "UTURN_LEFT",
+            "maneuver_u_turn_right": "UTURN_RIGHT"
+          },
+          "default": "UNKNOWN"
         },
         "primaryText": {
           "type": "firstNonEmpty",
