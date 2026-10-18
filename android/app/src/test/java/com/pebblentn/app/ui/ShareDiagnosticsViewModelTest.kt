@@ -27,6 +27,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * REQ-DEBUG-011: the share-to-help screen preselects the full dataset (with street names), and the
@@ -38,6 +41,7 @@ class ShareDiagnosticsViewModelTest {
 
     private lateinit var db: PebbleNtnDatabase
     private lateinit var exporter: DiagnosticExporter
+    private lateinit var debugHistory: DebugHistoryRepository
 
     @Before
     fun setUp() = runBlocking {
@@ -46,7 +50,7 @@ class ShareDiagnosticsViewModelTest {
             ApplicationProvider.getApplicationContext(),
             PebbleNtnDatabase::class.java,
         ).allowMainThreadQueries().build()
-        val debugHistory = DebugHistoryRepository(db.debugEventDao())
+        debugHistory = DebugHistoryRepository(db.debugEventDao())
         debugHistory.recordPosted(
             PostedNotification(
                 snapshot = NotificationSnapshot(
@@ -125,5 +129,42 @@ class ShareDiagnosticsViewModelTest {
 
         assertEquals(ExportMode.RULES_ONLY, vm.state.value.mode)
         assertEquals(0, state.includedEvents)
+        assertEquals(0, vm.state.value.includedEvents)
+        // The attachment follows the choice too: no full export with street names (CI race, 2026-10-18).
+        assertFalse(vm.payloadJson()!!.contains("Elm Street"))
+    }
+
+    @Test
+    fun aSupersededBuildThatAlreadyFinishedItsQueriesCannotPublish() {
+        // Cancelling is cooperative: the first full build is held after its database reads, past its
+        // last suspension, while the user picks rules only. Released, it must not replace the choice
+        // in the preview or the attachment (the CI race behind aModeChosenRightAwayIsNot…, 2026-10-18).
+        val held = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val first = AtomicBoolean(true)
+        val gated = DiagnosticExporter(
+            debugHistory,
+            UserRuleRepository(db.userRuleDao()),
+            appVersion = "0.0.1",
+            androidRelease = "14",
+            now = {
+                if (first.getAndSet(false)) {
+                    held.countDown()
+                    release.await(5, TimeUnit.SECONDS)
+                }
+                "2026-09-30T00:00:00Z"
+            },
+        )
+        val vm = ShareDiagnosticsViewModel(gated)
+        assertTrue("the first full build reached its last step", held.await(5, TimeUnit.SECONDS))
+
+        vm.setMode(ExportMode.RULES_ONLY)
+        vm.awaitLoaded()
+        release.countDown()
+        runBlocking { delay(300) }
+
+        assertEquals(ExportMode.RULES_ONLY, vm.state.value.mode)
+        assertEquals(0, vm.state.value.includedEvents)
+        assertFalse(vm.payloadJson()!!.contains("Elm Street"))
     }
 }

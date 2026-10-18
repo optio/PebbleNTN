@@ -8,6 +8,7 @@ import com.pebblentn.app.export.ExportMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -49,8 +50,9 @@ class ShareDiagnosticsViewModel(
     private val _state = MutableStateFlow(ShareDiagnosticsState())
     val state: StateFlow<ShareDiagnosticsState> = _state.asStateFlow()
 
-    /** The full capped payload to attach; populated once [prepare] completes. */
-    private var capped: CappedExport? = null
+    /** The full capped payload to attach, with the build that made it; populated once [prepare] completes. */
+    @Volatile
+    private var capped: Pair<Long, CappedExport>? = null
 
     init {
         prepare(ExportMode.FULL)
@@ -70,18 +72,29 @@ class ShareDiagnosticsViewModel(
         prepare(mode)
     }
 
-    /** The build in progress; a newer mode cancels it so a stale result can't overwrite the choice. */
+    /** The build in progress; a newer mode cancels it. */
     private var building: Job? = null
+
+    /**
+     * The latest build. Cancelling is cooperative: a superseded build whose export already finished
+     * on a database thread can still reach its last lines, so only the latest build may publish.
+     * Otherwise a stale full export could replace a rules-only choice, in the preview and in the
+     * attachment.
+     */
+    @Volatile
+    private var generation = 0L
 
     private fun prepare(mode: ExportMode) {
         // Preserve the previous preview while rebuilding so the mode selector doesn't flash away.
         _state.value = _state.value.copy(loading = true, mode = mode)
         building?.cancel()
+        val build = ++generation
         building = viewModelScope.launch {
             val export = exporter.buildCapped(mode, DiagnosticExporter.EMAIL_MAX_BYTES, onlyEventId)
-            capped = export
+            if (build != generation) return@launch
+            capped = build to export
             val trimmedPreview = export.json.length > PREVIEW_CHARS
-            _state.value = ShareDiagnosticsState(
+            val built = ShareDiagnosticsState(
                 loading = false,
                 mode = mode,
                 previewText = if (trimmedPreview) export.json.take(PREVIEW_CHARS) else export.json,
@@ -91,11 +104,12 @@ class ShareDiagnosticsViewModel(
                 sizeBytes = export.sizeBytes,
                 truncatedToFit = export.truncated,
             )
+            _state.update { current -> if (build == generation) built else current }
         }
     }
 
-    /** The full payload to attach to the email, or null if not ready. */
-    fun payloadJson(): String? = capped?.json
+    /** The full payload to attach to the email, or null if not ready or superseded by a newer build. */
+    fun payloadJson(): String? = capped?.takeIf { it.first == generation }?.second?.json
 
     /** The mode the payload was built for, so the caller can name/label the attachment. */
     fun currentMode(): ExportMode = _state.value.mode

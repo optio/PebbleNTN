@@ -2,6 +2,26 @@
 
 _Last updated: 2026-10-18_
 
+## Share diagnostics: a superseded export can no longer replace the chosen one (2026-10-18)
+
+**Bug:** the v0.0.67 release run failed on `ShareDiagnosticsViewModelTest`, and the failure was a
+real race.
+- **What happened:** when the user picks "rules only" while the initial full export is still
+  building, the full build is cancelled. Cancelling is cooperative, though: a build whose database
+  reads had already finished on a Room thread ran its last lines anyway.
+- **Effect:** it overwrote the state and the attachment. The email could carry the full export,
+  with street names, under a rules-only choice.
+
+**Fix:** each build takes a generation number, and only the latest build may publish its state
+(checked inside the atomic state update) or its payload. `payloadJson()` returns nothing from a
+superseded build.
+
+**Tests:** a deterministic test holds the first full build after its queries, past its last
+suspension, while rules-only completes, then releases it.
+- It fails on the old view model and passes on the fix, three runs each in the debug and release
+  variants.
+- The existing test also checks the attachment now.
+
 ## Google Maps transit: boarding and get-off cards, from shared user rules (2026-10-18)
 
 **Input:** a user shared two custom rules (rules export, app 0.0.64, Android 16, en-US) and three
