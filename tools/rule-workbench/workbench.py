@@ -245,6 +245,11 @@ def run_extractor(ext: dict, snap: dict):
             if v:
                 return v
         return None
+    if t == "boundedJoin":
+        # Mirror ExtractorRunner: the non-empty fields joined, cut to maxLength (Python counts code
+        # points, Kotlin UTF-16 units; they agree for the BMP text navigation apps post).
+        joined = ext.get("separator", " ").join(v for v in (field_value(snap, f) for f in ext["fields"]) if v)
+        return joined[: ext.get("maxLength", 64)] or None
     if t == "distance":
         v = field_value(snap, ext["field"])
         return parse_distance(v) if v else None
