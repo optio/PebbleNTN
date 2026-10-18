@@ -1,6 +1,36 @@
 # Implementation Status
 
-_Last updated: 2026-10-16_
+_Last updated: 2026-10-18_
+
+## Google Maps transit: boarding and get-off cards, from shared user rules (2026-10-18)
+
+**Input:** a user shared two custom rules (rules export, app 0.0.64, Android 16, en-US) and three
+full diagnostics exports. Each export has one grouped event that was unmatched before those rules,
+all from Google Maps 26.41 on the transit card:
+- `Take the <line>` / `<stop> · Departs 19:57` (×327);
+- `Get on the <line>` (×23);
+- `Get off at <stop>` / `Next stop · 2 min` (×155).
+
+**Rules (`google-maps-en-2026.10.18`):** the user's rules, adapted to the bundled conventions:
+- **`google-maps-transit-board-en`:** `Take the …` / `Get on the …` becomes TRANSIT. The road line
+  is the title and the text on two lines, as the user had it.
+  - It also requires `Departs` in the text, so `Take the exit` and `Take the pedestrian crossing`
+    stay road steps.
+- **`google-maps-transit-get-off-next-stop-en`:** TRANSIT with 1 stop left.
+- **`google-maps-transit-get-off-en`:** without `Next stop`, it takes the stop count from the text
+  when there is one.
+- **Language and ETA:** the rules are English only (the user's had no locale) and gain the ETA from
+  subText. There is no distance: the user's rules read it from combinedText, which holds none.
+- **Priority:** 203–204, next to `transit-ride` and above `arrive`, so a stop named like a
+  destination stays transit.
+
+**Workbench:** it now implements `boundedJoin`, as the Kotlin engine does (REQ-RULE-016 lockstep).
+
+**Spec:** REQ-RULE-016 amended; manifest refreshed.
+
+**Tests:**
+- 6 fixtures (3 sanitized captures), with workbench regression at 180/180.
+- All three exports replay as TRANSIT with the ETA.
 
 ## Google Maps: motorway exits and merges, title-less classic cards, classic ETA (#95) (2026-10-16)
 

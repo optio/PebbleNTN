@@ -7,7 +7,7 @@
   "examples/protocol-definition.json": "9408406f16c553e7bf7e29c8b6d5a0fb79de546debe4ef1cfae47f5cad58036b",
   "requirements/REQ-ANDROID.md": "4be82e73d721dd0dc11912bca339b47b75d3250adc4c05e6f8b5747c6800e95e",
   "requirements/REQ-DEBUG.md": "b5baec06edb6aa7da1ab8c25dfa01dbcb75556fae7d6075ba92f99e99aaccd7a",
-  "requirements/REQ-RULES.md": "12129c1c40d4cf162e6adacc4e0a0c2c394271b3eb4d8305d9b97b5352be67a8",
+  "requirements/REQ-RULES.md": "452c5fd21743ab15e391aac06f1ce3a6431006378f721cd0008631e1a70d3e07",
   "requirements/REQ-SECURITY.md": "382a3cbcaead916d730e673839ca2a4468f7882dc64465e677e3ab5f9757335d",
   "requirements/REQ-WATCH.md": "ea42da280b896bc7d077da51e2b996f11aaf9e99930cd4302a66bd2fbd5afbcf",
   "schemas/ruleset.schema.json": "7670ab2e80bbdd4fecb86742e23b18bbb7f1c2eb3516085b30fe2dded99d85b1",

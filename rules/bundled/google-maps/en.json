@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-en-2026.10.16",
+  "rulesetVersion": "google-maps-en-2026.10.18",
   "minimumAppVersionCode": 1,
   "createdAt": "2026-07-12T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
@@ -33,6 +33,140 @@
           "field": "title",
           "pattern": "(?i)^\\s*ride\\s+to\\s+(.+?)\\s*$",
           "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        },
+        "stopsRemaining": {
+          "type": "regexCapture",
+          "field": "text",
+          "pattern": "(?i)(\\d+)\\s*stops?\\b",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-transit-board-en",
+      "enabled": true,
+      "priority": 204,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Boarding a transit line (REQ-RULE-016): title 'Take the 197' / 'Get on the 851', text '<stop> · Departs 19:57', subText 'Arrive 20:24'. TRANSIT; the road line is the line and the stop with its departure on two lines. Needs 'Departs' in text, so 'Take the exit' or 'Take the pedestrian crossing' never read as transit. Shared by a user as custom rules (real capture, en-US, Android 16, Google Maps 26.41, 2026-10).",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*(?:take|get\\s+on)\\s+(?:the\\s+)?\\S"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)\\bdeparts?\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "TRANSIT"
+        },
+        "primaryText": {
+          "type": "boundedJoin",
+          "fields": [
+            "title",
+            "text"
+          ],
+          "separator": "\n",
+          "maxLength": 64
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "google-maps-transit-get-off-next-stop-en",
+      "enabled": true,
+      "priority": 204,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "Last leg of a ride (REQ-RULE-016): title 'Get off at <stop>', text 'Next stop · 2 min'. TRANSIT with 1 stop left. Shared by a user as custom rules (real capture, en-US, Android 16, 2026-10). Above google-maps-arrive-en, so a stop named like 'Destination Park' stays transit.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*get\\s+off\\s+at\\s+\\S"
+        },
+        {
+          "field": "text",
+          "operator": "regex",
+          "value": "(?i)^\\s*next\\s+stop\\b"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "TRANSIT"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title"
+          ]
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(?i)(?:\\barrive\\s+|(?=\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?\\s*ETA\\b))(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        },
+        "stopsRemaining": {
+          "type": "literal",
+          "value": "1"
+        }
+      }
+    },
+    {
+      "id": "google-maps-transit-get-off-en",
+      "enabled": true,
+      "priority": 203,
+      "packageNames": [
+        "com.google.android.apps.maps"
+      ],
+      "locales": [
+        "en"
+      ],
+      "comment": "'Get off at <stop>' without 'Next stop' (synthetic, following the captured card): TRANSIT, with the stop count when the text carries one ('3 stops · 6 min'). One step below google-maps-transit-get-off-next-stop-en.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)^\\s*get\\s+off\\s+at\\s+\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "TRANSIT"
+        },
+        "primaryText": {
+          "type": "firstNonEmpty",
+          "fields": [
+            "title"
+          ]
         },
         "secondaryText": {
           "type": "regexCapture",
