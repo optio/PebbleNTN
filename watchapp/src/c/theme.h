@@ -12,6 +12,8 @@
 
 #include <pebble.h>
 
+#include "early_warning.h"
+
 // Accent colours offered for the maneuver panel. On black-and-white watches only the last two
 // (BLACK, WHITE) are offered; every other entry falls back to one of them.
 typedef enum {
@@ -173,6 +175,12 @@ BacklightMode settings_backlight(void);
 BacklightColorId settings_backlight_color(void);
 VibePatternId settings_vibe_pattern(void);
 VibeIntensity settings_vibe_intensity(void);
+// Early-warning vibration (REQ-WATCH-022): the distance threshold, whether it repeats, and its own
+// pattern and strength, separate from the new-instruction buzz so the two can be told apart.
+EarlyWarnDistance settings_early_warn_distance(void);
+EarlyWarnRepeat settings_early_warn_repeat(void);
+VibePatternId settings_early_warn_pattern(void);
+VibeIntensity settings_early_warn_intensity(void);
 // Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
 // default is the arrow on the right and the distance on the left.
 bool settings_arrow_left(void);
@@ -187,12 +195,20 @@ void settings_set_backlight(BacklightMode id);
 void settings_set_backlight_color(BacklightColorId id);
 void settings_set_vibe_pattern(VibePatternId id);
 void settings_set_vibe_intensity(VibeIntensity id);
+void settings_set_early_warn_distance(EarlyWarnDistance id);
+void settings_set_early_warn_repeat(EarlyWarnRepeat id);
+void settings_set_early_warn_pattern(VibePatternId id);
+void settings_set_early_warn_intensity(VibeIntensity id);
 void settings_load(void);
 
 // Play the vibration selected for a newly parsed instruction, built from the current pattern and
 // intensity settings (REQ-WATCH-016). No-op when the pattern is OFF. Shared by the navigation path
 // (fired on new info) and the settings menu (fired as a preview when the user changes either row).
 void settings_vibe_play(void);
+
+// Play the early-warning buzz from its own pattern and intensity (REQ-WATCH-022). No-op when the
+// distance or the pattern is Off. Fired by the navigation path and as the menu's preview.
+void settings_early_warn_play(void);
 
 // How long (ms) the backlight is held lit after activity for the current backlight mode; 0 means
 // keep it on with no timeout (steady-on) and BACKLIGHT_OFF also returns 0 (no forcing).

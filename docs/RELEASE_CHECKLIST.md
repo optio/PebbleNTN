@@ -31,6 +31,8 @@ For each cell verify:
 - [ ] READY handshake after opening the watchapp mid-session syncs the current state.
 - [ ] Navigation end → watch returns to the watchface (with the setting on).
 - [ ] Vibrate-on-maneuver-change and backlight settings behave.
+- [ ] Early-warning vibration (REQ-WATCH-022): at 50 m / Once, one distinct buzz as a turn comes
+      within 50 m; with Every update, one buzz per closer distance.
 - [ ] Connection loss then reconnect → current state re-synced, no stale replay.
 - [ ] Disabled app produces no debug records (allowlist).
 - [ ] Debug export (rules-only / privacy-safe / full) shares via the sheet; full shows the warning.

@@ -1,13 +1,14 @@
-// On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012, REQ-WATCH-015, REQ-WATCH-016): appearance,
-// units, backlight and vibration. Opened with SELECT from the navigation window, dismissed with
-// BACK. Changes apply immediately and persist.
+// On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012, REQ-WATCH-015, REQ-WATCH-016,
+// REQ-WATCH-022): appearance, units, backlight and vibration. Opened with SELECT from the navigation
+// window, dismissed with BACK. Changes apply immediately and persist.
 //
-// The top menu is a short list of categories. Accent colour (a long list) and the glyph pack each
-// open their own sub-window ("door"); invert, units, ETA display and the two vibration rows toggle
-// in place. Backlight toggles in place too, except on RGB-backlight hardware, where it opens a door
-// holding both the duration and the tint. The glyph-pack door shows a sample arrow drawn in each
-// pack, so the packs can be previewed on the watch before choosing one; changing either vibration
-// row plays the newly selected buzz so it can be felt before leaving the menu.
+// The top menu is a short list of categories. Accent colour (a long list), the glyph pack and
+// vibration each open their own sub-window ("door"); invert, units and ETA display toggle in place.
+// Backlight toggles in place too, except on RGB-backlight hardware, where it opens a door holding
+// both the duration and the tint. The glyph-pack door shows a sample arrow drawn in each pack, so the
+// packs can be previewed on the watch before choosing one; the vibration door holds the
+// new-instruction buzz and the early warning, and changing a pattern, strength or warning distance
+// plays the newly selected buzz so it can be felt before leaving the menu.
 
 #include "settings_window.h"
 
@@ -423,20 +424,168 @@ static void push_backlight_window(void) {
 
 #endif  // PBL_RGB_BACKLIGHT
 
+// ===== Vibration sub-window =====================================================================
+//
+// Two sections: the buzz for a new instruction (REQ-WATCH-016) and the early warning as the
+// maneuver comes within a chosen distance (REQ-WATCH-022). Every row cycles in place. The early
+// warning's repeat, pattern and strength rows only appear once a distance is chosen.
+
+#define VIBE_SECTION_NEW 0
+#define VIBE_SECTION_WARN 1
+#define VIBE_SECTION_COUNT 2
+
+#define NEW_ROW_PATTERN 0
+#define NEW_ROW_STRENGTH 1
+#define NEW_ROW_COUNT 2
+
+#define WARN_ROW_DISTANCE 0
+#define WARN_ROW_REPEAT 1
+#define WARN_ROW_PATTERN 2
+#define WARN_ROW_STRENGTH 3
+#define WARN_ROW_COUNT 4
+
+static Window *s_vibe_window;
+static MenuLayer *s_vibe_menu;
+
+static void early_warn_label(char *buf, size_t len) {
+  early_warn_distance_label(settings_early_warn_distance(), settings_units() == UNITS_IMPERIAL, buf,
+                            len);
+}
+
+static uint16_t vibe_num_sections(struct MenuLayer *m, void *ctx) { return VIBE_SECTION_COUNT; }
+
+static uint16_t vibe_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
+  if (section == VIBE_SECTION_NEW) {
+    return NEW_ROW_COUNT;
+  }
+  return (settings_early_warn_distance() == EARLY_WARN_OFF) ? 1 : WARN_ROW_COUNT;
+}
+
+static void vibe_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
+  draw_menu_header(ctx, cell, (section == VIBE_SECTION_NEW) ? "New instruction" : "Early warning");
+}
+
+static void vibe_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
+  if (index->section == VIBE_SECTION_NEW) {
+    if (index->row == NEW_ROW_PATTERN) {
+      menu_cell_basic_draw(ctx, cell, "Pattern", vibe_pattern_name(settings_vibe_pattern()), NULL);
+    } else {
+      menu_cell_basic_draw(ctx, cell, "Strength", vibe_intensity_name(settings_vibe_intensity()),
+                           NULL);
+    }
+    return;
+  }
+  switch (index->row) {
+    case WARN_ROW_DISTANCE: {
+      char label[12];
+      early_warn_label(label, sizeof(label));
+      menu_cell_basic_draw(ctx, cell, "Distance", label, NULL);
+      break;
+    }
+    case WARN_ROW_REPEAT:
+      menu_cell_basic_draw(ctx, cell, "Repeat",
+                           early_warn_repeat_name(settings_early_warn_repeat()), NULL);
+      break;
+    case WARN_ROW_PATTERN:
+      menu_cell_basic_draw(ctx, cell, "Pattern",
+                           vibe_pattern_name(settings_early_warn_pattern()), NULL);
+      break;
+    default:
+      menu_cell_basic_draw(ctx, cell, "Strength",
+                           vibe_intensity_name(settings_early_warn_intensity()), NULL);
+      break;
+  }
+}
+
+// The early warning has no Off pattern (that is what an Off distance is for), so it cycles through
+// the audible patterns only.
+static VibePatternId next_audible_pattern(VibePatternId id) {
+  const VibePatternId next = (VibePatternId)((id + 1) % VIBE_PATTERN_COUNT);
+  return (next == VIBE_PATTERN_OFF) ? VIBE_PATTERN_SINGLE : next;
+}
+
+static void vibe_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  if (index->section == VIBE_SECTION_NEW) {
+    if (index->row == NEW_ROW_PATTERN) {
+      settings_set_vibe_pattern(
+          (VibePatternId)((settings_vibe_pattern() + 1) % VIBE_PATTERN_COUNT));
+    } else {
+      settings_set_vibe_intensity(
+          (VibeIntensity)((settings_vibe_intensity() + 1) % VIBE_INTENSITY_COUNT));
+    }
+    menu_layer_reload_data(s_vibe_menu);
+    settings_vibe_play();  // preview the newly selected buzz (no-op when the pattern is Off)
+    notify_change();
+    return;
+  }
+  switch (index->row) {
+    case WARN_ROW_DISTANCE:
+      settings_set_early_warn_distance(
+          (EarlyWarnDistance)((settings_early_warn_distance() + 1) % EARLY_WARN_COUNT));
+      break;
+    case WARN_ROW_REPEAT:
+      settings_set_early_warn_repeat(
+          (EarlyWarnRepeat)((settings_early_warn_repeat() + 1) % EARLY_WARN_REPEAT_COUNT));
+      break;
+    case WARN_ROW_PATTERN:
+      settings_set_early_warn_pattern(next_audible_pattern(settings_early_warn_pattern()));
+      break;
+    default:
+      settings_set_early_warn_intensity(
+          (VibeIntensity)((settings_early_warn_intensity() + 1) % VIBE_INTENSITY_COUNT));
+      break;
+  }
+  menu_layer_reload_data(s_vibe_menu);
+  if (index->row != WARN_ROW_REPEAT) {
+    settings_early_warn_play();  // preview the warning buzz (no-op when the distance is Off)
+  }
+  notify_change();
+}
+
+static void vibe_load(Window *window) {
+  Layer *root = window_get_root_layer(window);
+  s_vibe_menu = menu_layer_create(layer_get_bounds(root));
+  menu_layer_set_callbacks(s_vibe_menu, NULL, (MenuLayerCallbacks){
+    .get_num_sections = vibe_num_sections,
+    .get_num_rows = vibe_num_rows,
+    .get_header_height = header_height,
+    .draw_header = vibe_header,
+    .draw_row = vibe_row,
+    .select_click = vibe_select,
+  });
+  menu_layer_set_click_config_onto_window(s_vibe_menu, window);
+  layer_add_child(root, menu_layer_get_layer(s_vibe_menu));
+}
+
+static void vibe_unload(Window *window) {
+  menu_layer_destroy(s_vibe_menu);
+  s_vibe_menu = NULL;
+  window_destroy(s_vibe_window);
+  s_vibe_window = NULL;
+}
+
+static void push_vibe_window(void) {
+  s_vibe_window = window_create();
+  window_set_window_handlers(s_vibe_window, (WindowHandlers){
+    .load = vibe_load,
+    .unload = vibe_unload,
+  });
+  window_stack_push(s_vibe_window, true);
+}
+
 // ===== Top-level settings menu ==================================================================
 
 #define ROW_BACKLIGHT 0
 #define ROW_VIBE 1
-#define ROW_VIBE_INTENSITY 2
-#define ROW_COLOUR 3
-#define ROW_INVERT 4
-#define ROW_ETA 5
-#define ROW_ETA_LABEL 6
-#define ROW_ARROW 7
-#define ROW_GLYPH 8
-#define ROW_UNITS 9
-#define ROW_ABOUT 10
-#define MAIN_ROW_COUNT 11
+#define ROW_COLOUR 2
+#define ROW_INVERT 3
+#define ROW_ETA 4
+#define ROW_ETA_LABEL 5
+#define ROW_ARROW 6
+#define ROW_GLYPH 7
+#define ROW_UNITS 8
+#define ROW_ABOUT 9
+#define MAIN_ROW_COUNT 10
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -483,14 +632,16 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_BACKLIGHT:
       menu_cell_basic_draw(ctx, cell, "Backlight", backlight_mode_name(settings_backlight()), NULL);
       break;
-    case ROW_VIBE:
-      menu_cell_basic_draw(ctx, cell, "Vibrate on update", vibe_pattern_name(settings_vibe_pattern()),
-                           NULL);
+    default: {
+      // Both halves of the door in one line: "Double / Warn 50 m", "Off / Warn off".
+      char warn[12];
+      char summary[32];
+      early_warn_label(warn, sizeof(warn));
+      snprintf(summary, sizeof(summary), "%s / Warn %s", vibe_pattern_name(settings_vibe_pattern()),
+               (settings_early_warn_distance() == EARLY_WARN_OFF) ? "off" : warn);
+      menu_cell_basic_draw(ctx, cell, "Vibration", summary, NULL);
       break;
-    default:
-      menu_cell_basic_draw(ctx, cell, "Vibration strength",
-                           vibe_intensity_name(settings_vibe_intensity()), NULL);
-      break;
+    }
   }
 }
 
@@ -542,24 +693,14 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
       notify_change();
 #endif
       break;
-    case ROW_VIBE:
-      settings_set_vibe_pattern((VibePatternId)((settings_vibe_pattern() + 1) % VIBE_PATTERN_COUNT));
-      menu_layer_reload_data(s_menu);
-      settings_vibe_play();  // preview the newly selected pattern (no-op when Off)
-      notify_change();
-      break;
     default:
-      settings_set_vibe_intensity(
-          (VibeIntensity)((settings_vibe_intensity() + 1) % VIBE_INTENSITY_COUNT));
-      menu_layer_reload_data(s_menu);
-      settings_vibe_play();  // preview the newly selected intensity (no-op when pattern is Off)
-      notify_change();
+      push_vibe_window();
       break;
   }
 }
 
 static void main_appear(Window *window) {
-  // Returning from the Colour / Glyph-pack door: refresh those rows' subtitles.
+  // Returning from the Colour / Glyph-pack / Vibration door: refresh those rows' subtitles.
   if (s_menu != NULL) {
     menu_layer_reload_data(s_menu);
   }
