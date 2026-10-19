@@ -43,15 +43,14 @@ PACK = {"classic": 0, "bold": 1, "outline": 2}
 # Settings menu row indices (settings_window.c) — keep this order in sync with the #defines there.
 ROW_BACKLIGHT = 0
 ROW_VIBE = 1
-ROW_VIBE_INTENSITY = 2
-ROW_COLOUR = 3
-ROW_INVERT = 4
-ROW_ETA = 5
-ROW_ETA_LABEL = 6
-ROW_ARROW = 7
-ROW_GLYPH = 8
-ROW_UNITS = 9
-ROW_ABOUT = 10
+ROW_COLOUR = 2
+ROW_INVERT = 3
+ROW_ETA = 4
+ROW_ETA_LABEL = 5
+ROW_ARROW = 6
+ROW_GLYPH = 7
+ROW_UNITS = 8
+ROW_ABOUT = 9
 LAST_MAIN_ROW = ROW_ABOUT
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.

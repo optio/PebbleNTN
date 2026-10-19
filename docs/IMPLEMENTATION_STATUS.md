@@ -1,6 +1,59 @@
 # Implementation Status
 
-_Last updated: 2026-10-18_
+_Last updated: 2026-10-19_
+
+## Early-warning vibration (2026-10-19, #99)
+
+**Milestone:** post-M12 watch behaviour enhancement (new REQ-WATCH-022; REQ-WATCH-009, REQ-WATCH-016
+and `WatchUI.md` amended). Watch-side only: no protocol or Android change.
+
+**Requirement:** a buzz as the next maneuver comes within a chosen distance.
+- Distance: Off (default) / 10 / 25 / 50 / 100 / 200 m. Imperial labels show round feet (30 … 650 ft);
+  the threshold itself stays in metres.
+- Repeat: **Once** (default) per instruction, or **Every update** at or under the threshold.
+- Its own pattern (default Double, no Off) and strength (default Medium), so it feels different from
+  the new-instruction buzz.
+
+**Design.**
+- The decision is a pure unit, `early_warning.{h,c}`, host-tested by `tests/test_early_warning.c`.
+  It keeps one value per instruction: the distance it last warned at (-1 = not yet). New info
+  re-arms it.
+  - Once fires while that value is -1. Every update fires when the distance differs from it, so a
+    resend of the same distance is quiet.
+- **Precedence:** when an update is both new info and inside the threshold, the new-instruction buzz
+  (watch pattern, or the phone's maneuver-change pulse) wins and counts as the warning.
+- **Not fired:** transit rides, unknown distance (-1). The state resets on stop and on
+  no-active-navigation.
+- **Settings:** in `theme.{h,c}` under new persist keys 12–15. Existing keys 8–9 are untouched, so
+  earlier settings carry over. `vibe_play(pattern, intensity)` is now shared by both buzzes.
+- **Menu:** "Vibrate on update" and "Vibration strength" are replaced by one **Vibration** row
+  ("Double / Warn 50 m"). It opens a door with a *New instruction* and an *Early warning* section.
+  Repeat/Pattern/Strength appear only once a distance is chosen; changing a buzz row previews it.
+  The top-level menu is now 10 rows, and `capture_screenshots.py` row indices were updated.
+
+**Commands executed.**
+
+```bash
+./scripts/test-watchapp-unit.sh     # PASS, incl. new test_early_warning
+./scripts/build-watchapp.sh         # all five platforms build
+./scripts/validate-spec-assets.sh   # PASS (REQ-WATCH.md, WatchUI.md hashes resynced)
+./scripts/test-all.sh               # PASS
+```
+
+**Emulator verification** (basalt, chalk, emery), with a temporary `APP_LOG` in the two buzz
+functions, removed before commit:
+- A scripted route at 50 m:
+  - Once: quiet at 300/60, a warning at 50, quiet on the 50 resend and at 40.
+  - A new instruction arriving at 30 with no new-instruction buzz → warning, then quiet at 20.
+  - Transit at 0 → quiet.
+  - Every update: a warning at 50/40/30, quiet on the 50 resend.
+  - With the new-instruction pattern Single, a new instruction at 30 plays only that buzz; the
+    resend is quiet and 20 warns.
+- Menu rendering (round headers on chalk included), and persistence across a reinstall.
+
+The motor itself is a hardware check (release checklist).
+
+**Blockers:** none. **Next atomic task:** on-wrist check of the two buzzes' feel.
 
 ## Share diagnostics: a superseded export can no longer replace the chosen one (2026-10-18)
 

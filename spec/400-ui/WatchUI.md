@@ -61,6 +61,13 @@ or primary text), never on a resend as the distance counts down, and — when se
 supersedes the phone's simple maneuver-change pulse. Changing either row in the settings menu plays
 the selected buzz as a preview.
 
+An optional **early warning** (REQ-WATCH-022) is the user-opted threshold event: it buzzes as the next
+maneuver comes within a chosen distance (Off — the default — / 10 / 25 / 50 / 100 / 200 m), once per
+instruction or on every update under it, with its own pattern and strength. A resend of the same
+distance never buzzes again, and a new-instruction buzz in the same update takes precedence. Both
+settings live behind one **Vibration** row that opens a sub-window with a "New instruction" and an
+"Early warning" section.
+
 ## Backlight
 
 An on-watch setting (REQ-WATCH-015) can keep the backlight lit while the watchapp is the foreground

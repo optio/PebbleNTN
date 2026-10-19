@@ -11,6 +11,10 @@
 #define PERSIST_KEY_VIBE_INTENSITY 9
 #define PERSIST_KEY_BACKLIGHT_COLOR 10
 #define PERSIST_KEY_ETA_LABEL_STYLE 11
+#define PERSIST_KEY_EARLY_WARN_DISTANCE 12
+#define PERSIST_KEY_EARLY_WARN_REPEAT 13
+#define PERSIST_KEY_EARLY_WARN_PATTERN 14
+#define PERSIST_KEY_EARLY_WARN_INTENSITY 15
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
@@ -23,6 +27,11 @@ static BacklightMode s_backlight = BACKLIGHT_OFF;
 static BacklightColorId s_backlight_color = BACKLIGHT_COLOR_DEFAULT;
 static VibePatternId s_vibe_pattern = VIBE_PATTERN_OFF;
 static VibeIntensity s_vibe_intensity = VIBE_INTENSITY_MEDIUM;
+static EarlyWarnDistance s_early_warn_distance = EARLY_WARN_OFF;
+static EarlyWarnRepeat s_early_warn_repeat = EARLY_WARN_REPEAT_ONCE;
+// The early warning only exists once a distance is chosen, so its pattern is never Off.
+static VibePatternId s_early_warn_pattern = VIBE_PATTERN_DOUBLE;
+static VibeIntensity s_early_warn_intensity = VIBE_INTENSITY_MEDIUM;
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -263,6 +272,10 @@ BacklightMode settings_backlight(void) { return s_backlight; }
 BacklightColorId settings_backlight_color(void) { return s_backlight_color; }
 VibePatternId settings_vibe_pattern(void) { return s_vibe_pattern; }
 VibeIntensity settings_vibe_intensity(void) { return s_vibe_intensity; }
+EarlyWarnDistance settings_early_warn_distance(void) { return s_early_warn_distance; }
+EarlyWarnRepeat settings_early_warn_repeat(void) { return s_early_warn_repeat; }
+VibePatternId settings_early_warn_pattern(void) { return s_early_warn_pattern; }
+VibeIntensity settings_early_warn_intensity(void) { return s_early_warn_intensity; }
 
 void settings_set_accent(AccentId id) {
   s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
@@ -320,6 +333,26 @@ void settings_set_vibe_intensity(VibeIntensity id) {
   persist_write_int(PERSIST_KEY_VIBE_INTENSITY, s_vibe_intensity);
 }
 
+void settings_set_early_warn_distance(EarlyWarnDistance id) {
+  s_early_warn_distance = (id < EARLY_WARN_COUNT) ? id : EARLY_WARN_OFF;
+  persist_write_int(PERSIST_KEY_EARLY_WARN_DISTANCE, s_early_warn_distance);
+}
+
+void settings_set_early_warn_repeat(EarlyWarnRepeat id) {
+  s_early_warn_repeat = (id < EARLY_WARN_REPEAT_COUNT) ? id : EARLY_WARN_REPEAT_ONCE;
+  persist_write_int(PERSIST_KEY_EARLY_WARN_REPEAT, s_early_warn_repeat);
+}
+
+void settings_set_early_warn_pattern(VibePatternId id) {
+  s_early_warn_pattern = (id > VIBE_PATTERN_OFF && id < VIBE_PATTERN_COUNT) ? id : VIBE_PATTERN_DOUBLE;
+  persist_write_int(PERSIST_KEY_EARLY_WARN_PATTERN, s_early_warn_pattern);
+}
+
+void settings_set_early_warn_intensity(VibeIntensity id) {
+  s_early_warn_intensity = (id < VIBE_INTENSITY_COUNT) ? id : VIBE_INTENSITY_MEDIUM;
+  persist_write_int(PERSIST_KEY_EARLY_WARN_INTENSITY, s_early_warn_intensity);
+}
+
 uint32_t settings_backlight_hold_ms(void) {
   switch (s_backlight) {
     case BACKLIGHT_LOW: return 3000;     // brief assist around each update
@@ -341,17 +374,17 @@ static uint32_t vibe_pulse_ms(VibeIntensity intensity) {
   }
 }
 
-void settings_vibe_play(void) {
-  if (s_vibe_pattern == VIBE_PATTERN_OFF) {
+static void vibe_play(VibePatternId id, VibeIntensity intensity) {
+  if (id == VIBE_PATTERN_OFF) {
     return;
   }
-  const uint32_t pulse = vibe_pulse_ms(s_vibe_intensity);
+  const uint32_t pulse = vibe_pulse_ms(intensity);
   const uint32_t gap = 140;
   // Alternating on/off segments starting with a pulse; TRIPLE needs the most (pulse,gap,pulse,gap,
   // pulse) = 5. Static so the buffer outlives the enqueue call.
   static uint32_t segments[5];
   uint32_t count = 0;
-  switch (s_vibe_pattern) {
+  switch (id) {
     case VIBE_PATTERN_DOUBLE:
       segments[0] = pulse; segments[1] = gap; segments[2] = pulse;
       count = 3;
@@ -373,6 +406,17 @@ void settings_vibe_play(void) {
   }
   VibePattern pattern = { .durations = segments, .num_segments = count };
   vibes_enqueue_custom_pattern(pattern);
+}
+
+void settings_vibe_play(void) {
+  vibe_play(s_vibe_pattern, s_vibe_intensity);
+}
+
+void settings_early_warn_play(void) {
+  if (s_early_warn_distance == EARLY_WARN_OFF) {
+    return;
+  }
+  vibe_play(s_early_warn_pattern, s_early_warn_intensity);
 }
 
 void settings_load(void) {
@@ -436,6 +480,30 @@ void settings_load(void) {
     const int stored = persist_read_int(PERSIST_KEY_VIBE_INTENSITY);
     if (stored >= 0 && stored < VIBE_INTENSITY_COUNT) {
       s_vibe_intensity = (VibeIntensity)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_EARLY_WARN_DISTANCE)) {
+    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_DISTANCE);
+    if (stored >= 0 && stored < EARLY_WARN_COUNT) {
+      s_early_warn_distance = (EarlyWarnDistance)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_EARLY_WARN_REPEAT)) {
+    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_REPEAT);
+    if (stored >= 0 && stored < EARLY_WARN_REPEAT_COUNT) {
+      s_early_warn_repeat = (EarlyWarnRepeat)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_EARLY_WARN_PATTERN)) {
+    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_PATTERN);
+    if (stored > VIBE_PATTERN_OFF && stored < VIBE_PATTERN_COUNT) {
+      s_early_warn_pattern = (VibePatternId)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_EARLY_WARN_INTENSITY)) {
+    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_INTENSITY);
+    if (stored >= 0 && stored < VIBE_INTENSITY_COUNT) {
+      s_early_warn_intensity = (VibeIntensity)stored;
     }
   }
 }

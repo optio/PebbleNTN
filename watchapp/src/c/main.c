@@ -7,7 +7,8 @@
 //     timeout an install-the-companion-app QR hint (REQ-WATCH-017);
 //   - vibrate on maneuver change and enable backlight when the phone requests it;
 //   - keep the backlight lit and buzz on new instructions per the user's on-watch settings
-//     (REQ-WATCH-015, REQ-WATCH-016);
+//     (REQ-WATCH-015, REQ-WATCH-016), and buzz as a maneuver comes within the early-warning
+//     distance (REQ-WATCH-022);
 //   - return to the watchface on navigation stop when commanded;
 //   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT.
 //
@@ -70,6 +71,8 @@ static int32_t s_distance_meters = -1;
 static int32_t s_stops_remaining = -1;
 static int32_t s_flags = 0;
 static int s_last_maneuver = -1;
+// Whether the early warning has fired for the current instruction (REQ-WATCH-022).
+static EarlyWarnState s_early_warn = { .warned_at_m = -1 };
 static bool s_showing_message = true;
 // Arrival time as a Unix epoch second, or 0 when the phone did not send one. Used to render a live
 // "time to arrival" countdown when that ETA display mode is selected (REQ-WATCH-014).
@@ -823,12 +826,23 @@ static void render_navigation(DictionaryIterator *iter) {
   // Vibration (REQ-WATCH-016): when the user has chosen a watch-side pattern, it fires on new info
   // with the selected pattern/intensity and supersedes the phone's simple request. Otherwise the
   // original behaviour stands — a short pulse on a maneuver change, only when the phone asks.
+  bool new_info_buzzed = false;
   if (settings_vibe_pattern() != VIBE_PATTERN_OFF) {
     if (new_info) {
       settings_vibe_play();
+      new_info_buzzed = true;
     }
   } else if ((s_flags & PBNTN_FLAG_VIBRATE_ON_MANEUVER_CHANGE_MASK) && maneuver_changed) {
     vibes_short_pulse();
+    new_info_buzzed = true;
+  }
+
+  // Early warning (REQ-WATCH-022): a separate buzz as the maneuver comes within the chosen distance,
+  // once per instruction or on every closer update. A new-instruction buzz in the same update wins.
+  if (early_warn_should_fire(&s_early_warn, settings_early_warn_distance(),
+                             settings_early_warn_repeat(), new_info, new_info_buzzed,
+                             s_distance_meters, s_maneuver == PBNTN_MANEUVER_TRANSIT)) {
+    settings_early_warn_play();
   }
 
   // Backlight (REQ-WATCH-015): the watch-side setting, when on, keeps the light lit around activity
@@ -844,6 +858,7 @@ static void render_navigation(DictionaryIterator *iter) {
 
 static void handle_stopped(DictionaryIterator *iter) {
   s_navigating = false;
+  early_warn_reset(&s_early_warn);
   Tuple *flags_t = dict_find(iter, PBNTN_KEY_FLAGS);
   int32_t flags = flags_t ? flags_t->value->int32 : 0;
   if (flags & PBNTN_FLAG_EXIT_TO_WATCHFACE_ON_STOP_MASK) {
@@ -886,6 +901,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     case PBNTN_EVENT_NO_ACTIVE_NAVIGATION:
       s_last_maneuver = -1;
       s_navigating = false;
+      early_warn_reset(&s_early_warn);
       show_message("No navigation detected. If navigating, open PebbleNTN on your phone.");
       break;
     case PBNTN_EVENT_PHONE_COMPATIBILITY_ERROR:
