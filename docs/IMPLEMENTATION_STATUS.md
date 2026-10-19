@@ -2,6 +2,48 @@
 
 _Last updated: 2026-10-19_
 
+## Google Maps "toward <road>" cards take the arrow from the icon (2026-10-19, #104)
+
+**Input:** a full diagnostics export (app 0.0.64–0.0.66, Google Maps 26.42, Android 12, phone
+en-US, Maps showing Traditional Chinese roads). It is not committed because it contains personal
+data; the fixtures use replaced roads.
+
+**Bug:** `google-maps-toward-en` (a bare `toward <road>` card) always produced STRAIGHT. Google Maps
+also uses that card for real maneuvers shown only by the large icon. 5 occurrences carried
+`maneuver_off_ramp_u_turn_left` (a confident match: 3.0, runner-up 38.2), so the watch showed a
+straight arrow for a U-turn. `google-maps-continue-zh` (`前往…`) had the same shape.
+
+**Fix (rule data only):** both rules now use a `maneuverMap` on `iconDrawable` with
+`"default": "STRAIGHT"`.
+- The mapping is a verbatim copy of `google-maps-icon-step`'s. `IconCandidates` builds the device's
+  icon table from every icon map in precedence order, and these rules (priority 40/50) sit above
+  icon-step (35), so any difference would change icon meanings everywhere.
+- Without a matched icon, the result is straight, as before.
+- Rulesets bumped to `google-maps-en-2026.10.19` and `google-maps-zh-2026.10.19`.
+
+**Rest of the export:** replayed through `tools/rule-workbench` against the current rules, nothing
+else is new.
+- The 20 unmatched title-less cards now match `google-maps-icon-step-no-distance` (#95).
+- The 31 ETA-less cards get their ETA.
+- The 31 non-maneuver notifications still match nothing.
+
+**Tests:** five new fixtures in `rules/fixtures/google-maps.json`.
+- toward + U-turn icon, with and without a title → `UTURN_LEFT`;
+- toward + depart icon → `STRAIGHT`;
+- `前往…` + a turn icon → `RIGHT`, and + the depart icon → `STRAIGHT`.
+
+Against main's rules the three maneuver-changing fixtures fail (`STRAIGHT`); with the fix all 185
+pass.
+
+**Commands executed.**
+
+```bash
+python3 tools/rule-workbench/workbench.py regression   # google-maps 185/185, others unchanged
+./scripts/test-all.sh                                  # PASS, incl. GoogleMapsRulesRegressionTest
+```
+
+**Blockers:** none. **Next atomic task:** none for #104.
+
 ## Early-warning vibration (2026-10-19, #99)
 
 **Milestone:** post-M12 watch behaviour enhancement (new REQ-WATCH-022; REQ-WATCH-009, REQ-WATCH-016
