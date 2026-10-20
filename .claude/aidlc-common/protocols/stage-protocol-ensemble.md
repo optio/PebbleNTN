@@ -1,0 +1,94 @@
+# Ensemble Protocol Module
+
+Load this module when `directive.mode` is `subagent`, `pipeline`, or `mob`, or when the stage declares support agents; use only the harness subsection that matches the active harness.
+
+## 5. Multi-agent stages (ensemble topologies)
+
+Some stages use multiple agents (e.g., Feasibility uses aidlc-architect-agent + aidlc-aws-platform-agent + aidlc-compliance-agent). How the support agents participate is governed by the directive's `mode` — the stage's communication topology — never by the mere presence of `support_agents`. The roles are constant across topologies: the **lead agent** owns the stage's `produces[]` artifacts, **support agents** collaborate as real participants who write their own work, and the `reviewer` (stage-protocol-reviewer.md §12a, when declared) verifies from outside afterwards. The orchestrator is the bus on every topology: every exchange between participants is a dispatch it makes and a return it carries. Agents do NOT invoke each other — only the orchestrator delegates.
+
+**The directive's `support_agents` is authoritative — dispatch exactly those agents, and no others.** It is the effective list for THIS run: the engine has already applied the collaborators switch (the scope-owned `collaborators` ceremony; see `stage-protocol.md`), so a stage whose authored frontmatter names support agents may still arrive with `support_agents` empty. **An empty list means the lead runs alone, on every topology.** The lead then IS the sole and final author: it does the stage's whole body itself and leaves the `produces[]` artifacts complete — on a `pipeline` the lead is the only link and performs both the scan and the synthesis the chain would otherwise split; on `subagent`/`mob` there is simply no spoke round to dispatch or integrate. A lead-only run writes no contribution files and needs no link receipt beyond the lead's own. Never dispatch an agent that is not in `directive.support_agents`, and never infer collaborators from the stage body's prose or from the authored frontmatter. This rule is the single source of truth for who participates; stage bodies describe the full-roster case and defer to it.
+
+**What the user hears while an ensemble runs.** These handoffs happen inside a stage, past the reach of a directive's `narration`, so the sentences are written here. Only the double-quoted text is spoken; fill the `[bracketed]` slots and drop the brackets.
+
+- Handing a specific question to one specialist - **SAY:** "Let me bring in the [trade] on [the specific question, in plain terms]."
+- Starting a chain where each specialist builds on the last - **SAY:** "The [first trade] takes a look first, then the [next trade] builds on what comes back."
+- Convening several specialists at once - **SAY:** "Getting the [trade] and [trade] to weigh in on this together."
+- A specialist's work has come back and you are folding it in - **SAY:** nothing. Integration is the work, not an event.
+
+Trades, never agent names, files, or slugs: product manager, product lead, designer, delivery lead, architect, architecture reviewer, platform engineer, compliance specialist, security engineer, developer, quality engineer, release engineer, operations engineer. Nothing is said about handing off as a mechanism, briefs, context paths, rule bundles, contribution files, identity markers, blindness between participants, rounds, or which topology the stage declares. The user is meeting colleagues; that setup is ours, not theirs. A topology that does not apply is never mentioned either.
+
+- **`mode: inline`** — the support agents are perspectives the orchestrator adopts in its own context: read each support agent's file + knowledge from `inline_context_paths` (see "For inline stages" in `stage-protocol.md`), produce the lead's output first, then layer in each support perspective, then synthesise. Do NOT dispatch a support agent on an inline stage; dispatch is reserved for the other modes. No contribution files.
+- **`mode: subagent`** - hub-and-spoke. Dispatch the lead for the draft. If the stage declares `support_agents`, dispatch each one against the returned draft (artifacts by path per §11's context budget, rules per `stage-protocol.md` § "For subagent stages" step 2; spokes are mutually blind - no support agent's brief contains another's contribution); each spoke writes its contribution file; then dispatch the lead once more to integrate the contributions into the artifacts.
+- **`mode: pipeline`** — chain. `directive.pipeline.links` is the declared lead-then-support order; `directive.pipeline.completed` is the current-attempt recovery ledger. On entry or resume, skip every completed entry and dispatch the FIRST missing link. After each link returns, mint its receipt before dispatching the next: `aidlc engine log link --stage "<directive.stage>" --link "<agent>"`. Add `--single` when `directive.single === true`. For a multi-repo stage, run one independent chain per registered repo, add `--repo "<repo>"`, and treat repo-qualified `directive.pipeline.completed` entries (`<repo>:<agent>`) as that chain's recovery state. A current-attempt repo-scoped reuse receipt marks that repo's whole chain completed without dispatch. Each link sees everything upstream and advances the work product directly — it may edit the evolving artifacts in place (serialized, no conflict) or hand results down as context for the next link to build on, per the stage body. The FINAL link leaves the `produces[]` artifacts complete. Order is the point. No contribution files required.
+- **`mode: mob`** - mesh, run as bounded rounds with the support agents. With support agents to dispatch, the engine names the collaborators module (`stage-protocol-collaborators.md`), which says how the rounds, contribution files and objections run; with none, the lead runs alone.
+
+On every topology, a reviewer NOT-READY (stage-protocol-reviewer.md §12a step 3) re-invokes the LEAD alone with the findings — the ensemble convenes once; the repair loop is lead-reviewer ping-pong.
+
+**Completion evidence (deterministic).** On a `mob` or `subagent`-with-supports stage, the contribution files are the deterministic, structural completion evidence the engine checks: it refuses gate entry and completion while any support agent in the directive's effective `support_agents` is missing its contribution file or that file lacks its identity-marker first line. A lead-only run (the collaborators switch off, so the effective list is empty) owes no contribution evidence and likewise no pipeline link receipt beyond the lead's own. On `pipeline`, current-attempt `PIPELINE_LINK_COMPLETED` receipts are the evidence: every scanned repo needs every declared link, while a current-attempt repo-scoped `ARTIFACT_REUSED` row with `Decision: keep` exempts that reused repo. Isolated reuse rows and link receipts carry the same `single-stage:<slug>` workflow identity, never satisfy the main workflow, and are accepted only while the complete canonical CodeKB artifact set exists under authoritative regular-file paths and its source scope remains `CURRENT`. A rejection, jump, or later stage start resets the main-workflow evidence. Artifact files alone do not satisfy pipeline evidence. The shared escape hatch is `AIDLC_DISABLE_ENSEMBLE_EVIDENCE=1`, only for recovering a legitimately-run stage whose evidence was lost during upgrade or interruption.
+
+---
+
+## 11. Subagent Return Summary
+
+When a subagent completes its work, it MUST return a structured summary to the orchestrator. This ensures no context is lost between subagent execution and orchestrator continuation.
+
+If the dispatch returns before that summary exists (a harness that runs agents in the background), do not write a shell loop or a sleep. Run `aidlc engine orchestrate wait --stage <directive.stage> --for collaborators` after dispatching support agents, or `--for artifacts` after dispatching the lead (add `--unit <directive.unit>` on a per-unit stage), and re-run that same command while it answers `status: waiting`. It returns within its bound and lists exactly what is still missing.
+
+### Required return format:
+```markdown
+## Subagent Summary: [Stage Name]
+
+### Produced
+- [file path 1]: [brief description of content]
+- [file path 2]: [brief description of content]
+
+### Key Decisions
+- [Decision 1]: [rationale]
+- [Decision 2]: [rationale]
+
+### Issues / Concerns
+- [Any problems encountered, edge cases found, or risks identified]
+- "None" if no issues
+
+### Next Steps
+- [What the orchestrator should do next based on this output]
+```
+
+### Rules:
+- The orchestrator MUST read this summary before proceeding to the next stage
+- If the "Issues / Concerns" section is non-empty, the orchestrator MUST present them to the user before continuing
+- If the "Produced" section lists fewer files than expected for the stage, the orchestrator MUST investigate before marking the stage complete
+- The files are the substantive handoff. The return summary names paths,
+  decisions, concerns, and the next action only; it does not repeat artifact,
+  contribution, scan, source, or test-output bodies that are already on disk.
+
+### Context budget for subagent prompts
+To prevent context overflow in subagent calls:
+- **Current-unit only**: Pass only the design artifacts for the unit being implemented, not all units
+- **Summarize inception artifacts**: For CONSTRUCTION subagents, provide a 1-2 line summary of each inception artifact with its file path, rather than embedding full content. The subagent can Read specific files if needed.
+- **Always include**: The specific task instructions and relevant state/artifact paths. The harness agent config loads persona and knowledge context; do not paste either into the prompt.
+- **Large knowledge sets**: Name any especially relevant file paths in the brief, but let the dispatched agent read them through its configured resources.
+- **Files and commands**: Every subagent prompt carries this sentence verbatim: Write and edit files yourself with your file tools, never through the shell (no heredoc, no `echo`, `printf`, or `python3` writing a file, no `sed -i`, no `mkdir`; the file-write tool creates any missing folder). A command the person asks for, or one the plan names (a package install, a build, a scaffolder, a migration, a formatter, a code generator, even a `mkdir`), still runs as written. Every file you make on your own, a scratch file, a helper script, a command's output, stays inside the project (nothing in /tmp or any folder outside it), and a command's output is read from the tool result, never sent to a file; a file the person asks for, or one the plan names, goes where they say. Quote a pattern meant for the program, not the shell (`--include='*.ts'`), and never start an argument with `=`: zsh, the macOS default shell, stops on both. Read, list, and search (your own knowledge files included) with your file tools where you have them; where the shell is your only way to read, use one plain read command (no `cd` before it, no pipe or second command after it). Run every AI-DLC command exactly as written, as a command of its own (no `cd` before it, no pipe or second command after it), keeping its path as written (never a full path): a shell line can stop and ask the person to approve it.
+
+### Subagent failure recovery
+If a Task tool call fails (timeout, error, or returns truncated/incomplete output):
+1. **Retry once** with a reduced context prompt — summarize inception-phase artifacts instead of including full content, pass only the current unit's design artifacts
+2. If the retry also fails, **tell the user plainly what failed** and offer two options via a structured question:
+   - "Run it here": do the stage's work in this conversation instead of handing it off; slower, but it sidesteps whatever is failing
+   - "Skip and revisit": leave the stage unfinished, keep going, and come back to it later
+3. Record the failure and resolution with `aidlc engine audit append-raw "Error: <brief>" "<body>"` (the audit trail rules in section 4)
+
+---
+
+---
+
+## Harness topology bindings
+
+### Claude Code
+
+**Pipeline receipt rule:** after every pipeline `Task` return, run `aidlc engine log link --stage "<directive.stage>" --link "<agent>"` before the next dispatch; add `--repo "<repo>"` for multi-repo chains, add `--single` when `directive.single === true`, and resume from `directive.pipeline.completed`.
+
+`directive.mode` tells you HOW to run the body — it is the stage's communication topology (who talks to whom; this module's §5 "Multi-agent stages" section is the contract). The writing model on every dispatched topology: everyone writes their own work — each dispatched support agent writes a contribution file (`<record>/<phase>/<stage>/contributions/<agent-slug>.md`, §11 shape with the identity-marker first line) — and the lead alone edits the stage's `produces[]` artifacts. `inline` (run it in this session, with the lead agent's persona the step carries in `directive.lead_persona`; support agents are voices you adopt, no contribution files), `subagent` (hub-and-spoke: run the lead via a `Task` call to the named agent, which loads the persona automatically — do not inject it in the prompt; if the stage declares `support_agents`, dispatch each one via `Task` against the lead's returned draft — parallel calls in one message, briefs with artifacts by path and rules per `stage-protocol.md` § "For subagent stages" step 2, mutually blind — each writes its contribution file, then a final lead `Task` integrates them into the artifacts), `pipeline` (chain: the links collectively author the artifacts — lead `Task` first, then one `Task` per support agent in declared order, each link seeing everything upstream and advancing the work product directly; the FINAL link leaves the artifacts complete; no contribution files), or `mob` (mesh as bounded rounds: lead drafts, then ALL support agents in parallel `Task` calls against the draft, each writing its contribution file; integrate as the lead, then triage unresolved objections per §5 — judgment calls go to the HUMAN mid-stage as a structured question, knowledge disputes to round 2 with only the objectors; maintained dissent is quoted verbatim at the gate). You are the bus on every topology, and a reviewer NOT-READY re-invokes the LEAD alone. The contribution files are the ensemble's completion evidence — the engine refuses approval on a mob/subagent-with-supports stage while one is missing. The shipped graph is 29 inline / 2 subagent / 1 pipeline / 1 mob: practices-discovery and code-generation carry `subagent`; reverse-engineering carries `pipeline` (developer scans, architect synthesizes and writes); user-stories carries `mob`.
+
+---
+
