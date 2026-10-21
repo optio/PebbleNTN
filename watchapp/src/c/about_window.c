@@ -13,7 +13,7 @@ static TextLayer *s_texts[4];
 static BitmapLayer *s_qr_layer;
 static GBitmap *s_qr;
 static AboutInfo s_info;
-static char s_details[80];
+static char s_details[ABOUT_DETAILS_LEN];
 
 // Adds a centred, word-wrapped text block at `*y` and moves `*y` below it.
 static TextLayer *add_text(int index, const char *text, const char *font_key, int16_t x,
@@ -49,8 +49,10 @@ static void about_load(Window *window) {
   const int16_t w = bounds.size.w - 2 * inset;
   int16_t y = PBL_IF_ROUND_ELSE(16, 0);
 
-  about_details(s_details, sizeof(s_details), s_info.app_version, PBNTN_PROTOCOL_MAJOR,
-                PBNTN_PROTOCOL_MINOR,
+  // Formatted once, here: About shows the phone version and status as they were when it opened, and
+  // does not refresh while open (#103).
+  about_details(s_details, sizeof(s_details), s_info.app_version, s_info.phone_version,
+                PBNTN_PROTOCOL_MAJOR, PBNTN_PROTOCOL_MINOR,
                 about_phone_status(connection_service_peek_pebble_app_connection(),
                                    s_info.heard_from_phone));
   add_text(0, "PebbleNTN", FONT_KEY_GOTHIC_24_BOLD, inset, w, &y);

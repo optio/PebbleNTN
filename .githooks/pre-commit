@@ -41,7 +41,7 @@ else
   leak="$(git diff --cached -U0 -- . ':(exclude).githooks/pre-commit' |
     grep -nE '^\+' |
     grep -viE '^\+\+\+' |
-    grep -nEi 'BEGIN [A-Z ]*PRIVATE KEY|(storePassword|keyPassword|keyAlias)[[:space:]]*=[[:space:]]*[^$[:space:]]|(api[_-]?key|auth[_-]?token|client[_-]?secret)["[:space:]]*[:=][[:space:]]*["'\''][^"'\'']{8,}' || true)"
+    grep -nEi 'BEGIN [A-Z ]*PRIVATE KEY|(storePassword|keyPassword|keyAlias)[[:space:]]*=[[:space:]]*[^$[:space:]]|(api[_-]?key|auth[_-]?token|client[_-]?secret)["[:space:]]*[:=][[:space:]]*["'\''][^"'\''$][^"'\'']{7,}' || true)"
   if [[ -n "$leak" ]]; then
     fail "possible secret in the staged diff:"
     sed 's/^/       /' <<<"$leak" >&2

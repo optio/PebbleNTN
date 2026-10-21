@@ -25,6 +25,7 @@
 #include "glance_text.h"
 #include "settings_window.h"
 #include "panel_layout.h"
+#include "phone_version.h"
 #include "stops_text.h"
 #include "theme.h"
 
@@ -33,6 +34,10 @@ _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 #define APP_VERSION_STR "0.0.69"
 #define PRIMARY_TEXT_MAX 64
 #define SECONDARY_TEXT_MAX 24
+
+// Persist key for the last connected phone app version (REQ-WATCH-020, #103). Keys 1–15 belong to
+// theme.c's settings.
+#define PERSIST_KEY_PHONE_VERSION 16
 
 static Window *s_window;
 static Layer *s_panel_layer;   // maneuver + distance
@@ -63,6 +68,11 @@ static AppTimer *s_connect_timer;
 static int s_connect_left;         // seconds remaining on the countdown, CONNECT_TIMEOUT_S..0
 static bool s_heard_from_phone;    // set on the first inbox message; stops the watchdog for good
 static GBitmap *s_qr_bitmap;
+
+// The last phone app version heard (key 11 on any inbound message), persisted so About can show it
+// after a relaunch and while the phone is out of range; empty until a phone ever answered
+// (REQ-WATCH-020, #103).
+static char s_phone_version[PHONE_VERSION_MAX + 1];
 
 // Current normalized state, as sent by the phone.
 static int s_maneuver = PBNTN_MANEUVER_UNKNOWN;
@@ -882,6 +892,39 @@ static void send_ready(void) {
   app_message_outbox_send();
 }
 
+// Record the phone app version a message carries (key 11) and persist it, but only when it changed:
+// the phone sends it with every navigation update, and flash has limited write cycles (REQ-WATCH-020,
+// #103). A message without the key leaves the recorded version as it is.
+static void record_phone_version(DictionaryIterator *iter) {
+  Tuple *version_t = dict_find(iter, PBNTN_KEY_APP_VERSION);
+  if (version_t == NULL || version_t->type != TUPLE_CSTRING || version_t->length == 0) {
+    return;
+  }
+  if (!phone_version_update(s_phone_version, sizeof(s_phone_version), version_t->value->cstring)) {
+    return;
+  }
+  const int written = persist_write_string(PERSIST_KEY_PHONE_VERSION, s_phone_version);
+  if (written < 0) {
+    // Not fatal: About still shows it this session; the next changed version retries the write.
+    APP_LOG(APP_LOG_LEVEL_WARNING, "phone version not persisted (%d)", written);
+  }
+}
+
+// The stored phone app version from an earlier session, if any (REQ-WATCH-020, #103).
+static void load_phone_version(void) {
+  s_phone_version[0] = '\0';
+  if (!persist_exists(PERSIST_KEY_PHONE_VERSION)) {
+    return;
+  }
+  const int read = persist_read_string(PERSIST_KEY_PHONE_VERSION, s_phone_version,
+                                       sizeof(s_phone_version));
+  if (read < 0) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "phone version not read (%d)", read);
+    s_phone_version[0] = '\0';
+  }
+  s_phone_version[PHONE_VERSION_MAX] = '\0';
+}
+
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *event_t = dict_find(iter, PBNTN_KEY_EVENT);
   if (!event_t) {
@@ -891,6 +934,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   // it can never overwrite a real state with a "connecting"/install hint (REQ-WATCH-017).
   s_heard_from_phone = true;
   connect_stop();
+  record_phone_version(iter);
   switch (event_t->value->int32) {
     case PBNTN_EVENT_NAVIGATION_UPDATE:
       render_navigation(iter);
@@ -925,6 +969,7 @@ static void on_settings_changed(void) {
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   const AboutInfo about = {
     .app_version = APP_VERSION_STR,
+    .phone_version = s_phone_version,
     .heard_from_phone = s_heard_from_phone,
   };
   settings_window_push(on_settings_changed, &about);
@@ -994,6 +1039,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void init(void) {
   settings_load();
+  load_phone_version();
 
 #if defined(PBL_PLATFORM_EMERY)
   // Touch watches (Pebble Time 2): opt into the system touch bridge, so the settings menus, their

@@ -1,6 +1,56 @@
 # Implementation Status
 
-_Last updated: 2026-10-19_
+_Last updated: 2026-10-21_
+
+## About shows the last connected phone app version (2026-10-21, #103)
+
+**Milestone:** post-M12 watch enhancement (REQ-WATCH-020 amended). Watch-side only: no protocol,
+generated-constant or Android change.
+
+**Requirement:** About names both versions, so a report says which phone build the watch last
+talked to (and #94 can later build on it).
+- `Watchapp 0.0.68` (was `Version …`);
+- `Phone app 0.0.67 (last seen)`, or `Phone app: never connected`;
+- `Protocol 1.1` and the status line, unchanged.
+
+**Design.**
+- The phone already sends its version as key 11 (`APP_VERSION`) with every message. A new pure unit,
+  `phone_version.{h,c}`, holds the recording rule: a 16-byte cap, empty means none, and "changed?".
+  It is host-tested by `tests/test_phone_version.c`.
+- `main.c` records the version from any inbound message and persists it under key 16 (theme.c owns
+  1–15), writing only when it changed, to spare flash. It loads it at startup, so the version is
+  still shown after a relaunch and while the phone is out of range. A failed write is logged.
+- About formats it once when it opens, like the status line; it does not refresh while open.
+- The details buffer grows from 80 to `ABOUT_DETAILS_LEN` (128). The worst case, 16-byte versions
+  on both sides with `Pebble app not connected`, is about 105 bytes.
+- The About row's subtitle in the settings menu stays the watchapp version.
+
+**Verification.**
+- Host tests: the new `test_phone_version` and the extended `test_about_text` (never connected for
+  NULL and empty, the worst case fits uncut, small-buffer truncation).
+- Emulator, on basalt, chalk, emery and diorite:
+  - a fresh install shows `Phone app: never connected`;
+  - after a message with key 11, `Phone app 0.0.67 (last seen)`;
+  - after a relaunch without the phone, the same version with `Phone app not answering`;
+  - the screen scrolls to the link and stays inside the bezel on chalk.
+- On basalt, also: a new version sent while About is open leaves it unchanged until reopened, and
+  the About row's subtitle is still `0.0.68`.
+- On 144-wide screens the phone line wraps onto a second line at a word boundary; nothing is cut.
+
+**Commands executed.**
+
+```bash
+./scripts/test-watchapp-unit.sh        # baseline green, then green with the new and extended tests
+./scripts/build-watchapp.sh            # all five platforms build
+pebble install/send-app-message/emu-button/screenshot --emulator {basalt,chalk,emery,diorite}
+./scripts/validate-spec-assets.sh      # OK (34 files) after the manifest resync
+./scripts/test-all.sh                  # PASS; protocol constants unchanged
+```
+
+**Blockers:** none. The local Pebble emulator sometimes stopped answering mid-session (the HEAD
+build did too), so the emulator checks were run as short sessions with a restart between them.
+**Next atomic task:** refresh the published `screenshots/settings-about-*.png` with
+`watchapp/tools/capture_screenshots.py`.
 
 ## Google Maps "toward <road>" cards take the arrow from the icon (2026-10-19, #104)
 

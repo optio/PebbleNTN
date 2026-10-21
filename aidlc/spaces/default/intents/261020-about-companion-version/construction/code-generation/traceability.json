@@ -1,0 +1,20 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR3.1", "NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR1.2", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR1.3", "status": "OK", "target": "watchapp/src/c/phone_version.c" },
+    { "id": "FR1.4", "status": "OK", "target": "watchapp/tests/test_phone_version.c" },
+    { "id": "FR2.1", "status": "OK", "target": "watchapp/src/c/about_text.c" },
+    { "id": "FR2.2", "status": "OK", "target": "watchapp/src/c/about_window.c" },
+    { "id": "FR2.3", "status": "OK", "target": "watchapp/src/c/settings_window.c" },
+    { "id": "FR2.4", "status": "OK", "target": "watchapp/tests/test_about_text.c" },
+    { "id": "FR3.1", "status": "OK", "target": "requirements/REQ-WATCH.md" },
+    { "id": "NFR1", "status": "OK", "target": "protocol/protocol-definition.json" },
+    { "id": "NFR2", "status": "OK", "target": "watchapp/tests/test_phone_version.c" },
+    { "id": "NFR3", "status": "OK", "target": "watchapp/src/c/about_window.c" },
+    { "id": "NFR4", "status": "OK", "target": "watchapp/tests/test_about_text.c" }
+  ],
+  "reverse": []
+}

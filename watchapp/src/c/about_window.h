@@ -5,6 +5,7 @@
 // What the About screen shows that only main.c knows (REQ-WATCH-020).
 typedef struct {
   const char *app_version;
+  const char *phone_version;  // last connected phone app version, "" if never (#103)
   bool heard_from_phone;  // the PebbleNTN phone app has answered since the watchapp opened
 } AboutInfo;
 

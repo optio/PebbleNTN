@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "frameworkVersion": "2.11.1",
+  "distribution": "claude",
+  "harnessDir": ".claude"
+}
