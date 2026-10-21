@@ -1504,3 +1504,77 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Stage Skip
+**Timestamp**: 2026-10-21T07:08:15Z
+**Event**: STAGE_SKIPPED
+**Stage**: deployment-pipeline
+**Reason**: Existing CD pipeline needs no creation or change: .github/workflows/release.yml and watchapp.yml already build and ship the watchapp (PBW) and APK on every push to main; #103 is a watch-only code change with no pipeline impact
+**Skip Kind**: conditional-runtime
+
+---
+
+## Stage Start
+**Timestamp**: 2026-10-21T07:08:15Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-execution
+**Agent**: aidlc-pipeline-deploy-agent
+**Answer Mode**: guide (reused from requirements-analysis)
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-10-21T07:08:29Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-21T07:08:30Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Q1: How far should I take the deployment?
+**Options**: A. Push + open PR then stop,B. Push + PR + merge after CI (publishes release),C. Keep local
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T07:09:45Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: picker
+**Picked**: ["B. Push, PR, merge"]
+**Message Id**: 24088f91
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-21T07:09:46Z
+**Event**: QUESTION_REPLIED
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Question**: Q1. How far should I take the deployment? Merging feat/about-companion-version into main publishes the next public release (APK + PBW). The branch has two commits: the AI-DLC setup, then the #103 change.
+**Reply**: B. Push, PR, merge
+
+---
+
+## Question Answered
+**Timestamp**: 2026-10-21T07:09:47Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q1: B. Push, PR, merge
+**Person Reply**: B. Push, PR, merge
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-21T07:09:48Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
