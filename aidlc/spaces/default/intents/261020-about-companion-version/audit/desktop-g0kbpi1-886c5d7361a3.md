@@ -1578,3 +1578,337 @@
 **Context**: operation > deployment-execution > deployment-execution-questions.md
 
 ---
+
+## Artifact Updated
+**Timestamp**: 2026-10-21T07:16:06Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-21T07:16:07Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Q2: PR #106 green; merge blocked by session permissions. How to merge?
+**Options**: A. I merged it myself,B. Leave PR open; deployment pending
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T16:30:01Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. I merged it"]
+**Message Id**: e706da83
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-21T16:30:01Z
+**Event**: QUESTION_REPLIED
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Question**: Q2. My merge of PR #106 was blocked by this session's permission settings. How do you want to proceed?
+**Reply**: A. I merged it
+
+---
+
+## Question Answered
+**Timestamp**: 2026-10-21T16:30:09Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q2: A. I merged it
+**Person Reply**: A. I merged it
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T16:30:24Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a8654b0120d94fd04
+**Message**: ! gh pr merge 106 --repo optio/PebbleNTN --merge --delete-branch
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-10-21T17:24:17Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: deployment-execution
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T17:24:51Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ad2c7b10f691d71f9
+**Message**: <summary>\n1. Primary Request and Intent:\n   - First request, via `/aidlc` with the argument "check which gh issue to work on next": recommend the next GitHub issue. I recommended #103 (About screen sh
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T22:15:00Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: typed
+**Message Id**: 2fa19184
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T22:15:17Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a219f472a159d5892
+**Message**: I merged it
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T22:15:36Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: typed
+**Message Id**: 48122ad3
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T22:15:59Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ae06e6a5772ea3805
+**Message**: merged it now
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T22:17:12Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: typed
+**Message Id**: ad844647
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T22:18:17Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a7b9b61c8c92db933
+**Message**: finish the deployment stage
+
+---
+
+## Host Turn
+**Timestamp**: 2026-10-21T22:25:51Z
+**Event**: HOST_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T22:26:13Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ac291ba5fa81c70c7
+**Message**: yes, wrap up the AI-DLC record
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-21T23:05:42Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ad8a9244df378d00d
+**Message**: The goal was shipping #103 so About shows the last connected phone app version; it's merged and released as v0.0.70. Next, I'll finish #103's work record and ask for your sign-off.
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T23:07:09Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: typed
+**Message Id**: 49c3ee94
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T23:07:45Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: typed
+**Message Id**: e93b8839
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-21T23:08:04Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-10-21T23:08:06Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q2: X. Merged PR #106 at the person's request ("Ok merge all open pr's"), merge commit 8ba0c47
+**Person Reply**: Once #103 is fully wrapped up, work on gh issue #94
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-10-21T23:08:34Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-log.md
+**Context**: operation > deployment-execution > deployment-log.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-10-21T23:08:39Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/smoke-test-results.md
+**Context**: operation > deployment-execution > smoke-test-results.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-10-21T23:08:44Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/health-check-report.md
+**Context**: operation > deployment-execution > health-check-report.md
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-10-21T23:08:45Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-execution
+**Next Stage**: observability-setup
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-log.md=not-run; required-sections@aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/smoke-test-results.md=not-run; required-sections@aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/health-check-report.md=not-run; required-sections@aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-execution-questions.md=not-run; upstream-coverage@aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/deployment-log.md=not-run
+**Open Decisions**: 0
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-21T23:09:35Z
+**Event**: HUMAN_TURN
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: d9afb7e2
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-21T23:09:36Z
+**Event**: QUESTION_REPLIED
+**Session**: 82c9fa22-666d-4fad-8667-64e6711b3dc8
+**Question**: 📦 #103 is live as v0.0.70. The checksums match, all 5 watch builds contain the new About text, and every check on main passed. The rollback is to revert merge 8ba0c47. The notes are in aidlc/spaces/default/intents/261020-about-companion-version/operation/deployment-execution/. Approve the deployment?
+**Reply**: Approve
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-10-21T23:09:38Z
+**Event**: GATE_APPROVED
+**Stage**: deployment-execution
+**User Input**: Approve
+**Person Reply**: Approve
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-10-21T23:09:38Z
+**Event**: STAGE_COMPLETED
+**Stage**: deployment-execution
+**Validation Basis**: {"graphContract":"sha256:9324fac9ed5362e892b6f0c448c7cd3701eec134e2e24178d842efc36efe955a","inputs":[{"artifact":"build-test-results","contentHash":"sha256:19b05d5bca796e6f1f815a596309c5a382bad02c7acadca3580332521cf98a76","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:1dd38c004d37694aabfcdd077e4d1ee977cdd50899d14ab1f15cc59868b70f1c"},{"artifact":"cd-config","contentHash":"sha256:fdb9c516fd80c933fc28a19e3d156910587e5a6402f0faf299d6633c6d42b93a","instanceCount":1,"presentCount":0,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:044802bce547071b809579e742d32a7d29d867aa99d6873883b2395a7b66ea31"},{"artifact":"deployment-strategy","contentHash":"sha256:81690f115467a5b3c9f6e1af45cfa86757aeae1a9e299256b8883d8b842465aa","instanceCount":1,"presentCount":0,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:e63d5764e9b7f40c410e0e94e32d52352f228241cc729661261fe605574ac8ee"},{"artifact":"environment-inventory","contentHash":"sha256:71821c801d6fd9ce726c9efa6e8ba0bab7bd93c26c1b5ae05d473b4dc670dfc4","instanceCount":1,"presentCount":0,"producer":"environment-provisioning","required":true,"structureHash":"sha256:f42a67c9087c8361b9f879a74cf720bf9c39839ada913fe21df397fdfa78a345"}],"outputs":[{"artifact":"deployment-execution-questions","contentHash":"sha256:5d973a65da909889872f75dbfcefcc07e65ba3c6d2af22be033216743b734d21","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:290135b3eb513842bf690321693ee1d5888cd43b7a0861058868b08d44307555"},{"artifact":"deployment-log","contentHash":"sha256:8c398a08f0fe32e1f034643e69eedce789f4752a2d5d9da04be6a6d8120c4e8a","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:46233c5c1a70e0312f4a36e30440c02e68192ceb7ba30c963462cc2e5109ac45"},{"artifact":"health-check-report","contentHash":"sha256:45c3e22d4253d42b8efb6c7d84b1cf5676e995b6c0f3bd6f3f5e88cf0d202777","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:22e4221f65a70c42ef02a6a31189b0cb3b808a29ee441ec872b2e943e46b0a2a"},{"artifact":"smoke-test-results","contentHash":"sha256:20036c6b4d3c302f1a4a4ac7dbbdf44bea5b0d563a89b0fef8db72f8df3adf3b","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:7455c8632f874cdca09d14e12614c052a89afd6eaf5b90ab89ec263020aa1aed"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Deployment Execution approved by gate
+**Tokens In**: 76
+**Tokens Out**: 13523
+**Cache Read**: 7295315
+**Cache Write**: 448942
+**Cost USD**: 5.32
+**By Model**: opus-5-5=5.32
+**By Agent**: main=5.32
+**Tokens By Model**: opus-5-5=76/13.5k/7.3M/448.9k
+**Tokens By Agent**: main=76/13.5k/7.3M/448.9k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-10-21T23:09:38Z
+**Event**: STAGE_STARTED
+**Stage**: observability-setup
+**Agent**: aidlc-operations-agent
+**Answer Mode**: guide (reused from requirements-analysis)
+
+---
+
+## Stage Skip
+**Timestamp**: 2026-10-21T23:09:50Z
+**Event**: STAGE_SKIPPED
+**Stage**: observability-setup
+**Reason**: No monitoring to configure: #103 is an offline watchapp change with no server, no telemetry and no new signal; release health is covered by the deployment checks and GitHub issue reports
+**Skip Kind**: conditional-runtime
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-10-21T23:09:50Z
+**Event**: PHASE_COMPLETED
+**From phase**: operation
+**To phase**: (end)
+**Stages completed**: 8
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-10-21T23:09:50Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: operation → end
+
+---
+
+## Workflow Completion
+**Timestamp**: 2026-10-21T23:09:50Z
+**Event**: WORKFLOW_COMPLETED
+**Scope**: express
+**Details**: Scope: express, final stage observability-setup skipped
+**Reason**: No monitoring to configure: #103 is an offline watchapp change with no server, no telemetry and no new signal; release health is covered by the deployment checks and GitHub issue reports
+**Tokens In**: 490
+**Tokens Out**: 95512
+**Cache Read**: 42927629
+**Cache Write**: 1625727
+**Cost USD**: 21.59
+**By Model**: opus-5-5=21.59
+**By Agent**: main=13.32; aidlc-developer-agent=8.27
+**Tokens By Model**: opus-5-5=490/95.5k/42.9M/1.6M
+**Tokens By Agent**: main=208/53.9k/21.7M/987.3k; aidlc-developer-agent=282/41.7k/21.2M/638.5k
+
+---
