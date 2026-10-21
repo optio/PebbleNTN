@@ -15,6 +15,7 @@
 #define PERSIST_KEY_EARLY_WARN_REPEAT 13
 #define PERSIST_KEY_EARLY_WARN_PATTERN 14
 #define PERSIST_KEY_EARLY_WARN_INTENSITY 15
+// Key 16 is taken by main.c for the last connected phone app version (#103): the next setting is 17.
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
