@@ -70,7 +70,8 @@ class ProtocolCodecTest {
         assertEquals(Protocol.ManeuverCodes.TRANSIT, msg.intOrNull(Protocol.Keys.MANEUVER))
         assertEquals(5, msg.intOrNull(Protocol.Keys.STOPS_REMAINING))
         assertNull("a ride has no turn distance", msg.intOrNull(Protocol.Keys.DISTANCE_METERS))
-        assertEquals(1, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
+        // #94 (FR1.1): protocol 1.2 adds the update flag and LATEST_PHONE_VERSION.
+        assertEquals(2, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
     }
 
     @Test
@@ -96,6 +97,49 @@ class ProtocolCodecTest {
         val msg = ProtocolCodec.encodeCompatibilityError(Protocol.ErrorCodes.INCOMPATIBLE_PROTOCOL_MAJOR)
         assertEquals(Protocol.Events.PHONE_COMPATIBILITY_ERROR, msg.intOrNull(Protocol.Keys.EVENT))
         assertEquals(Protocol.ErrorCodes.INCOMPATIBLE_PROTOCOL_MAJOR, msg.intOrNull(Protocol.Keys.ERROR_CODE))
+    }
+
+    // REQ-ANDROID-017 / #94 (FR2): the update flag and latest version ride on every state message.
+
+    private val navigating = NavigationState.Navigating(
+        sessionId = 4,
+        instruction = NavigationInstruction(maneuver = Maneuver.LEFT, distanceMeters = 80),
+        stateTimestampSeconds = 100,
+    )
+    private val allStates = listOf(navigating, NavigationState.Stopped(sessionId = 4), NavigationState.NoActiveNavigation)
+
+    @Test
+    fun updateSetsBit4AndLatestVersionOnEveryStateMessage() {
+        val otherBits = Protocol.FlagMasks.EXIT_TO_WATCHFACE_ON_STOP_MASK or Protocol.FlagMasks.STATE_IS_STALE_MASK
+        for (state in allStates) {
+            val msg = ProtocolCodec.encodeState(state, flags = otherBits, appVersion = appVersion, latestPhoneVersion = "v0.0.71")
+            val flags = msg.intOrNull(Protocol.Keys.FLAGS)!!
+            assertEquals("$state: bit 4", Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK, flags and Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK)
+            assertEquals("$state: other bits kept", otherBits, flags and Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK.inv())
+            assertEquals("$state: leading v removed", "0.0.71", msg.stringOrNull(Protocol.Keys.LATEST_PHONE_VERSION))
+        }
+        // No active navigation, whose flags the reducer always sets to 0, still carries the bit.
+        val idle = ProtocolCodec.encodeState(NavigationState.NoActiveNavigation, flags = 0, appVersion = appVersion, latestPhoneVersion = "0.0.71")
+        assertEquals(Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK, idle.intOrNull(Protocol.Keys.FLAGS))
+        assertEquals("0.0.71", idle.stringOrNull(Protocol.Keys.LATEST_PHONE_VERSION))
+    }
+
+    @Test
+    fun noUpdateLeavesBit4ClearAndKey14Out() {
+        for (state in allStates) {
+            for (latest in listOf(null, "", "  ", "v")) {
+                val msg = ProtocolCodec.encodeState(state, flags = 0b10, appVersion = appVersion, latestPhoneVersion = latest)
+                assertEquals("$state / '$latest': flags as given", 0b10, msg.intOrNull(Protocol.Keys.FLAGS))
+                assertNull("$state / '$latest': no key 14", msg.stringOrNull(Protocol.Keys.LATEST_PHONE_VERSION))
+            }
+        }
+    }
+
+    @Test
+    fun compatibilityErrorHasNoUpdateKey() {
+        val msg = ProtocolCodec.encodeCompatibilityError(Protocol.ErrorCodes.INCOMPATIBLE_PROTOCOL_MAJOR)
+        assertNull(msg.stringOrNull(Protocol.Keys.LATEST_PHONE_VERSION))
+        assertNull(msg.intOrNull(Protocol.Keys.FLAGS))
     }
 
     @Test

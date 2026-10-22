@@ -4,126 +4,134 @@
 
 ### System Overview
 
-A monorepo with two runtime programs joined by a generated AppMessage protocol: an event-driven Android companion (Kotlin) and a Pebble watchapp (C). Supporting Python tooling generates the protocol constants, validates rules and drives emulator regression runs.
+A two-device monorepo. The Android companion (`android/app`, Kotlin/Compose) observes navigation notifications, normalizes them through a declarative rule engine and a pure session reducer, and pushes one current state to the Pebble watchapp (`watchapp/`, C) over PebbleKit Android 2 AppMessages. One JSON protocol definition (`protocol/`) generates the constants for both sides. Rule data, schemas and maintainer tools live beside the code.
 
 ### Architectural Style
 
-Two-tier device pair (phone + watch), each side a small monolith.
-- **Phone**: a pipeline into a pure, deterministic reducer (functional core, imperative shell). Services and UI feed `ReducerEvent`s; the reducer returns a new `ReducerState` plus `ReducerEffect`s; `NavigationController` runs the effects against a `WatchTransport` interface. Dependencies are wired by hand in `di/AppContainer.kt` (no Hilt).
-- **Watch**: a single event loop (`app_event_loop`) with one navigation window, a settings window tree and an About window. Pure logic is split into Pebble-free C units that compile on the host for testing.
+A client-side, offline monolith per device, with a hexagonal flavour on the phone. Pure domain cores (`core/NavigationSessionReducer`, `rules/RuleEngine`, `protocol/ProtocolCodec`) are isolated from Android and PebbleKit behind interfaces (`WatchTransport`, `AppAllowlist`, `ReleaseFetcher`, `EpochClock`). Wiring is manual through `di/AppContainer` (no Hilt, by the coding standards). The watch is a single-window event loop that keeps pure, host-testable text modules apart from Pebble API code. There is no backend. The only network call is the GitHub Releases GET.
 
 ### Component Relationships
 
 ```mermaid
 flowchart LR
-  NavApp[Navigation app notification] --> NLS[NavigationNotificationListenerService]
-  NLS --> Disp[NotificationDispatcher and AppAllowlist]
-  Disp --> Snap[NotificationSnapshotFactory]
-  Snap --> Rules[RuleEngine]
-  Rules --> Ctrl[NavigationController]
-  Ctrl --> Red[NavigationSessionReducer]
-  Red --> Ctrl
-  Ctrl --> Codec[ProtocolCodec]
-  Codec --> Tx[PebbleWatchTransport]
-  Tx --> PK[PebbleKit 2 and Pebble companion app]
-  PK --> Watch[watchapp main.c]
-  Watch --> Settings[settings_window.c]
-  Settings --> About[about_window.c]
-  Watch --> Theme[theme.c persisted settings]
-  PK --> WLS[WatchListenerService]
-  WLS --> Ctrl
-  Ctrl --> Store[NavigationStateRepository Room]
-  Snap --> Debug[DebugHistoryRepository Room]
-  Def[protocol/protocol-definition.json] -.generates.-> Codec
-  Def -.generates.-> Watch
+  subgraph Phone["Android companion (android/app)"]
+    NLS[NavigationNotificationListenerService] --> DISP[NotificationDispatcher]
+    DISP --> Q[SerialProcessingQueue]
+    Q --> PROC[DebugCaptureProcessor]
+    PROC --> RE[RuleEngine]
+    RE --> RR[RuleRepository layers]
+    PROC --> DH[DebugHistoryRepository]
+    PROC --> NC[NavigationController]
+    NC --> RED[NavigationSessionReducer]
+    NC --> CODEC[ProtocolCodec]
+    NC --> TR[PebbleWatchTransport]
+    UCR[UpdateCheckRepository] --> GH[(GitHub Releases API)]
+    UI[MainActivity / DashboardScreen] --> UCR
+    UI --> NC
+    AC[AppContainer] -.wires.-> NC
+    AC -.wires.-> UCR
+  end
+  TR --> PK[PebbleKit 2 / Pebble mobile app]
+  PK --> WA
+  subgraph Watch["Pebble watchapp (watchapp/)"]
+    WA[main.c inbox handler] --> REN[panel / strip / road / message layers]
+    WA --> PV[phone_version + persist]
+    WA --> SET[settings_window]
+    SET --> ABOUT[about_window]
+    WA --> GL[glance_text on exit]
+  end
+  DEF[protocol/protocol-definition.json] -.generates.-> CODEC
+  DEF -.generates.-> WA
 ```
 
-Text fallback: notification -> listener -> allowlist dispatcher -> snapshot -> rule engine -> controller <-> reducer; controller -> codec -> PebbleKit transport -> Pebble companion app -> watchapp main.c, which opens settings and About and reads persisted settings from theme.c. Watch messages come back through WatchListenerService into the controller. The controller persists state in Room; snapshots feed debug history. protocol-definition.json generates both Protocol.kt (used by the codec) and protocol.h (used by the watch).
+Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> capture processor -> rule engine -> navigation controller -> reducer -> codec -> PebbleKit transport -> Pebble mobile app -> watchapp inbox -> layers. Separately, the dashboard drives UpdateCheckRepository, which calls GitHub. AppContainer wires everything. The protocol JSON generates the Kotlin and C constants.
 
 ### Data Flow
 
-1. A notification from an allowlisted package becomes a `NotificationSnapshot` (selected text fields only).
-2. `RuleEngine` evaluates user, then official layers and produces a `NavigationInstruction` or nothing; the attempt is recorded in debug history.
-3. `NavigationSessionReducer` deduplicates, quantizes distance, detects session start/stop and staleness, and decides effects.
-4. `ProtocolCodec.encodeState` builds an AppMessage; texts are cut to the watch's byte budgets (64 and 24 bytes).
-5. The watch decodes tuples by generated key numbers, stores them in static buffers and redraws.
-
-Persisted state: phone in Room (schema v8) and DataStore; watch in Pebble `persist_*` storage, used only for on-watch settings (keys 1-15 in theme.c). Details in [component-inventory.md](component-inventory.md).
+1. A notification is posted. The master switch and package allowlist are checked on the package name only, and then a minimal snapshot is taken (no icons except rule-driven large-icon matching).
+2. The rule engine produces a `NavigationInstruction`. Debug history stores the snapshot and trace, with keys hashed.
+3. The controller reduces it into a `NavigationState` and effects (`LaunchWatchApp`, `SendState(state, flags)`, `SendCompatibilityError`). Flags are computed in the reducer from `WatchSettings` and staleness.
+4. `ProtocolCodec.encodeState` builds an `AppMessage`, always with protocol major/minor and `APP_VERSION`. Text is fitted to the watch buffers (64/24 UTF-8 bytes).
+5. `PebbleWatchTransport.send` delivers it, with one relaunch-and-retry on `FailedDifferentAppOpen`. The controller retries up to 3 times with backoff.
+6. The watch decodes the tuples, records the phone version (persist key 16), renders, and sets the glance when it exits.
+7. Watch to phone: `WATCH_READY` (or a synthetic one from `onAppOpened`, or an autonomous READY 1.5 s after a launch) triggers a resend of the current state.
 
 ### Key Design Decisions
 
-- **Generated protocol** shared by both sides; unknown keys are ignored, a different major version yields an explicit error state (spec/200-architecture/Protocol.md).
-- **Synthesized readiness**: the Core Devices Pebble app does not forward the watch's WATCH_READY, so the phone fakes readiness after launch (`scheduleAutonomousReady`) and on `onAppOpened` (spec/200-architecture/Pebble.md).
-- **Relaunch on `FailedDifferentAppOpen`**: the transport relaunches the watchapp once and retries, only for a real pending update (REQ-WATCH-006).
-- **Watch-side features stay off the wire**: appearance, ETA mode, backlight, vibration, early warning and About are all watch-only and "SHALL NOT change the protocol" (REQ-WATCH-011 to -022).
-- **Handshake watchdog on the watch**: any inbound message sets `s_heard_from_phone`; after 5 s without one the watch shows an install QR or "Open the Pebble app" (REQ-WATCH-017).
-- **Vendored PebbleKit 2** from source for F-Droid reproducible builds.
+- **One state, never a queue** (REQ-ANDROID-010): newer state replaces pending state. It is persisted in Room for process recovery.
+- **Generated protocol constants** with a DO-NOT-EDIT banner and a `--check` gate in CI and pre-commit. They must stay consistent with the integrity-protected `examples/protocol-definition.json`.
+- **Synthetic readiness**: the Core Devices companion does not forward `WATCH_READY`, so the phone synthesizes it.
+- **Privacy by construction**: allowlist before content, no automatic upload, network used only for the update check, which is opt-in for automatic runs.
+- **Vendored PebbleKit 2** for F-Droid reproducibility.
+- **Pure C units** for watch logic that can be tested on the host.
 
 ### Improvement Opportunities
 
-- Split watchapp/src/c/main.c (rendering, handshake, backlight, vibration, AppMessage in one 1078-line file).
-- Run the watch host unit tests in CI. Both items are tracked in [code-quality-assessment.md](code-quality-assessment.md).
+- Split `watchapp/src/c/main.c` (1,124 lines) into decoding, rendering and lifecycle units, and validate tuple types.
+- Give phone-wide flags (such as a future update-available bit) one place to be applied. The reducer currently hard-codes `flags = 0` for `NoActiveNavigation`.
+- Add coverage tooling (Kover or JaCoCo) and a lint baseline.
 
 ## Interaction Diagrams
 
-### Startup handshake and state delivery
+### Navigation update reaches the watch
 
 ```mermaid
 sequenceDiagram
-  participant W as Watchapp main.c
-  participant C as Pebble companion app
-  participant L as WatchListenerService
-  participant N as NavigationController
-  participant R as NavigationSessionReducer
-  W->>C: WATCH_READY protocol 1.1, APP_VERSION (watch)
-  Note over C,L: Core Devices app may drop this
-  C->>L: onAppOpened(uuid)
-  L->>N: synthetic WATCH_READY
-  N->>R: reduce(WatchReady)
-  R-->>N: SendState(current)
-  N->>C: NAVIGATION_UPDATE or NO_ACTIVE_NAVIGATION with APP_VERSION (phone)
-  C->>W: AppMessage
-  W->>W: s_heard_from_phone = true, stop watchdog, render
-```
-
-Text fallback: the watch sends WATCH_READY with its protocol and version. The companion may drop it, but forwards onAppOpened, which WatchListenerService turns into a synthetic WATCH_READY for the controller. The reducer answers with SendState; the controller sends the current state (always carrying the phone's APP_VERSION) through the companion; the watch marks the phone as heard, stops the watchdog and renders.
-
-### Navigation update
-
-```mermaid
-sequenceDiagram
-  participant S as Listener and RuleEngine
-  participant N as NavigationController
+  participant NA as Navigation app
+  participant L as Listener + Dispatcher
+  participant P as DebugCaptureProcessor
+  participant E as RuleEngine
+  participant C as NavigationController
   participant R as Reducer
   participant T as PebbleWatchTransport
-  participant W as Watchapp
-  S->>N: onInstruction(instruction)
-  N->>R: reduce(InstructionReceived)
-  R-->>N: LaunchWatchApp (first in session), SendState
-  N->>T: launchApp, then send(encodeState)
-  T->>T: on FailedDifferentAppOpen relaunch, wait 1 s, retry once
-  T->>W: NAVIGATION_UPDATE
-  W->>W: render_navigation, vibrate on new info, early warning, backlight
+  participant W as Watchapp main.c
+  NA->>L: notification posted
+  L->>L: master switch + allowlist (package only)
+  L->>P: PostedNotification (minimal snapshot)
+  P->>E: evaluate(snapshot, layered rules)
+  E-->>P: NavigationInstruction
+  P->>C: onInstruction
+  C->>R: reduce(InstructionReceived)
+  R-->>C: LaunchWatchApp? + SendState(state, flags)
+  C->>T: send(encodeState(state, flags, appVersion))
+  T->>W: AppMessage NAVIGATION_UPDATE
+  W->>W: record_phone_version, render_navigation
 ```
 
-Text fallback: a parsed instruction enters the controller, the reducer decides to launch (once per session) and send; the transport sends, relaunching and retrying once if the watchapp is not in front; the watch renders, buzzes only on new information and applies backlight.
+Text fallback: notification -> allowlist -> snapshot -> rule engine -> controller -> reducer effects -> codec -> transport -> watch renders and records the phone version.
 
-### About screen (intent area)
+### Watch launch handshake
 
 ```mermaid
 sequenceDiagram
-  participant U as User
-  participant M as main.c
-  participant S as settings_window.c
-  participant A as about_window.c
-  participant X as about_text.c
-  U->>M: SELECT
-  M->>S: settings_window_push(on_change, AboutInfo{app_version, heard_from_phone})
-  U->>S: select About row
-  S->>A: about_window_push(AboutInfo)
-  A->>X: about_phone_status(pebble_app_connected, heard_from_phone)
-  A->>X: about_details(buf 80, version, protocol, status)
-  A-->>U: scrollable black-on-white page with QR
+  participant W as Watchapp
+  participant PK as Pebble mobile app
+  participant S as WatchListenerService
+  participant C as NavigationController
+  W->>PK: WATCH_READY (protocol, APP_VERSION_STR)
+  PK-->>S: onAppOpened (WATCH_READY often not forwarded)
+  S->>C: synthetic WATCH_READY via WatchInboundBus
+  C->>C: reduce(WatchReady) -> sendCurrent
+  C->>W: NAVIGATION_UPDATE or NO_ACTIVE_NAVIGATION (flags)
+  Note over W: no reply in 5 s -> install QR or "Open the Pebble app"
 ```
 
-Text fallback: SELECT on the navigation screen pushes settings with an AboutInfo snapshot (watch version, heard-from-phone flag). Choosing About pushes the About window, which asks about_text for the phone status line and the details text (into an 80-byte buffer) and shows a scrollable page with the install QR. The phone's version is not part of AboutInfo today.
+Text fallback: the watch sends READY; the companion reports the app as opened; the listener emits a synthetic READY; the controller sends the current state. Without a reply in 5 s the watch shows a hint.
+
+### Update check (current behaviour)
+
+```mermaid
+sequenceDiagram
+  participant U as User / AppContainer.start
+  participant M as MainActivity
+  participant UCR as UpdateCheckRepository
+  participant GH as GitHub Releases API
+  U->>UCR: checkForUpdate(force=false) only if autoCheckEnabled
+  M->>UCR: checkForUpdate(force=true) on tap
+  UCR->>GH: GET releases/latest
+  GH-->>UCR: tag_name (e.g. v0.0.71)
+  UCR->>UCR: persist last_check_millis, latest_version
+  UCR-->>M: state.updateAvailable -> dashboard PromptCard
+```
+
+Text fallback: a check runs on start when auto-check is on (weekly throttle) or on a manual tap. It calls GitHub, persists the time and tag, and the dashboard shows the update card. Today no update information reaches the watch.

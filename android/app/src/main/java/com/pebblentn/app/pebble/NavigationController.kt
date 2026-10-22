@@ -48,6 +48,11 @@ class NavigationController(
     initialSettings: WatchSettings = WatchSettings.DEFAULT,
     /** Called when a message reached the watchapp: proof it is installed (setup checklist, #28). */
     private val onWatchappReached: () -> Unit = {},
+    /**
+     * The newer phone app version while an update is available, else null; read on every state
+     * send so the watch can show the update notice (REQ-ANDROID-017, #94).
+     */
+    private val latestPhoneUpdate: () -> String? = { null },
 ) {
     private val mutex = Mutex()
     private var state = ReducerState(settings = initialSettings)
@@ -121,7 +126,7 @@ class NavigationController(
             }
             is ReducerEffect.SendState -> {
                 Timber.i("Effect: send state %s to watch", effect.state)
-                sendWithRetry(ProtocolCodec.encodeState(effect.state, effect.flags, appVersion))
+                sendWithRetry(ProtocolCodec.encodeState(effect.state, effect.flags, appVersion, latestPhoneUpdate()))
             }
             is ReducerEffect.SendCompatibilityError -> {
                 Timber.i("Effect: send compatibility error %d", effect.errorCode)

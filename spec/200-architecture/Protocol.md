@@ -27,6 +27,9 @@
 | 11 | appVersion | string |
 | 12 | errorCode | int32 |
 | 13 | stopsRemaining | int32 (optional; protocol 1.1) |
+| 14 | latestPhoneVersion | string (optional; protocol 1.2; sent with flag bit 4) |
+
+The current protocol version is 1.2. Minor versions only add optional keys and flag bits, which an older peer ignores.
 
 ## Events
 
@@ -43,6 +46,7 @@
 - bit 1: vibrate on maneuver change;
 - bit 2: activate backlight;
 - bit 3: state is stale;
+- bit 4: phone app update available (protocol 1.2): set on every state message while the phone knows of a newer phone app, with `latestPhoneVersion` (key 14, no leading `v`) on the same message (REQ-ANDROID-017, REQ-WATCH-023);
 - remaining bits reserved.
 
 ## Delivery behavior

@@ -102,6 +102,31 @@ class NavigationControllerTest {
     }
 
     @Test
+    fun everySendReadsTheLatestPhoneUpdate() = runTest {
+        // REQ-ANDROID-017 / #94: the provider is read on each send, so a check that finds an update
+        // reaches the watch with the next state message.
+        var latest: String? = null
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport, backgroundScope, appVersion = "0.0.1", clock = { 0 }, latestPhoneUpdate = { latest },
+        )
+        controller.start()
+        runCurrent()
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        assertEquals(null, transport.sent.last().stringOrNull(Protocol.Keys.LATEST_PHONE_VERSION))
+
+        latest = "v0.0.71"
+        controller.onNavigationStopped()
+        runCurrent()
+        val stopped = transport.sent.last()
+        assertEquals("0.0.71", stopped.stringOrNull(Protocol.Keys.LATEST_PHONE_VERSION))
+        assertTrue((stopped.intOrNull(Protocol.Keys.FLAGS) ?: 0) and Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK != 0)
+    }
+
+    @Test
     fun failedSendIsRetriedThenSucceeds() = runTest {
         // READY triggers a send; script the first send to fail, second to succeed.
         val transport = FakeWatchTransport(listOf(SendResult.FAILED, SendResult.SENT))

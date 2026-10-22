@@ -9,7 +9,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
@@ -27,6 +30,7 @@ import com.pebblentn.app.export.ExportMode
 import com.pebblentn.app.rules.RuleValidationResult
 import com.pebblentn.app.ui.apps.NavigationAppsScreen
 import com.pebblentn.app.ui.dashboard.DashboardScreen
+import com.pebblentn.app.ui.dashboard.updatePrompt
 import com.pebblentn.app.ui.debug.DebugDetailScreen
 import com.pebblentn.app.ui.debug.DebugHistoryScreen
 import com.pebblentn.app.ui.debug.DebugHistoryViewModel
@@ -116,6 +120,13 @@ class MainActivity : ComponentActivity() {
             .collectAsState(initial = 0)
         val updateState by container.updateCheckRepository.state.collectAsState()
         val autoCheckUpdates by container.updateCheckRepository.autoCheckEnabled.collectAsState()
+        // REQ-ANDROID-018 (#94): reading lastCheckMillis recomposes when a check records its time,
+        // which is what moves the stale item off the top.
+        val lastUpdateCheck by container.updateCheckRepository.lastCheckMillis.collectAsState()
+        val updateCheckStale = lastUpdateCheck.let { container.updateCheckRepository.isCheckStale() }
+        // A check started from the stale item finished while weekly checks were off. Kept for this
+        // screen only, not persisted: the question comes back only with the next stale item.
+        var staleCheckFinished by rememberSaveable { mutableStateOf(false) }
         val autoLaunch by container.watchSettingsRepository.autoLaunchEnabled.collectAsState()
         val watchStatus by container.navigationController.status.collectAsState()
         val watchappInstalled by container.watchappPresence.detected.collectAsState()
@@ -168,6 +179,24 @@ class MainActivity : ComponentActivity() {
                     feedbackActions = feedbackActions(),
                     overriddenOfficialCount = overrides.values.count { it.needsAttention },
                     onReviewOverrides = { navController.navigate("rules-review") },
+                    updatePrompt = updatePrompt(
+                        stale = updateCheckStale,
+                        autoCheckEnabled = autoCheckUpdates,
+                        staleCheckFinished = staleCheckFinished,
+                    ),
+                    updateNeverChecked = lastUpdateCheck == 0L,
+                    onStaleCheck = {
+                        // Whatever the outcome, ask about weekly checks afterwards, if they are off.
+                        checkForUpdate(onFinished = {
+                            staleCheckFinished = !container.updateCheckRepository.autoCheckEnabled.value
+                        })
+                    },
+                    onEnableWeeklyChecks = {
+                        staleCheckFinished = false
+                        // The check just ran, so turning weekly checks on needs no second one now.
+                        container.updateCheckRepository.setAutoCheckEnabled(true)
+                    },
+                    onDismissWeeklyQuestion = { staleCheckFinished = false },
                 )
             }
             composable(
@@ -390,8 +419,11 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { container.enabledAppRepository.setEnabled(appId, enabled) }
     }
 
-    /** Manual "Check for updates": force a check now and report the outcome (REQ-ANDROID-013). */
-    private fun checkForUpdate() {
+    /**
+     * Manual "Check for updates": force a check now and report the outcome (REQ-ANDROID-013).
+     * [onFinished] runs after the outcome is shown, whatever it was (the stale item's follow-up, #94).
+     */
+    private fun checkForUpdate(onFinished: () -> Unit = {}) {
         lifecycleScope.launch {
             val messageRes = when (container.updateCheckRepository.checkForUpdate(force = true)) {
                 com.pebblentn.app.update.UpdateCheckOutcome.UPDATE_AVAILABLE -> R.string.update_check_available
@@ -399,6 +431,7 @@ class MainActivity : ComponentActivity() {
                 else -> R.string.update_check_failed
             }
             android.widget.Toast.makeText(this@MainActivity, messageRes, android.widget.Toast.LENGTH_SHORT).show()
+            onFinished()
         }
     }
 

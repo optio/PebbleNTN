@@ -6,7 +6,7 @@ package com.pebblentn.app.protocol
 /** AppMessage protocol constants shared with the Pebble watchapp. */
 object Protocol {
     const val MAJOR = 1
-    const val MINOR = 1
+    const val MINOR = 2
 
     /** AppMessage dictionary keys. */
     object Keys {
@@ -24,6 +24,7 @@ object Protocol {
         const val APP_VERSION = 11
         const val ERROR_CODE = 12
         const val STOPS_REMAINING = 13
+        const val LATEST_PHONE_VERSION = 14
     }
 
     /** Values for the [Keys.EVENT] field. */
@@ -42,6 +43,7 @@ object Protocol {
         const val VIBRATE_ON_MANEUVER_CHANGE = 1
         const val ACTIVATE_BACKLIGHT = 2
         const val STATE_IS_STALE = 3
+        const val PHONE_UPDATE_AVAILABLE = 4
     }
 
     /** Precomputed masks for the [Keys.FLAGS] field. */
@@ -50,6 +52,7 @@ object Protocol {
         const val VIBRATE_ON_MANEUVER_CHANGE_MASK = 1 shl 1
         const val ACTIVATE_BACKLIGHT_MASK = 1 shl 2
         const val STATE_IS_STALE_MASK = 1 shl 3
+        const val PHONE_UPDATE_AVAILABLE_MASK = 1 shl 4
     }
 
     /** Values for the [Keys.MANEUVER] field. */

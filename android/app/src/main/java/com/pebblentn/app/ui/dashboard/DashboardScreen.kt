@@ -3,6 +3,7 @@ package com.pebblentn.app.ui.dashboard
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,7 +61,8 @@ import java.util.Date
 
 /**
  * Dashboard, grouped into sections (#28): Status, Watch, Navigation, Troubleshooting, Updates. The
- * update prompt and the share nudge appear above the sections only when they apply.
+ * update prompt and the share nudge appear above the sections only when they apply; a stale update
+ * check, or the weekly-check question after it, comes first of all (#94).
  */
 @Composable
 fun DashboardScreen(
@@ -97,6 +100,13 @@ fun DashboardScreen(
     onGetWatchapp: () -> Unit = {},
     onConfirmWatchapp: () -> Unit = {},
     appVersion: String = BuildConfig.VERSION_NAME,
+    /** The stale-check item or the weekly-check question, first on the dashboard (REQ-ANDROID-018, #94). */
+    updatePrompt: UpdatePrompt = UpdatePrompt.NONE,
+    /** No update check has ever run, so the stale item says "never" rather than "over 30 days". */
+    updateNeverChecked: Boolean = false,
+    onStaleCheck: () -> Unit = {},
+    onEnableWeeklyChecks: () -> Unit = {},
+    onDismissWeeklyQuestion: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -119,6 +129,30 @@ fun DashboardScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
+
+            // A stale update check comes first, above the setup checklist, and after a check run from
+            // it, the weekly-check question (REQ-ANDROID-018, #94).
+            when (updatePrompt) {
+                UpdatePrompt.STALE_CHECK -> PromptCard(
+                    title = stringResource(R.string.dashboard_stale_check_title),
+                    body = stringResource(
+                        if (updateNeverChecked) R.string.dashboard_stale_check_never_body else R.string.dashboard_stale_check_body,
+                    ),
+                    action = stringResource(R.string.dashboard_stale_check_action),
+                    onAction = onStaleCheck,
+                    primary = true,
+                )
+                UpdatePrompt.WEEKLY_QUESTION -> PromptCard(
+                    title = stringResource(R.string.dashboard_weekly_question_title),
+                    body = stringResource(R.string.dashboard_weekly_question_body),
+                    action = stringResource(R.string.dashboard_weekly_question_turn_on),
+                    onAction = onEnableWeeklyChecks,
+                    primary = false,
+                    secondaryAction = stringResource(R.string.dashboard_weekly_question_not_now),
+                    onSecondaryAction = onDismissWeeklyQuestion,
+                )
+                UpdatePrompt.NONE -> Unit
+            }
 
             // Until setup is done: access, the watchapp, a first navigation (#28).
             val setup = SetupProgress(
@@ -288,14 +322,17 @@ fun DashboardScreen(
             }
 
             Section(stringResource(R.string.dashboard_section_updates)) {
-                NavRow(
-                    icon = Icons.Filled.Refresh,
-                    title = stringResource(R.string.dashboard_check_update),
-                    summary = stringResource(R.string.dashboard_version, appVersion),
-                    onClick = onCheckForUpdate,
-                    showChevron = false,
-                )
-                HorizontalDivider()
+                // While the check is stale, "Check for updates" is the top card instead (#94).
+                if (updatePrompt != UpdatePrompt.STALE_CHECK) {
+                    NavRow(
+                        icon = Icons.Filled.Refresh,
+                        title = stringResource(R.string.dashboard_check_update),
+                        summary = stringResource(R.string.dashboard_version, appVersion),
+                        onClick = onCheckForUpdate,
+                        showChevron = false,
+                    )
+                    HorizontalDivider()
+                }
                 ToggleRow(
                     icon = Icons.Filled.DateRange,
                     title = stringResource(R.string.dashboard_auto_update),
@@ -392,9 +429,20 @@ private fun InfoRow(title: String, value: String, dimmed: Boolean = false) {
     )
 }
 
-/** An attention card above the sections (update available, captures to share). */
+/**
+ * An attention card above the sections (update available, captures to share). [secondaryAction],
+ * when given, adds a text button beside the main one (the weekly-check question's "Not now", #94).
+ */
 @Composable
-private fun PromptCard(title: String, body: String, action: String, onAction: () -> Unit, primary: Boolean) {
+private fun PromptCard(
+    title: String,
+    body: String,
+    action: String,
+    onAction: () -> Unit,
+    primary: Boolean,
+    secondaryAction: String? = null,
+    onSecondaryAction: () -> Unit = {},
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = if (primary) {
@@ -412,7 +460,14 @@ private fun PromptCard(title: String, body: String, action: String, onAction: ()
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = title, style = MaterialTheme.typography.titleSmall)
             Text(text = body, style = MaterialTheme.typography.bodySmall)
-            Button(onClick = onAction) { Text(action) }
+            if (secondaryAction == null) {
+                Button(onClick = onAction) { Text(action) }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onAction) { Text(action) }
+                    TextButton(onClick = onSecondaryAction) { Text(secondaryAction) }
+                }
+            }
         }
     }
 }

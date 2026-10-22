@@ -1,6 +1,65 @@
 # Implementation Status
 
-_Last updated: 2026-10-21_
+_Last updated: 2026-10-22_
+
+## Phone app update notice on the watch (2026-10-22, #94)
+
+**Milestone:** post-M12 enhancement across the protocol, the Android app and the watchapp. Protocol
+1.1 → 1.2 (minor: optional key and flag bit, so either side can update first).
+
+**Requirements:** REQ-WATCH-023 (new), REQ-WATCH-019 and REQ-WATCH-020 amended, REQ-ANDROID-017 and
+REQ-ANDROID-018 (new), `Protocol.md` at 1.2. Manifest resynced.
+
+**What changed.**
+- Protocol: flag bit 4 `PHONE_UPDATE_AVAILABLE` and key 14 `LATEST_PHONE_VERSION`, generated into
+  `Protocol.kt` and `protocol.h` by `scripts/generate-protocol.sh`.
+- Phone: `ProtocolCodec.encodeState` takes the latest version and sets bit 4 and key 14 (no leading
+  `v`) on every state message; `NavigationController` reads it on each send from `AppContainer`'s
+  provider (the update check's latest version while an update is available). The reducer is unchanged.
+- Phone dashboard: `UpdateCheckRepository` exposes `lastCheckMillis` and `isCheckStale` (never, or
+  over 30 days). The pure `UpdatePrompt` decides between the stale-check card (first on the
+  dashboard; the "Check for updates now" row leaves Updates meanwhile) and, after a check from that
+  card with weekly checks off, the "Check for updates automatically every week?" question.
+- Watch: the Pebble-free `update_notice.{h,c}` holds the recording rule, the show/defer/skip
+  decision and the idle text; `update_notice_window.{h,c}` is the notice (About's black-on-white
+  look, 10 s or any button, no vibration or light). `main.c` persists keys 17 (latest version) and
+  18 (shown for), shows the update idle text, and opens the notice after "no navigation" or a stop
+  that keeps the app open. `glance_text` adds `Update: <version>` as the subtitle
+  fallback.
+- Watch, round screens: the full-screen message now picks its font against the circle, because the
+  five-line update idle text clipped on chalk. Long messages on chalk may use a smaller font.
+
+**Verification.**
+- Host tests: new `test_update_notice` (25 assertions), extended `test_glance_text` (6 new).
+- JVM: `ProtocolCodecTest` (3 new, 1 updated for minor 2), `UpdateCheckRepositoryTest` (5 new),
+  new `UpdatePromptTest` (4), `NavigationControllerTest` (1 new). 402 tests green.
+- Emulator, basalt, chalk, emery and diorite: the notice, the 10 s close, the close on SELECT and
+  BACK without acting behind it, no notice after a relaunch, again for a newer version, none during
+  a route, then on stop, both idle texts within the bezel, the launcher subtitle.
+- The dashboard was not run on an Android emulator here (it crashes WSL); `UpdatePrompt` is unit
+  tested and the APK builds.
+
+**Commands executed.**
+
+```bash
+./scripts/generate-protocol.sh         # regenerated Protocol.kt and protocol.h
+./scripts/test-watchapp-unit.sh        # baseline green, then green with the new tests
+./android/gradlew -p android :app:testDebugUnitTest --tests ...   # scoped classes, green
+./scripts/build-watchapp.sh            # all five platforms build
+./android/gradlew -p android :app:assembleDebug
+pebble install/send-app-message/emu-button/screenshot --emulator {basalt,chalk,emery,diorite}
+./scripts/validate-spec-assets.sh      # OK (34 files) after the manifest resync
+./scripts/test-all.sh                  # exit 0
+```
+
+**Blockers / open points.**
+- Resolved in Build and Test loop-back 1: the launcher cut `Update phone app to 0.0.71` after about
+  16 characters, so the subtitle is now `Update: 0.0.71` (the user's choice, 2026-10-22). The full
+  version is readable on basalt, chalk, emery and diorite in the emulator.
+- The local Pebble emulator drops a session after some seconds, also with the unchanged HEAD build,
+  so the checks ran as short sessions and the 10 s timeout check needed retries.
+
+**Next atomic task:** check the dashboard on a phone.
 
 ## About shows the last connected phone app version (2026-10-21, #103)
 

@@ -2,66 +2,59 @@
 
 ## Test Coverage
 
-| Area | Tests | Runner | In CI |
-|---|---|---|---|
-| Android app | 66 JVM/Robolectric files (reducer, codec, controller with `FakeWatchTransport`, rules regressions per app, repositories, Room migrations, view models, Compose rule review) | `./gradlew test` | yes (android.yml, release.yml) |
-| Android instrumentation | 1 (`ManualOpenWithAutoLaunchOffTest`) | `connectedDebugAndroidTest` | no |
-| Watchapp pure units | 6 host C tests (about_text, early_warning, eta_text, glance_text, panel_layout, stops_text) | scripts/test-watchapp-unit.sh | **no** - only scripts/test-all.sh |
-| Watchapp UI | emulator acceptance per REQ (manual / capture_screenshots.py) | Pebble emulator | no |
-| Rules | schema validation + fixture regression | validate-rules.sh, workbench.py regression | yes (rules.yml, release.yml) |
-| Route capture harness | Python unittest | test-all.sh | no |
+| Area | Tests | Framework |
+|---|---|---|
+| Android app | 66 test sources under `android/app/src/test/` covering core, data (including the Room v1-v8 migration test), notification, icon, rules (per-app regression suites), export, protocol, pebble controller, system, ui view models, update | JUnit 4 + Robolectric + coroutines-test + Compose UI test |
+| Android instrumented | `ManualOpenWithAutoLaunchOffTest` | AndroidJUnit4 |
+| Watchapp | 7 host tests (about_text, early_warning, eta_text, glance_text, panel_layout, phone_version, stops_text) | plain C, `-Werror` |
+| Rules | fixtures through `workbench.py regression` and Kotlin `*RulesRegressionTest` | Python + JUnit |
+| Tools | `tools/route-capture/tests/test_routecap.py` | unittest |
 
-No coverage tooling (no JaCoCo/Kover, no gcov). `PebbleWatchTransport` is documented as not unit-testable (bound companion app) and verified on device.
+Coverage measurement: **none configured** (no JaCoCo or Kover, no gcov). Untested by design: `PebbleWatchTransport` (needs a bound companion) and the Pebble API parts of `main.c`, `settings_window.c` and `about_window.c`, which are verified in the emulator per the REQ acceptance criteria. `UpdateCheckRepository` has 7 Robolectric tests (throttle, force, failure retention, persistence, auto-check default off). No test covers last-check staleness, because the repository does not expose it.
 
-## Linting and Formatting
+## Linting and Static Analysis
 
-- Android Lint runs in CI and pre-commit; no `lint.xml` baseline. Kotlin official style flag only; no ktlint/detekt/.editorconfig.
-- C: `-Wall -Wextra -Werror` for host tests only; no clang-format or static analysis for the ARM build.
-- CodeQL (java-kotlin) on the Android build.
+- Android Lint (`./gradlew lint`) in CI, pre-commit and release verify; default configuration with no baseline file.
+- CodeQL java-kotlin on push, PR and weekly.
+- No ktlint, detekt or formatter check. C warnings are enforced only in host tests.
 
 ## CI/CD
 
-- **android.yml**: protocol `--check`, test, lint, assembleDebug (paths `android/**`).
-- **watchapp.yml**: protocol `--check`, `pebble build` (paths `watchapp/**`); SDK installed as `latest`.
-- **rules.yml**: spec integrity, schema validation, regression.
-- **release.yml**: on push to `main`: verify (spec, protocol, rules, version sync, Android test + lint), bump version, changelog, signed APK, PBW, checksums, tag, GitHub Release.
-- **play-release.yml**: signed AAB.
-- **.githooks/pre-commit**: secrets, spec integrity, protocol, version sync, rules, syntax, Android test + lint when android/ changed.
+| Workflow | Trigger | Gates |
+|---|---|---|
+| android.yml | push/PR on `android/**` | protocol `--check`, `test`, `lint`, `assembleDebug`, APK artifact |
+| watchapp.yml | push/PR on `watchapp/**` | protocol `--check`, `pebble build`, PBW artifact |
+| rules.yml | push/PR on rules, schemas, examples | spec-asset integrity, schema validation, rule regression |
+| codeql.yml | push/PR on main, weekly | CodeQL analysis |
+| release.yml | push to main (not docs/tools/md) or manual | verify job (spec assets, protocol, rules, version sync, tests, lint), then version bump, changelog, signed or debug APK, PBW, SHA256SUMS, tag `v<version>`, GitHub release |
+| play-release.yml | manual | signed AAB from a protected environment |
+
+`.githooks/pre-commit` runs secrets/keystore scanning, MANIFEST integrity, protocol `--check`, version sync, rules, syntax checks and Android tests + lint. Watchapp host tests run only in `scripts/test-all.sh`, not in any CI workflow.
 
 ## Documentation Quality
 
-Good: numbered specs, requirement IDs and issue numbers in code comments, AGENTS.md contract, READMEs per area, docs/IMPLEMENTATION_STATUS.md. Spec and requirement files are SHA-256 protected by MANIFEST.sha256.json; changing one requires updating the manifest in the same commit.
+Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a MANIFEST-protected spec set, KDoc on public Kotlin APIs, a rationale header on every C module, an implementation status log per change, and human build guides (`docs/FOR-HUMAN.md`).
 
 ## Quick Ratings
 
 | Criterion | Rating | Evidence |
 |---|---|---|
-| Naming clarity | good | intent-revealing names on both sides |
-| Function size | fair | `panel_update_proc`, `strip_update_proc`, `render_navigation` are long |
-| Error handling | good | transport failures caught and logged; send retry with backoff; watch NULL-checks bitmaps and tuples |
-| Test presence | good (phone) / fair (watch) | watch tests cover pure units only |
-| Duplication | fair | three near-identical switch blocks in `maneuver_resource_id` |
-| Dead code | good | 1 TODO in the repo (play-release.yml) |
+| Naming clarity | good | descriptive Kotlin and C names, REQ cross-references |
+| Function size | fair | most functions are small; `panel_update_proc`, `strip_update_proc` and `DashboardScreen` are long |
+| Error handling | good | best-effort network returns null, transport failures are caught and logged, persist errors are logged; watch tuple types are not validated in `render_navigation` |
+| Test presence | good | pure logic is tested on both devices; Pebble UI is emulator-verified only |
+| Duplication | fair | three near-identical switch tables in `maneuver_resource_id`; repeated SharedPreferences repository boilerplate |
+| Dead code | good | none found; datastore in `:app` is the one unused declared dependency |
 
 ## Technical Debt
 
-| # | Item | Location | Impact |
-|---|---|---|---|
-| TD1 | Watch host unit tests not run in CI or pre-commit | .github/workflows/watchapp.yml, .githooks/pre-commit | regressions in pure C units can merge |
-| TD2 | God file | watchapp/src/c/main.c (1078 lines), settings_window.c (741) | harder review and change isolation |
-| TD3 | Contradictory protocol docs: README names examples/ as source of truth and says "Placeholder in M0"; JSON `_comment` cites missing `scripts/check-protocol.py` | protocol/README.md, protocol/protocol-definition.json | misleads contributors |
-| TD4 | `rules/test-cases/` documented but absent | rules/README.md | stale docs |
-| TD5 | Pebble.md UI section predates the current panel/strip layout | spec/200-architecture/Pebble.md vs spec/400-ui/WatchUI.md | spec drift |
-| TD6 | Committed binaries: `scripts/__pycache__/changelog.cpython-312.pyc` (ignored by `.gitignore` but tracked), `tools/route-capture/device/routecap-locale.dex` | scripts/, tools/route-capture/device/ | repo hygiene |
-| TD7 | Release target-SDK check failure swallowed with `|| echo "TODO(M10) ..."` | .github/workflows/play-release.yml:38 | silent policy bypass |
-| TD8 | Pebble SDK installed as `latest` (unpinned) | watchapp.yml, release.yml | non-reproducible watch builds |
-| TD9 | Fixed `s_details[80]` About buffer truncates silently | watchapp/src/c/about_window.c | adding lines can cut text |
-
-## Intent Impact (#103)
-
-Constraints for adding the companion version to About (watch-only; protocol detail in [api-documentation.md](api-documentation.md)):
-- Amend REQ-WATCH-020 in requirements/REQ-WATCH.md and update MANIFEST.sha256.json in the same commit.
-- Persist the version under a new key (16 is the next free key in theme.c) so "last connected" survives relaunch; handle "never seen" (older phone, compatibility-error path).
-- Keep the details text within the 80-byte buffer (TD9) or enlarge it; re-check round-display layout on chalk per REQ-WATCH-020 acceptance.
-- Extend watchapp/tests/test_about_text.c; it only runs through scripts/test-all.sh (TD1).
-- Do not hand-edit generated protocol files (AGENTS.md rule 5).
+- `watchapp/src/c/main.c` (1,124 lines) mixes decoding, rendering, timers and glance. `settings_window.c` is 741 lines.
+- Tuple type checks are missing in `render_navigation` and `handle_stopped` (CodingStandards: "Validate every tuple and type").
+- Phone-wide flags have no single application point: `NoActiveNavigation` is sent with `flags = 0`, and compatibility errors carry no flags.
+- `PebbleNtnDatabase` KDoc is stale (lists v1-v5; the schema is v8).
+- `scripts/__pycache__/changelog.cpython-312.pyc` is committed against `.gitignore`.
+- `rules/test-cases/` is documented but has no tracked content.
+- `play-release.yml` swallows the target-SDK gate failure (`|| echo "TODO(M10) ..."`).
+- No coverage tooling, so the org-default 80% floor (non-express scopes) cannot be measured.
+- Pebble SDK version unpinned in CI (`pebble sdk install latest`).
+- A committed binary `.dex` helper sits in `tools/route-capture/device/`.

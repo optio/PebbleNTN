@@ -2,37 +2,29 @@
 
 ## Purpose
 
-PebbleNTN ("Pebble Notification To Navigation") shows turn-by-turn directions from a phone's navigation app on a Pebble smartwatch. The Android companion app reads the navigation app's ongoing notification, turns it into a small normalized state (maneuver, distance, road, arrival time) and sends it to a Pebble watchapp, which renders it. The watch never parses notifications and never computes routes (spec/000-overview.md).
+PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions from a phone's navigation app on a Pebble smartwatch. The Android companion reads navigation notifications on the phone (Google Maps, OsmAnd, Organic Maps and CoMaps have official rules). It turns them into one normalized instruction (maneuver, distance, road, ETA) with declarative rules and sends that state to a C watchapp over Pebble AppMessage. Users then see the next turn without reaching for the phone.
 
-## Users and Value
+## Users and Journeys
 
-- **Driver, cyclist or walker** wearing a Pebble: sees the next turn without reaching for the phone.
-- **Rule maintainer / contributor**: writes declarative JSON rules that teach the app a new navigation app or language, checked by fixtures and regression tests.
-- **Maintainer / releaser**: ships an APK (GitHub Releases, F-Droid, Obtainium) and a PBW (Rebble app store) from every push to `main`.
+- **Driver, cyclist or walker**: installs the companion APK and the watchapp, grants notification access, and navigates. The watchapp auto-launches (configurable) and shows the arrow, distance, road, clock and ETA.
+- **Rule maintainer or contributor**: inspects debug history, writes or copies user rules, and shares redacted diagnostics to help support new apps and languages (tools: rule workbench, route-capture harness).
+- **Maintainer or releaser**: every push to `main` releases an APK and PBW on GitHub. F-Droid and the Rebble app store redistribute them.
 
 ## Key Functionality
 
-| Area | What it does | Where |
-|---|---|---|
-| Notification capture | Listens to allowlisted navigation apps only; builds a minimal immutable snapshot | android/app notification/, core/AppAllowlist.kt |
-| Rule extraction | Declarative, layered (official, user) rules turn a snapshot into an instruction | android/app rules/, rules/bundled/ |
-| Session sync | A pure reducer keeps one latest state, launches the watchapp once per session, retries sends | core/NavigationSessionReducer.kt, pebble/NavigationController.kt |
-| Watch rendering | Maneuver glyph, distance, clock + ETA strip, road text; stale, connecting, no-navigation and incompatible states | watchapp/src/c/main.c |
-| On-watch settings | Colour, invert, units, glyph pack, arrow side, ETA mode and label, backlight, vibration, early warning, About | watchapp/src/c/settings_window.c, theme.c |
-| About screen | Watchapp version, protocol version, phone link status, install QR | watchapp/src/c/about_window.c, about_text.c (REQ-WATCH-020) |
-| Diagnostics | Debug history, redacted or full export through the share sheet | android/app data/, export/, ui/debug, ui/share |
-| Updates | Release check against GitHub; signed (Ed25519) official ruleset updates | android/app update/ |
+- Privacy-first notification capture: package allowlist before content is read, minimal snapshot, local processing only, no automatic upload (REQ-SEC-*).
+- Declarative, layered rule engine (user over downloaded over bundled), with regex time budgets.
+- Deterministic session reducer: dedupe, quantization, launch-once, READY handshake, stale detection.
+- Watch rendering for five platforms (rectangular, round, 200x228), with glyph packs, themes, backlight, vibration, early warning, an About screen and an app-glance subtitle.
+- Opt-in GitHub update check (off by default), with a dashboard prompt when a newer APK exists (REQ-ANDROID-013).
+- Diagnostics export (rules only, privacy-safe, full) through the share sheet.
 
-Supported apps today: Google Maps (official rules in 9 languages), OsmAnd, Organic Maps and CoMaps (rules/bundled/), with capture-only entries for more (rules/catalog/navigation-apps.json).
+## Business Context for the Active Intent (#94)
 
-## Business Rules That Shape the Code
+Updates reach users only through GitHub, F-Droid or Obtainium, and the automatic weekly check is opt-in. Many users therefore run an old companion without knowing it. Issue #94 asks the watch to surface a pending companion update (in-app notice plus launcher subtitle) and the phone to nudge users whose last check is stale. Component detail is in [component-inventory.md](component-inventory.md); the protocol surface is in [api-documentation.md](api-documentation.md).
 
-- Privacy first: notification text is never inspected before the package allowlist passes, disabled apps are never stored, nothing is uploaded automatically (AGENTS.md rules 7-9; spec/600-security-release/SecurityPrivacy.md).
-- Remote rules are data only, never executable code (AGENTS.md rule 6).
-- The protocol is generated from one JSON definition and never hand-edited (AGENTS.md rule 5).
-- Spec and requirement files are integrity-protected (MANIFEST.sha256.json).
-- Every behaviour change needs automated tests and cites requirement IDs (AGENTS.md rules 4 and commit discipline).
+## Glossary
 
-## Current Intent Context
-
-Intent `261020-about-companion-version` (GitHub #103): the About screen should also show the last connected companion (phone) app version. See [api-documentation.md](api-documentation.md) for why this needs no protocol change and [code-quality-assessment.md](code-quality-assessment.md) for the constraints it touches.
+- **Companion app**: the PebbleNTN Android app (not the Pebble/Core Devices mobile app, which PebbleKit 2 routes through).
+- **App glance**: the watch launcher's subtitle under the app name.
+- **READY handshake**: `WATCH_READY` from the watch, answered with the current state.

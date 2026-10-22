@@ -20,11 +20,25 @@ object ProtocolCodec {
     const val MAX_PRIMARY_BYTES = 64
     const val MAX_SECONDARY_BYTES = 24
 
-    fun encodeState(state: NavigationState, flags: Int, appVersion: String): AppMessage {
+    /**
+     * Encode a state message. [latestPhoneVersion] is the newer phone app version when an update is
+     * available, else null (REQ-ANDROID-017, #94): when set, every state message carries
+     * [Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK] in FLAGS and the version, without a leading
+     * `v`, as LATEST_PHONE_VERSION. When null both are left out and [flags] is sent as given.
+     */
+    fun encodeState(
+        state: NavigationState,
+        flags: Int,
+        appVersion: String,
+        latestPhoneVersion: String? = null,
+    ): AppMessage {
+        val update = latestPhoneVersion?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
+        val wireFlags = if (update != null) flags or Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK else flags
         val builder = AppMessage.builder()
             .putInt(Protocol.Keys.PROTOCOL_MAJOR, Protocol.MAJOR)
             .putInt(Protocol.Keys.PROTOCOL_MINOR, Protocol.MINOR)
             .putString(Protocol.Keys.APP_VERSION, appVersion)
+            .putString(Protocol.Keys.LATEST_PHONE_VERSION, update)
 
         when (state) {
             is NavigationState.Navigating -> {
@@ -39,19 +53,19 @@ object ProtocolCodec {
                     .putInt(Protocol.Keys.ETA_EPOCH_SECONDS, i.etaEpochSeconds?.let(::toInt32))
                     .putInt(Protocol.Keys.STATE_TIMESTAMP_SECONDS, toInt32(state.stateTimestampSeconds))
                     .putInt(Protocol.Keys.SESSION_ID, state.sessionId)
-                    .putInt(Protocol.Keys.FLAGS, flags)
+                    .putInt(Protocol.Keys.FLAGS, wireFlags)
             }
 
             is NavigationState.Stopped ->
                 builder
                     .putInt(Protocol.Keys.EVENT, Protocol.Events.NAVIGATION_STOPPED)
                     .putInt(Protocol.Keys.SESSION_ID, state.sessionId)
-                    .putInt(Protocol.Keys.FLAGS, flags)
+                    .putInt(Protocol.Keys.FLAGS, wireFlags)
 
             NavigationState.NoActiveNavigation ->
                 builder
                     .putInt(Protocol.Keys.EVENT, Protocol.Events.NO_ACTIVE_NAVIGATION)
-                    .putInt(Protocol.Keys.FLAGS, flags)
+                    .putInt(Protocol.Keys.FLAGS, wireFlags)
         }
         return builder.build()
     }

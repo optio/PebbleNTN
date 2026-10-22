@@ -62,6 +62,23 @@ class UpdateCheckRepository(
         prefs.edit().putBoolean(KEY_AUTO_CHECK, enabled).apply()
     }
 
+    private val _lastCheckMillis = MutableStateFlow(prefs.getLong(KEY_LAST_CHECK, 0L))
+    /**
+     * When a check last ran (succeeded or failed), in epoch millis; 0 when one never has. This is the
+     * same `last_check_millis` the weekly throttle reads (REQ-ANDROID-018, #94).
+     */
+    val lastCheckMillis: StateFlow<Long> = _lastCheckMillis.asStateFlow()
+
+    /**
+     * True when no check has ever run, or the last one was more than [STALE_AFTER_MS] ago. The
+     * dashboard then puts "Check for updates" first, so installs with weekly checks off still learn
+     * about updates (REQ-ANDROID-018, #94). Reading this makes no network call.
+     */
+    fun isCheckStale(now: Long = this.now()): Boolean {
+        val last = _lastCheckMillis.value
+        return last == 0L || now - last > STALE_AFTER_MS
+    }
+
     /**
      * Check for a newer version. When [force] is false the network is only hit if at least a week
      * has passed since the last attempt; a manual check passes [force] = true. Safe to call on every
@@ -78,6 +95,7 @@ class UpdateCheckRepository(
         val latest = fetcher.latestVersion()
         // Record the attempt time either way so a failing check does not retry on every launch.
         val editor = prefs.edit().putLong(KEY_LAST_CHECK, timestamp)
+        _lastCheckMillis.value = timestamp
         if (latest == null) {
             editor.apply()
             _state.value = _state.value.copy(checking = false)
@@ -100,5 +118,7 @@ class UpdateCheckRepository(
         /** Automatic weekly checks are opt-in, so the app never touches the network unprompted. */
         const val DEFAULT_AUTO_CHECK = false
         val CHECK_INTERVAL_MS: Long = TimeUnit.DAYS.toMillis(7)
+        /** A check older than this is stale and is offered first on the dashboard (REQ-ANDROID-018, #94). */
+        val STALE_AFTER_MS: Long = TimeUnit.DAYS.toMillis(30)
     }
 }

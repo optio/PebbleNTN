@@ -89,6 +89,56 @@ class UpdateCheckRepositoryTest {
         assertTrue(repo(FakeFetcher(null)).autoCheckEnabled.value)
     }
 
+    // REQ-ANDROID-018 / #94 (FR7.1): a check is stale after 30 days, or when one never ran.
+
+    @Test
+    fun neverCheckedIsStale() {
+        val repo = repo(FakeFetcher("0.0.14"))
+        assertEquals(0L, repo.lastCheckMillis.value)
+        assertTrue(repo.isCheckStale())
+    }
+
+    @Test
+    fun staleOnlyAfterMoreThanThirtyDays() = runTest {
+        val repo = repo(FakeFetcher("0.0.14"))
+        repo.checkForUpdate(force = true)
+        val checkedAt = nowMillis
+        assertFalse("exactly 30 days is not stale", repo.isCheckStale(checkedAt + TimeUnit.DAYS.toMillis(30)))
+        assertTrue("30 days + 1 ms is stale", repo.isCheckStale(checkedAt + TimeUnit.DAYS.toMillis(30) + 1))
+    }
+
+    @Test
+    fun forcedCheckClearsStalenessAndRecordsItsTime() = runTest {
+        val fetcher = FakeFetcher("0.0.14")
+        val repo = repo(fetcher)
+        nowMillis += TimeUnit.DAYS.toMillis(40)
+        assertEquals(UpdateCheckOutcome.UPDATE_AVAILABLE, repo.checkForUpdate(force = true))
+        assertEquals(nowMillis, repo.lastCheckMillis.value)
+        assertFalse(repo.isCheckStale())
+        assertEquals("the stale check itself makes no network call", 1, fetcher.calls)
+        // A fresh instance over the same prefs sees the same time, so it is not stale either.
+        assertEquals(nowMillis, repo(FakeFetcher(null)).lastCheckMillis.value)
+    }
+
+    @Test
+    fun failedCheckAlsoClearsStaleness() = runTest {
+        val repo = repo(FakeFetcher(null))
+        assertTrue(repo.isCheckStale())
+        assertEquals(UpdateCheckOutcome.FAILED, repo.checkForUpdate(force = true))
+        assertEquals(nowMillis, repo.lastCheckMillis.value)
+        assertFalse(repo.isCheckStale())
+    }
+
+    @Test
+    fun skippedCheckDoesNotMoveTheLastCheckTime() = runTest {
+        val repo = repo(FakeFetcher("0.0.14"))
+        repo.checkForUpdate(force = true)
+        val checkedAt = nowMillis
+        nowMillis += TimeUnit.DAYS.toMillis(3)
+        assertEquals(UpdateCheckOutcome.SKIPPED_NOT_DUE, repo.checkForUpdate(force = false))
+        assertEquals(checkedAt, repo.lastCheckMillis.value)
+    }
+
     @Test
     fun latestVersionPersistsAcrossInstances() = runTest {
         repo(FakeFetcher("0.0.14")).checkForUpdate(force = true)

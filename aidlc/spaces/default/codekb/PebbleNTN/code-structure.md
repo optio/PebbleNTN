@@ -4,52 +4,59 @@
 
 | Path | Contents |
 |---|---|
-| android/app/ | Companion app (`com.pebblentn.app`): src/main (Kotlin, ~120 files), src/test (66 JVM/Robolectric tests), src/androidTest (1), schemas/room (Room v1-v8) |
-| android/pebblekit/ | Vendored PebbleKit Android 2 (`io.rebble.pebblekit2`, Kotlin + AIDL) |
-| android/fixture-publisher/ | Debug app that posts synthetic navigation notifications |
-| watchapp/ | Pebble watchapp: src/c (C sources), src/c/generated/protocol.h, tests/ (host C tests), resources/images (glyph packs, QR), store/ (store art), tools/ (Python asset and emulator tools), package.json, wscript |
-| protocol/ | protocol-definition.json, generate.py, check_consistency.py |
-| rules/ | catalog/ (navigation-app catalog), bundled/<app>/<lang>.json (official rules), fixtures/ |
-| schemas/ | ruleset.schema.json, app-catalog.schema.json |
-| examples/ | example-ruleset.json, protocol-definition.json (spec contract copy) |
-| spec/, requirements/ | Numbered specification and REQ-* requirement files (integrity-protected) |
-| scripts/ | Build, test, validation, versioning, changelog, emulator helpers |
-| tools/ | rule-workbench (Python), route-capture (Python harness + Java device helpers, route/scenario JSON) |
-| docs/, fastlane/, fdroid/, screenshots/ | Status and policy docs, store metadata, F-Droid metadata, emulator screenshots |
-| .github/, .githooks/ | CI workflows, issue templates, pre-commit hook |
+| `android/app/src/main/java/com/pebblentn/app/` | Companion source (111 Kotlin files), organised by feature package |
+| `android/app/src/test/`, `src/androidTest/` | 66 JVM/Robolectric test sources; 1 instrumented test |
+| `android/app/schemas/room/` | Exported Room schemas v1-v8 (migration tests) |
+| `android/app/src/main/res/` | Resources; `values/strings.xml` (407 lines, English only) |
+| `android/pebblekit/` | Vendored PebbleKit Android 2 1.2.0 (26 Kotlin files + AIDL) |
+| `android/fixture-publisher/` | Debug app with synthetic notifications |
+| `watchapp/src/c/` | Watchapp C (11 `.c`, headers, `generated/protocol.h`) |
+| `watchapp/tests/` | Host C tests, `test_<unit>.c` paired 1:1 with `src/c/<unit>.c` |
+| `watchapp/tools/`, `resources/`, `store/` | Python asset generators, bitmaps and QR, store art |
+| `protocol/` | Protocol JSON and generator |
+| `rules/` (`catalog/`, `bundled/<app>/<lang>.json`, `fixtures/`), `schemas/`, `examples/` | Rule data and JSON Schemas |
+| `tools/rule-workbench/`, `tools/route-capture/` | Maintainer CLIs |
+| `scripts/`, `.githooks/`, `.github/` | Build, test, release automation, CI, issue templates |
+| `spec/`, `requirements/`, `docs/` | Specification, REQ-* IDs, status log, privacy, release checklist |
+| `fastlane/`, `fdroid/`, `screenshots/` | Store metadata, F-Droid recipe, watch screenshots |
 
-## Android Package Organization (`com.pebblentn.app`)
-
-Feature-and-layer hybrid; classification by package:
+## Android Package Organisation (`com.pebblentn.app`)
 
 | Package | Classification | Notes |
 |---|---|---|
-| core/ | Model/Entity + Service | Pure domain: `Maneuver`, `NavigationInstruction`, `NavigationState`, `NavigationSessionReducer`, `AppAllowlist`, `DistanceQuantizer`, `EpochClock` |
-| notification/ (+ icon/) | Controller/Handler + Service | Listener service, dispatcher (privacy gate), snapshot factory, serial queue, large-icon recognizer |
-| rules/ | Service + Utility | Rule model, codec, validator, engine, extractors, `SafeRegex` time budget |
-| pebble/ | Adapter + Service | `NavigationController`, `PebbleWatchTransport`, `PebbleAppMessageMapper`, `WatchListenerService` |
-| protocol/ | Model + Utility | `AppMessage`, generated `Protocol.kt`, `ProtocolCodec`, `WatchTransport` interface |
-| data/ (+ db/) | Repository/DAO | Room database, DAOs, entities; DataStore-backed repositories |
-| update/ | Service | Release check, signed ruleset download and verification |
-| export/ | Service | Export builder, redactor, share manager |
-| ui/ | Static/UI | Compose screens and view models by feature (dashboard, apps, rules, debug, share, onboarding) |
-| di/, system/ | Configuration | Manual DI container, installed-apps provider, notification-access helpers |
+| `core/` | Model/Entity + Service (pure) | `NavigationSessionReducer`, `NavigationState`, `NavigationInstruction`, `Maneuver`, `WatchSettings`, `DistanceQuantizer`, `EpochClock`, `Hashing`, `AppAllowlist` |
+| `protocol/` | Utility (pure codec) + interface | `ProtocolCodec`, `AppMessage`, `WatchTransport`/`WatchLink`/`SendResult`, generated `Protocol.kt` |
+| `pebble/` | Adapter + Service | `NavigationController`, `PebbleWatchTransport`, `PebbleAppMessageMapper`, `WatchListenerService` + `WatchInboundBus` |
+| `notification/`, `notification/icon/` | Controller/Handler + Service | listener, dispatcher (privacy gate), queue, snapshot factory, capture processor, maneuver heuristic, large-icon matcher |
+| `rules/` | Service (pure) | engine, conditions, extractors, parsers, `SafeRegex`, codec, validator, preview, asset repository |
+| `data/`, `data/db/` | Repository/DAO + Migration | Room entities and DAOs (v8 with 7 migrations), SharedPreferences repositories |
+| `update/` | Service + Adapter | `UpdateCheckRepository`, `AppVersions`, `ReleaseFetcher`/`GitHubReleaseFetcher`, `RuleUpdateRepository`, signature verifier |
+| `export/` | Service | export builder, redactor, exporter, share manager |
+| `system/` | Adapter | notification access, listener refresher, install receiver |
+| `catalog/` | Model | navigation-app catalog |
+| `di/` | Configuration | `AppContainer`, asset catalog source, installed apps provider |
+| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/`, `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `components/`, `format/`, `theme/` |
 
-## Watchapp Source Organization (`watchapp/src/c`)
+## Watchapp Module Organisation
 
-| File | Classification | Responsibility |
+| File | Classification | Pebble APIs |
 |---|---|---|
-| main.c | Controller + UI | Window, layers, AppMessage inbox/outbox, handshake watchdog, backlight, vibration, glance |
-| settings_window.c/.h | UI | Settings menu tree (10 main rows, sub-windows) |
-| theme.c/.h | Configuration + Repository | Settings state, `persist_*` keys 1-15, theme colours, vibe patterns |
-| about_window.c/.h | UI | About page; `AboutInfo` struct |
-| about_text.c/.h | Utility (pure) | About status line and details text |
-| eta_text, glance_text, stops_text, panel_layout, early_warning (.c/.h) | Utility (pure) | Host-testable formatting and decision logic |
-| generated/protocol.h | Generated | Protocol constants (`PBNTN_*`) |
+| `main.c` | Controller + View + lifecycle | yes (AppMessage, layers, persist, timers, glance) |
+| `settings_window.c/.h` | View (menus) | yes |
+| `about_window.c/.h` | View | yes |
+| `theme.c/.h` | Configuration + Repository (persist keys 1-15) | yes |
+| `about_text`, `glance_text`, `phone_version`, `eta_text`, `stops_text`, `panel_layout`, `early_warning` (`.c/.h`) | Utility (pure) | no; host-tested |
+| `generated/protocol.h` | Configuration (generated, read-only) | no |
 
 ## Code Patterns
 
-- **Pure core, thin shell**: Kotlin reducer and codec are pure; on the watch every unit without Pebble APIs has a `test_<unit>.c` twin (enforced by scripts/test-watchapp-unit.sh, which fails if a test has no matching unit).
-- **Requirement IDs in comments**: headers and KDoc cite `REQ-*` and issue numbers (for example about_text.h cites REQ-WATCH-020, #48).
-- **Static module state on the watch**: each window keeps `static` pointers and copies its input struct (`s_info = *info`).
-- **Generated constants only**: both sides reference `Protocol.Keys.*` / `PBNTN_KEY_*`, never literals.
+- **Pure core plus adapters**: domain logic receives time (`EpochClock`), I/O (`ReleaseFetcher`) and transport (`WatchTransport`) through interfaces with fakes in tests (`FakeWatchTransport`, `FakeFetcher`).
+- **StateFlow repositories**: SharedPreferences-backed repositories expose `StateFlow`s and `@Volatile` caches for callback-thread reads (`AppEnabledRepository`, `WatchSettingsRepository`, `UpdateCheckRepository`, `WatchappPresenceRepository`).
+- **Stateless Compose screens**: `DashboardScreen` takes plain parameters and lambdas, and `MainActivity.AppNavHost` collects flows. There is no dashboard ViewModel.
+- **Effect-returning reducer**: `reduce(state, event) -> ReducerResult(state, effects)`, run under a mutex by `NavigationController`.
+- **Watch pure-unit split**: each piece of formatting or decision logic is a Pebble-free `.c/.h` with a host test. `main.c` owns the persisted state and the UI.
+- **Requirement tagging**: comments cite REQ IDs and issue numbers throughout.
+
+## Dependency Graph Notes
+
+There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`. Watch: `main.c` -> all pure units, `settings_window`, `theme`; `settings_window` -> `about_window` -> `about_text`. External libraries are listed in [dependencies.md](dependencies.md).
