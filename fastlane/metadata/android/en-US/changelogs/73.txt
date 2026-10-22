@@ -1,0 +1,1 @@
+• detect a phone app update by comparing the watchapp and phone app versions
