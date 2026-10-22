@@ -1,4 +1,4 @@
-// Host-compiled unit tests for the launcher subtitle text (REQ-WATCH-019).
+// Host-compiled unit tests for the launcher subtitle text (REQ-WATCH-019, amended by #94).
 // Run with scripts/test-watchapp-unit.sh — no Pebble SDK or emulator needed.
 
 #include "../src/c/glance_text.h"
@@ -12,6 +12,18 @@ static void check(const char *what, bool navigating, int32_t eta, int32_t now, c
                   bool want_ok, const char *want) {
   char buf[150];
   bool ok = glance_countdown_template(navigating, eta, now, eta_text, buf, sizeof(buf));
+  if (ok != want_ok || strcmp(buf, want) != 0) {
+    printf("  FAIL  %s: expected %d \"%s\", got %d \"%s\"\n", what, want_ok, want, ok, buf);
+    failures++;
+  } else {
+    printf("  ok    %s\n", what);
+  }
+}
+
+static void check_update(const char *what, const char *version, size_t len, bool want_ok,
+                         const char *want) {
+  char buf[48];
+  bool ok = glance_update_subtitle(version, buf, len);
   if (ok != want_ok || strcmp(buf, want) != 0) {
     printf("  FAIL  %s: expected %d \"%s\", got %d \"%s\"\n", what, want_ok, want, ok, buf);
     failures++;
@@ -43,6 +55,17 @@ int main(void) {
   } else {
     printf("  ok    small buffer\n");
   }
+
+  // #94 (FR6): the subtitle while a phone app update is recorded and no countdown applies.
+  printf("glance_update_subtitle\n");
+  check_update("update recorded", "0.0.71", 48, true, "Update: 0.0.71");
+  check_update("template characters dropped", "0.0.{7}1\\", 48, true, "Update: 0.0.71");
+  check_update("empty version: hint", "", 48, false, "");
+  check_update("NULL version: hint", NULL, 48, false, "");
+  check_update("only template characters: hint", "{}\\", 48, false, "");
+  // "Update: 0.0.71" is 14 characters, so it needs 15 bytes with the terminator.
+  check_update("exact fit", "0.0.71", 15, true, "Update: 0.0.71");
+  check_update("small buffer: hint, never a cut version", "0.0.71", 14, false, "");
 
   if (failures) {
     printf("%d failure(s)\n", failures);

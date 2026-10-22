@@ -158,6 +158,10 @@ class AppContainer(context: Context) {
         stateStore = navigationStateRepository,
         onWatchappReached = { watchappPresence.markSeen(System.currentTimeMillis()) },
         initialSettings = watchSettingsRepository.settings.value,
+        // Tell the watch about a newer phone app on every state message (REQ-ANDROID-017, #94).
+        latestPhoneUpdate = {
+            updateCheckRepository.state.value.let { if (it.updateAvailable) it.latestVersion else null }
+        },
     )
 
     init {

@@ -45,6 +45,15 @@
     <string name="update_check_available">An update is available.</string>
     <string name="update_check_up_to_date">PebbleNTN is up to date.</string>
     <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
+    <!-- #94 (REQ-ANDROID-018): shown first while the last update check is over 30 days old, or never ran. -->
+    <string name="dashboard_stale_check_title">Check for updates</string>
+    <string name="dashboard_stale_check_body">PebbleNTN hasn\'t checked for a newer version in over 30 days. Tap below to check GitHub now; nothing is sent.</string>
+    <string name="dashboard_stale_check_never_body">PebbleNTN has never checked for a newer version. Tap below to check GitHub now; nothing is sent.</string>
+    <string name="dashboard_stale_check_action">Check for updates</string>
+    <string name="dashboard_weekly_question_title">Check for updates automatically every week?</string>
+    <string name="dashboard_weekly_question_body">PebbleNTN would check GitHub about once a week, so you hear about new versions without remembering to check. You can change this in Updates.</string>
+    <string name="dashboard_weekly_question_turn_on">Turn on</string>
+    <string name="dashboard_weekly_question_not_now">Not now</string>
     <!-- Where the "Download latest version" button sends the user. -->
     <string name="update_releases_url" translatable="false">https://github.com/optio/PebbleNTN/releases/latest</string>
 

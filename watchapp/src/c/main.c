@@ -10,6 +10,8 @@
 //     (REQ-WATCH-015, REQ-WATCH-016), and buzz as a maneuver comes within the early-warning
 //     distance (REQ-WATCH-022);
 //   - return to the watchface on navigation stop when commanded;
+//   - show a once-per-version notice, idle text and launcher subtitle when the phone reports a
+//     phone app update (REQ-WATCH-023, #94);
 //   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT.
 //
 // Layout: the maneuver arrow and the distance sit side by side in a coloured panel, so the road
@@ -28,6 +30,8 @@
 #include "phone_version.h"
 #include "stops_text.h"
 #include "theme.h"
+#include "update_notice.h"
+#include "update_notice_window.h"
 
 _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 
@@ -38,6 +42,10 @@ _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 // Persist key for the last connected phone app version (REQ-WATCH-020, #103). Keys 1–15 belong to
 // theme.c's settings.
 #define PERSIST_KEY_PHONE_VERSION 16
+// Persist keys for the phone app update notice (REQ-WATCH-023, #94): the latest phone app version
+// the phone offers, and the version the notice was last shown for.
+#define PERSIST_KEY_LATEST_PHONE_VERSION 17
+#define PERSIST_KEY_UPDATE_NOTICE_SHOWN 18
 
 static Window *s_window;
 static Layer *s_panel_layer;   // maneuver + distance
@@ -73,6 +81,12 @@ static GBitmap *s_qr_bitmap;
 // after a relaunch and while the phone is out of range; empty until a phone ever answered
 // (REQ-WATCH-020, #103).
 static char s_phone_version[PHONE_VERSION_MAX + 1];
+
+// The newer phone app version the phone last reported (flag bit 4 + key 14, protocol 1.2), empty
+// when none, and the version the update notice was last shown for. Both persisted, so the launcher
+// subtitle and "once per version" survive a relaunch (REQ-WATCH-023, #94).
+static char s_latest_phone_version[UPDATE_VERSION_MAX + 1];
+static char s_update_notice_shown[UPDATE_VERSION_MAX + 1];
 
 // Current normalized state, as sent by the phone.
 static int s_maneuver = PBNTN_MANEUVER_UNKNOWN;
@@ -593,6 +607,39 @@ static void draw_qr_hint(GContext *ctx, const GRect bounds) {
   }
 }
 
+#ifdef PBL_ROUND
+// Round displays: pick the largest font whose centred, word-wrapped message stays clear of the
+// bezel. A fixed side margin cannot do this: the outer lines of a four- or five-line message sit
+// where the circle narrows, which clipped the phone app update idle text on chalk (#94). So each
+// candidate is measured, the box is inset to the narrowest row the block spans (6 px of each outer
+// line's box is padding above or below the glyphs), and measured again, since narrowing can add a
+// line; it fits when that second inset is no wider than the one it was measured with.
+static void fit_round_message(GRect bounds, const char *const *fonts, size_t count, GRect *box_out,
+                              GFont *font_out, GSize *size_out) {
+  const int16_t max_h = bounds.size.h - 20;
+  for (size_t i = 0; i < count; i++) {
+    const GFont font = fonts_get_system_font(fonts[i]);
+    int16_t inset = 6;
+    GRect box = GRect(inset, 0, bounds.size.w - 2 * inset, max_h);
+    GSize size = GSizeZero;
+    for (int pass = 0; pass < 2; pass++) {
+      box = GRect(inset, 0, bounds.size.w - 2 * inset, max_h);
+      size = graphics_text_layout_get_content_size(s_message_buf, font, box,
+                                                   GTextOverflowModeWordWrap, GTextAlignmentCenter);
+      const int16_t top = (bounds.size.h - size.h) / 2;
+      inset = round_inset(top + 6, top + size.h - 6, 2);
+    }
+    const bool last = (i == count - 1);
+    if (last || (size.h <= box.size.h && size.w <= box.size.w && inset <= box.origin.x)) {
+      *box_out = box;
+      *font_out = font;
+      *size_out = size;
+      return;
+    }
+  }
+}
+#endif
+
 static void message_update_proc(Layer *layer, GContext *ctx) {
   const GRect bounds = layer_get_bounds(layer);
 
@@ -633,11 +680,18 @@ static void message_update_proc(Layer *layer, GContext *ctx) {
   };
   // Reserve a vertical margin so fit_font steps down before the text reaches the top/bottom edges:
   // a long line packed edge-to-edge is technically "fitting" but reads as cramped.
+#ifdef PBL_ROUND
+  GRect fit_box;
+  GFont font;
+  GSize sz;
+  fit_round_message(bounds, kMsgFonts, ARRAY_LENGTH(kMsgFonts), &fit_box, &font, &sz);
+#else
   const GRect fit_box = GRect(6, 0, bounds.size.w - 12, bounds.size.h - 20);
   GFont font = fit_font(s_message_buf, fit_box, GTextOverflowModeWordWrap, kMsgFonts,
                         ARRAY_LENGTH(kMsgFonts));
   const GSize sz = graphics_text_layout_get_content_size(s_message_buf, font, fit_box,
                                                          GTextOverflowModeWordWrap, GTextAlignmentCenter);
+#endif
   int16_t y = (bounds.size.h - sz.h) / 2;
   if (y < 0) {
     y = 0;
@@ -866,6 +920,65 @@ static void render_navigation(DictionaryIterator *iter) {
   s_last_maneuver = s_maneuver;
 }
 
+// --- Phone app update notice (REQ-WATCH-023, #94) --------------------------------------------
+
+// Persist `value` under `key`, or remove the key when `value` is empty. A failed write is not fatal:
+// this session goes on with the value in memory, and the next change retries the write.
+static void persist_version(uint32_t key, const char *value, const char *what) {
+  const int result = (value[0] == '\0') ? (int)persist_delete(key) : persist_write_string(key, value);
+  if (result < 0 && result != E_DOES_NOT_EXIST) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s not persisted (%d)", what, result);
+  }
+}
+
+// Read a version stored by an earlier session into `out` (UPDATE_VERSION_MAX + 1 bytes), or "".
+static void load_version(uint32_t key, char *out, const char *what) {
+  out[0] = '\0';
+  if (!persist_exists(key)) {
+    return;
+  }
+  const int read = persist_read_string(key, out, UPDATE_VERSION_MAX + 1);
+  if (read < 0) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s not read (%d)", what, read);
+    out[0] = '\0';
+  }
+  out[UPDATE_VERSION_MAX] = '\0';
+}
+
+// Record the update state a state message carries: bit 4 of FLAGS, and the version in key 14. Only
+// messages with FLAGS take part, so a compatibility error leaves the record as it is. Key 17 is
+// written only when the recorded version changes (flash wear, FR3.2).
+static void record_update(DictionaryIterator *iter) {
+  Tuple *flags_t = dict_find(iter, PBNTN_KEY_FLAGS);
+  if (flags_t == NULL) {
+    return;
+  }
+  const bool flag_set = (flags_t->value->int32 & PBNTN_FLAG_PHONE_UPDATE_AVAILABLE_MASK) != 0;
+  Tuple *version_t = dict_find(iter, PBNTN_KEY_LATEST_PHONE_VERSION);
+  const char *incoming = (version_t != NULL && version_t->type == TUPLE_CSTRING && version_t->length > 0)
+                             ? version_t->value->cstring
+                             : NULL;
+  if (update_record(s_latest_phone_version, sizeof(s_latest_phone_version), flag_set, incoming)) {
+    persist_version(PERSIST_KEY_LATEST_PHONE_VERSION, s_latest_phone_version, "latest phone version");
+  }
+}
+
+// Show the update notice once per version, but never during a route or over Settings/About: then
+// it waits for the next stop or "no navigation" message (FR4.3, FR4.4). It is marked shown, and key
+// 18 written, as it opens.
+static void maybe_show_update_notice(void) {
+  const bool main_on_top = window_stack_get_top_window() == s_window;
+  if (update_notice_action(s_latest_phone_version, s_update_notice_shown, s_navigating,
+                           main_on_top) != UPDATE_NOTICE_SHOW) {
+    return;
+  }
+  if (!update_notice_window_push(NULL)) {
+    return;
+  }
+  snprintf(s_update_notice_shown, sizeof(s_update_notice_shown), "%s", s_latest_phone_version);
+  persist_version(PERSIST_KEY_UPDATE_NOTICE_SHOWN, s_update_notice_shown, "update notice shown");
+}
+
 static void handle_stopped(DictionaryIterator *iter) {
   s_navigating = false;
   early_warn_reset(&s_early_warn);
@@ -875,6 +988,7 @@ static void handle_stopped(DictionaryIterator *iter) {
     window_stack_pop_all(true); // return to the watchface (REQ-WATCH-007)
   } else {
     show_message("Arrived");
+    maybe_show_update_notice();  // a notice held back during the route (FR4.4)
   }
 }
 
@@ -935,6 +1049,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   s_heard_from_phone = true;
   connect_stop();
   record_phone_version(iter);
+  record_update(iter);
   switch (event_t->value->int32) {
     case PBNTN_EVENT_NAVIGATION_UPDATE:
       render_navigation(iter);
@@ -946,7 +1061,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
       s_last_maneuver = -1;
       s_navigating = false;
       early_warn_reset(&s_early_warn);
-      show_message("No navigation detected. If navigating, open PebbleNTN on your phone.");
+      // While an update is recorded the idle text points at it, every time (FR5.1).
+      show_message(update_idle_text(s_latest_phone_version));
+      maybe_show_update_notice();
       break;
     case PBNTN_EVENT_PHONE_COMPATIBILITY_ERROR:
       show_message("Update phone app");
@@ -1040,6 +1157,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 static void init(void) {
   settings_load();
   load_phone_version();
+  load_version(PERSIST_KEY_LATEST_PHONE_VERSION, s_latest_phone_version, "latest phone version");
+  load_version(PERSIST_KEY_UPDATE_NOTICE_SHOWN, s_update_notice_shown, "update notice shown");
 
 #if defined(PBL_PLATFORM_EMERY)
   // Touch watches (Pebble Time 2): opt into the system touch bridge, so the settings menus, their
@@ -1079,8 +1198,9 @@ static void init(void) {
 }
 
 #if !PBL_PLATFORM_APLITE
-// Launcher subtitle (REQ-WATCH-019, #15): during a route, a countdown to the arrival time that the
-// launcher keeps current and that expires at the arrival time; after it, and otherwise, a short hint.
+// Launcher subtitle (REQ-WATCH-019, #15, amended by #94): during a route, a countdown to the arrival
+// time that the launcher keeps current and that expires at the arrival time. After it, and
+// otherwise, "Update: <version>" while an update is recorded, else a short hint.
 static void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
   char countdown[150];
   if (limit >= 2 && glance_countdown_template(s_navigating, s_eta_epoch, (int32_t)time(NULL),
@@ -1090,8 +1210,11 @@ static void glance_reload_callback(AppGlanceReloadSession *session, size_t limit
       .expiration_time = s_eta_epoch,
     });
   }
+  char update[48];
+  const bool has_update = glance_update_subtitle(s_latest_phone_version, update, sizeof(update));
   app_glance_add_slice(session, (AppGlanceSlice){
-    .layout = { .icon = APP_GLANCE_SLICE_DEFAULT_ICON, .subtitle_template_string = GLANCE_HINT },
+    .layout = { .icon = APP_GLANCE_SLICE_DEFAULT_ICON,
+                .subtitle_template_string = has_update ? update : GLANCE_HINT },
     .expiration_time = APP_GLANCE_SLICE_NO_EXPIRATION,
   });
 }
@@ -1113,6 +1236,7 @@ static void deinit(void) {
       gbitmap_destroy(s_maneuver_bitmaps[i]);
     }
   }
+  update_notice_window_deinit();
   window_destroy(s_window);
 }
 
