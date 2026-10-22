@@ -1,0 +1,33 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR1.5",
+    "FR2.1",
+    "NFR1", "NFR2", "NFR3"
+  ],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt" },
+    { "id": "FR1.2", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt" },
+    { "id": "FR1.3", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt" },
+    { "id": "FR1.4", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt" },
+    { "id": "FR1.5", "status": "OK", "target": "android/app/src/main/res/values/strings.xml" },
+    { "id": "FR2.1", "status": "OK", "target": "requirements/REQ-ANDROID.md" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt" },
+    { "id": "NFR2", "status": "OK", "target": "scripts/test-all.sh" },
+    { "id": "NFR3", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt" }
+  ],
+  "reverse": [
+    { "id": "Compact InfoRow (tighter Status row spacing)", "status": "N/A", "target": "the person's request recorded in plan Step 5 (2026-10-22); makes room for the FR1.1 row and keeps every InfoRow alike (NFR3)" }
+  ],
+  "files": {
+    "FR1.1": ["android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt"],
+    "FR1.2": ["android/app/src/main/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRow.kt", "android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt", "android/app/src/main/res/values/strings.xml"],
+    "FR1.3": ["android/app/src/main/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRow.kt", "android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt", "android/app/src/main/res/values/strings.xml"],
+    "FR1.4": ["android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt", "android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt"],
+    "FR1.5": ["android/app/src/main/res/values/strings.xml"],
+    "FR2.1": ["requirements/REQ-ANDROID.md", "MANIFEST.sha256.json"],
+    "NFR1": ["android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt", "android/app/src/main/java/com/pebblentn/app/update/UpdateCheckRepository.kt"],
+    "NFR2": ["android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt", "scripts/test-all.sh"],
+    "NFR3": ["android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt"]
+  }
+}

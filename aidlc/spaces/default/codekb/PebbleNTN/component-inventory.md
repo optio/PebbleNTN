@@ -27,15 +27,15 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Watchapp Update Notice
 - **Location**: watchapp/src/c/update_notice.c, update_notice.h, update_notice_window.c, update_notice_window.h
-- **Responsibility**: #94 / REQ-WATCH-023 rules. `update_record` copies key 14 when bit 4 is set and clears the record when bit 4 is clear. `update_notice_action` returns NONE / DEFER / SHOW: once per version, deferred during a route or under another window. `update_idle_text` picks the idle text. The window shows `UPDATE_NOTICE_TEXT`. There is no version comparison: "update available" is whatever the phone last said.
+- **Responsibility**: #94 / REQ-WATCH-023 rules. `update_record` copies key 14 when bit 4 is set and clears the record when bit 4 is clear. `update_notice_action` returns NONE / DEFER / SHOW: once per version, deferred during a route or under another window. `update_idle_text` picks the idle text. The window shows `UPDATE_NOTICE_TEXT`. Since v0.0.73 the watch also derives an update from its own version compare (`version_compare.c/.h`, strict `version_parse`, tested by `test_version_compare.c`); that unit was not re-read in the latest focused scan.
 - **Depends on**: string.h only (pure part); Pebble Window APIs (window part).
 
 ### Watchapp Pure Text Modules
-- **Location**: watchapp/src/c/{about_text,glance_text,phone_version,update_notice,eta_text,stops_text,panel_layout,early_warning}.{c,h}
+- **Location**: watchapp/src/c/{about_text,glance_text,phone_version,update_notice,version_compare,eta_text,stops_text,panel_layout,early_warning}.{c,h}
 - **Responsibility**: Pebble-free logic: About text, glance template and `GLANCE_HINT`, phone-version recording rule (16-byte cap, change detection), update-notice rules (see Watchapp Update Notice), `glance_update_subtitle`, ETA parsing/labels, stop count, panel placement, early-warning decision.
 
 ### Watchapp Host Unit Tests
-- **Location**: watchapp/tests/test_*.c (8 files, including test_update_notice.c)
+- **Location**: watchapp/tests/test_*.c (9 files, including test_update_notice.c and test_version_compare.c)
 - **Responsibility**: host-compiled assertions per pure unit, run by `scripts/test-watchapp-unit.sh` (each test must have a matching `src/c/<unit>.c` and is linked against that unit alone, so units cannot share helpers).
 
 ### Watchapp Asset Tools
@@ -52,16 +52,16 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Phone Protocol Codec
 - **Location**: android/app/src/main/java/com/pebblentn/app/protocol/ (ProtocolCodec.kt, AppMessage.kt, Protocol.kt generated)
-- **Responsibility**: encode states (always with APP_VERSION; bit 4 + key 14 when a latest phone version is given) and compatibility errors; decode WATCH_READY (major/minor only, key 11 ignored) / WATCH_REQUEST_STATE; UTF-8-safe text fitting to the watch buffers.
+- **Responsibility**: encode states (always with APP_VERSION; bit 4 + key 14 when a latest phone version is given) and compatibility errors; decode WATCH_READY (major/minor) / WATCH_REQUEST_STATE; `watchAppVersion` extracts key 11 from a WATCH_READY (trimmed, non-blank); UTF-8-safe text fitting to the watch buffers.
 
 ### Phone Watch Transport
 - **Location**: protocol/WatchTransport.kt, pebble/PebbleWatchTransport.kt, pebble/PebbleAppMessageMapper.kt, pebble/WatchListenerService.kt
-- **Responsibility**: send/launch over PebbleKit 2 with one relaunch-and-retry on `FailedDifferentAppOpen`; inbound bridge through `WatchInboundBus`; synthetic WATCH_READY on `onAppOpened`; `WatchLink` status for the dashboard.
+- **Responsibility**: send/launch over PebbleKit 2 with one relaunch-and-retry on `FailedDifferentAppOpen`; inbound bridge through `WatchInboundBus` (`onMessageReceived` forwards our UUID's messages, including a real WATCH_READY when the companion forwards it, and marks the watchapp seen); synthetic WATCH_READY without key 11 on `onAppOpened`; `WatchLink` status for the dashboard.
 - **Depends on**: PebbleKit 2 Vendored Library.
 
 ### Navigation Controller
 - **Location**: pebble/NavigationController.kt
-- **Responsibility**: serialises reducer access with a mutex, runs effects, retries sends (3 attempts, exponential backoff), sends an autonomous READY 1.5 s after a launch, persists state, exposes `WatchLinkStatus`, and passes `appVersion` and `latestPhoneUpdate()` (read on every SendState) to the codec.
+- **Responsibility**: serialises reducer access with a mutex, runs effects, retries sends (3 attempts, exponential backoff), sends an autonomous READY 1.5 s after a launch, persists state, exposes `WatchLinkStatus`, and passes `appVersion` and `latestPhoneUpdate()` (read on every SendState) to the codec. In `handleInbound` it hands key 11 of a genuine WATCH_READY to `onWatchAppVersion` (failures logged, never thrown); its own autonomous READY carries no version.
 - **Depends on**: Navigation Session Reducer, Phone Protocol Codec, `WatchTransport`, `NavigationStateRepository`.
 
 ### Navigation Session Reducer
@@ -81,8 +81,8 @@ Each component lists its location, responsibility and dependencies. The `###` he
 - **Responsibility**: Room database v8 (supported_app_settings, notification_debug_event, user_rule, navigation_state, official_ruleset) with migration tests; SharedPreferences repositories (`pebblentn_settings`: master switch, watch settings, appearance, presence, feedback); debug history with hashed keys and grouping.
 
 ### App Update Check
-- **Location**: update/UpdateCheckRepository.kt, update/AppVersions.kt, update/ReleaseFetcher.kt
-- **Responsibility**: opt-in weekly or manual GitHub release check (REQ-ANDROID-013); persists last check time, latest tag and the auto-check choice (prefs `pebblentn_update_check`); exposes `UpdateState`, `autoCheckEnabled` and `lastCheckMillis` flows and `isCheckStale` (30 days, REQ-ANDROID-018); tolerant version comparison (`AppVersions`, junk components become 0). It is the only source of `updateAvailable` today: there is no watch-version input and no install-source awareness.
+- **Location**: update/UpdateCheckRepository.kt, update/AppVersions.kt, update/ReleaseFetcher.kt, update/InstallSource.kt
+- **Responsibility**: opt-in weekly or manual GitHub release check (REQ-ANDROID-013); persists last check time, latest tag, the auto-check choice and the last-seen watchapp version (prefs `pebblentn_update_check`, key `watch_app_version`, REQ-ANDROID-019); exposes `UpdateState` (`watchAppVersion`, `updateAvailable`, `effectiveLatest`), `autoCheckEnabled` and `lastCheckMillis` flows and `isCheckStale` (30 days, REQ-ANDROID-018); tolerant (GitHub) and strict (watch) version comparison in `AppVersions`; install-source detection (`InstallSources`, REQ-ANDROID-020). The stored watchapp version has no timestamp and is never cleared.
 - **Depends on**: GitHub Releases API, kotlinx-serialization, coroutines.
 
 ### Ruleset Signing and Activation
@@ -91,7 +91,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Compose UI
 - **Location**: ui/ (MainActivity, dashboard, rules, debug, share, apps, onboarding, components, format, theme)
-- **Responsibility**: onboarding/disclosure; dashboard with setup checklist, feedback card, `PromptCard` attention cards ("Update available" with a single "Download latest version" button to the GitHub releases page; overridden rules; share nudge; `PromptCard` supports an optional secondary text button), the #94 stale-check item / weekly-check question (`UpdatePrompt`), and sections Status / Watch / Navigation / Troubleshooting / Appearance / Updates ("Check for updates now", "Check for updates weekly" toggle); rules browse/edit/review; debug history; diagnostics sharing. `MainActivity` collects flows and wires the actions (`checkForUpdate`, `setAutoCheckUpdates`, `openUrl`).
+- **Responsibility**: onboarding/disclosure; dashboard with setup checklist, feedback card, `PromptCard` attention cards ("Update available" via `UpdateAvailableCard`: "Update from {source}", F-Droid delay line, "Other sources" dialog, model from the pure `updateCardModel`; overridden rules; share nudge), the #94 stale-check item / weekly-check question (`UpdatePrompt`), and sections Status (master switch, access chip, `InfoRow`s Watch link, Last navigation notification, Last sent to watch; no watchapp version row yet) / Watch / Navigation / Troubleshooting / Appearance / Updates ("Check for updates now" with "Version X", "Check for updates weekly" toggle); rules browse/edit/review; debug history; diagnostics sharing. `MainActivity.AppNavHost` collects flows (including `updateCheckRepository.state`) and wires the actions (`checkForUpdate`, `setAutoCheckUpdates`, `openUpdateSource`, `openUrl`). There is no `DashboardScreen` UI test; Compose screen tests follow `NavigationAppsScreenTest` (Robolectric + `createComposeRule`).
 
 ### Diagnostics Export
 - **Location**: export/
@@ -99,7 +99,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Dependency Container
 - **Location**: di/AppContainer.kt, PebbleNtnApplication.kt
-- **Responsibility**: manual DI and startup: builds every repository, the transport and the controller; forwards `WatchSettings` changes to the controller; on start restores state, starts inbound collection, warms caches, and runs the update check only when auto-check is enabled. Supplies `latestPhoneUpdate` = `latestVersion` while `updateAvailable` (#94).
+- **Responsibility**: manual DI and startup: builds every repository, the transport and the controller; forwards `WatchSettings` changes to the controller; on start restores state, starts inbound collection, warms caches, and runs the update check only when auto-check is enabled. Supplies `latestPhoneUpdate` = `updateCheckRepository.state.value.effectiveLatest` (#94, REQ-ANDROID-019), `onWatchAppVersion` = `updateCheckRepository.recordWatchAppVersion`, and `installSource` (detected once per app start).
 
 ### PebbleKit 2 Vendored Library
 - **Location**: android/pebblekit/
