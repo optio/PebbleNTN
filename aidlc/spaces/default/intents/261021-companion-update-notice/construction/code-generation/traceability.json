@@ -1,0 +1,40 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR2.1", "FR2.2", "FR2.3",
+    "FR3.1", "FR3.2",
+    "FR4.1", "FR4.2", "FR4.3", "FR4.4",
+    "FR5.1",
+    "FR6.1", "FR6.2", "FR6.3",
+    "FR7.1", "FR7.2", "FR7.3", "FR7.4",
+    "FR8.1",
+    "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"
+  ],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "protocol/protocol-definition.json" },
+    { "id": "FR2.1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/protocol/ProtocolCodec.kt" },
+    { "id": "FR2.2", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/protocol/ProtocolCodecTest.kt" },
+    { "id": "FR2.3", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/protocol/ProtocolCodecTest.kt" },
+    { "id": "FR3.1", "status": "OK", "target": "watchapp/src/c/update_notice.c" },
+    { "id": "FR3.2", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR4.1", "status": "OK", "target": "watchapp/src/c/update_notice_window.c" },
+    { "id": "FR4.2", "status": "OK", "target": "watchapp/src/c/update_notice_window.c" },
+    { "id": "FR4.3", "status": "OK", "target": "watchapp/tests/test_update_notice.c" },
+    { "id": "FR4.4", "status": "OK", "target": "watchapp/tests/test_update_notice.c" },
+    { "id": "FR5.1", "status": "OK", "target": "watchapp/src/c/update_notice.c" },
+    { "id": "FR6.1", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR6.2", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR6.3", "status": "OK", "target": "watchapp/tests/test_glance_text.c" },
+    { "id": "FR7.1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/update/UpdateCheckRepository.kt" },
+    { "id": "FR7.2", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt" },
+    { "id": "FR7.3", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdatePrompt.kt" },
+    { "id": "FR7.4", "status": "OK", "target": "android/app/src/main/res/values/strings.xml" },
+    { "id": "FR8.1", "status": "OK", "target": "requirements/REQ-WATCH.md" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/protocol/ProtocolCodecTest.kt" },
+    { "id": "NFR2", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/update/UpdateCheckRepositoryTest.kt" },
+    { "id": "NFR3", "status": "OK", "target": "watchapp/tests/test_update_notice.c" },
+    { "id": "NFR4", "status": "OK", "target": "aidlc/spaces/default/intents/261021-companion-update-notice/construction/code-generation/emulator-chalk-2-relaunch-no-notice.png" },
+    { "id": "NFR5", "status": "OK", "target": "scripts/test-all.sh" }
+  ]
+}

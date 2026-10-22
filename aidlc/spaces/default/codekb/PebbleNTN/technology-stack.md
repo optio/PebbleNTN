@@ -4,39 +4,33 @@
 
 | Language | Where | Notes |
 |---|---|---|
-| Kotlin 2.3.10 | android/app, android/pebblekit, android/fixture-publisher | JVM target 21, `kotlin.code.style=official` |
-| AIDL | android/pebblekit/src/main/aidl | PebbleKit 2 IPC |
-| C (C11 for host tests) | watchapp/src/c, watchapp/tests | Pebble SDK 3; host tests built with `gcc -std=c11 -Wall -Wextra -Werror` |
-| Python 3 (3.12 in CI) | protocol/, scripts/, tools/, watchapp/tools/ | mostly standard library; `jsonschema` for rule validation |
-| Bash | scripts/, .githooks/ | `set -euo pipefail` |
-| Java | tools/route-capture/device/ | small on-device helpers |
-| JSON | protocol, rules, schemas, routes | data contracts |
+| Kotlin 2.3.10 | android/app, android/pebblekit, android/fixture-publisher | JVM target 21, official code style |
+| AIDL | android/pebblekit | PebbleKit 2 IPC contracts |
+| C (C11 for host tests) | watchapp | Pebble SDK 3; host tests run under `gcc -Wall -Wextra -Werror` |
+| Python 3.10+ (CI 3.12) | protocol, scripts, tools, watchapp/tools | stdlib, plus jsonschema and pyqrcode where used |
+| Bash | scripts, .githooks | `set -euo pipefail` throughout |
+| Java | tools/route-capture/device | small on-device helpers (dex, icon probe) |
+| JSON | protocol, rules, schemas, examples | JSON Schema for rulesets and the catalog |
 
-## Platforms
+## Platforms and Baselines
 
-| Platform | Baseline |
-|---|---|
-| Android | minSdk 31, targetSdk 35 (Play floor check `verifyReleaseTargetSdk` = 35), compileSdk 36 |
-| Pebble | SDK 3; aplite, basalt, chalk (round), diorite, emery (Pebble Time 2, touch, RGB backlight) |
+- Android: minSdk 31, targetSdk 35 (Play floor gate `verifyReleaseTargetSdk` = 35), compileSdk 36.
+- Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite.
+- Build: Gradle 8.13 wrapper, AGP 8.13.2, KSP 2.3.10, JDK 21 (Temurin in CI); pebble-tool with the latest SDK.
 
-## Android Frameworks and Libraries
+## Frameworks
 
-The version catalog android/gradle/libs.versions.toml is the single source of versions; full list with roles in [dependencies.md](dependencies.md). Main pieces: Jetpack Compose (BOM 2024.12.01, Material 3), Navigation Compose 2.8.5, Lifecycle 2.8.7, Room 2.7.2 with KSP 2.3.10, DataStore 1.1.1, kotlinx-serialization 1.7.3, kotlinx-coroutines 1.9.0, Timber 5.0.1, PebbleKit Android 2 (vendored).
+- Jetpack Compose (BOM 2024.12.01) with Material 3 and Navigation Compose 2.8.5.
+- AndroidX Lifecycle 2.8.7 and Activity Compose 1.9.3.
+- Room 2.7.2 (KSP) for persistence; SharedPreferences for small settings.
+- kotlinx-coroutines 1.9.0 (Flow/StateFlow, Mutex) and kotlinx-serialization-json 1.7.3.
+- PebbleKit Android 2 1.2.0 (vendored).
+- Pebble C SDK: Window/Layer/MenuLayer/ScrollLayer, AppMessage, persist, AppGlance, connection and tick services.
 
-## Build Tooling
+## Tooling
 
-| Tool | Version / config |
-|---|---|
-| Gradle wrapper | 8.13 (checksum-pinned) |
-| Android Gradle Plugin | 8.13.2 |
-| KSP | 2.3.10 |
-| Pebble build | `pebble build` (waf, watchapp/wscript); `pebble-tool` + `pebble sdk install latest` in CI |
-| R8 | release minify + resource shrink; ART baseline profile disabled for reproducible builds |
+- Android Lint (default rules), CodeQL (java-kotlin).
+- Test stack: JUnit 4, Robolectric 4.14.1, coroutines-test, Compose UI test, room-testing, Espresso (instrumented).
+- No coverage tool, formatter enforcement, ktlint or detekt.
 
-## Test Tooling
-
-JUnit 4.13.2, Robolectric 4.14.1, kotlinx-coroutines-test 1.9.0, androidx.test core 1.6.1 / ext-junit 1.2.1, Espresso 3.6.1, Room testing, Compose UI test (JUnit4); host C test harness; Python `unittest`.
-
-## Distribution
-
-GitHub Releases (APK + PBW + SHA256SUMS), F-Droid (fdroid/metadata, reproducible builds), Obtainium, Rebble app store (PBW), optional Play AAB (play-release.yml); fastlane/metadata for store listings.
+Library versions and transitive relationships are in [dependencies.md](dependencies.md).

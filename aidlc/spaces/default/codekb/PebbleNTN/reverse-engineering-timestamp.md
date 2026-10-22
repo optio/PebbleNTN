@@ -2,83 +2,52 @@
 
 ## Run Record
 
-- Date: 2026-10-21
-- Commit: f8366a4b34a77c504df0194a9f31386553a74b8c
+- Date: 2026-10-22
+- Commit: b5a9e8bedf0c9d57fe0e1808d3b082aa1e7015e3
 - Breadth requested: full rescan of the whole repo (snapshot paths `./`); depth Minimal
-- Coverage recorded honestly as partial: the watchapp, protocol, phone-to-watch layer, watch/protocol specs and CI were read deeply; the rest of the Android app, tools, rules and docs were classified by listing and doc headers (see `shallow.paths`)
+- Intent: `companion-update-notice` (GitHub issue #94)
+- Coverage: every tracked, hand-written file was listed folder by folder and read at least at its declarations and header comments. The intent focus areas (protocol and generator, watchapp `main.c`/glance/About/settings, Android update check, codec, reducer, controller, transport, dashboard, DI, CI) were read in full. Build outputs, caches, ignored files and the AI-DLC install were left out. This full rescan replaces all nine artifacts of the previous store (intent `about-companion-version`, commit f8366a4).
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
-kind: partial
-intent: 261020-about-companion-version
-fingerprint: 30f464f0185d26a004af27217139a88b157ef29f
+kind: full
+intent: companion-update-notice
+fingerprint: 29cbe882c2eb21717fc994f78953879a1c922631
 analyzed:
   paths:
-    - watchapp/src/c/main.c
-    - watchapp/src/c/about_text.c
-    - watchapp/src/c/about_text.h
-    - watchapp/src/c/about_window.c
-    - watchapp/src/c/about_window.h
-    - watchapp/src/c/settings_window.h
-    - watchapp/src/c/generated/
-    - watchapp/tests/test_about_text.c
-    - watchapp/package.json
-    - watchapp/wscript
-    - protocol/
-    - android/app/src/main/java/com/pebblentn/app/protocol/ProtocolCodec.kt
-    - android/app/src/main/java/com/pebblentn/app/protocol/WatchTransport.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/NavigationController.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleWatchTransport.kt
-    - spec/000-overview.md
-    - spec/200-architecture/Protocol.md
-    - spec/200-architecture/Pebble.md
-    - spec/200-architecture/System.md
-    - spec/400-ui/WatchUI.md
-    - requirements/REQ-WATCH.md
-    - scripts/test-all.sh
-    - scripts/test-watchapp-unit.sh
-    - scripts/generate-protocol.sh
-    - scripts/build-watchapp.sh
-    - .github/workflows/watchapp.yml
-    - .github/workflows/android.yml
-    - .github/workflows/rules.yml
-    - android/gradle/libs.versions.toml
-    - android/app/build.gradle.kts
-    - AGENTS.md
-    - MANIFEST.sha256.json
+    - ./
   components:
     - Watchapp Main Renderer
+    - Watchapp Settings Menu
     - Watchapp About Screen
+    - Watchapp Settings Store and Theme
+    - Watchapp Pure Text Modules
+    - Watchapp Host Unit Tests
+    - Watchapp Asset Tools
     - Protocol Definition and Generator
     - Phone Protocol Codec
     - Phone Watch Transport
     - Navigation Controller
+    - Navigation Session Reducer
+    - Notification Pipeline
+    - Rule Engine
+    - Persistence Layer
+    - App Update Check
+    - Ruleset Signing and Activation
+    - Compose UI
+    - Diagnostics Export
+    - Dependency Container
+    - PebbleKit 2 Vendored Library
+    - Fixture Publisher
+    - Rule Data and Schemas
+    - Rule Workbench
+    - Route Capture Harness
+    - Build and Release Scripts
+    - CI Workflows
+    - Distribution Metadata
+    - Specification and Requirements
 shallow:
-  paths:
-    - watchapp/src/c/
-    - watchapp/tests/
-    - watchapp/tools/
-    - watchapp/resources/
-    - watchapp/store/
-    - android/app/src/
-    - android/app/schemas/
-    - android/pebblekit/
-    - android/fixture-publisher/
-    - spec/
-    - requirements/
-    - scripts/
-    - .github/workflows/
-    - .githooks/
-    - rules/
-    - schemas/
-    - examples/
-    - tools/rule-workbench/
-    - tools/route-capture/
-    - docs/
-    - fastlane/
-    - fdroid/
-    - screenshots/
-    - README.md
+  paths: []
 ```
