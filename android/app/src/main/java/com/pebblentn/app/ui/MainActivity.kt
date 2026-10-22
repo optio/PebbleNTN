@@ -155,6 +155,8 @@ class MainActivity : ComponentActivity() {
                     updateAvailable = updateState.updateAvailable,
                     // The higher of the GitHub version and the watch's version (REQ-ANDROID-019).
                     latestVersion = updateState.effectiveLatest,
+                    // Follows the stored version live, so a new WATCH_READY shows at once (REQ-ANDROID-019).
+                    watchAppVersion = updateState.watchAppVersion,
                     installSource = container.installSource,
                     onOpenUpdateSource = ::openUpdateSource,
                     onCheckForUpdate = ::checkForUpdate,

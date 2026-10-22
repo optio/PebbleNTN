@@ -2,6 +2,47 @@
 
 _Last updated: 2026-10-22_
 
+## Watchapp version in the dashboard status (2026-10-22)
+
+**Milestone:** post-M12 enhancement to the Android dashboard. Android app only; no protocol, storage
+or watch change.
+
+**Requirements:** REQ-ANDROID-019 amended (the dashboard shows the last seen watchapp version, or
+"Not received yet"). Manifest resynced.
+
+**What changed.**
+- The pure `watchAppVersionText` (`ui/dashboard/WatchAppVersionRow.kt`) gives "{version} (last
+  seen)" for a stored version, shown exactly as stored, and "Not received yet" for none or blank.
+- `DashboardScreen` takes a defaulted `watchAppVersion` and shows a "Watchapp version" `InfoRow`
+  directly below "Watch"; `MainActivity` passes `updateState.watchAppVersion`, so the row follows
+  the stored `watch_app_version` live. Three new string resources.
+- `InfoRow` is now a compact column (overline in `labelMedium`, value in `bodyLarge`, 16 dp × 6 dp
+  padding) instead of a Material 3 `ListItem`, whose minimum height left big gaps between the Status
+  rows. Same colours, dimming and 2-line ellipsis; the toggle rows and the access chip are unchanged.
+- Use: with the Core Devices Pebble app, "Not received yet" after opening the watchapp means
+  watch→phone messages do not reach PebbleNTN.
+
+**Verification.**
+- JVM: new `WatchAppVersionRowTest` (3). 424 tests green.
+- The APK builds and passes lint (no new warnings). The row and the tighter spacing were not run on
+  an Android emulator here (it crashes WSL).
+
+**Commands executed.**
+
+```bash
+./android/gradlew -p android :app:testDebugUnitTest --tests 'com.pebblentn.app.ui.dashboard.UpdateCardTest'           # runner check, 3 green
+./android/gradlew -p android :app:testDebugUnitTest --tests 'com.pebblentn.app.ui.dashboard.WatchAppVersionRowTest'   # 3 green
+./android/gradlew -p android :app:assembleDebug :app:lintDebug
+./scripts/validate-spec-assets.sh      # OK (34 files) after the manifest resync
+./scripts/test-all.sh                  # exit 0
+```
+
+**Blockers / open points.** None in code. The layout is still to be checked on a phone.
+
+**Next atomic task:** on a phone, check the "Watchapp version" row and the tighter Status rows, then
+open the watchapp with the original Pebble app and with the Core Devices app and note what the row
+shows.
+
 ## Phone app update found by comparing versions; "Update from {source}" (2026-10-22)
 
 **Milestone:** post-M12 enhancement to the #94 update UI, in the watchapp and the Android app. No

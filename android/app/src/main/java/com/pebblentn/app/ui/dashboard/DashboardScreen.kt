@@ -1,5 +1,6 @@
 package com.pebblentn.app.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -117,6 +118,8 @@ fun DashboardScreen(
     onStaleCheck: () -> Unit = {},
     onEnableWeeklyChecks: () -> Unit = {},
     onDismissWeeklyQuestion: () -> Unit = {},
+    /** The last watchapp version a WATCH_READY carried, or null when none arrived (REQ-ANDROID-019). */
+    watchAppVersion: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -239,6 +242,16 @@ fun DashboardScreen(
                         WatchLink.NotConnected -> stringResource(R.string.dashboard_watch_not_connected)
                         is WatchLink.Connected -> stringResource(R.string.dashboard_watch_connected, watchLink.watchNames.joinToString())
                     },
+                )
+                // Shows whether the companion app delivers watch-to-phone messages (REQ-ANDROID-019).
+                val seenFormat = stringResource(R.string.dashboard_watchapp_version_seen)
+                InfoRow(
+                    title = stringResource(R.string.dashboard_watchapp_version),
+                    value = watchAppVersionText(
+                        version = watchAppVersion,
+                        lastSeen = { seenFormat.format(it) },
+                        none = stringResource(R.string.dashboard_watchapp_version_none),
+                    ),
                 )
                 InfoRow(
                     title = stringResource(R.string.dashboard_last_notification),
@@ -427,15 +440,33 @@ private fun NavRow(
     )
 }
 
-/** A read-only value, such as the last notification time. */
+/**
+ * A read-only value, such as the last notification time. A compact column rather than a `ListItem`,
+ * whose minimum height and vertical padding left big gaps between the Status rows; it keeps the
+ * `ListItem` overline and headline colours.
+ */
 @Composable
 private fun InfoRow(title: String, value: String, dimmed: Boolean = false) {
-    ListItem(
-        modifier = Modifier.alpha(if (dimmed) DIMMED_ALPHA else 1f),
-        overlineContent = { Text(title) },
-        headlineContent = { Text(value, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-        colors = sectionColors(),
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (dimmed) DIMMED_ALPHA else 1f)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 /** The name a source has on the card and in the "Other sources" list (REQ-ANDROID-020). */
