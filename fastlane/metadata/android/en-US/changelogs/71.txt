@@ -1,0 +1,1 @@
+• tell the watch user when a phone app update is available (#94)
