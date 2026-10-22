@@ -6,9 +6,9 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Watchapp Main Renderer
 - **Location**: watchapp/src/c/main.c
-- **Responsibility**: opens AppMessage and sends WATCH_READY (protocol + `APP_VERSION_STR`); `inbox_received_handler` sets `s_heard_from_phone`, stops the watchdog, records the phone version and dispatches by event; renders the panel (glyph + distance or stops), strip (clock/STALE + ETA), road text and the full-screen message layer (`MSG_PLAIN`, `MSG_CONNECTING`, `MSG_QR`); 5 s handshake watchdog (REQ-WATCH-017); backlight, vibration and early warning; app glance on exit (REQ-WATCH-019); SELECT opens settings with an `AboutInfo` snapshot.
-- **Key state**: `s_phone_version[17]` (persist key 16), `s_heard_from_phone`, `s_navigating`, `s_flags`, `s_eta_epoch`, `s_primary_buf[65]`, `s_secondary_buf[25]`, `s_message_buf[96]`.
-- **Depends on**: generated/protocol.h, theme, settings_window, eta_text, glance_text, phone_version, stops_text, panel_layout, early_warning.
+- **Responsibility**: opens AppMessage and sends WATCH_READY (protocol + `APP_VERSION_STR`); `inbox_received_handler` sets `s_heard_from_phone`, stops the watchdog, records the phone version (key 11) and the #94 update state (bit 4 + key 14) and dispatches by event; shows the once-per-version update notice when no route is active and Main is on top (`maybe_show_update_notice`), and the update idle text; renders the panel (glyph + distance or stops), strip (clock/STALE + ETA), road text and the full-screen message layer (`MSG_PLAIN`, `MSG_CONNECTING`, `MSG_QR`); 5 s handshake watchdog (REQ-WATCH-017); backlight, vibration and early warning; app glance on exit (REQ-WATCH-019; "Update: <version>" while an update is recorded); SELECT opens settings with an `AboutInfo` snapshot.
+- **Key state**: `APP_VERSION_STR` (the watch's own version), `s_phone_version[17]` (persist key 16), `s_latest_phone_version[17]` (key 17), `s_update_notice_shown[17]` (key 18), `s_heard_from_phone`, `s_navigating`, `s_flags`, `s_eta_epoch`, `s_primary_buf[65]`, `s_secondary_buf[25]`, `s_message_buf[96]`.
+- **Depends on**: generated/protocol.h, theme, settings_window, eta_text, glance_text, phone_version, update_notice, update_notice_window, stops_text, panel_layout, early_warning.
 
 ### Watchapp Settings Menu
 - **Location**: watchapp/src/c/settings_window.c, settings_window.h
@@ -25,13 +25,18 @@ Each component lists its location, responsibility and dependencies. The `###` he
 - **Responsibility**: setting getters/setters persisted under keys 1-15; theme colours; vibration patterns; backlight hold and RGB tint.
 - **Depends on**: Pebble persist, light and vibes APIs, early_warning.
 
+### Watchapp Update Notice
+- **Location**: watchapp/src/c/update_notice.c, update_notice.h, update_notice_window.c, update_notice_window.h
+- **Responsibility**: #94 / REQ-WATCH-023 rules. `update_record` copies key 14 when bit 4 is set and clears the record when bit 4 is clear. `update_notice_action` returns NONE / DEFER / SHOW: once per version, deferred during a route or under another window. `update_idle_text` picks the idle text. The window shows `UPDATE_NOTICE_TEXT`. There is no version comparison: "update available" is whatever the phone last said.
+- **Depends on**: string.h only (pure part); Pebble Window APIs (window part).
+
 ### Watchapp Pure Text Modules
-- **Location**: watchapp/src/c/{about_text,glance_text,phone_version,eta_text,stops_text,panel_layout,early_warning}.{c,h}
-- **Responsibility**: Pebble-free logic: About text, glance template and `GLANCE_HINT`, phone-version recording rule (16-byte cap, change detection), ETA parsing/labels, stop count, panel placement, early-warning decision.
+- **Location**: watchapp/src/c/{about_text,glance_text,phone_version,update_notice,eta_text,stops_text,panel_layout,early_warning}.{c,h}
+- **Responsibility**: Pebble-free logic: About text, glance template and `GLANCE_HINT`, phone-version recording rule (16-byte cap, change detection), update-notice rules (see Watchapp Update Notice), `glance_update_subtitle`, ETA parsing/labels, stop count, panel placement, early-warning decision.
 
 ### Watchapp Host Unit Tests
-- **Location**: watchapp/tests/test_*.c (7 files)
-- **Responsibility**: host-compiled assertions per pure unit, run by `scripts/test-watchapp-unit.sh` (each test must have a matching `src/c/<unit>.c`).
+- **Location**: watchapp/tests/test_*.c (8 files, including test_update_notice.c)
+- **Responsibility**: host-compiled assertions per pure unit, run by `scripts/test-watchapp-unit.sh` (each test must have a matching `src/c/<unit>.c` and is linked against that unit alone, so units cannot share helpers).
 
 ### Watchapp Asset Tools
 - **Location**: watchapp/tools/ (gen_maneuver_bitmaps.py, gen_connect_qr.py, gen_store_icon.py, capture_screenshots.py, touch_emulator.py); outputs in watchapp/resources/, watchapp/store/, screenshots/
@@ -47,7 +52,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Phone Protocol Codec
 - **Location**: android/app/src/main/java/com/pebblentn/app/protocol/ (ProtocolCodec.kt, AppMessage.kt, Protocol.kt generated)
-- **Responsibility**: encode states (always with APP_VERSION) and compatibility errors; decode WATCH_READY / WATCH_REQUEST_STATE; UTF-8-safe text fitting to the watch buffers.
+- **Responsibility**: encode states (always with APP_VERSION; bit 4 + key 14 when a latest phone version is given) and compatibility errors; decode WATCH_READY (major/minor only, key 11 ignored) / WATCH_REQUEST_STATE; UTF-8-safe text fitting to the watch buffers.
 
 ### Phone Watch Transport
 - **Location**: protocol/WatchTransport.kt, pebble/PebbleWatchTransport.kt, pebble/PebbleAppMessageMapper.kt, pebble/WatchListenerService.kt
@@ -56,7 +61,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Navigation Controller
 - **Location**: pebble/NavigationController.kt
-- **Responsibility**: serialises reducer access with a mutex, runs effects, retries sends (3 attempts, exponential backoff), sends an autonomous READY 1.5 s after a launch, persists state, exposes `WatchLinkStatus`, and passes `appVersion` to the codec.
+- **Responsibility**: serialises reducer access with a mutex, runs effects, retries sends (3 attempts, exponential backoff), sends an autonomous READY 1.5 s after a launch, persists state, exposes `WatchLinkStatus`, and passes `appVersion` and `latestPhoneUpdate()` (read on every SendState) to the codec.
 - **Depends on**: Navigation Session Reducer, Phone Protocol Codec, `WatchTransport`, `NavigationStateRepository`.
 
 ### Navigation Session Reducer
@@ -77,7 +82,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### App Update Check
 - **Location**: update/UpdateCheckRepository.kt, update/AppVersions.kt, update/ReleaseFetcher.kt
-- **Responsibility**: opt-in weekly or manual GitHub release check (REQ-ANDROID-013); persists last check time, latest tag and the auto-check choice (prefs `pebblentn_update_check`); exposes `UpdateState` and `autoCheckEnabled` flows; tolerant version comparison.
+- **Responsibility**: opt-in weekly or manual GitHub release check (REQ-ANDROID-013); persists last check time, latest tag and the auto-check choice (prefs `pebblentn_update_check`); exposes `UpdateState`, `autoCheckEnabled` and `lastCheckMillis` flows and `isCheckStale` (30 days, REQ-ANDROID-018); tolerant version comparison (`AppVersions`, junk components become 0). It is the only source of `updateAvailable` today: there is no watch-version input and no install-source awareness.
 - **Depends on**: GitHub Releases API, kotlinx-serialization, coroutines.
 
 ### Ruleset Signing and Activation
@@ -86,7 +91,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Compose UI
 - **Location**: ui/ (MainActivity, dashboard, rules, debug, share, apps, onboarding, components, format, theme)
-- **Responsibility**: onboarding/disclosure; dashboard with setup checklist, feedback card, `PromptCard` attention cards (update, overridden rules, share nudge) and sections Status / Watch / Navigation / Troubleshooting / Appearance / Updates ("Check for updates now", "Check for updates weekly" toggle); rules browse/edit/review; debug history; diagnostics sharing. `MainActivity` collects flows and wires the actions (`checkForUpdate`, `setAutoCheckUpdates`, `openUrl`).
+- **Responsibility**: onboarding/disclosure; dashboard with setup checklist, feedback card, `PromptCard` attention cards ("Update available" with a single "Download latest version" button to the GitHub releases page; overridden rules; share nudge; `PromptCard` supports an optional secondary text button), the #94 stale-check item / weekly-check question (`UpdatePrompt`), and sections Status / Watch / Navigation / Troubleshooting / Appearance / Updates ("Check for updates now", "Check for updates weekly" toggle); rules browse/edit/review; debug history; diagnostics sharing. `MainActivity` collects flows and wires the actions (`checkForUpdate`, `setAutoCheckUpdates`, `openUrl`).
 
 ### Diagnostics Export
 - **Location**: export/
@@ -94,7 +99,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Dependency Container
 - **Location**: di/AppContainer.kt, PebbleNtnApplication.kt
-- **Responsibility**: manual DI and startup: builds every repository, the transport and the controller; forwards `WatchSettings` changes to the controller; on start restores state, starts inbound collection, warms caches, and runs the update check only when auto-check is enabled.
+- **Responsibility**: manual DI and startup: builds every repository, the transport and the controller; forwards `WatchSettings` changes to the controller; on start restores state, starts inbound collection, warms caches, and runs the update check only when auto-check is enabled. Supplies `latestPhoneUpdate` = `latestVersion` while `updateAvailable` (#94).
 
 ### PebbleKit 2 Vendored Library
 - **Location**: android/pebblekit/
@@ -128,7 +133,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Distribution Metadata
 - **Location**: fastlane/metadata/android/, fdroid/, watchapp/store/, screenshots/
-- **Responsibility**: F-Droid/fastlane descriptions and per-versionCode changelogs, F-Droid recipe and reproducible-build notes, Pebble store art and watch screenshots.
+- **Responsibility**: F-Droid/fastlane descriptions and per-versionCode changelogs, F-Droid recipe (`Binaries:` = the GitHub APK, `UpdateCheckMode: Tags`) and reproducible-build notes, Pebble store art and watch screenshots. The channels (GitHub, F-Droid, Obtainium, Rebble store) are listed in [business-overview.md](business-overview.md).
 
 ### Specification and Requirements
 - **Location**: spec/, requirements/, docs/, MANIFEST.sha256.json, AGENTS.md, README.md

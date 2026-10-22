@@ -4,13 +4,13 @@
 
 | Path | Contents |
 |---|---|
-| `android/app/src/main/java/com/pebblentn/app/` | Companion source (111 Kotlin files), organised by feature package |
-| `android/app/src/test/`, `src/androidTest/` | 66 JVM/Robolectric test sources; 1 instrumented test |
+| `android/app/src/main/java/com/pebblentn/app/` | Companion source (112 Kotlin files), organised by feature package |
+| `android/app/src/test/`, `src/androidTest/` | 67 JVM/Robolectric test sources; 1 instrumented test |
 | `android/app/schemas/room/` | Exported Room schemas v1-v8 (migration tests) |
-| `android/app/src/main/res/` | Resources; `values/strings.xml` (407 lines, English only) |
+| `android/app/src/main/res/` | Resources; `values/strings.xml` (416 lines, English only) |
 | `android/pebblekit/` | Vendored PebbleKit Android 2 1.2.0 (26 Kotlin files + AIDL) |
 | `android/fixture-publisher/` | Debug app with synthetic notifications |
-| `watchapp/src/c/` | Watchapp C (11 `.c`, headers, `generated/protocol.h`) |
+| `watchapp/src/c/` | Watchapp C (13 `.c`, headers, `generated/protocol.h`) |
 | `watchapp/tests/` | Host C tests, `test_<unit>.c` paired 1:1 with `src/c/<unit>.c` |
 | `watchapp/tools/`, `resources/`, `store/` | Python asset generators, bitmaps and QR, store art |
 | `protocol/` | Protocol JSON and generator |
@@ -44,8 +44,9 @@
 | `main.c` | Controller + View + lifecycle | yes (AppMessage, layers, persist, timers, glance) |
 | `settings_window.c/.h` | View (menus) | yes |
 | `about_window.c/.h` | View | yes |
+| `update_notice_window.c/.h` | View (full-screen #94 notice) | yes |
 | `theme.c/.h` | Configuration + Repository (persist keys 1-15) | yes |
-| `about_text`, `glance_text`, `phone_version`, `eta_text`, `stops_text`, `panel_layout`, `early_warning` (`.c/.h`) | Utility (pure) | no; host-tested |
+| `about_text`, `glance_text`, `phone_version`, `update_notice`, `eta_text`, `stops_text`, `panel_layout`, `early_warning` (`.c/.h`) | Utility (pure) | no; host-tested |
 | `generated/protocol.h` | Configuration (generated, read-only) | no |
 
 ## Code Patterns
@@ -54,9 +55,9 @@
 - **StateFlow repositories**: SharedPreferences-backed repositories expose `StateFlow`s and `@Volatile` caches for callback-thread reads (`AppEnabledRepository`, `WatchSettingsRepository`, `UpdateCheckRepository`, `WatchappPresenceRepository`).
 - **Stateless Compose screens**: `DashboardScreen` takes plain parameters and lambdas, and `MainActivity.AppNavHost` collects flows. There is no dashboard ViewModel.
 - **Effect-returning reducer**: `reduce(state, event) -> ReducerResult(state, effects)`, run under a mutex by `NavigationController`.
-- **Watch pure-unit split**: each piece of formatting or decision logic is a Pebble-free `.c/.h` with a host test. `main.c` owns the persisted state and the UI.
+- **Watch pure-unit split**: each piece of formatting or decision logic is a Pebble-free `.c/.h` with a host test linked against that unit alone (so `update_notice.c` keeps its own capped copy instead of calling `phone_version.c`). `main.c` owns the persisted state and the UI.
 - **Requirement tagging**: comments cite REQ IDs and issue numbers throughout.
 
 ## Dependency Graph Notes
 
-There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`. Watch: `main.c` -> all pure units, `settings_window`, `theme`; `settings_window` -> `about_window` -> `about_text`. External libraries are listed in [dependencies.md](dependencies.md).
+There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`. Watch: `main.c` -> all pure units, `update_notice_window`, `settings_window`, `theme`; `settings_window` -> `about_window` -> `about_text`. External libraries are listed in [dependencies.md](dependencies.md).

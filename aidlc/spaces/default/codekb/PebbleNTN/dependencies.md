@@ -25,7 +25,7 @@ Gradle plugins: AGP 8.13.2, Kotlin Android, serialization and Compose 2.3.10, KS
 - Pebble SDK 3 and pebble-tool (CI installs `latest`, so it is not pinned).
 - Python: `jsonschema` (rules validation, CI), `pyqrcode` (QR asset generation tool only).
 - GitHub Actions: checkout@v7, setup-java@v5, setup-android@v4, setup-python@v6, cache@v6, upload-artifact@v7, codeql-action@v4.
-- Runtime services: the GitHub Releases API (update check), and the Pebble / Core Devices mobile app as the PebbleKit 2 companion (`SEND_DATA_TO_WATCH` service).
+- Runtime services: the GitHub Releases API (update check), and the Pebble / Core Devices mobile app as the PebbleKit 2 companion (`SEND_DATA_TO_WATCH` service). The Core Devices app does not forward the watch's own AppMessages (WATCH_READY) to PebbleKit listeners, so the phone cannot rely on receiving the watchapp's version. Distribution clients (F-Droid, Obtainium) are runtime dependencies of the install source only, with no code dependency yet.
 
 ## Internal Cross-Package Dependencies
 
@@ -48,4 +48,4 @@ Text fallback: `:app` depends on `:pebblekit` and stages rule data as assets and
 
 ## Version Coupling
 
-The phone and watch share one version (`VERSION`, currently 0.0.70; versionCode = major*10000 + minor*100 + patch = 70). The release workflow tags `v<version>`, which is the `tag_name` the update check reads. F-Droid metadata (`fdroid/metadata/com.pebblentn.app.yml`) tracks tags (`UpdateCheckMode: Tags`), so F-Droid builds lag the GitHub release.
+The phone and watch share one version (`VERSION`, currently 0.0.71; versionCode = major*10000 + minor*100 + patch = 71). The release workflow tags `v<version>`, which is the `tag_name` the update check reads. F-Droid metadata (`fdroid/metadata/com.pebblentn.app.yml`) tracks tags (`UpdateCheckMode: Tags`), so F-Droid builds lag the GitHub release (the intent's "about a day" warning). It uses `Binaries:` (the GitHub APK) for reproducible-build verification. The Rebble store watchapp auto-updates on the watch, so after a release the watch is normally ahead of a phone that needs a manual update. That is what makes a watch-higher-than-phone comparison a valid "update available" signal, as long as both versions follow the shared `VERSION` line.
