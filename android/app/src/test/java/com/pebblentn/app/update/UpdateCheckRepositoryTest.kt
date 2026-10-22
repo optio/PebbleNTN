@@ -139,6 +139,58 @@ class UpdateCheckRepositoryTest {
         assertEquals(checkedAt, repo.lastCheckMillis.value)
     }
 
+    // REQ-ANDROID-019 (FR3): the watchapp version from a genuine WATCH_READY reveals an update with
+    // no network call.
+
+    @Test
+    fun newerWatchVersionIsAnUpdateWithoutAFetch() {
+        val fetcher = FakeFetcher("0.0.99")
+        val repo = repo(fetcher, current = "0.0.71")
+        assertTrue("first sighting is written", repo.recordWatchAppVersion("0.0.72"))
+        assertTrue(repo.state.value.updateAvailable)
+        assertEquals("0.0.72", repo.state.value.effectiveLatest)
+        assertEquals("no network call", 0, fetcher.calls)
+        // A fresh instance over the same prefs still knows it.
+        assertEquals("0.0.72", repo(FakeFetcher(null), current = "0.0.71").state.value.effectiveLatest)
+    }
+
+    @Test
+    fun sameWatchVersionAgainIsNotRewritten() {
+        val repo = repo(FakeFetcher(null), current = "0.0.71")
+        assertTrue(repo.recordWatchAppVersion("0.0.72"))
+        assertFalse("same value again: no write", repo.recordWatchAppVersion("0.0.72"))
+        assertFalse("blank is no version", repo.recordWatchAppVersion(" "))
+        assertEquals("0.0.72", repo.state.value.watchAppVersion)
+    }
+
+    @Test
+    fun unparsableOrOlderWatchVersionIsNoUpdate() {
+        val repo = repo(FakeFetcher(null), current = "0.0.71")
+        repo.recordWatchAppVersion("0.0.72-debug")
+        assertFalse(repo.state.value.updateAvailable)
+        assertEquals(null, repo.state.value.effectiveLatest)
+        repo.recordWatchAppVersion("0.0.71")
+        assertFalse("the same version is not newer", repo.state.value.updateAvailable)
+    }
+
+    @Test
+    fun higherGitHubVersionWinsOverTheWatch() = runTest {
+        val repo = repo(FakeFetcher("v0.0.73"), current = "0.0.71")
+        repo.recordWatchAppVersion("0.0.72")
+        repo.checkForUpdate(force = true)
+        assertEquals("v0.0.73", repo.state.value.effectiveLatest)
+        assertEquals("the check keeps the watch version", "0.0.72", repo.state.value.watchAppVersion)
+    }
+
+    @Test
+    fun higherWatchVersionWinsOverGitHub() = runTest {
+        val repo = repo(FakeFetcher("0.0.72"), current = "0.0.71")
+        repo.checkForUpdate(force = true)
+        repo.recordWatchAppVersion("0.0.74")
+        assertTrue(repo.state.value.updateAvailable)
+        assertEquals("0.0.74", repo.state.value.effectiveLatest)
+    }
+
     @Test
     fun latestVersionPersistsAcrossInstances() = runTest {
         repo(FakeFetcher("0.0.14")).checkForUpdate(force = true)

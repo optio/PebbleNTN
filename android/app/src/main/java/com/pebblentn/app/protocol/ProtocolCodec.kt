@@ -98,6 +98,17 @@ object ProtocolCodec {
     }
 
     /**
+     * The watchapp version a WATCH_READY carries as APP_VERSION (key 11), or null when [message] is
+     * another event or has no non-blank version (REQ-ANDROID-019). The phone uses it to spot a newer
+     * watchapp, which means a newer phone app has been published. No protocol change: the watch has
+     * always sent key 11 in WATCH_READY.
+     */
+    fun watchAppVersion(message: AppMessage): String? {
+        if (message.intOrNull(Protocol.Keys.EVENT) != Protocol.Events.WATCH_READY) return null
+        return message.stringOrNull(Protocol.Keys.APP_VERSION)?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    /**
      * [text] within [maxBytes] of UTF-8. Too long: cut on a whole character, back to the last word
      * boundary when one is in the second half (a road ends on a word, not "Bundesstr"), trailing
      * separators dropped, and "…" appended so the cut shows.

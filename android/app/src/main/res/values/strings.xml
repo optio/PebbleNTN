@@ -37,8 +37,15 @@
 
     <!-- App update check (REQ-ANDROID-013). -->
     <string name="dashboard_update_title">Update available</string>
-    <string name="dashboard_update_body">PebbleNTN %1$s is available — you have %2$s. Tap below to download the latest APK from GitHub. If it won\'t install over the current app, uninstall PebbleNTN first, then install the downloaded version.</string>
-    <string name="dashboard_update_download">Download latest version</string>
+    <string name="dashboard_update_body">PebbleNTN %1$s is available — you have %2$s. Tap below to get the update. If it won\'t install over the current app, uninstall PebbleNTN first, then install the downloaded version.</string>
+    <!-- REQ-ANDROID-020: the card names the install source; %1$s is a dashboard_update_source_* name. -->
+    <string name="dashboard_update_from">Update from %1$s</string>
+    <string name="dashboard_update_other_sources">Other sources</string>
+    <string name="dashboard_update_pick_source">Get the update from</string>
+    <string name="dashboard_update_fdroid_delay">F-Droid may take about a day to offer this update.</string>
+    <string name="dashboard_update_source_github">GitHub</string>
+    <string name="dashboard_update_source_fdroid">F-Droid</string>
+    <string name="dashboard_update_source_obtainium">Obtainium</string>
     <string name="dashboard_check_update">Check for updates now</string>
     <string name="dashboard_auto_update">Check for updates weekly</string>
     <string name="dashboard_auto_update_hint">When on, PebbleNTN checks GitHub about once a week. Off by default; nothing is sent.</string>
@@ -54,8 +61,11 @@
     <string name="dashboard_weekly_question_body">PebbleNTN would check GitHub about once a week, so you hear about new versions without remembering to check. You can change this in Updates.</string>
     <string name="dashboard_weekly_question_turn_on">Turn on</string>
     <string name="dashboard_weekly_question_not_now">Not now</string>
-    <!-- Where the "Download latest version" button sends the user. -->
+    <!-- Where "Update from {source}" sends the user, per install source (REQ-ANDROID-020). -->
     <string name="update_releases_url" translatable="false">https://github.com/optio/PebbleNTN/releases/latest</string>
+    <string name="update_fdroid_url" translatable="false">https://f-droid.org/packages/com.pebblentn.app/</string>
+    <!-- Only when the Obtainium app itself is not installed. -->
+    <string name="update_obtainium_url" translatable="false">https://obtainium.imranr.dev/</string>
 
     <!-- Navigation apps (per-app enablement, REQ-ANDROID-004/009) -->
     <string name="navigation_apps_title">Navigation apps</string>

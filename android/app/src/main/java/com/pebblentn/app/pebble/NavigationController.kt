@@ -53,6 +53,12 @@ class NavigationController(
      * send so the watch can show the update notice (REQ-ANDROID-017, #94).
      */
     private val latestPhoneUpdate: () -> String? = { null },
+    /**
+     * Called with the watchapp version from a WATCH_READY the watch really sent (key 11), so a newer
+     * watchapp can reveal a phone app update (REQ-ANDROID-019). The readiness this controller makes
+     * up itself, and the one from `onAppOpened`, carry no version and never call it.
+     */
+    private val onWatchAppVersion: (String) -> Unit = {},
 ) {
     private val mutex = Mutex()
     private var state = ReducerState(settings = initialSettings)
@@ -97,6 +103,10 @@ class NavigationController(
     private suspend fun handleInbound(message: AppMessage) {
         val event = ProtocolCodec.decodeInbound(message, nowSeconds())
         Timber.i("Watch inbound message decoded to %s", event ?: "no-op")
+        ProtocolCodec.watchAppVersion(message)?.let { version ->
+            runCatching { onWatchAppVersion(version) }
+                .onFailure { Timber.w(it, "Watchapp version %s not recorded", version) }
+        }
         event?.let { dispatch(it) }
     }
 

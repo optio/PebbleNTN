@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.concurrent.TimeUnit
 
 /** What a check produced, so the UI can give the user immediate feedback on a manual check. */
@@ -23,9 +24,41 @@ data class UpdateState(
     /** Latest version last learned from GitHub, or null if never successfully checked. */
     val latestVersion: String?,
     val checking: Boolean = false,
+    /**
+     * The watchapp version last seen in a genuine WATCH_READY, or null if none ever arrived
+     * (REQ-ANDROID-019). Both apps share one version number, so a newer watchapp means a newer
+     * phone app has been published.
+     */
+    val watchAppVersion: String? = null,
 ) {
-    val updateAvailable: Boolean
+    /** GitHub reports a newer version (tolerant tag compare). */
+    private val githubNewer: Boolean
         get() = latestVersion?.let { AppVersions.isNewer(currentVersion, it) } ?: false
+
+    /** The watch reports a strictly newer version; an unparsable one is ignored (REQ-ANDROID-019). */
+    private val watchNewer: Boolean
+        get() = AppVersions.isNewerStrict(currentVersion, watchAppVersion)
+
+    /** An update is known: from the internet check, or from the watch's version with no network. */
+    val updateAvailable: Boolean
+        get() = githubNewer || watchNewer
+
+    /**
+     * The version to offer: the higher of the GitHub version (when it is newer) and the watch's
+     * version (when it is strictly newer), or null when there is no update. This is what the card
+     * shows and what the watch is told (REQ-ANDROID-017, REQ-ANDROID-019).
+     */
+    val effectiveLatest: String?
+        get() {
+            val github = latestVersion?.takeIf { githubNewer }
+            val watch = watchAppVersion?.takeIf { watchNewer }
+            return when {
+                github == null -> watch
+                watch == null -> github
+                AppVersions.compare(watch, github) > 0 -> watch
+                else -> github
+            }
+        }
 }
 
 /**
@@ -33,6 +66,8 @@ data class UpdateState(
  * (REQ-ANDROID-013). The weekly cadence and the last-known latest version are persisted, so the
  * "update available" prompt survives restarts without re-hitting the network every launch. This
  * performs the app's only network access and sends no user data (see [GitHubReleaseFetcher]).
+ * It also remembers the watchapp version the watch last announced ([recordWatchAppVersion]), which
+ * can reveal an update with no network access at all (REQ-ANDROID-019).
  */
 class UpdateCheckRepository(
     context: Context,
@@ -44,9 +79,31 @@ class UpdateCheckRepository(
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(
-        UpdateState(currentVersion, prefs.getString(KEY_LATEST_VERSION, null)),
+        UpdateState(
+            currentVersion,
+            prefs.getString(KEY_LATEST_VERSION, null),
+            watchAppVersion = prefs.getString(KEY_WATCH_APP_VERSION, null),
+        ),
     )
     val state: StateFlow<UpdateState> = _state.asStateFlow()
+
+    /**
+     * Record the watchapp version a genuine WATCH_READY carried (key 11), so a newer watchapp shows
+     * the update card with no network call (REQ-ANDROID-019). Best effort: with the Core Devices app
+     * WATCH_READY never arrives and this is never called. A blank version is no version and is
+     * ignored. The preference is written only when the version changed (flash wear); returns true
+     * only then.
+     */
+    fun recordWatchAppVersion(version: String): Boolean {
+        val trimmed = version.trim()
+        if (trimmed.isEmpty()) return false
+        synchronized(this) {
+            if (_state.value.watchAppVersion == trimmed) return false
+            prefs.edit().putString(KEY_WATCH_APP_VERSION, trimmed).apply()
+            _state.update { it.copy(watchAppVersion = trimmed) }
+        }
+        return true
+    }
 
     private val _autoCheckEnabled = MutableStateFlow(prefs.getBoolean(KEY_AUTO_CHECK, DEFAULT_AUTO_CHECK))
     /**
@@ -102,7 +159,8 @@ class UpdateCheckRepository(
             return UpdateCheckOutcome.FAILED
         }
         editor.putString(KEY_LATEST_VERSION, latest).apply()
-        _state.value = UpdateState(currentVersion, latest, checking = false)
+        // Keep the watch's version: the card offers the higher of the two (REQ-ANDROID-019).
+        _state.update { it.copy(latestVersion = latest, checking = false) }
         return if (AppVersions.isNewer(currentVersion, latest)) {
             UpdateCheckOutcome.UPDATE_AVAILABLE
         } else {
@@ -115,6 +173,7 @@ class UpdateCheckRepository(
         private const val KEY_LAST_CHECK = "last_check_millis"
         private const val KEY_LATEST_VERSION = "latest_version"
         private const val KEY_AUTO_CHECK = "auto_check_enabled"
+        private const val KEY_WATCH_APP_VERSION = "watch_app_version"
         /** Automatic weekly checks are opt-in, so the app never touches the network unprompted. */
         const val DEFAULT_AUTO_CHECK = false
         val CHECK_INTERVAL_MS: Long = TimeUnit.DAYS.toMillis(7)

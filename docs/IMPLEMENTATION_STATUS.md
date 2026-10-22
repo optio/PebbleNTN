@@ -2,6 +2,63 @@
 
 _Last updated: 2026-10-22_
 
+## Phone app update found by comparing versions; "Update from {source}" (2026-10-22)
+
+**Milestone:** post-M12 enhancement to the #94 update UI, in the watchapp and the Android app. No
+protocol change (still 1.2): the phone now reads key 11, which WATCH_READY has always carried.
+
+**Requirements:** REQ-WATCH-023 amended (effective update version), REQ-ANDROID-019 (update from the
+watchapp version, best effort) and REQ-ANDROID-020 (install source and the update card) new,
+`Protocol.md` notes the WATCH_READY version. Manifest resynced.
+
+**What changed.**
+- Watch: the Pebble-free `version_compare.{h,c}` holds the strict version rule (optional `v`, 1–9
+  digits per part, nothing else; missing parts are 0; unparsable is never newer) and
+  `version_effective_update`. `main.c` derives the effective update version from keys 16, 17 and
+  `APP_VERSION_STR` and uses it for the notice (and key 18), the idle text and the launcher subtitle.
+  No persist key added.
+- Phone: `AppVersions.parseStrict` / `isNewerStrict` beside the unchanged tolerant pair.
+  `ProtocolCodec.watchAppVersion` reads key 11 of a WATCH_READY; `NavigationController` reports it
+  through `onWatchAppVersion` for genuine messages only; `UpdateCheckRepository.recordWatchAppVersion`
+  stores it (`watch_app_version`, written only on change). `UpdateState.updateAvailable` is "GitHub
+  newer or watch strictly newer", and `effectiveLatest` (the higher) feeds the card and key 14.
+- Phone card: `InstallSources` maps the installer package to GitHub, F-Droid or Obtainium (detected
+  once in `AppContainer`); the pure `updateCardModel` picks the main source, the other two and the
+  F-Droid delay line. The card reads "Update from {source}" with "Other sources" (a one-time pick in a
+  dialog); `MainActivity.openUpdateSource` opens the release page, the F-Droid page, or Obtainium
+  (falling back to its website). The manifest's `<queries>` lists Obtainium's packages so its launch
+  intent is visible on Android 11+.
+
+**Verification.**
+- Host tests: new `test_version_compare` (38 assertions).
+- JVM: `AppVersionsTest` (3 new), `UpdateCheckRepositoryTest` (5 new), `ProtocolCodecTest` (3 new),
+  `NavigationControllerTest` (2 new), new `InstallSourceTest` (3) and `UpdateCardTest` (3). 421 tests
+  green.
+- Emulator, basalt, chalk, emery and diorite (watch 0.0.71, key 11 = 0.0.70, bit 4 clear): the notice
+  appears once, the idle text shows the update, the launcher subtitle reads `Update: 0.0.71`; with
+  key 11 = 0.0.71 the usual idle text and the hint return.
+- The card was not run on an Android emulator here (it crashes WSL); its model is unit tested, and
+  the APK builds and passes lint.
+
+**Commands executed.**
+
+```bash
+./scripts/test-watchapp-unit.sh        # baseline green, then green with test_version_compare
+./android/gradlew -p android :app:testDebugUnitTest --tests ...   # scoped classes, green
+./android/gradlew -p android :app:assembleDebug :app:lintDebug
+./scripts/build-watchapp.sh
+pebble wipe; pebble install/send-app-message/emu-button/screenshot --emulator {basalt,chalk,emery,diorite}
+./scripts/validate-spec-assets.sh      # OK (34 files) after the manifest resync
+./scripts/test-all.sh                  # exit 0
+```
+
+**Blockers / open points.**
+- With the Core Devices Pebble app WATCH_READY never reaches the phone, so the phone side has no
+  effect there; the watch side covers it (accepted in requirements).
+- `pebble wipe` was needed because the #94 checks had left key 18 = `0.0.71` in the emulator.
+
+**Next atomic task:** check the update card, "Other sources" and the three destinations on a phone.
+
 ## Phone app update notice on the watch (2026-10-22, #94)
 
 **Milestone:** post-M12 enhancement across the protocol, the Android app and the watchapp. Protocol
