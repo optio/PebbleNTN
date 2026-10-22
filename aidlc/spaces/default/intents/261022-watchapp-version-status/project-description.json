@@ -1,0 +1,1 @@
+"Show the watchapp version (last seen) in the phone app dashboard status section, from the watch_app_version the phone stores when the watch WATCH_READY arrives (v0.0.73); show \"not received yet\" when none was stored. Purpose: lets the user check on-device whether the Core Devices companion forwards watch-to-phone messages."

@@ -4,13 +4,13 @@
 
 | Area | Tests | Framework |
 |---|---|---|
-| Android app | 67 test sources under `android/app/src/test/` covering core, data (including the Room v1-v8 migration test), notification, icon, rules (per-app regression suites), export, protocol, pebble controller, system, ui view models, update | JUnit 4 + Robolectric + coroutines-test + Compose UI test |
+| Android app | 69 test sources under `android/app/src/test/` covering core, data (including the Room v1-v8 migration test), notification, icon, rules (per-app regression suites), export, protocol, pebble controller, system, ui view models, update | JUnit 4 + Robolectric + coroutines-test + Compose UI test |
 | Android instrumented | `ManualOpenWithAutoLaunchOffTest` | AndroidJUnit4 |
-| Watchapp | 8 host tests (about_text, early_warning, eta_text, glance_text, panel_layout, phone_version, stops_text, update_notice) | plain C, `-Werror` |
+| Watchapp | 9 host tests (about_text, early_warning, eta_text, glance_text, panel_layout, phone_version, stops_text, update_notice, version_compare) | plain C, `-Werror` |
 | Rules | fixtures through `workbench.py regression` and Kotlin `*RulesRegressionTest` | Python + JUnit |
 | Tools | `tools/route-capture/tests/test_routecap.py` | unittest |
 
-Coverage measurement: **none configured** (no JaCoCo or Kover, no gcov). Untested by design: `PebbleWatchTransport` (needs a bound companion) and the Pebble API parts of `main.c`, `settings_window.c` and `about_window.c`, which are verified in the emulator per the REQ acceptance criteria. `UpdateCheckRepository` is covered by Robolectric tests (throttle, force, failure retention, persistence, auto-check default off, and staleness since #94). `AppVersionsTest` covers newer, equal or lower, leading `v`, component counts, pre-release suffixes, and junk `latest`. `UpdatePromptTest`, `ProtocolCodecTest` (bit 4 / key 14) and `NavigationControllerTest` (`latestPhoneUpdate`) cover the #94 phone side. `test_update_notice.c` and `test_glance_text.c` cover the watch side.
+Coverage measurement: **none configured** (no JaCoCo or Kover, no gcov). Untested by design: `PebbleWatchTransport` (needs a bound companion) and the Pebble API parts of `main.c`, `settings_window.c` and `about_window.c`, which are verified in the emulator per the REQ acceptance criteria. `UpdateCheckRepository` is covered by Robolectric tests (throttle, force, failure retention, persistence, auto-check default off, and staleness since #94). `AppVersionsTest` covers newer, equal or lower, leading `v`, component counts, pre-release suffixes, and junk `latest`. `UpdatePromptTest`, `ProtocolCodecTest` (bit 4 / key 14) and `NavigationControllerTest` (`latestPhoneUpdate`) cover the #94 phone side. `test_update_notice.c` and `test_glance_text.c` cover the watch side. Since v0.0.73: `UpdateCheckRepositoryTest` covers the stored watchapp version (first write, no rewrite of the same value, blank ignored, unparsable or older is no update, GitHub/watch precedence); `ProtocolCodecTest` covers `watchAppVersion`; `NavigationControllerTest` covers that a genuine READY reports the version and the synthetic READYs do not; `InstallSourceTest` and `UpdateCardTest` cover install-source mapping and the card model. `DashboardScreen` itself has no test; its logic is tested through pure helpers beside it.
 
 ## Linting and Static Analysis
 
@@ -48,7 +48,7 @@ Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a M
 
 ## Technical Debt
 
-- `watchapp/src/c/main.c` (1,248 lines) mixes decoding, rendering, timers and glance. `settings_window.c` is 741 lines.
+- `watchapp/src/c/main.c` (1,261 lines at c50710e) mixes decoding, rendering, timers and glance. `settings_window.c` is 741 lines.
 - Tuple type checks are missing in `render_navigation` and `handle_stopped` (CodingStandards: "Validate every tuple and type").
 - Phone-wide flags: resolved for the update bit by #94 (`encodeState` ORs bit 4 into every state message). Compatibility errors still carry no flags.
 - `PebbleNtnDatabase` KDoc is stale (lists v1-v5; the schema is v8).
@@ -59,7 +59,9 @@ Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a M
 - Pebble SDK version unpinned in CI (`pebble sdk install latest`).
 - A committed binary `.dex` helper sits in `tools/route-capture/device/`.
 
-### Version-compare update findings (intent 261022, focused scan at 1ad9ec8)
+### Version-compare update findings (intent 261022-version-compare-update, focused scan at 1ad9ec8)
+
+Status at c50710e (v0.0.73): findings 1-5 were addressed by the merged work. The phone records the watch's key 11 from a genuine READY (finding 1, still best effort by nature), each device derives its own effective update (2, 4), `AppVersions.parseStrict` / `isNewerStrict` and the watch `version_compare.c` reject unparsable versions (3), and `InstallSources` drives a per-source card (5). Finding 6 was not re-checked. The original findings are kept below for history.
 
 1. **The phone has no reliable source for the watchapp version.** The watch sends key 11 only in its real `WATCH_READY`, once from `init()` (main.c:997-1007, 1197). `ProtocolCodec.decodeInbound` drops it, and `ReducerEvent.WatchReady` has no version field. The Core Devices companion does not forward the real READY (NavigationController.kt:138-148). The synthetic READYs (`scheduleAutonomousReady`, `WatchListenerService.appOpenedReadyMessage`) have no key 11. PebbleKit 2 exposes firmware version only. The phone half of the comparison is therefore best-effort; the watch half is reliable, because the phone sends key 11 on every message.
 2. **The watch's update record is overwritten by every message.** `update_record` clears `s_latest_phone_version` whenever bit 4 is clear (update_notice.c:110-117). A watch-side comparison result needs its own derived "effective latest" that feeds the notice, the idle text and the glance.
@@ -67,3 +69,12 @@ Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a M
 4. **There are two "update available" sources on the phone.** The GitHub `latestVersion` drives the card text, `latestPhoneUpdate` and persistence. A watch-reported version needs a defined precedence (for example, the higher of the parsable versions) so the card version and key 14 agree.
 5. **There is no install-source detection.** The card has a single hard-coded GitHub URL and GitHub-specific body text (strings.xml:40-41, 58; MainActivity.kt:157). The installer-package mapping (F-Droid clients, Obtainium, unknown or browser to GitHub) is not in code.
 6. **Signatures can differ between sources.** Whether F-Droid ships the developer signature depends on reproducible builds (fdroid/REPRODUCIBLE_BUILDS.md). Switching source can fail to install over the current app, so the existing "uninstall first" warning needs a per-source equivalent.
+
+### Watchapp version status row findings (intent 261022-watchapp-version-status, focused scan at c50710e)
+
+1. **The data already reaches the dashboard host.** `MainActivity.AppNavHost` collects `updateCheckRepository.state` as `updateState` (MainActivity.kt:121) and passes `updateAvailable` and `effectiveLatest` (lines 155-157), but not `watchAppVersion`. One new defaulted `DashboardScreen` parameter and one `InfoRow` in the Status section (DashboardScreen.kt:218-255) cover it, using the `?.let { ... } ?: stringResource(..._none)` fallback of the "Last navigation notification" row.
+2. **"Last seen" has no time.** `watch_app_version` is a bare string with no timestamp, and it is never cleared (UpdateCheckRepository.kt:97-106). The row can prove that forwarding worked at least once, not that it works now. The label must say "last seen".
+3. **Raw value, not the strict parse.** `ProtocolCodec.watchAppVersion` and `recordWatchAppVersion` only trim and drop blanks, so a debug build's `0.0.72-debug` is stored. The diagnostic row should show it as stored rather than filter it with `parseStrict`, which only governs "is newer".
+4. **No dashboard UI test exists.** Tests for dashboard decisions are pure helpers (`UpdateCardTest`, `UpdatePromptTest`, `SetupProgressTest`). A row test needs either a small pure formatter or the Robolectric Compose pattern of `NavigationAppsScreenTest` (activity registration rule chain, `@Config(qualifiers = "w411dp-h891dp")`).
+5. **Strings are split.** `dashboard_watch*` live in the "Leftovers of #28, part 2" group (strings.xml:362-367), the other Status rows in the "#28" group (lines 219-228). English only.
+6. **`DashboardScreen` keeps growing** (568 lines, about 40 parameters).

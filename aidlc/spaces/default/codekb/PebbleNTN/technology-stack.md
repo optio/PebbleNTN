@@ -32,5 +32,6 @@
 - Android Lint (default rules), CodeQL (java-kotlin).
 - Test stack: JUnit 4, Robolectric 4.14.1, coroutines-test, Compose UI test, room-testing, Espresso (instrumented).
 - No coverage tool, formatter enforcement, ktlint or detekt.
+- No stack change in v0.0.73 or for the watchapp version row: `PackageManager.getInstallSourceInfo` (platform API 30+) is the only new platform call, and the row uses existing Compose Material 3 `ListItem`s.
 
 Library versions and transitive relationships are in [dependencies.md](dependencies.md).

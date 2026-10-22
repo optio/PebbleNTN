@@ -19,7 +19,7 @@ Source of truth: `protocol/protocol-definition.json` (protocol **1.2**, since #9
 | 8 | STATE_TIMESTAMP_SECONDS | int32 | phone (update) |
 | 9 | SESSION_ID | int32 | phone (update, stopped) |
 | 10 | FLAGS | int32 bitfield | phone (update, stopped, none) |
-| 11 | APP_VERSION | string | phone (every state message); watch (real `WATCH_READY` only, `APP_VERSION_STR`; ignored by the phone today) |
+| 11 | APP_VERSION | string | phone (every state message); watch (real `WATCH_READY` only, `APP_VERSION_STR`; recorded by the phone as `watch_app_version` since v0.0.73) |
 | 12 | ERROR_CODE | int32 | phone (compat error) |
 | 13 | STOPS_REMAINING | int32 (optional, 1.1) | phone (transit update) |
 | 14 | LATEST_PHONE_VERSION | string, no leading `v` (optional, 1.2) | phone (every state message while an update is known) |
@@ -46,7 +46,8 @@ The next free key is **15**. Keys and events must equal `examples/protocol-defin
 
 - `encodeState(state, flags, appVersion, latestPhoneVersion = null)`: always MAJOR, MINOR, APP_VERSION. With a non-blank `latestPhoneVersion` (trimmed, leading `v` removed), bit 4 is ORed into FLAGS and key 14 is added; otherwise both are omitted. Then the per-state fields. Null optional values are omitted.
 - `encodeCompatibilityError(code)`: EVENT, MAJOR, MINOR, ERROR_CODE.
-- `decodeInbound`: `WATCH_READY` becomes `ReducerEvent.WatchReady(major, minor)` (key 11 dropped), `WATCH_REQUEST_STATE` becomes `WatchRequestedState`, anything else becomes null.
+- `decodeInbound`: `WATCH_READY` becomes `ReducerEvent.WatchReady(major, minor)`, `WATCH_REQUEST_STATE` becomes `WatchRequestedState`, anything else becomes null.
+- `watchAppVersion(message)`: key 11 of a `WATCH_READY`, trimmed and non-blank, else null (any other event, or no key 11). Not strictly parsed: a value such as `0.0.72-debug` is returned as is.
 - Wire mapping (`PebbleAppMessageMapper`): ints go out as `Int32`, strings as `Text`; inbound ints of any width are normalised, and bytes are dropped.
 
 ### Watch handling (`main.c` `inbox_received_handler`)
@@ -78,17 +79,21 @@ A message without EVENT is ignored. Any other message sets `s_heard_from_phone` 
 - `NavigationNotificationListenerService` (permission `BIND_NOTIFICATION_LISTENER_SERVICE`, not exported).
 - `WatchListenerService` (exported, action `io.rebble.pebblekit2.RECEIVE_DATA_FROM_WATCH`, filters on watchapp UUID `9c7cef54-517e-42c8-8e95-0a8316e70cf1`). `onAppOpened` emits a synthetic WATCH_READY without key 11.
 - `FileProvider` `${applicationId}.fileprovider` (diagnostic exports).
-- Outbound intents: `ACTION_VIEW` of `update_releases_url` (`https://github.com/optio/PebbleNTN/releases/latest`, the only update destination today) and `watchapp_store_url`; notification-listener settings.
-- `<queries>` lists 25 navigation-app packages, which must match `rules/catalog/navigation-apps.json`. Reading the app's own install source (`PackageManager.getInstallSourceInfo`, API 30+, minSdk is 31) needs no entry. No install-source code exists yet.
+- Outbound intents: `MainActivity.openUpdateSource(source)` opens `update_releases_url` (GitHub `releases/latest`), `update_fdroid_url`, or Obtainium's launch intent (`InstallSources.OBTAINIUM_PACKAGES`) falling back to `update_obtainium_url`; also `watchapp_store_url` and notification-listener settings.
+- `<queries>` lists 25 navigation-app packages, which must match `rules/catalog/navigation-apps.json`. `InstallSources.detect` reads the app's own install source (`PackageManager.getInstallSourceInfo`, API 30+, minSdk is 31) with no entry, once per app start in `AppContainer.installSource`.
 - PebbleKit 2 `PebbleInfoRetriever.getConnectedWatches()` gives the watch name and firmware version only, not the watchapp version.
 
-## Internal Kotlin APIs Relevant to #94 and This Intent
+## Internal Kotlin APIs Relevant to #94, Version Compare and the Watchapp Version Row
 
-- `UpdateCheckRepository(context, currentVersion, fetcher, now)`: `state: StateFlow<UpdateState(currentVersion, latestVersion?, checking)>` with `updateAvailable`; `autoCheckEnabled`; `lastCheckMillis: StateFlow<Long>`; `isCheckStale(now)` (over 30 days, or never); `setAutoCheckEnabled`; `suspend checkForUpdate(force): UpdateCheckOutcome {SKIPPED_NOT_DUE, UP_TO_DATE, UPDATE_AVAILABLE, FAILED}`. Prefs `pebblentn_update_check`: `last_check_millis`, `latest_version`, `auto_check_enabled`. `CHECK_INTERVAL_MS` 7 days, `STALE_AFTER_MS` 30 days.
-- `AppVersions.isNewer(current, latest)` / `compare`: tolerates a leading `v`, uneven component counts and `-pre`/`+build` suffixes; a non-numeric component counts as 0 (it is not rejected).
+- `UpdateCheckRepository(context, currentVersion, fetcher, now)`: `state: StateFlow<UpdateState(currentVersion, latestVersion?, checking, watchAppVersion?)>` with `updateAvailable` (GitHub newer or watch strictly newer) and `effectiveLatest` (the higher of the two, or null); `recordWatchAppVersion(version): Boolean` (trims, ignores blank, writes prefs key `watch_app_version` only on change, true only then; restored into the state at construction; never cleared); `autoCheckEnabled`; `lastCheckMillis: StateFlow<Long>`; `isCheckStale(now)` (over 30 days, or never); `setAutoCheckEnabled`; `suspend checkForUpdate(force): UpdateCheckOutcome {SKIPPED_NOT_DUE, UP_TO_DATE, UPDATE_AVAILABLE, FAILED}`. Prefs `pebblentn_update_check`: `last_check_millis`, `latest_version`, `auto_check_enabled`, `watch_app_version`. `CHECK_INTERVAL_MS` 7 days, `STALE_AFTER_MS` 30 days. A GitHub check keeps the stored watch version.
+- `AppVersions.isNewer(current, latest)` / `compare`: tolerates a leading `v`, uneven component counts and `-pre`/`+build` suffixes; a non-numeric component counts as 0 (used for GitHub tags). `parseStrict(version)` / `isNewerStrict(current, candidate)` (v0.0.73): optional `v`, then dot-separated parts of 1-9 digits and nothing else; unparsable is never newer. Same rule as the watch's `version_parse`.
+- `InstallSource {GITHUB, FDROID, OBTAINIUM}`; `InstallSources.fromInstaller(pkg)` (F-Droid clients `org.fdroid.fdroid`, `org.fdroid.basic`, `com.looker.droidify`, `com.machiav3lli.fdroid`; `dev.imranr.obtainium[.*]`; anything else or null is GitHub) and `detect(context)` (logs and falls back to GitHub on failure).
+- `updateCardModel(source)` -> `UpdateCardModel(main, others, showFdroidDelay)` (`ui/dashboard/UpdateCard.kt`).
+- `ProtocolCodec.watchAppVersion(message)` and `NavigationController(onWatchAppVersion: (String) -> Unit)`: called from `handleInbound` for every inbound message that yields a version, wrapped in `runCatching` with a warning log. AppContainer wires it to `updateCheckRepository.recordWatchAppVersion`.
 - `updatePrompt(stale, autoCheckEnabled, staleCheckFinished)` → `UpdatePrompt {NONE, STALE_CHECK, WEEKLY_QUESTION}` (`ui/dashboard/UpdatePrompt.kt`).
-- `NavigationController(transport, scope, appVersion, ..., onWatchappReached, latestPhoneUpdate: () -> String?)`: `onInstruction`, `onNavigationStopped`, `onSettingsChanged`, `onConnectionLost`, `status: StateFlow<WatchLinkStatus>`. `latestPhoneUpdate` is read on every SendState. AppContainer supplies `latestVersion` when `updateAvailable`.
-- `DashboardScreen(updateAvailable, latestVersion, onDownloadUpdate, appVersion, updatePrompt, ...)`. The update card is a `PromptCard(title, body, action, onAction, primary, secondaryAction?, onSecondaryAction)` using strings `dashboard_update_title`, `dashboard_update_body` (`%1$s` latest, `%2$s` current, GitHub-specific text) and `dashboard_update_download`.
+- `NavigationController(transport, scope, appVersion, ..., onWatchappReached, latestPhoneUpdate: () -> String?)`: `onInstruction`, `onNavigationStopped`, `onSettingsChanged`, `onConnectionLost`, `status: StateFlow<WatchLinkStatus>`. `latestPhoneUpdate` is read on every SendState. AppContainer supplies `updateCheckRepository.state.value.effectiveLatest`.
+- `DashboardScreen(accessGranted, lastEligibleAtMillis, ..., updateAvailable, latestVersion, installSource, onOpenUpdateSource, appVersion, watchLink, updatePrompt, ...)`: stateless, every parameter but the first two defaulted. `MainActivity` passes `updateState.updateAvailable` and `updateState.effectiveLatest`; it does not pass `updateState.watchAppVersion` yet (the gap this intent fills). The update card is `UpdateAvailableCard(model, latestVersion, appVersion, onOpenSource)` over `PromptCard`, with strings `dashboard_update_title`, `dashboard_update_body`, `dashboard_update_from`, `dashboard_update_fdroid_delay`, `dashboard_update_other_sources`, `dashboard_update_pick_source`, `dashboard_update_source_*`.
+- Status-section strings: `dashboard_section_status`, `dashboard_watch` / `dashboard_watch_checking` / `_no_companion` / `_not_connected` / `_connected`, `dashboard_last_notification`, `dashboard_last_eligible` / `_none`, `dashboard_last_sent` / `_none`. There is no watchapp-version string yet.
 - `WatchTransport`: `inbound`, `launchApp()`, `send(AppMessage): SendResult`, `watchLink()`, `linkDiagnostics()`.
 
 Rule JSON contracts are `schemas/ruleset.schema.json` and `schemas/app-catalog.schema.json` (see `spec/300-data/RulesJSON.md`). The diagnostic export format is in `spec/300-data/ExportFormat.md`.
