@@ -28,6 +28,8 @@ Requires the companion Android app with notification access.
 
 Don't forget to ❤️ the [PebbleNTN App](https://apps.repebble.com/ad4971e345854b909b73b1a9)
 
+[![](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/optio)
+
 ## Distribution
 
 [PebbleNTN](https://apps.repebble.com/ad4971e345854b909b73b1a9) ships two artifacts on every successful push to `main`
