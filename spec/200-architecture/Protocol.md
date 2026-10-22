@@ -36,7 +36,7 @@ The current protocol version is 1.2. Minor versions only add optional keys and f
 - `1 NAVIGATION_UPDATE`
 - `2 NAVIGATION_STOPPED`
 - `3 NO_ACTIVE_NAVIGATION`
-- `10 WATCH_READY`
+- `10 WATCH_READY` (carries `protocolMajor`, `protocolMinor` and the watchapp's `appVersion`; the phone stores that version to spot a newer watchapp, REQ-ANDROID-019, with no protocol change)
 - `11 WATCH_REQUEST_STATE`
 - `12 PHONE_COMPATIBILITY_ERROR`
 

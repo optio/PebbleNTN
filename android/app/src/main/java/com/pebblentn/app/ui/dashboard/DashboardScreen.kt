@@ -3,6 +3,8 @@ package com.pebblentn.app.ui.dashboard
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,8 +41,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +61,7 @@ import com.pebblentn.app.protocol.WatchLink
 import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.format.DisplayLabels
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
+import com.pebblentn.app.update.InstallSource
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
@@ -78,7 +85,10 @@ fun DashboardScreen(
     onShareDiagnostics: () -> Unit = {},
     updateAvailable: Boolean = false,
     latestVersion: String? = null,
-    onDownloadUpdate: () -> Unit = {},
+    /** Where this app was installed from: the card's main "Update from …" button (REQ-ANDROID-020). */
+    installSource: InstallSource = InstallSource.GITHUB,
+    /** Open a source's update destination: the detected one, or one picked once under "Other sources". */
+    onOpenUpdateSource: (InstallSource) -> Unit = {},
     onCheckForUpdate: () -> Unit = {},
     autoCheckUpdates: Boolean = false,
     onAutoCheckUpdatesChange: (Boolean) -> Unit = {},
@@ -177,12 +187,11 @@ fun DashboardScreen(
             }
 
             if (updateAvailable) {
-                PromptCard(
-                    title = stringResource(R.string.dashboard_update_title),
-                    body = stringResource(R.string.dashboard_update_body, latestVersion ?: "", appVersion),
-                    action = stringResource(R.string.dashboard_update_download),
-                    onAction = onDownloadUpdate,
-                    primary = true,
+                UpdateAvailableCard(
+                    model = updateCardModel(installSource),
+                    latestVersion = latestVersion ?: "",
+                    appVersion = appVersion,
+                    onOpenSource = onOpenUpdateSource,
                 )
             }
             // Official rules were updated under rules of yours that override them (#58).
@@ -429,10 +438,70 @@ private fun InfoRow(title: String, value: String, dimmed: Boolean = false) {
     )
 }
 
+/** The name a source has on the card and in the "Other sources" list (REQ-ANDROID-020). */
+@Composable
+private fun sourceName(source: InstallSource): String = stringResource(
+    when (source) {
+        InstallSource.GITHUB -> R.string.dashboard_update_source_github
+        InstallSource.FDROID -> R.string.dashboard_update_source_fdroid
+        InstallSource.OBTAINIUM -> R.string.dashboard_update_source_obtainium
+    },
+)
+
+/**
+ * The update-available card (REQ-ANDROID-013, amended by REQ-ANDROID-020): "Update from {source}" for
+ * the install source, the F-Droid delay line when that source is F-Droid, and "Other sources", a
+ * short list of the other two. A pick is used once; nothing is stored, so the detected source stays
+ * the default.
+ */
+@Composable
+private fun UpdateAvailableCard(
+    model: UpdateCardModel,
+    latestVersion: String,
+    appVersion: String,
+    onOpenSource: (InstallSource) -> Unit,
+) {
+    var pickingSource by remember { mutableStateOf(false) }
+    val body = stringResource(R.string.dashboard_update_body, latestVersion, appVersion)
+    PromptCard(
+        title = stringResource(R.string.dashboard_update_title),
+        body = if (model.showFdroidDelay) body + "\n\n" + stringResource(R.string.dashboard_update_fdroid_delay) else body,
+        action = stringResource(R.string.dashboard_update_from, sourceName(model.main)),
+        onAction = { onOpenSource(model.main) },
+        primary = true,
+        secondaryAction = stringResource(R.string.dashboard_update_other_sources),
+        onSecondaryAction = { pickingSource = true },
+    )
+    if (pickingSource) {
+        AlertDialog(
+            onDismissRequest = { pickingSource = false },
+            title = { Text(stringResource(R.string.dashboard_update_pick_source)) },
+            text = {
+                Column {
+                    for (source in model.others) {
+                        TextButton(
+                            onClick = {
+                                pickingSource = false
+                                onOpenSource(source)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(sourceName(source)) }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pickingSource = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+}
+
 /**
  * An attention card above the sections (update available, captures to share). [secondaryAction],
- * when given, adds a text button beside the main one (the weekly-check question's "Not now", #94).
+ * when given, adds a text button beside the main one (the weekly-check question's "Not now", #94),
+ * wrapping below it when both do not fit on one line.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PromptCard(
     title: String,
@@ -463,7 +532,7 @@ private fun PromptCard(
             if (secondaryAction == null) {
                 Button(onClick = onAction) { Text(action) }
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onAction) { Text(action) }
                     TextButton(onClick = onSecondaryAction) { Text(secondaryAction) }
                 }

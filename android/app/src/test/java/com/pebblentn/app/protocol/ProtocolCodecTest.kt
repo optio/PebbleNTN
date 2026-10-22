@@ -210,4 +210,38 @@ class ProtocolCodecTest {
         assertNull(ProtocolCodec.decodeInbound(msg, 0))
         assertNull(ProtocolCodec.decodeInbound(AppMessage(emptyMap()), 0))
     }
+
+    // REQ-ANDROID-019 (FR3.1): the watchapp version from WATCH_READY's key 11.
+
+    @Test
+    fun watchReadyWithKey11CarriesTheWatchVersion() {
+        val msg = AppMessage.builder()
+            .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY)
+            .putInt(Protocol.Keys.PROTOCOL_MAJOR, Protocol.MAJOR)
+            .putInt(Protocol.Keys.PROTOCOL_MINOR, Protocol.MINOR)
+            .putString(Protocol.Keys.APP_VERSION, "0.0.72")
+            .build()
+        assertEquals("0.0.72", ProtocolCodec.watchAppVersion(msg))
+    }
+
+    @Test
+    fun watchReadyWithoutKey11HasNoWatchVersion() {
+        val bare = AppMessage.builder().putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY).build()
+        assertNull(ProtocolCodec.watchAppVersion(bare))
+        val blank = AppMessage.builder()
+            .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY)
+            .putString(Protocol.Keys.APP_VERSION, " ")
+            .build()
+        assertNull("a blank version is no version", ProtocolCodec.watchAppVersion(blank))
+    }
+
+    @Test
+    fun otherEventsHaveNoWatchVersion() {
+        val request = AppMessage.builder()
+            .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_REQUEST_STATE)
+            .putString(Protocol.Keys.APP_VERSION, "0.0.72")
+            .build()
+        assertNull(ProtocolCodec.watchAppVersion(request))
+        assertNull(ProtocolCodec.watchAppVersion(AppMessage(emptyMap())))
+    }
 }

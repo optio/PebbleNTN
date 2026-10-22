@@ -127,6 +127,52 @@ class NavigationControllerTest {
     }
 
     @Test
+    fun genuineWatchReadyReportsTheWatchappVersion() = runTest {
+        // REQ-ANDROID-019 (FR3.1): key 11 of a WATCH_READY the watch sent reaches the callback.
+        val versions = mutableListOf<String>()
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport, backgroundScope, appVersion = "0.0.71", clock = { 0 }, onWatchAppVersion = { versions += it },
+        )
+        controller.start()
+        runCurrent()
+
+        transport.emitInbound(
+            AppMessage.builder()
+                .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY)
+                .putInt(Protocol.Keys.PROTOCOL_MAJOR, Protocol.MAJOR)
+                .putInt(Protocol.Keys.PROTOCOL_MINOR, Protocol.MINOR)
+                .putString(Protocol.Keys.APP_VERSION, "0.0.72")
+                .build(),
+        )
+        runCurrent()
+
+        assertEquals(listOf("0.0.72"), versions)
+    }
+
+    @Test
+    fun madeUpReadinessNeverReportsAWatchappVersion() = runTest {
+        // REQ-ANDROID-019 (FR3.2): the timed READY after a launch and onAppOpened's READY carry no
+        // version, so they must not touch the stored one.
+        val versions = mutableListOf<String>()
+        val transport = FakeWatchTransport()
+        val controller = NavigationController(
+            transport, backgroundScope, appVersion = "0.0.71", clock = { 0 }, onWatchAppVersion = { versions += it },
+        )
+        controller.start()
+        runCurrent()
+
+        controller.onInstruction(NavigationInstruction(Maneuver.RIGHT, distanceMeters = 100))
+        testScheduler.advanceTimeBy(1_600) // the autonomous READY fires
+        runCurrent()
+        transport.emitInbound(WatchListenerService.appOpenedReadyMessage())
+        runCurrent()
+
+        assertTrue("state was sent, so readiness was handled", events(transport).contains(Protocol.Events.NAVIGATION_UPDATE))
+        assertTrue("no version reported", versions.isEmpty())
+    }
+
+    @Test
     fun failedSendIsRetriedThenSucceeds() = runTest {
         // READY triggers a send; script the first send to fail, second to succeed.
         val transport = FakeWatchTransport(listOf(SendResult.FAILED, SendResult.SENT))

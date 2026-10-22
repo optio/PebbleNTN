@@ -12,7 +12,15 @@
     "slug": "companion-update-notice",
     "dirName": "261021-companion-update-notice",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "4d314984"
+  },
+  {
+    "uuid": "01a164f4-cd72-748f-96e7-68d949ef6e78",
+    "slug": "version-compare-update",
+    "dirName": "261022-version-compare-update",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "fc072f54"
   }
 ]

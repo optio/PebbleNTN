@@ -37,6 +37,10 @@
         <package android:name="com.tomtom.speedcams.android.map" />
         <package android:name="ru.dublgis.dgismobile" />
         <package android:name="com.baidu.BaiduMap" />
+        <!-- Not navigation apps: the update card opens Obtainium when it is installed
+             (REQ-ANDROID-020). Keep in sync with InstallSources.OBTAINIUM_PACKAGES. -->
+        <package android:name="dev.imranr.obtainium" />
+        <package android:name="dev.imranr.obtainium.fdroid" />
     </queries>
 
     <application

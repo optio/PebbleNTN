@@ -11,7 +11,7 @@
 //     distance (REQ-WATCH-022);
 //   - return to the watchface on navigation stop when commanded;
 //   - show a once-per-version notice, idle text and launcher subtitle when the phone reports a
-//     phone app update (REQ-WATCH-023, #94);
+//     phone app update, or when this watchapp is newer than the phone app (REQ-WATCH-023, #94);
 //   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT.
 //
 // Layout: the maneuver arrow and the distance sit side by side in a coloured panel, so the road
@@ -32,6 +32,7 @@
 #include "theme.h"
 #include "update_notice.h"
 #include "update_notice_window.h"
+#include "version_compare.h"
 
 _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 
@@ -84,7 +85,8 @@ static char s_phone_version[PHONE_VERSION_MAX + 1];
 
 // The newer phone app version the phone last reported (flag bit 4 + key 14, protocol 1.2), empty
 // when none, and the version the update notice was last shown for. Both persisted, so the launcher
-// subtitle and "once per version" survive a relaunch (REQ-WATCH-023, #94).
+// subtitle and "once per version" survive a relaunch (REQ-WATCH-023, #94). The update UI itself uses
+// effective_update(), which also counts this watchapp being newer than s_phone_version.
 static char s_latest_phone_version[UPDATE_VERSION_MAX + 1];
 static char s_update_notice_shown[UPDATE_VERSION_MAX + 1];
 
@@ -963,19 +965,29 @@ static void record_update(DictionaryIterator *iter) {
   }
 }
 
+// The phone app update to offer, "" when none: the higher of the version the phone reports (key
+// 14) and this watchapp's own version when it is newer than the phone app (key 11). Both apps share
+// one version number, so a newer watchapp means a newer phone app is out. Derived from the stored
+// keys 16 and 17 on every call, so it needs no persist key of its own, and a phone message with bit
+// 4 clear never hides the watch's own finding (REQ-WATCH-023).
+static const char *effective_update(void) {
+  return version_effective_update(s_latest_phone_version, APP_VERSION_STR, s_phone_version);
+}
+
 // Show the update notice once per version, but never during a route or over Settings/About: then
 // it waits for the next stop or "no navigation" message (FR4.3, FR4.4). It is marked shown, and key
 // 18 written, as it opens.
 static void maybe_show_update_notice(void) {
+  const char *update = effective_update();
   const bool main_on_top = window_stack_get_top_window() == s_window;
-  if (update_notice_action(s_latest_phone_version, s_update_notice_shown, s_navigating,
-                           main_on_top) != UPDATE_NOTICE_SHOW) {
+  if (update_notice_action(update, s_update_notice_shown, s_navigating, main_on_top) !=
+      UPDATE_NOTICE_SHOW) {
     return;
   }
   if (!update_notice_window_push(NULL)) {
     return;
   }
-  snprintf(s_update_notice_shown, sizeof(s_update_notice_shown), "%s", s_latest_phone_version);
+  snprintf(s_update_notice_shown, sizeof(s_update_notice_shown), "%s", update);
   persist_version(PERSIST_KEY_UPDATE_NOTICE_SHOWN, s_update_notice_shown, "update notice shown");
 }
 
@@ -1048,6 +1060,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   // it can never overwrite a real state with a "connecting"/install hint (REQ-WATCH-017).
   s_heard_from_phone = true;
   connect_stop();
+  // Both records come first: the update UI below compares this watchapp with the phone version.
   record_phone_version(iter);
   record_update(iter);
   switch (event_t->value->int32) {
@@ -1062,7 +1075,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
       s_navigating = false;
       early_warn_reset(&s_early_warn);
       // While an update is recorded the idle text points at it, every time (FR5.1).
-      show_message(update_idle_text(s_latest_phone_version));
+      show_message(update_idle_text(effective_update()));
       maybe_show_update_notice();
       break;
     case PBNTN_EVENT_PHONE_COMPATIBILITY_ERROR:
@@ -1200,7 +1213,7 @@ static void init(void) {
 #if !PBL_PLATFORM_APLITE
 // Launcher subtitle (REQ-WATCH-019, #15, amended by #94): during a route, a countdown to the arrival
 // time that the launcher keeps current and that expires at the arrival time. After it, and
-// otherwise, "Update: <version>" while an update is recorded, else a short hint.
+// otherwise, "Update: <version>" while there is an update (effective_update()), else a short hint.
 static void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
   char countdown[150];
   if (limit >= 2 && glance_countdown_template(s_navigating, s_eta_epoch, (int32_t)time(NULL),
@@ -1211,7 +1224,7 @@ static void glance_reload_callback(AppGlanceReloadSession *session, size_t limit
     });
   }
   char update[48];
-  const bool has_update = glance_update_subtitle(s_latest_phone_version, update, sizeof(update));
+  const bool has_update = glance_update_subtitle(effective_update(), update, sizeof(update));
   app_glance_add_slice(session, (AppGlanceSlice){
     .layout = { .icon = APP_GLANCE_SLICE_DEFAULT_ICON,
                 .subtitle_template_string = has_update ? update : GLANCE_HINT },

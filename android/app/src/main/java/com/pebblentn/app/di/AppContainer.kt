@@ -31,6 +31,8 @@ import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.NotificationListenerRefresher
 import com.pebblentn.app.system.SystemNotificationAccess
 import com.pebblentn.app.system.SystemNotificationListenerRefresher
+import com.pebblentn.app.update.InstallSource
+import com.pebblentn.app.update.InstallSources
 import com.pebblentn.app.update.UpdateCheckRepository
 import kotlinx.coroutines.CoroutineScope
 import java.util.Locale
@@ -91,6 +93,9 @@ class AppContainer(context: Context) {
         appContext,
         currentVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
     )
+
+    /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
+    val installSource: InstallSource = InstallSources.detect(appContext)
 
     private val ruleEngine = RuleEngine()
 
@@ -158,10 +163,11 @@ class AppContainer(context: Context) {
         stateStore = navigationStateRepository,
         onWatchappReached = { watchappPresence.markSeen(System.currentTimeMillis()) },
         initialSettings = watchSettingsRepository.settings.value,
-        // Tell the watch about a newer phone app on every state message (REQ-ANDROID-017, #94).
-        latestPhoneUpdate = {
-            updateCheckRepository.state.value.let { if (it.updateAvailable) it.latestVersion else null }
-        },
+        // Tell the watch about a newer phone app on every state message (REQ-ANDROID-017, #94): the
+        // higher of the GitHub version and the watch's own version (REQ-ANDROID-019).
+        latestPhoneUpdate = { updateCheckRepository.state.value.effectiveLatest },
+        // A genuine WATCH_READY carries the watchapp version; a newer one means a phone app update.
+        onWatchAppVersion = { updateCheckRepository.recordWatchAppVersion(it) },
     )
 
     init {

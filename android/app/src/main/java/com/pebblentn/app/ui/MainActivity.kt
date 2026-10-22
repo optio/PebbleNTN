@@ -153,8 +153,10 @@ class MainActivity : ComponentActivity() {
                     unmatchedCaptureCount = unmatchedCount,
                     onShareDiagnostics = { navController.navigate("share-diagnostics") },
                     updateAvailable = updateState.updateAvailable,
-                    latestVersion = updateState.latestVersion,
-                    onDownloadUpdate = { openUrl(getString(R.string.update_releases_url)) },
+                    // The higher of the GitHub version and the watch's version (REQ-ANDROID-019).
+                    latestVersion = updateState.effectiveLatest,
+                    installSource = container.installSource,
+                    onOpenUpdateSource = ::openUpdateSource,
                     onCheckForUpdate = ::checkForUpdate,
                     autoCheckUpdates = autoCheckUpdates,
                     onAutoCheckUpdatesChange = ::setAutoCheckUpdates,
@@ -403,6 +405,26 @@ class MainActivity : ComponentActivity() {
     /** Open an external URL (the GitHub releases page) in the browser. */
     private fun openUrl(url: String) {
         runCatching { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+    }
+
+    /**
+     * Send the user to [source] for the update (REQ-ANDROID-020): GitHub's latest release page, the
+     * F-Droid package page (an installed F-Droid client handles the link, else the browser), or the
+     * Obtainium app's launch screen, falling back to its website when it is not installed.
+     */
+    private fun openUpdateSource(source: com.pebblentn.app.update.InstallSource) {
+        when (source) {
+            com.pebblentn.app.update.InstallSource.GITHUB -> openUrl(getString(R.string.update_releases_url))
+            com.pebblentn.app.update.InstallSource.FDROID -> openUrl(getString(R.string.update_fdroid_url))
+            com.pebblentn.app.update.InstallSource.OBTAINIUM -> {
+                val launch = com.pebblentn.app.update.InstallSources.OBTAINIUM_PACKAGES
+                    .firstNotNullOfOrNull { packageManager.getLaunchIntentForPackage(it) }
+                val opened = launch != null && runCatching { startActivity(launch) }
+                    .onFailure { timber.log.Timber.w(it, "Obtainium did not open; using its website") }
+                    .isSuccess
+                if (!opened) openUrl(getString(R.string.update_obtainium_url))
+            }
+        }
     }
 
     /**
