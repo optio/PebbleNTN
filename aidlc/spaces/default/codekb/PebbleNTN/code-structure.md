@@ -35,7 +35,7 @@
 | `system/` | Adapter | notification access, listener refresher, install receiver |
 | `catalog/` | Model | navigation-app catalog |
 | `di/` | Configuration | `AppContainer`, asset catalog source, installed apps provider |
-| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt`, `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `components/`, `format/`, `theme/` |
+| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `components/`, `format/`, `theme/` |
 
 ## Watchapp Module Organisation
 
@@ -54,7 +54,7 @@
 - **Pure core plus adapters**: domain logic receives time (`EpochClock`), I/O (`ReleaseFetcher`) and transport (`WatchTransport`) through interfaces with fakes in tests (`FakeWatchTransport`, `FakeFetcher`).
 - **StateFlow repositories**: SharedPreferences-backed repositories expose `StateFlow`s and `@Volatile` caches for callback-thread reads (`AppEnabledRepository`, `WatchSettingsRepository`, `UpdateCheckRepository`, `WatchappPresenceRepository`).
 - **Stateless Compose screens**: `DashboardScreen` takes plain parameters and lambdas (about 40, all but two defaulted), and `MainActivity.AppNavHost` collects flows and passes values. There is no dashboard ViewModel. Decision logic is pulled into pure top-level functions beside the screen (`updateCardModel`, `updatePrompt`, `SetupProgress`) so it is unit-tested without Compose.
-- **Dashboard rows**: private composables `Section`, `ToggleRow`, `NavRow` and `InfoRow(title, value, dimmed)` in `DashboardScreen.kt`. The Status section is a master-switch `ToggleRow`, the access chip, then `InfoRow`s "Watch", "Last navigation notification" and "Last sent to watch"; an absent value falls back to a `*_none` string (`value?.let { ... } ?: stringResource(...)`).
+- **Dashboard rows**: private composables `Section`, `ToggleRow`, `NavRow` and `InfoRow(title, value, dimmed)` in `DashboardScreen.kt`. The Status section is a master-switch `ToggleRow`, the access chip, then `InfoRow`s "Watch", "Watchapp version" (v0.0.74), "Last navigation notification" and "Last sent to watch"; an absent value falls back to a `*_none` string (`value?.let { ... } ?: stringResource(...)`).
 - **Effect-returning reducer**: `reduce(state, event) -> ReducerResult(state, effects)`, run under a mutex by `NavigationController`.
 - **Watch pure-unit split**: each piece of formatting or decision logic is a Pebble-free `.c/.h` with a host test linked against that unit alone (so `update_notice.c` keeps its own capped copy instead of calling `phone_version.c`). `main.c` owns the persisted state and the UI.
 - **Requirement tagging**: comments cite REQ IDs and issue numbers throughout.

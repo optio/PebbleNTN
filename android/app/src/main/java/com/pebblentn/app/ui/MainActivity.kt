@@ -46,6 +46,8 @@ import com.pebblentn.app.ui.rules.RulesViewModel
 import com.pebblentn.app.ui.share.ShareDiagnosticsScreen
 import com.pebblentn.app.ui.share.ShareDiagnosticsViewModel
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
+import com.pebblentn.app.update.UpdateCheckMessage
+import com.pebblentn.app.update.updateCheckMessage
 
 /**
  * Single host activity. Shows onboarding until notification access is granted; once granted, hosts
@@ -444,17 +446,20 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Manual "Check for updates": force a check now and report the outcome (REQ-ANDROID-013).
+     * Manual "Check for updates": force a GitHub check now and report the result combined with the
+     * watchapp version, so the message matches the update card (REQ-ANDROID-013, REQ-ANDROID-019).
      * [onFinished] runs after the outcome is shown, whatever it was (the stale item's follow-up, #94).
      */
     private fun checkForUpdate(onFinished: () -> Unit = {}) {
         lifecycleScope.launch {
-            val messageRes = when (container.updateCheckRepository.checkForUpdate(force = true)) {
-                com.pebblentn.app.update.UpdateCheckOutcome.UPDATE_AVAILABLE -> R.string.update_check_available
-                com.pebblentn.app.update.UpdateCheckOutcome.UP_TO_DATE -> R.string.update_check_up_to_date
-                else -> R.string.update_check_failed
+            val repository = container.updateCheckRepository
+            val outcome = repository.checkForUpdate(force = true)
+            val message = when (val result = updateCheckMessage(outcome, repository.state.value)) {
+                is UpdateCheckMessage.Available -> getString(R.string.update_check_available_version, result.version)
+                UpdateCheckMessage.UpToDate -> getString(R.string.update_check_up_to_date)
+                UpdateCheckMessage.Failed -> getString(R.string.update_check_failed)
             }
-            android.widget.Toast.makeText(this@MainActivity, messageRes, android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(this@MainActivity, message, android.widget.Toast.LENGTH_SHORT).show()
             onFinished()
         }
     }

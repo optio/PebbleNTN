@@ -88,7 +88,11 @@ class AppContainer(context: Context) {
     val notificationListenerRefresher: NotificationListenerRefresher =
         SystemNotificationListenerRefresher(appContext)
 
-    /** Weekly (or on-demand) check for a newer app version on GitHub (REQ-ANDROID-013). */
+    /**
+     * Update detection: by default offline, comparing the watchapp version with this app's
+     * (REQ-ANDROID-019); the GitHub check is an optional extra, on demand or weekly when turned on
+     * (REQ-ANDROID-013).
+     */
     val updateCheckRepository = UpdateCheckRepository(
         appContext,
         currentVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,

@@ -42,13 +42,15 @@ No continuous animation. Redraw only when state changes.
 
 Step 2 assumes the companion app forwards the watch's inbound `WATCH_READY` to third-party
 PebbleKit listeners. The Core Devices Pebble app (`coredevices.coreapp`, the PebbleKit Android 2
-companion) does **not** — its protocol runner receives our packet but never calls our listener
-service — so a phone that waits for `WATCH_READY` sits on "Connecting" forever. Because the phone
-has just launched our watchapp on a connected watch, it therefore **synthesizes readiness itself**
-after a short settle delay (`NavigationController.scheduleAutonomousReady`), and also treats the
-PebbleKit `onAppOpened` lifecycle callback (which the companion *does* forward) as a readiness
-signal (`WatchListenerService.onAppOpened`). A genuine `WATCH_READY`, if it ever does arrive, is
-still handled and simply re-sends the current state.
+companion) does, once the watchapp declares `companionApp` (below): v0.0.74 confirmed on a phone
+that the phone receives the watchapp version that `WATCH_READY` carries (REQ-ANDROID-019). Before
+that declaration it did not, and a phone that waited for `WATCH_READY` sat on "Connecting" forever.
+The phone therefore keeps a fallback: because it has just launched our watchapp on a connected
+watch, it **synthesizes readiness itself** after a short settle delay
+(`NavigationController.scheduleAutonomousReady`), and also treats the PebbleKit `onAppOpened`
+lifecycle callback as a readiness signal (`WatchListenerService.onAppOpened`), which covers
+auto-launch being off. The synthesized readiness carries no watchapp version. A genuine
+`WATCH_READY` is still handled and simply re-sends the current state.
 
 ### Companion authorization (`companionApp`)
 

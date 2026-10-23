@@ -65,13 +65,14 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 ### Version Exchange (both directions)
 
 - **Phone to watch**: key 11 `APP_VERSION` (`BuildConfig.VERSION_NAME`) on every state message, recorded and persisted on change by the watch (`phone_version_update`, main.c `record_phone_version`). The watch's own version is `APP_VERSION_STR` in main.c, kept equal to the phone's version line by `scripts/version.sh`.
-- **Watch to phone**: key 11 only inside the watch's real `WATCH_READY`, sent once from `init()`. Since v0.0.73 the phone records it (`ProtocolCodec.watchAppVersion` -> `NavigationController.onWatchAppVersion` -> `UpdateCheckRepository.recordWatchAppVersion`, prefs key `watch_app_version`, exposed as `UpdateState.watchAppVersion`). The synthetic READYs carry no version and never record one. On the Core Devices companion the real READY is not forwarded at all, so the stored value stays null there. PebbleKit 2 reports watch firmware version only. The phone half of version compare is therefore best effort, and the dashboard does not show whether it ever worked: that is what intent `261022-watchapp-version-status` adds (see [Dashboard watchapp version](#dashboard-watchapp-version-status-row-target-flow-for-261022-watchapp-version-status)).
+- **Watch to phone**: key 11 only inside the watch's real `WATCH_READY`, sent once from `init()`. Since v0.0.73 the phone records it (`ProtocolCodec.watchAppVersion` -> `NavigationController.onWatchAppVersion` -> `UpdateCheckRepository.recordWatchAppVersion`, prefs key `watch_app_version`, exposed as `UpdateState.watchAppVersion`). The synthetic READYs carry no version and never record one. The Core Devices companion does forward the real READY once the watchapp declares `companionApp` (confirmed on a real phone with v0.0.74; the dashboard "Watchapp version (last seen)" row shows it). The earlier belief that it never forwards it is outdated. PebbleKit 2 reports watch firmware version only, so the real READY is the phone's only source for the watchapp version.
 
 ### Key Design Decisions
 
 - **One state, never a queue** (REQ-ANDROID-010): newer state replaces pending state. It is persisted in Room for process recovery.
 - **Generated protocol constants** with a DO-NOT-EDIT banner and a `--check` gate in CI and pre-commit. They must stay consistent with the integrity-protected `examples/protocol-definition.json`.
-- **Synthetic readiness**: the Core Devices companion does not forward `WATCH_READY`, so the phone synthesizes it.
+- **Synthetic readiness**: the phone synthesizes `WATCH_READY` (1.5 s after a launch, and on `onAppOpened`). Its recorded rationale, that the Core Devices companion does not forward the real one, is outdated (forwarding confirmed in v0.0.74 with `companionApp` declared); the mechanism still covers auto-launch off and the settle delay, and its comments need correcting.
+- **Version compare is ungated by the online check**: `UpdateState.updateAvailable = githubNewer || watchNewer`, so the card and bit 4/key 14 appear from the watch version alone with no check ever run. Only the #94 stale prompt (`isCheckStale`: never checked or over 30 days) keys off the online check, and it does so regardless of the version-compare result.
 - **Phone-wide update bit applied in the codec** (#94): `encodeState` adds bit 4 + key 14 on every state message, so the reducer's per-state flags stay unchanged and NO_ACTIVE_NAVIGATION also carries it.
 - **Two update signals per device (v0.0.73)**: the phone's `UpdateState.effectiveLatest` is the higher of a newer GitHub tag (tolerant compare) and a strictly newer watchapp version (`AppVersions.isNewerStrict`); it drives the card and key 14. The watch combines the phone's bit 4/key 14 with its own `version_compare` of `APP_VERSION_STR` against the phone's key 11. Unparsable versions are never "newer".
 - **Install-source-aware card (v0.0.73)**: `InstallSources.detect` (installer package, no network) picks the card's main source; `updateCardModel` is the pure choice of main source, other sources and the F-Droid delay line.
@@ -84,7 +85,8 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - Split `watchapp/src/c/main.c` (1,261 lines) into decoding, rendering and lifecycle units, and validate tuple types.
 - Add coverage tooling (Kover or JaCoCo) and a lint baseline.
 - Done in v0.0.73: "update available" is now derived on each device from the GitHub result and the version comparison.
-- `DashboardScreen` takes about 40 parameters; grouping the Status section inputs into one small model would ease further rows such as the watchapp version.
+- `DashboardScreen` takes about 40 parameters; grouping the Status section inputs into one small model would ease further rows.
+- Let the #94 stale prompt and the manual-check toast take the version-compare result into account, so the online check stops acting as the default (active intent `261022-update-by-version-compar`).
 
 ## Interaction Diagrams
 
@@ -124,9 +126,9 @@ sequenceDiagram
   participant S as WatchListenerService
   participant C as NavigationController
   W->>PK: WATCH_READY (protocol, APP_VERSION_STR)
-  PK-->>S: onAppOpened (WATCH_READY often not forwarded)
+  PK-->>S: onAppOpened
   S->>C: synthetic WATCH_READY via WatchInboundBus (no APP_VERSION)
-  opt companion forwards the real WATCH_READY (not Core Devices)
+  opt companion forwards the real WATCH_READY (Core Devices does, with companionApp declared)
     PK-->>S: onMessageReceived(WATCH_READY, key 11)
     S->>C: real WATCH_READY via WatchInboundBus
     C->>C: onWatchAppVersion(key 11) -> recordWatchAppVersion
@@ -136,7 +138,7 @@ sequenceDiagram
   Note over W: no reply in 5 s -> install QR or "Open the Pebble app"
 ```
 
-Text fallback: the watch sends READY with its version; the companion usually reports only "app opened"; the listener emits a synthetic READY without a version. When a companion does forward the real READY, its key 11 is recorded as the watchapp version. Either way the controller sends the current state. Without a reply in 5 s the watch shows a hint.
+Text fallback: the watch sends READY with its version; the companion reports "app opened" and the listener emits a synthetic READY without a version. When the companion forwards the real READY (the Core Devices app does, confirmed in v0.0.74), its key 11 is recorded as the watchapp version. Either way the controller sends the current state. Without a reply in 5 s the watch shows a hint.
 
 ### Update check and #94 update notice (current behaviour)
 
@@ -164,7 +166,7 @@ Text fallback: the GitHub check stores the latest tag. The dashboard shows the c
 
 ### Version-compare update (implemented in v0.0.73)
 
-This was the proposal diagram of intent `261022-version-compare-update`; it is now implemented and merged. The phone half below was re-verified against the code at c50710e; the watch half (`version_compare.c`, `test_version_compare.c`) was not re-read in this run.
+This was the proposal diagram of intent `261022-version-compare-update`; it is now implemented and merged. Both halves were re-verified against the code at 8f08e02 (v0.0.74), including the watch's `version_compare.c` (`version_effective_update`).
 
 ```mermaid
 flowchart TD
@@ -186,7 +188,7 @@ flowchart TD
 
 Text fallback: on the watch, the received phone version is compared with the watch's own version, and a higher watch version becomes the effective update version alongside the phone-reported bit 4/key 14. Unparsable versions are ignored. On the phone, a watch version is recorded only when a real WATCH_READY is forwarded. `UpdateState.effectiveLatest` is the higher of a strictly newer watch version and a newer GitHub tag; it feeds the card ("Update from {source}", the F-Droid delay line, "Other sources") and key 14.
 
-### Dashboard watchapp version status row (target flow for 261022-watchapp-version-status)
+### Dashboard watchapp version status row (implemented in v0.0.74)
 
 ```mermaid
 sequenceDiagram
@@ -198,16 +200,36 @@ sequenceDiagram
   participant M as MainActivity.AppNavHost
   participant D as DashboardScreen Status section
   W->>PK: WATCH_READY (key 11 APP_VERSION_STR)
-  alt companion forwards it
-    PK-->>S: onMessageReceived
-    S->>C: WatchInboundBus -> handleInbound
-    C->>UCR: onWatchAppVersion -> recordWatchAppVersion (write on change)
-  else Core Devices companion
-    PK--xS: not forwarded; watch_app_version stays null
-  end
+  PK-->>S: onMessageReceived (Core Devices included, companionApp declared)
+  S->>C: WatchInboundBus -> handleInbound
+  C->>UCR: onWatchAppVersion -> recordWatchAppVersion (write on change)
   UCR-->>M: state (StateFlow) collected as updateState
-  M->>D: watchAppVersion = updateState.watchAppVersion (new parameter)
-  D->>D: InfoRow "Watchapp version (last seen)": version, or "not received yet"
+  M->>D: watchAppVersion = updateState.watchAppVersion
+  D->>D: InfoRow "Watchapp version": "X (last seen)" or "Not received yet"
 ```
 
-Text fallback: when the companion forwards the watch's real WATCH_READY, the controller records its key 11 in UpdateCheckRepository (prefs `watch_app_version`). The dashboard already collects the repository's state; it would pass `watchAppVersion` to a new Status-section `InfoRow`, which shows the stored version or "not received yet" when it is null. This is the target shape for the intent, not existing code.
+Text fallback: the companion forwards the watch's real WATCH_READY (confirmed with the Core Devices app on a real phone with v0.0.74). The controller records its key 11 in UpdateCheckRepository (prefs `watch_app_version`), and the dashboard shows it through `watchAppVersionText` as "X (last seen)", or "Not received yet" when none is stored.
+
+### Update signals and the #94 prompts on the dashboard (current, 8f08e02)
+
+This is the interplay the active intent `261022-update-by-version-compar` changes: version compare should be the default signal, with the GitHub check kept as an optional extra.
+
+```mermaid
+flowchart TD
+  WV[watch_app_version from a real WATCH_READY] --> WN{isNewerStrict current vs watch?}
+  GH[latest_version from an online check, optional] --> GN{isNewer current vs GitHub tag?}
+  WN -- yes --> UA[updateAvailable, effectiveLatest = higher]
+  GN -- yes --> UA
+  UA --> CARD[Update available card]
+  UA --> BIT[bit 4 + key 14 on every state message]
+  LC[last_check_millis] --> ST{never checked or over 30 days?}
+  ST -- yes --> SP[Stale item first: Check for updates on GitHub]
+  SP --> CHK[checkForUpdate force]
+  CHK --> WQ{weekly checks off?}
+  WQ -- yes --> Q[Weekly-check question]
+  CHK --> TOAST[Toast from the GitHub result only]
+  WN -. not consulted .-> ST
+  WN -. not consulted .-> TOAST
+```
+
+Text fallback: the card and bit 4/key 14 follow `updateAvailable` and `effectiveLatest`, which a strictly newer watch version satisfies with no online check ever run. Separately, `last_check_millis` alone decides the stale item: never checked (every fresh install) or over 30 days old puts "Check for updates" (GitHub) first on the dashboard, even when version compare already shows the card or proves the app current. A check started from it leads to the weekly-check question when weekly checks are off. The manual check's toast reports the GitHub result only, so it can say "up to date" while the card shows a version-compare update. The watch side (`effective_update()`) is independent of all of this.

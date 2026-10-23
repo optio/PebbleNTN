@@ -1,6 +1,55 @@
 # Implementation Status
 
-_Last updated: 2026-10-22_
+_Last updated: 2026-10-23_
+
+## Version comparison as the default update check (2026-10-23)
+
+**Milestone:** post-M12 enhancement and correction to the Android update check. Android app, specs
+and docs only; no protocol, storage or watch change.
+
+**Requirements:** REQ-ANDROID-013 and REQ-ANDROID-018 amended (the GitHub check is an optional
+extra; the version comparison is the default), REQ-ANDROID-019 amended (no more "best effort / not
+with the Core Devices app"; the manual check's message combines both sources). `Pebble.md`
+§"Companion limitation and synthesized readiness" corrected. Manifest resynced.
+
+**What changed.**
+- v0.0.74 showed on a phone with the Core Devices app that the phone does receive the watchapp
+  version from WATCH_READY (once `companionApp` is declared), so the offline comparison works for
+  every user and is now the default way PebbleNTN learns about a new version.
+- The pure `updateCheckMessage` (`update/UpdateCheckMessage.kt`) picks the manual check's message
+  from the GitHub outcome and the combined `UpdateState`: "PebbleNTN {version} is available."
+  whenever `updateAvailable` (any leading `v` removed), even when the fetch failed; "PebbleNTN is up
+  to date." only when neither source is newer; "Couldn't check for updates…" when the fetch failed
+  and the watchapp shows no update. `MainActivity.checkForUpdate` uses it, so the message no longer
+  contradicts the card. `update_check_available_version` replaces `update_check_available`.
+- Shorter texts: the onboarding disclosure's network sentence and the weekly toggle hint present the
+  offline check as the default and GitHub as optional. The stale item and the weekly question keep
+  their texts and behaviour.
+- KDoc and comments corrected (`UpdateCheckRepository`, `AppContainer`, the INTERNET comment,
+  `NavigationController.scheduleAutonomousReady`, `WatchListenerService`, `NavigationControllerTest`):
+  forwarding was confirmed in v0.0.74 with `companionApp` declared; the synthesized readiness stays
+  as a fallback (auto-launch off, settle delay). Behaviour unchanged.
+
+**Verification.**
+- JVM: new `UpdateCheckMessageTest` (5). 429 tests green.
+- The APK builds and passes lint. The texts were not run on an Android emulator here (it crashes
+  WSL).
+
+**Commands executed.**
+
+```bash
+./android/gradlew -p android :app:testDebugUnitTest --tests 'com.pebblentn.app.update.UpdateCheckRepositoryTest'   # runner check, 17 green
+./android/gradlew -p android :app:testDebugUnitTest --tests 'com.pebblentn.app.update.UpdateCheckMessageTest'      # 5 green
+./android/gradlew -p android :app:assembleDebug :app:lintDebug
+./scripts/validate-spec-assets.sh      # OK (34 files) after the manifest resync
+./scripts/test-all.sh                  # exit 0
+```
+
+**Blockers / open points.** None in code. The texts and the manual check's message are still to be
+checked on a phone.
+
+**Next atomic task:** on a phone, read the onboarding disclosure and the weekly hint, then run "Check
+for updates now" with a newer watchapp installed and confirm the message names its version.
 
 ## Watchapp version in the dashboard status (2026-10-22)
 
@@ -94,8 +143,10 @@ pebble wipe; pebble install/send-app-message/emu-button/screenshot --emulator {b
 ```
 
 **Blockers / open points.**
-- With the Core Devices Pebble app WATCH_READY never reaches the phone, so the phone side has no
-  effect there; the watch side covers it (accepted in requirements).
+- ~~With the Core Devices Pebble app WATCH_READY never reaches the phone, so the phone side has no
+  effect there.~~ Corrected 2026-10-23: v0.0.74 confirmed on a phone that the Core Devices app
+  forwards WATCH_READY (with `companionApp` declared), so the phone side works there too and is the
+  default update check; the watch side still covers any companion that does not.
 - `pebble wipe` was needed because the #94 checks had left key 18 = `0.0.71` in the emulator.
 
 **Next atomic task:** check the update card, "Other sources" and the three destinations on a phone.

@@ -49,9 +49,10 @@ class WatchListenerService : BasePebbleListenerService() {
 
     /**
      * PebbleKit lifecycle callback: our watchapp came to the foreground on the watch. The Core
-     * Devices companion forwards this even though it does not forward the watch's WATCH_READY
-     * AppMessage, so it is a reliable "the watch is ready for state" signal. We turn it into a
-     * synthetic WATCH_READY so the controller (re)sends the current navigation state.
+     * Devices companion forwards this, and (with `companionApp` declared, confirmed in v0.0.74) the
+     * watch's WATCH_READY AppMessage too. We still turn this into a synthetic WATCH_READY as a
+     * fallback readiness signal, so the controller (re)sends the current navigation state even with
+     * auto-launch off or when the genuine WATCH_READY does not reach us.
      */
     override fun onAppOpened(watchappUUID: UUID, watch: WatchIdentifier) {
         if (watchappUUID != PebbleWatchTransport.PEBBLENTN_UUID) return
@@ -68,9 +69,10 @@ class WatchListenerService : BasePebbleListenerService() {
 
     companion object {
         /**
-         * The synthetic WATCH_READY emitted when the watchapp comes to the foreground. It is the only
-         * readiness signal when auto-launch is off and the user opens the watchapp by hand, since no
-         * launch means no autonomous READY either.
+         * The synthetic WATCH_READY emitted when the watchapp comes to the foreground. It is the
+         * fallback readiness signal when auto-launch is off and the user opens the watchapp by hand
+         * and the genuine WATCH_READY does not reach us, since no launch means no autonomous READY
+         * either. It carries no watchapp version, so it never records one (REQ-ANDROID-019).
          */
         fun appOpenedReadyMessage(): AppMessage = AppMessage.builder()
             .putInt(Protocol.Keys.EVENT, Protocol.Events.WATCH_READY)
