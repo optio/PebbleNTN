@@ -62,12 +62,13 @@ data class UpdateState(
 }
 
 /**
- * Checks GitHub for a newer app version at most once a week (or on demand) and remembers the result
- * (REQ-ANDROID-013). The weekly cadence and the last-known latest version are persisted, so the
- * "update available" prompt survives restarts without re-hitting the network every launch. This
- * performs the app's only network access and sends no user data (see [GitHubReleaseFetcher]).
- * It also remembers the watchapp version the watch last announced ([recordWatchAppVersion]), which
- * can reveal an update with no network access at all (REQ-ANDROID-019).
+ * Knows whether a newer app version exists. The default way is offline: it remembers the watchapp
+ * version the watch last announced ([recordWatchAppVersion]), and a newer watchapp reveals an
+ * update with no network access at all (REQ-ANDROID-019). The GitHub check is an optional extra
+ * (REQ-ANDROID-013): on demand, or at most once a week when the user turns it on. Its weekly
+ * cadence and last-known latest version are persisted, so the "update available" prompt survives
+ * restarts without re-hitting the network every launch. It performs the app's only network access
+ * and sends no user data (see [GitHubReleaseFetcher]).
  */
 class UpdateCheckRepository(
     context: Context,
@@ -89,9 +90,10 @@ class UpdateCheckRepository(
 
     /**
      * Record the watchapp version a genuine WATCH_READY carried (key 11), so a newer watchapp shows
-     * the update card with no network call (REQ-ANDROID-019). Best effort: with the Core Devices app
-     * WATCH_READY never arrives and this is never called. A blank version is no version and is
-     * ignored. The preference is written only when the version changed (flash wear); returns true
+     * the update card with no network call (REQ-ANDROID-019). The Core Devices app forwards
+     * WATCH_READY (confirmed in v0.0.74 with `companionApp` declared), so this is the default update
+     * check. A synthesized readiness carries no version and never calls this. A blank version is no
+     * version and is ignored. The preference is written only when the version changed (flash wear); returns true
      * only then.
      */
     fun recordWatchAppVersion(version: String): Boolean {

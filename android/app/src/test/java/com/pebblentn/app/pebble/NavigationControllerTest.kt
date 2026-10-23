@@ -47,9 +47,10 @@ class NavigationControllerTest {
 
     @Test
     fun launchIsFollowedByAutonomousReadyWhenNoInboundHandshakeArrives() = runTest {
-        // Mimic a companion app (e.g. the Core Devices Pebble app) that never forwards the watch's
-        // WATCH_READY: no start(), no inbound READY. The controller must still send state on its own
-        // after the settle delay, so the watch does not sit on "Connecting" forever.
+        // Mimic a companion where the watch's WATCH_READY does not reach us (as the Core Devices
+        // Pebble app did before `companionApp` was declared; forwarding was confirmed in v0.0.74):
+        // no start(), no inbound READY. The controller must still send state on its own after the
+        // settle delay, so the watch does not sit on "Connecting" forever.
         val transport = FakeWatchTransport()
         val controller = controller(transport, backgroundScope)
 
@@ -279,8 +280,9 @@ class NavigationControllerTest {
 
     @Test
     fun autoLaunchDisabledThenWatchappOpenedByHandSendsState() = runTest {
-        // Companions like the Core Devices Pebble app never forward the watch's own WATCH_READY, and
-        // with auto-launch off there is no launch and so no autonomous READY. The only readiness
+        // Fallback case: the watch's own WATCH_READY does not reach us (forwarding by the Core Devices
+        // Pebble app was confirmed in v0.0.74 with `companionApp` declared, but this stays covered),
+        // and with auto-launch off there is no launch and so no autonomous READY. The readiness
         // signal left is WatchListenerService.onAppOpened; its synthetic READY must unblock the send.
         val transport = FakeWatchTransport()
         val controller = NavigationController(

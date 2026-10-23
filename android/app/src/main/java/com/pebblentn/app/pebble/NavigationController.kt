@@ -147,14 +147,13 @@ class NavigationController(
 
     /**
      * The watch announces itself with WATCH_READY once it has opened AppMessage, and normally that
-     * handshake is what unblocks the first state send. But some companion apps — notably the Core
-     * Devices Pebble app — receive the watch's inbound messages yet do not forward them to
-     * third-party PebbleKit listeners, so WATCH_READY never reaches us and the watch would sit on
-     * "Connecting" forever (confirmed on-device: the companion logged our WATCH_READY packet but our
-     * listener service was never called). Since we have just launched our app on a connected watch,
-     * we synthesize readiness ourselves after a short settle delay that lets the watchapp finish
-     * opening its inbox. A genuine WATCH_READY, if it does arrive, is still handled and simply
-     * re-sends the current state.
+     * handshake is what unblocks the first state send. The Core Devices Pebble app forwards it to
+     * us once the watchapp declares `companionApp` in its package.json (confirmed on-device in
+     * v0.0.74). Before that declaration it did not, and the watch sat on "Connecting" forever. This
+     * synthesized readiness stays as a fallback for any companion or moment where WATCH_READY does
+     * not reach us: since we have just launched our app on a connected watch, we synthesize
+     * readiness ourselves after a short settle delay that lets the watchapp finish opening its
+     * inbox. A genuine WATCH_READY is still handled and simply re-sends the current state.
      */
     private fun scheduleAutonomousReady() {
         scope.launch {

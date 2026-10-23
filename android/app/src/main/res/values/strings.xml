@@ -6,7 +6,7 @@
     <string name="onboarding_title">Welcome to PebbleNTN</string>
     <string name="onboarding_intro">PebbleNTN turns navigation-app notifications into turn-by-turn instructions on your Pebble watch.</string>
     <!-- Prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
-    <string name="onboarding_disclosure">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. The app connects to the network only to check GitHub for a newer app version — when you tap Check for updates, or, if you turn on weekly checks, about once a week — and this sends no personal data.</string>
+    <string name="onboarding_disclosure">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. PebbleNTN spots new versions offline, by comparing the phone app with your watchapp. It uses the network only for the optional GitHub check (Check for updates, or weekly if you turn it on), which sends no personal data.</string>
     <string name="onboarding_open_settings">Grant notification access</string>
     <string name="onboarding_privacy_note">You can turn off any navigation app in Navigation apps, or revoke notification access entirely at any time in system settings.</string>
 
@@ -48,8 +48,9 @@
     <string name="dashboard_update_source_obtainium">Obtainium</string>
     <string name="dashboard_check_update">Check for updates now</string>
     <string name="dashboard_auto_update">Check for updates weekly</string>
-    <string name="dashboard_auto_update_hint">When on, PebbleNTN checks GitHub about once a week. Off by default; nothing is sent.</string>
-    <string name="update_check_available">An update is available.</string>
+    <string name="dashboard_auto_update_hint">Optional: also check GitHub about once a week. Nothing is sent.</string>
+    <!-- The manual check's message combines GitHub and the watchapp version; %1$s is the version without a leading "v". -->
+    <string name="update_check_available_version">PebbleNTN %1$s is available.</string>
     <string name="update_check_up_to_date">PebbleNTN is up to date.</string>
     <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
     <!-- #94 (REQ-ANDROID-018): shown first while the last update check is over 30 days old, or never ran. -->
