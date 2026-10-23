@@ -1,0 +1,18 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1", "FR2", "FR3", "FR4", "FR5", "FR6",
+    "NFR-Testability", "NFR-Compatibility", "NFR-Memory"
+  ],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "watchapp/src/c/settings_window.c" },
+    { "id": "FR2", "status": "OK", "target": "watchapp/src/c/shortcuts.c" },
+    { "id": "FR3", "status": "OK", "target": "watchapp/src/c/shortcut_apply.c" },
+    { "id": "FR4", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR5", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "FR6", "status": "OK", "target": "requirements/REQ-WATCH.md" },
+    { "id": "NFR-Testability", "status": "OK", "target": "watchapp/tests/test_shortcuts.c" },
+    { "id": "NFR-Compatibility", "status": "OK", "target": "watchapp/src/c/theme.c" },
+    { "id": "NFR-Memory", "status": "OK", "target": "watchapp/src/c/qr_code.c" }
+  ]
+}

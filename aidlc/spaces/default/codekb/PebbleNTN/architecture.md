@@ -79,6 +79,8 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Privacy by construction**: allowlist before content, no automatic upload, network used only for the update check, which is opt-in for automatic runs.
 - **Vendored PebbleKit 2** for F-Droid reproducibility.
 - **Pure C units** for watch logic that can be tested on the host, one unit per test binary.
+- **Settings change through one path**: every on-watch setting has a `settings_set_*` setter in `theme.c` that writes its persist key at once; the menus call it and then `notify_change()`, which runs `main.c` `on_settings_changed()` (window background, `redraw_all`, `apply_backlight`). Everything else that depends on a setting reads it when it draws (theme colours, units, ETA mode and label, arrow side; the glyph cache flushes itself when the pack changes).
+- **Touch only through the system bridge, on emery only (#53)**: the app opts into the bridge (`app_touch_navigation_enable(true)`) so the menus, sub-lists, About and the update notice take touches as button presses, and disables it on the navigation window, so a stray swipe cannot act as BACK and close the app mid-route. No gesture recognizer or raw touch subscription exists yet (#12).
 
 ### Improvement Opportunities
 
@@ -86,9 +88,30 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - Add coverage tooling (Kover or JaCoCo) and a lint baseline.
 - Done in v0.0.73: "update available" is now derived on each device from the GitHub result and the version comparison.
 - `DashboardScreen` takes about 40 parameters; grouping the Status section inputs into one small model would ease further rows.
-- Let the #94 stale prompt and the manual-check toast take the version-compare result into account, so the online check stops acting as the default (active intent `261022-update-by-version-compar`).
+- Done in v0.0.75: the #94 stale prompt and the manual-check toast take the version-compare result into account (intent `261022-update-by-version-compar`).
+- Navigation-screen gestures (#12, active intent `261023-touch-gestures`): the navigation window has the bridge off and only SELECT subscribed. The gesture-to-action decision belongs in a new pure unit, and the recognizers, a short change notice and the Touch settings in `main.c` and `settings_window.c` (see [code-quality-assessment.md](code-quality-assessment.md)).
 
 ## Interaction Diagrams
+
+### Watch input and setting changes (current, 3727ddc)
+
+This is the surface the active intent `261023-touch-gestures` (#12) builds on.
+
+```mermaid
+flowchart TD
+  SEL["SELECT on navigation window"] --> PUSH["settings_window_push(on_settings_changed, AboutInfo)"]
+  PUSH --> MENU["Settings menu: 10 rows, About last"]
+  MENU --> SET["theme.c settings_set_*: persist write at once"]
+  SET --> NOTE["notify_change"]
+  NOTE --> APPLY["on_settings_changed: background, redraw_all, apply_backlight"]
+  UD["UP or DOWN on navigation window"] --> IGN1["not subscribed"]
+  BK["BACK on navigation window"] --> EXIT["default handler: pops the window, app exits"]
+  T["Touch on emery"] --> BR{"Bridge on for this window?"}
+  BR -- "settings, sub-lists, About, update notice" --> BTN["firmware maps touch to button presses"]
+  BR -- "navigation window: disabled" --> IGN2["no recognizer attached: touch ignored"]
+```
+
+Text fallback: SELECT on the navigation window opens the settings menu with the `on_settings_changed` callback and an About snapshot. A menu choice calls a `theme.c` setter, which persists at once, then `notify_change`, which re-applies the background, redraws every layer and re-applies the backlight. UP and DOWN are not subscribed on the navigation window, and BACK uses the default handler (the app exits). On emery, touches on the settings windows, About and the update notice become button presses through the system bridge, while the navigation window has the bridge disabled and attaches no recognizer, so touches there do nothing today.
 
 ### Navigation update reaches the watch
 

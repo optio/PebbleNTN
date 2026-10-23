@@ -6,13 +6,13 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Watchapp Main Renderer
 - **Location**: watchapp/src/c/main.c
-- **Responsibility**: opens AppMessage and sends WATCH_READY (protocol + `APP_VERSION_STR`); `inbox_received_handler` sets `s_heard_from_phone`, stops the watchdog, records the phone version (key 11) and the #94 update state (bit 4 + key 14) and dispatches by event; shows the once-per-version update notice when no route is active and Main is on top (`maybe_show_update_notice`), and the update idle text; renders the panel (glyph + distance or stops), strip (clock/STALE + ETA), road text and the full-screen message layer (`MSG_PLAIN`, `MSG_CONNECTING`, `MSG_QR`); 5 s handshake watchdog (REQ-WATCH-017); backlight, vibration and early warning; app glance on exit (REQ-WATCH-019; "Update: <version>" while an update is recorded); SELECT opens settings with an `AboutInfo` snapshot.
+- **Responsibility**: opens AppMessage and sends WATCH_READY (protocol + `APP_VERSION_STR`); `inbox_received_handler` sets `s_heard_from_phone`, stops the watchdog, records the phone version (key 11) and the #94 update state (bit 4 + key 14) and dispatches by event; shows the once-per-version update notice when no route is active and Main is on top (`maybe_show_update_notice`), and the update idle text; renders the panel (glyph + distance or stops), strip (clock/STALE + ETA), road text and the full-screen message layer (`MSG_PLAIN`, `MSG_CONNECTING`, `MSG_QR`); 5 s handshake watchdog (REQ-WATCH-017); backlight, vibration and early warning; app glance on exit (REQ-WATCH-019; "Update: <version>" while an update is recorded); SELECT opens settings with an `AboutInfo` snapshot and `on_settings_changed` as the change callback. UP and DOWN are unsubscribed and BACK is the default exit. On emery it opts into the system touch bridge for the whole app and disables it on its own window (#53, REQ-WATCH-021), with no gesture recognizer yet (#12). Input and feedback detail: [api-documentation.md](api-documentation.md) "Watch Input Surface".
 - **Key state**: `APP_VERSION_STR` (the watch's own version), `s_phone_version[17]` (persist key 16), `s_latest_phone_version[17]` (key 17), `s_update_notice_shown[17]` (key 18), `s_heard_from_phone`, `s_navigating`, `s_flags`, `s_eta_epoch`, `s_primary_buf[65]`, `s_secondary_buf[25]`, `s_message_buf[96]`.
 - **Depends on**: generated/protocol.h, theme, settings_window, eta_text, glance_text, phone_version, update_notice, update_notice_window, stops_text, panel_layout, early_warning.
 
 ### Watchapp Settings Menu
 - **Location**: watchapp/src/c/settings_window.c, settings_window.h
-- **Responsibility**: top-level menu with `ROW_BACKLIGHT`..`ROW_ABOUT` (`MAIN_ROW_COUNT 10`; About is last, subtitle = watchapp version) and sub-windows (colour list, glyph pack preview, backlight duration/colour, vibration with new-instruction and early-warning sections).
+- **Responsibility**: top-level menu with `ROW_BACKLIGHT`..`ROW_ABOUT` (`MAIN_ROW_COUNT 10`, the same rows on every platform; About is last, subtitle = watchapp version) and sub-windows (colour list with previews, glyph pack preview, backlight duration/colour on RGB hardware, vibration with new-instruction and early-warning sections). Every change calls a `theme.c` setter and then the `on_change` callback. The windows leave the touch bridge on, so on emery they take touches as button presses. The row order is mirrored in `capture_screenshots.py`. Rows: [api-documentation.md](api-documentation.md) "Watch Settings Menu".
 - **Depends on**: theme, about_window, early_warning.
 
 ### Watchapp About Screen
@@ -22,7 +22,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Watchapp Settings Store and Theme
 - **Location**: watchapp/src/c/theme.c, theme.h
-- **Responsibility**: setting getters/setters persisted under keys 1-15; theme colours; vibration patterns; backlight hold and RGB tint.
+- **Responsibility**: setting getters/setters persisted under keys 1-15 (accent, units, invert, glyph pack, arrow side, ETA mode, backlight, vibration pattern and strength, backlight colour, ETA label style, early-warning distance, repeat, pattern and strength); setters clamp and persist at once; theme colours (accent panel, shaded strip, black or white road area); vibration patterns (pulse length as strength); backlight hold and RGB tint. Keys and ranges: [api-documentation.md](api-documentation.md).
 - **Depends on**: Pebble persist, light and vibes APIs, early_warning.
 
 ### Watchapp Update Notice
@@ -35,12 +35,17 @@ Each component lists its location, responsibility and dependencies. The `###` he
 - **Responsibility**: Pebble-free logic: About text, glance template and `GLANCE_HINT`, phone-version recording rule (16-byte cap, change detection), update-notice rules (see Watchapp Update Notice), `glance_update_subtitle`, ETA parsing/labels, stop count, panel placement, early-warning decision.
 
 ### Watchapp Host Unit Tests
-- **Location**: watchapp/tests/test_*.c (9 files, including test_update_notice.c and test_version_compare.c)
-- **Responsibility**: host-compiled assertions per pure unit, run by `scripts/test-watchapp-unit.sh` (each test must have a matching `src/c/<unit>.c` and is linked against that unit alone, so units cannot share helpers).
+- **Location**: watchapp/tests/test_*.c (9 files: about_text, early_warning, eta_text, glance_text, panel_layout, phone_version, stops_text, update_notice, version_compare)
+- **Responsibility**: host-compiled assertions per pure unit, run by `scripts/test-watchapp-unit.sh` (each test must have a matching `src/c/<unit>.c` and is linked against that unit alone, under `gcc -std=c11 -Wall -Wextra -Werror`, so units cannot share helpers or include `pebble.h`). Each test is a plain `main` with a `failures` counter and `ok`/`FAIL` lines. Run by `scripts/test-all.sh`, not by CI.
 
 ### Watchapp Asset Tools
-- **Location**: watchapp/tools/ (gen_maneuver_bitmaps.py, gen_connect_qr.py, gen_store_icon.py, capture_screenshots.py, touch_emulator.py); outputs in watchapp/resources/, watchapp/store/, screenshots/
-- **Responsibility**: generate committed glyph, QR and icon bitmaps; drive emulators for screenshots and touch checks.
+- **Location**: watchapp/tools/ (gen_maneuver_bitmaps.py, gen_connect_qr.py, gen_store_icon.py); outputs in watchapp/resources/, watchapp/store/
+- **Responsibility**: generate committed glyph, QR and icon bitmaps.
+
+### Watchapp Emulator Test Tools
+- **Location**: watchapp/tools/capture_screenshots.py, watchapp/tools/touch_emulator.py; outputs in screenshots/ and watchapp/build/touch-check/
+- **Responsibility**: `capture_screenshots.py` wipes and installs per platform (basalt, chalk, emery), injects a navigation update with `send-app-message`, walks the settings menu with button clicks using a hand-kept copy of the `ROW_*` indices, accent and glyph-pack rows, and pins the clock. `touch_emulator.py` is a standard-library RFB client for the emery emulator (VNC port 5901, 200x228) with `tap X Y`, `swipe X1 Y1 X2 Y2` (300 ms gestures) and a REQ-WATCH-021 `check` that screenshots each step. It never wipes, because `pebble wipe` turns touch navigation off in the emulator; its docstring says #12 can reuse `tap`/`swipe`.
+- **Depends on**: pebble-tool (`--emulator`, `--vnc`, `emu-button`, `emu-set-time`, `screenshot`), a built `watchapp/build/watchapp.pbw`.
 
 ## Protocol
 

@@ -54,9 +54,42 @@ The next free key is **15**. Keys and events must equal `examples/protocol-defin
 
 A message without EVENT is ignored. Any other message sets `s_heard_from_phone` and stops the watchdog. `record_phone_version` (TUPLE_CSTRING, non-empty, capped at 16 bytes, persisted under key 16 only on change) and `record_update` (bit 4 + key 14 → `s_latest_phone_version`, key 17; bit 4 clear empties it) run before the event switch. Events: UPDATE goes to `render_navigation`. STOPPED goes to exit, or to "Arrived" plus `maybe_show_update_notice`. NONE shows `update_idle_text(effective_update())` plus `maybe_show_update_notice`. COMPAT_ERROR shows "Update phone app".
 
-## Watch-side Persist Keys
+## Watch-side Persist Keys and Settings (`theme.h` / `theme.c`, `main.c`, at 3727ddc)
 
-1-15: `theme.c` settings (accent through early-warning intensity). 16: `PERSIST_KEY_PHONE_VERSION`. 17: `PERSIST_KEY_LATEST_PHONE_VERSION`. 18: `PERSIST_KEY_UPDATE_NOTICE_SHOWN` (all in `main.c`). The next free key is 19.
+| Key | Name | Owner | Stored as | Values (default **bold**) | Setter / menu row |
+|---:|---|---|---|---|---|
+| 1 | `PERSIST_KEY_ACCENT` | theme.c | int `AccentId` | 0 Green, Blue, Red, Orange, Purple, Teal, Pink, Yellow, Cyan, Lime, Tan, Navy, Amber, Grey, 14 Black, 15 White (**Green** on colour, **Black** on black-and-white) | `settings_set_accent` / Colour door |
+| 2 | `PERSIST_KEY_UNITS` | theme.c | int `UnitsId` | **0 metric**, 1 imperial | `settings_set_units` / Distance units (in place) |
+| 3 | `PERSIST_KEY_INVERT` | theme.c | bool | **false** ("Dark on light"), true ("Light on dark") | `settings_set_inverted` / Invert (in place) |
+| 4 | `PERSIST_KEY_GLYPH_PACK` | theme.c | int `GlyphPack` | **0 Classic**, 1 Bold, 2 Outline | `settings_set_glyph_pack` / Glyph pack door |
+| 5 | `PERSIST_KEY_ARROW_LEFT` | theme.c | bool | **false** (arrow right, distance left), true | `settings_set_arrow_left` / Arrow side (in place) |
+| 6 | `PERSIST_KEY_ETA_MODE` | theme.c | int `EtaMode` | **0 Arrival time**, 1 Time to arrival | `settings_set_eta_mode` / ETA display (in place) |
+| 7 | `PERSIST_KEY_BACKLIGHT` | theme.c | int `BacklightMode` | **0 Watch default**, 1 Low (3 s), 2 Medium (10 s), 3 High (until the app closes) | `settings_set_backlight` / Backlight (in place, or the Duration row of the RGB door) |
+| 8 | `PERSIST_KEY_VIBE_PATTERN` | theme.c | int `VibePatternId` | **0 Off**, 1 Single, 2 Double, 3 Triple, 4 Long | `settings_set_vibe_pattern` / Vibration door, New instruction |
+| 9 | `PERSIST_KEY_VIBE_INTENSITY` | theme.c | int `VibeIntensity` | 0 Light, **1 Medium**, 2 Strong (pulse 100/220/400 ms) | `settings_set_vibe_intensity` / same |
+| 10 | `PERSIST_KEY_BACKLIGHT_COLOR` | theme.c | int `BacklightColorId` | **0 Watch default**, White, Warm white, Red, Orange, Yellow, Green, Cyan, Blue, Purple, 10 Pink | `settings_set_backlight_color` (applies the tint at once) / Colour row of the backlight door, `PBL_RGB_BACKLIGHT` only |
+| 11 | `PERSIST_KEY_ETA_LABEL_STYLE` | theme.c | int `EtaLabelStyle` | **0 labelled** ("ETA at / ETA in"), 1 compact ("ETA / IN") | `settings_set_eta_label_style` / ETA label (in place) |
+| 12 | `PERSIST_KEY_EARLY_WARN_DISTANCE` | theme.c | int `EarlyWarnDistance` | **0 Off**, 10, 25, 50, 100, 200 m (labels 30, 80, 160, 330, 650 ft in imperial) | `settings_set_early_warn_distance` / Vibration door, Early warning |
+| 13 | `PERSIST_KEY_EARLY_WARN_REPEAT` | theme.c | int `EarlyWarnRepeat` | **0 Once**, 1 Every update | `settings_set_early_warn_repeat` / same, shown only while a distance is set |
+| 14 | `PERSIST_KEY_EARLY_WARN_PATTERN` | theme.c | int `VibePatternId` | 1 Single, **2 Double**, 3 Triple, 4 Long (never Off) | `settings_set_early_warn_pattern` / same |
+| 15 | `PERSIST_KEY_EARLY_WARN_INTENSITY` | theme.c | int `VibeIntensity` | **Medium** | `settings_set_early_warn_intensity` / same |
+| 16 | `PERSIST_KEY_PHONE_VERSION` | main.c | string, 16 bytes at most | last phone app version (key 11) | `record_phone_version` |
+| 17 | `PERSIST_KEY_LATEST_PHONE_VERSION` | main.c | string | key 14 while bit 4 is set | `record_update` |
+| 18 | `PERSIST_KEY_UPDATE_NOTICE_SHOWN` | main.c | string | version the notice was shown for | `maybe_show_update_notice` |
+
+The next free key is **19** (the `theme.c` comment says so). Setters clamp an out-of-range id to the default, and `settings_load` keeps the default when the stored value is out of range. `settings_set_accent` accepts any id below 16 on every platform: only the Colour menu limits black-and-white watches to Black and White, through `accent_for_row` / `row_for_accent` over `ACCENT_AVAILABLE_COUNT` (16 on colour, 2 on black-and-white), and the renderer draws any other accent as black there. Preview helpers: `settings_vibe_play()` and `settings_early_warn_play()` (no-op when Off). Name helpers: `accent_name`, `units_name`, `glyph_pack_name`, `eta_mode_name`, `eta_label_style_name`, `backlight_mode_name`, `backlight_color_name`, `vibe_pattern_name`, `vibe_intensity_name`, `early_warn_distance_label`, `early_warn_repeat_name`.
+
+## Watch Settings Menu (`settings_window.c`)
+
+Main menu rows (`ROW_*`, `MAIN_ROW_COUNT 10`, mirrored by hand in `watchapp/tools/capture_screenshots.py`): 0 Backlight, 1 Vibration (subtitle "Double / Warn 50 m"), 2 Colour, 3 Invert, 4 ETA display, 5 ETA label, 6 Arrow side, 7 Glyph pack, 8 Distance units, 9 About (subtitle = watchapp version; REQ-WATCH-020 requires it last). The row set is the same on every platform; only what Backlight does differs (door on RGB hardware, in-place cycle elsewhere). Doors: Colour (16 or 2 rows), Glyph pack (3 rows with previews), Vibration (sections New instruction: `NEW_ROW_PATTERN`, `NEW_ROW_STRENGTH`; Early warning: `WARN_ROW_DISTANCE`, then `WARN_ROW_REPEAT`, `WARN_ROW_PATTERN`, `WARN_ROW_STRENGTH` only while a distance is set), Backlight (`BL_ROW_DURATION`, `BL_ROW_COLOUR` -> colour list; RGB only), About. `settings_window_push(on_change, about)` is the only entry point.
+
+## Watch Input Surface (navigation window, `main.c`)
+
+- Buttons: `click_config_provider` subscribes only `BUTTON_ID_SELECT` (`select_click_handler` opens Settings with an `AboutInfo` of `APP_VERSION_STR`, `s_phone_version` and `s_heard_from_phone`). UP and DOWN are not subscribed. BACK uses the system default, which pops the window and exits the app. The window has `load` and `unload` handlers and no `appear` or `disappear` handler.
+- Touch, emery only (`#if defined(PBL_PLATFORM_EMERY)`): `init()` calls `app_touch_navigation_enable(true)` and `window_set_touch_bridge_disabled(s_window, true)` before the push. No `touch_service_subscribe`, recognizer or `touch_service_is_enabled()` call exists anywhere in the watchapp. The settings windows, About and the update notice window leave the bridge on.
+- Timers and services: `s_connect_timer` (1 s countdown, 5 s handshake watchdog), `s_backlight_timer` (3 s / 10 s hold), the update notice window's 10 s timer, `tick_timer_service` at `MINUTE_UNIT` (strip redraw), `connection_service` (watchdog restart).
+- Screens: one navigation window with panel, strip and road layers plus a full-screen message layer (`MSG_PLAIN`, `MSG_CONNECTING`, `MSG_QR`) that hides the others (`set_message_mode`), and the separate full-screen update notice window. No small overlay or timed toast layer exists.
+- Feedback paths a gesture action can reuse: `on_settings_changed()` (background, `redraw_all`, `apply_backlight`); vibration on new information (`settings_vibe_play` when the pattern is not Off, otherwise the phone's flag bit 1 pulse `vibes_short_pulse` on a maneuver change), then the early warning (`early_warn_should_fire` -> `settings_early_warn_play`); backlight (`apply_backlight` while the Backlight setting is not Watch default, otherwise the phone's flag bit 2 `light_enable_interaction`).
 
 ## Watch Update Notice Surface (#94, REQ-WATCH-023)
 

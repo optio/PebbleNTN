@@ -15,7 +15,7 @@ PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions fro
 - Privacy-first notification capture: package allowlist before content is read, minimal snapshot, local processing only, no automatic upload (REQ-SEC-*).
 - Declarative, layered rule engine (user over downloaded over bundled), with regex time budgets.
 - Deterministic session reducer: dedupe, quantization, launch-once, READY handshake, stale detection.
-- Watch rendering for five platforms (rectangular, round, 200x228), with glyph packs, themes, backlight, vibration, early warning, an About screen and an app-glance subtitle.
+- Watch rendering for five platforms (rectangular, round, 200x228), with glyph packs, themes, backlight, vibration, early warning, an About screen and an app-glance subtitle. On Pebble Time 2 (emery, the only touch watch built for) the settings menus, their sub-lists and About respond to touch through the system touch bridge (REQ-WATCH-021, #53); the navigation screen opts out of the bridge and has no gestures yet (#12).
 - Opt-in GitHub update check (off by default), with a dashboard prompt when a newer APK exists (REQ-ANDROID-013). A stale-check item comes first when the last check is over 30 days old (REQ-ANDROID-018, #94).
 - Phone app update notice on the watch (#94, REQ-WATCH-023): a once-per-version full-screen notice, update idle text and an "Update: <version>" launcher subtitle while the phone reports a newer phone app.
 - Version-compare update detection (v0.0.73, REQ-ANDROID-019/020, REQ-WATCH-023): the watch compares its own version with the phone's (`version_compare.c`, strict parse), and the phone compares the watchapp version from a genuine `WATCH_READY` (stored as `watch_app_version`) with its own. Either signal raises the update notice or card with no internet check. Forwarding of the watch's `WATCH_READY` through the Core Devices app is confirmed working (v0.0.74, with `companionApp` declared), so the phone half is not limited to other companions. The card says "Update from {source}" for the detected install source (GitHub, F-Droid, Obtainium), adds the F-Droid delay line, and offers "Other sources".
@@ -33,7 +33,13 @@ PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions fro
 
 Because the watchapp auto-updates from the store while the phone app needs a manual update, the watch is usually ahead of the phone. Both share one version line (see [dependencies.md](dependencies.md)).
 
-## Business Context for the Active Intent (261022-update-by-version-compar)
+## Business Context for the Active Intent (261023-touch-gestures)
+
+GitHub issue #12 (opened 2026-08-09, body last edited 2026-10-23) asks for configurable gestures on the navigation screen of touchscreen Pebbles: a Touch submenu (Touch on/off; swipe left, right, up and down; tap; double tap; long press), each gesture mapped to an action that changes a watch setting (ETA mode, accent colour, invert, arrow side, glyph pack, vibration, early warning, units), lights the backlight or opens Settings, with a short "what changed" notice. It ships as a watchapp release only, with no phone-app change. The users are drivers, cyclists and walkers wearing a Pebble Time 2 (emery), the only touch watch among the five build targets.
+
+The watchapp has moved on since the issue was opened (v0.0.75 at 3727ddc). Touch browsing of the settings menus has already shipped (#53, REQ-WATCH-021). Settings were added: the ETA label style (#13), the early-warning vibration (REQ-WATCH-022), the About row (REQ-WATCH-020) and colour previews (#81). Persist keys 11-18 were taken, and the main menu now has ten rows and ends with About. What this means for each part of #12 is listed in [code-quality-assessment.md](code-quality-assessment.md) ("Touch gestures findings"); the input and settings surfaces are in [api-documentation.md](api-documentation.md).
+
+## Earlier Intent Context (261022-update-by-version-compar, shipped in v0.0.75)
 
 The person wants version compare (a watchapp version higher than the companion app version) to be the **default** way an update is detected. The online GitHub check stays as an optional extra: a manual "Check for updates" or the opt-in weekly check. With v0.0.74 it was confirmed on a real phone with the Core Devices app that the watch's `WATCH_READY` (key 11) does reach `WatchListenerService`: the dashboard "Watchapp version" row shows it. The earlier "Core Devices does not forward watch messages" statement is wrong and is being corrected (the likely real cause was the missing `companionApp` declaration in `watchapp/package.json`, since added).
 
@@ -49,4 +55,5 @@ Earlier intent (`261022-version-compare-update`, shipped): #94 told users about 
 - **App glance**: the watch launcher's subtitle under the app name.
 - **READY handshake**: `WATCH_READY` from the watch, answered with the current state.
 - **Install source**: the installer package Android records for the app (F-Droid client, Obtainium, package installer/browser), mapped by `InstallSources.fromInstaller`.
+- **Touch bridge**: the firmware's mapping of touches to button presses on a window, which an app opts into with `app_touch_navigation_enable(true)` and turns off per window with `window_set_touch_bridge_disabled(window, true)`. With the bridge off, touches go to the app's own gesture recognizers.
 - **Watchapp version (last seen)**: the `APP_VERSION` from the last genuine `WATCH_READY` the phone received, persisted as `watch_app_version`; null when none ever arrived.
