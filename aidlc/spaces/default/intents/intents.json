@@ -30,5 +30,13 @@
     "scope": "express",
     "status": "complete",
     "request": "81df1ca8"
+  },
+  {
+    "uuid": "01a165b2-597a-77b0-8760-947528ae00e3",
+    "slug": "update-by-version-compar",
+    "dirName": "261022-update-by-version-compar",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "d61d3a98"
   }
 ]
