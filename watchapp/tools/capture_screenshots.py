@@ -50,7 +50,8 @@ ROW_ETA_LABEL = 5
 ROW_ARROW = 6
 ROW_GLYPH = 7
 ROW_UNITS = 8
-ROW_ABOUT = 9
+ROW_SHORTCUTS = 9
+ROW_ABOUT = 10
 LAST_MAIN_ROW = ROW_ABOUT
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.
@@ -250,7 +251,7 @@ def apply_settings(platform, state, target):
 
 
 def capture_settings_screens(platform):
-    """Screenshot the settings menu and both of its sub-windows."""
+    """Screenshot the settings menu and its sub-windows."""
     click(platform, "select")
     shot(platform, "settings-menu")
     click(platform, "down", LAST_MAIN_ROW)
@@ -271,6 +272,16 @@ def capture_settings_screens(platform):
     row = move_to_row(platform, row, ROW_GLYPH)
     click(platform, "select")               # open the glyph door
     shot(platform, "settings-glyph-pack-list")
+    click(platform, "back")
+
+    # REQ-WATCH-024: the shortcuts door and the action list behind its first row (Up button). The
+    # emulator is wiped, so Touch is Off and only the button rows show, emery included.
+    row = move_to_row(platform, row, ROW_SHORTCUTS)
+    click(platform, "select")               # open the shortcuts door
+    shot(platform, "settings-shortcuts")
+    click(platform, "select")               # Up button -> its action list
+    shot(platform, "settings-shortcuts-action-list")
+    click(platform, "back")
     click(platform, "back")
 
     row = move_to_row(platform, row, ROW_ABOUT)

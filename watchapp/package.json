@@ -860,7 +860,7 @@
           "type": "bitmap",
           "name": "CONNECT_QR",
           "file": "images/connect_qr.png",
-          "memoryFormat": "1BitPalette"
+          "memoryFormat": "1Bit"
         }
       ]
     }

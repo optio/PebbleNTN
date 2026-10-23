@@ -13,7 +13,11 @@ needs no QR library. Re-run it only if QR_URL changes.
 Encoding: 43-byte URL -> QR version 3, error-correction level L (29x29 modules). Version 3 is the
 smallest that holds the URL, which keeps the modules as large as possible so the code stays
 scannable on a 144 px watch. No quiet zone is baked in: the watchapp draws the code on its own white
-backing panel (theme-independent), so the module bitmap is pure black/white at MODULE_PX per module.
+backing panel (theme-independent), so the module bitmap is pure black/white.
+
+The bitmap holds one pixel per module (MODULE_PX = 1, 29x29) and the watchapp draws each dark module
+as a 4x4 square (src/c/qr_code.c, QR_MODULE_PX), so the code on screen is still 116x116. Loaded at
+4 px per module it took about 1.8 KB of heap per copy, which aplite could no longer spare (#12).
 
 Output: watchapp/resources/images/connect_qr.png (8-bit grayscale, matching gen_maneuver_bitmaps).
 """
@@ -24,7 +28,7 @@ import zlib
 from pathlib import Path
 
 QR_URL = "https://github.com/optio/PebbleNTN/releases"
-MODULE_PX = 4  # on-screen pixels per QR module; 29 * 4 = 116 px, fits the round chalk screen
+MODULE_PX = 1  # one pixel per module; the watchapp scales to 4 px (29 * 4 = 116, fits chalk)
 BLACK, WHITE = 0, 255
 OUT = Path(__file__).resolve().parent.parent / "resources" / "images" / "connect_qr.png"
 

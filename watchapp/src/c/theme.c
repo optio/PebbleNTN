@@ -16,8 +16,12 @@
 #define PERSIST_KEY_EARLY_WARN_PATTERN 14
 #define PERSIST_KEY_EARLY_WARN_INTENSITY 15
 // Keys 16–18 are taken by main.c: 16 the last connected phone app version (#103), 17 the latest
-// phone app version on offer and 18 the version the update notice was shown for (#94). The next
-// setting is 19.
+// phone app version on offer and 18 the version the update notice was shown for (#94).
+// Shortcuts (REQ-WATCH-024, #12): 19 is Touch on/off, 20–26 one action per slot in ShortcutSlot
+// order, and 27 the last New instruction pattern that wasn't Off. The next setting is 28.
+#define PERSIST_KEY_TOUCH 19
+#define PERSIST_KEY_SHORTCUT_FIRST 20
+#define PERSIST_KEY_VIBE_LAST 27
 
 static AccentId s_accent = ACCENT_GREEN;
 static bool s_inverted = false;
@@ -35,6 +39,10 @@ static EarlyWarnRepeat s_early_warn_repeat = EARLY_WARN_REPEAT_ONCE;
 // The early warning only exists once a distance is chosen, so its pattern is never Off.
 static VibePatternId s_early_warn_pattern = VIBE_PATTERN_DOUBLE;
 static VibeIntensity s_early_warn_intensity = VIBE_INTENSITY_MEDIUM;
+// Off while no pattern was ever chosen; settings_vibe_last_pattern() then answers Single.
+static VibePatternId s_vibe_last = VIBE_PATTERN_OFF;
+static bool s_touch_enabled = false;
+static ShortcutAction s_shortcuts[SLOT_COUNT];  // filled with the defaults by settings_load
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -279,6 +287,38 @@ EarlyWarnDistance settings_early_warn_distance(void) { return s_early_warn_dista
 EarlyWarnRepeat settings_early_warn_repeat(void) { return s_early_warn_repeat; }
 VibePatternId settings_early_warn_pattern(void) { return s_early_warn_pattern; }
 VibeIntensity settings_early_warn_intensity(void) { return s_early_warn_intensity; }
+bool settings_touch_enabled(void) { return s_touch_enabled; }
+
+VibePatternId settings_vibe_last_pattern(void) {
+  return (s_vibe_last != VIBE_PATTERN_OFF) ? s_vibe_last : VIBE_PATTERN_SINGLE;
+}
+
+ShortcutAction settings_shortcut(ShortcutSlot slot) {
+  return (slot < SLOT_COUNT) ? s_shortcuts[slot] : ACTION_NONE;
+}
+
+void settings_set_touch_enabled(bool enabled) {
+  s_touch_enabled = enabled;
+  persist_write_bool(PERSIST_KEY_TOUCH, s_touch_enabled);
+}
+
+void settings_set_shortcut(ShortcutSlot slot, ShortcutAction action) {
+  if (slot >= SLOT_COUNT) {
+    return;
+  }
+  s_shortcuts[slot] = shortcut_valid_action(action);
+  persist_write_int(PERSIST_KEY_SHORTCUT_FIRST + slot, s_shortcuts[slot]);
+}
+
+// Remember `id` as the pattern the Vibration shortcut turns back on. Written only when it changes:
+// the menu row writes the pattern on every step through the list.
+static void record_vibe_last(VibePatternId id) {
+  if (id == s_vibe_last && persist_exists(PERSIST_KEY_VIBE_LAST)) {
+    return;
+  }
+  s_vibe_last = id;
+  persist_write_int(PERSIST_KEY_VIBE_LAST, s_vibe_last);
+}
 
 void settings_set_accent(AccentId id) {
   s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
@@ -327,8 +367,15 @@ void settings_set_backlight_color(BacklightColorId id) {
 }
 
 void settings_set_vibe_pattern(VibePatternId id) {
+  const VibePatternId previous = s_vibe_pattern;
   s_vibe_pattern = (id < VIBE_PATTERN_COUNT) ? id : VIBE_PATTERN_OFF;
   persist_write_int(PERSIST_KEY_VIBE_PATTERN, s_vibe_pattern);
+  // Turning it off keeps the pattern it had, which also covers a pattern stored before key 27.
+  if (s_vibe_pattern != VIBE_PATTERN_OFF) {
+    record_vibe_last(s_vibe_pattern);
+  } else if (previous != VIBE_PATTERN_OFF) {
+    record_vibe_last(previous);
+  }
 }
 
 void settings_set_vibe_intensity(VibeIntensity id) {
@@ -508,5 +555,20 @@ void settings_load(void) {
     if (stored >= 0 && stored < VIBE_INTENSITY_COUNT) {
       s_early_warn_intensity = (VibeIntensity)stored;
     }
+  }
+  if (persist_exists(PERSIST_KEY_VIBE_LAST)) {
+    const int stored = persist_read_int(PERSIST_KEY_VIBE_LAST);
+    if (stored > VIBE_PATTERN_OFF && stored < VIBE_PATTERN_COUNT) {
+      s_vibe_last = (VibePatternId)stored;
+    }
+  }
+  if (persist_exists(PERSIST_KEY_TOUCH)) {
+    s_touch_enabled = persist_read_bool(PERSIST_KEY_TOUCH);
+  }
+  // A slot with nothing stored keeps its default; an out-of-range byte reads as None.
+  for (int slot = 0; slot < SLOT_COUNT; slot++) {
+    const uint32_t key = PERSIST_KEY_SHORTCUT_FIRST + slot;
+    s_shortcuts[slot] = persist_exists(key) ? shortcut_valid_action(persist_read_int(key))
+                                            : shortcut_default((ShortcutSlot)slot);
   }
 }

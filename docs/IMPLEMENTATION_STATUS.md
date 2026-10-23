@@ -1,6 +1,93 @@
 # Implementation Status
 
-_Last updated: 2026-10-23_
+_Last updated: 2026-10-24_
+
+## Shortcuts: UP/DOWN buttons and touch gestures on the navigation screen (2026-10-24, #12)
+
+**Milestone:** post-M12 watch enhancement (new REQ-WATCH-024; REQ-WATCH-021 now points to it).
+Watchapp, spec and docs only: no protocol, storage-format or phone-app change.
+
+**#12 as re-scoped.** The issue predates several changes, so these replace its original assumptions:
+- Touch browsing in the settings menus already shipped with #53 (REQ-WATCH-021); #12 is only the
+  navigation screen, which keeps the system touch bridge off.
+- The firmware maps a swipe right to BACK (not a swipe left), which is why the bridge stays off there.
+- Five gestures (four swipes and a tap), not seven: the SDK has no double-tap or long-press
+  recognizer.
+- Touch is Off by default; Swipe left and right default to the ETA toggle once it is turned on.
+- "Switch ETA / IN" is now "ETA: arrival time / time left", since "ETA / IN" became a label style
+  (#13); the label style is an action of its own.
+- There is no "RGB background" setting; the RGB setting is the backlight colour, added as "Next
+  backlight colour" (RGB-backlight watches only). "Backlight now" was added too.
+- The vibration action switches only the New instruction pattern.
+- UP and DOWN get the same action list on every watch.
+
+**What changed.**
+- `shortcuts.{h,c}` (pure, host-tested): slots, the 15 actions and their labels, defaults, the
+  action list with or without an RGB backlight, wrap-around cycling, the vibration toggle, the stored
+  value check and the notice texts.
+- `shortcut_apply.{h,c}`: runs an action through the existing setters, so the save is the menu's.
+  Colours go through `row_for_accent`/`accent_for_row`, so black-and-white watches cycle Black/White.
+- `theme.{h,c}`: persist keys 19 (Touch), 20–26 (one action per slot; missing → default, out of range
+  → None) and 27 (last New instruction pattern that wasn't Off). Keys 1–18 are untouched.
+- `main.c`: UP/DOWN single clicks; on emery a swipe and a tap recognizer on the navigation window, run
+  only while Touch is On and `touch_service_is_enabled()`; a 1.5 s banner (`TextLayer`, the road
+  colours swapped) whose timer restarts on the next action.
+- `settings_window.c`: a Shortcuts row above About; a door with the Buttons section and, on emery
+  while the watch delivers touch, the Touch section; one action list shared by every slot.
+- `capture_screenshots.py`: About is now row 10; the shortcuts door and an action list are captured.
+
+**aplite memory (beyond the plan).** The feature costs about 3.8 KB of aplite app RAM, and the
+first build faulted on aplite: with the 116x116 install QR preloaded (1.8 KB) only 136 bytes were
+left, so opening Settings failed. Three behaviour-neutral changes make it fit again:
+- The QR resource is now its 29x29 module bitmap (`gen_connect_qr.py` `MODULE_PX = 1`, `1Bit`
+  format) and `qr_code.{h,c}` draws each dark module as a 4x4 square, for the hint and About. The
+  rendering is pixel-identical (0 differing pixels on basalt and chalk, hint and About), and each copy
+  takes 168 bytes of heap instead of 1796.
+- `settings_window.c` passes each menu's callbacks as a `static const` table to one `menu_create`
+  helper, about 750 bytes less code.
+- The navigation window releases its cached maneuver glyphs and the QR when another window covers
+  it; the next draw reloads them, as after a glyph-pack change.
+
+Measured on the aplite emulator with temporary logging (removed): Settings > Shortcuts > action list
+and Settings > About both open without a fault, with roughly 600 and 800 bytes left, about the
+margin the previous release had on its About path.
+
+**Verification.**
+- Host: new `test_shortcuts` (47 assertions); all watchapp host tests green.
+- Build: all five platforms, no new warnings. aplite free heap at load 3940 bytes (was 7430; the QR
+  and the release on cover win back more than that difference at run time).
+- Emulator (screenshots in `watchapp/build/shots/`):
+  - basalt: the Shortcuts row ("Up: None / Down: None") and a door with exactly the two button rows.
+    UP/DOWN at the defaults change nothing (0 differing pixels). With Up = Invert colours, UP inverts
+    the road area with the "Light on dark" banner at 0.2 s, gone 2.9 s later. A second UP 0.9 s
+    after the first replaces the text and keeps the banner past the first timer.
+  - aplite: the same two-row door; Shortcuts > action list and About open without a fault, and the
+    connection hint redraws its QR on return.
+  - emery: a door with Touch Off and no gesture rows; Touch On shows the five gesture rows. With
+    Touch On and Tap = Next glyph pack, a tap changes the glyphs with the notice. With Touch Off, a
+    tap and a swipe change nothing. The app stays open after a swipe right.
+  - chalk: the door, the action list and the banner stay inside the bezel.
+
+**Commands executed.**
+
+```bash
+./scripts/test-watchapp-unit.sh        # runner check, then with test_shortcuts: OK
+(cd watchapp && pebble build)          # aplite, basalt, chalk, diorite, emery
+python3 watchapp/tools/gen_connect_qr.py   # 29x29 module bitmap
+./scripts/validate-spec-assets.sh      # OK (34 files) after the REQ-WATCH.md resync
+./scripts/test-all.sh                  # "All tests finished." (429 JVM tests, lint clean)
+```
+
+**Blockers / open points.**
+- The emery emulator delivers a VNC swipe as a tap (no touch movement reaches the watch: the
+  system's own swipe-right-back in Settings does not react either), so the four swipe directions
+  could not be checked there. On a Pebble Time 2: each swipe runs its own action, a swipe does not
+  also run the Tap action, and touch is ignored with touch navigation off in the watch's settings.
+- aplite does not receive AppMessages in the emulator (unchanged from v0.0.75), so the aplite
+  checks ran on the connection-hint screen.
+
+**Next atomic task:** on a Pebble Time 2, turn Touch on and check the swipes and the tap, and that a
+swipe right never closes the app.
 
 ## Version comparison as the default update check (2026-10-23)
 

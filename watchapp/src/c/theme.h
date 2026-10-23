@@ -13,6 +13,7 @@
 #include <pebble.h>
 
 #include "early_warning.h"
+#include "shortcuts.h"
 
 // Accent colours offered for the maneuver panel. On black-and-white watches only the last two
 // (BLACK, WHITE) are offered; every other entry falls back to one of them.
@@ -184,6 +185,15 @@ VibeIntensity settings_early_warn_intensity(void);
 // Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
 // default is the arrow on the right and the distance on the left.
 bool settings_arrow_left(void);
+// The last New instruction pattern that wasn't Off, which the Vibration shortcut turns back on
+// (REQ-WATCH-024); Single when none was ever chosen.
+VibePatternId settings_vibe_last_pattern(void);
+// Shortcuts (REQ-WATCH-024, #12): whether the navigation screen reacts to touch (Off by default),
+// and the action of each button and gesture slot.
+bool settings_touch_enabled(void);
+ShortcutAction settings_shortcut(ShortcutSlot slot);
+void settings_set_touch_enabled(bool enabled);
+void settings_set_shortcut(ShortcutSlot slot, ShortcutAction action);
 void settings_set_accent(AccentId id);
 void settings_set_inverted(bool inverted);
 void settings_set_units(UnitsId id);
