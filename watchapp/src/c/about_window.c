@@ -2,6 +2,7 @@
 
 #include "about_text.h"
 #include "generated/protocol.h"
+#include "qr_code.h"
 
 // Black on white whatever the theme: the install QR needs a white quiet zone for a phone camera to
 // read it (as on the connection-hint screen, REQ-WATCH-017), and one look for the whole page reads
@@ -10,8 +11,8 @@
 static Window *s_window;
 static ScrollLayer *s_scroll;
 static TextLayer *s_texts[4];
-static BitmapLayer *s_qr_layer;
-static GBitmap *s_qr;
+static Layer *s_qr_layer;
+static GBitmap *s_qr;  // the module bitmap, drawn scaled by qr_code_draw
 static AboutInfo s_info;
 static char s_details[ABOUT_DETAILS_LEN];
 
@@ -32,6 +33,10 @@ static TextLayer *add_text(int index, const char *text, const char *font_key, in
   s_texts[index] = layer;
   *y += size.h + 6;
   return layer;
+}
+
+static void qr_update_proc(Layer *layer, GContext *ctx) {
+  qr_code_draw(ctx, s_qr, GPoint(0, 0));
 }
 
 static void about_load(Window *window) {
@@ -61,10 +66,10 @@ static void about_load(Window *window) {
   add_text(2, "Install phone app", FONT_KEY_GOTHIC_18_BOLD, inset, w, &y);
 
   s_qr = gbitmap_create_with_resource(RESOURCE_ID_CONNECT_QR);
-  const GSize qr = s_qr ? gbitmap_get_bounds(s_qr).size : GSize(0, 0);
-  s_qr_layer = bitmap_layer_create(GRect((bounds.size.w - qr.w) / 2, y, qr.w, qr.h));
-  bitmap_layer_set_bitmap(s_qr_layer, s_qr);
-  scroll_layer_add_child(s_scroll, bitmap_layer_get_layer(s_qr_layer));
+  const GSize qr = qr_code_size(s_qr);
+  s_qr_layer = layer_create(GRect((bounds.size.w - qr.w) / 2, y, qr.w, qr.h));
+  layer_set_update_proc(s_qr_layer, qr_update_proc);
+  scroll_layer_add_child(s_scroll, s_qr_layer);
   y += qr.h + 4;
 
   // For anyone who cannot scan: the same link as text.
@@ -79,7 +84,7 @@ static void about_unload(Window *window) {
     text_layer_destroy(s_texts[i]);
     s_texts[i] = NULL;
   }
-  bitmap_layer_destroy(s_qr_layer);
+  layer_destroy(s_qr_layer);
   if (s_qr != NULL) {
     gbitmap_destroy(s_qr);
     s_qr = NULL;

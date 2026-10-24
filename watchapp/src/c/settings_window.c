@@ -1,6 +1,6 @@
 // On-watch settings menu (REQ-WATCH-011, REQ-WATCH-012, REQ-WATCH-015, REQ-WATCH-016,
-// REQ-WATCH-022): appearance, units, backlight and vibration. Opened with SELECT from the navigation
-// window, dismissed with BACK. Changes apply immediately and persist.
+// REQ-WATCH-022, REQ-WATCH-024): appearance, units, backlight, vibration and shortcuts. Opened with
+// SELECT from the navigation window, dismissed with BACK. Changes apply immediately and persist.
 //
 // The top menu is a short list of categories. Accent colour (a long list), the glyph pack and
 // vibration each open their own sub-window ("door"); invert, units and ETA display toggle in place.
@@ -8,12 +8,14 @@
 // both the duration and the tint. The glyph-pack door shows a sample arrow drawn in each pack, so the
 // packs can be previewed on the watch before choosing one; the vibration door holds the
 // new-instruction buzz and the early warning, and changing a pattern, strength or warning distance
-// plays the newly selected buzz so it can be felt before leaving the menu.
+// plays the newly selected buzz so it can be felt before leaving the menu. The shortcuts door lists
+// UP, DOWN and, on a touch watch, Touch and the gestures; each opens one shared action list.
 
 #include "settings_window.h"
 
 #include <pebble.h>
 
+#include "shortcut_apply.h"
 #include "theme.h"
 
 static void (*s_on_change)(void);
@@ -41,6 +43,18 @@ static uint16_t one_section(struct MenuLayer *m, void *ctx) { return 1; }
 
 static int16_t header_height(struct MenuLayer *m, uint16_t section, void *ctx) {
   return MENU_CELL_BASIC_HEADER_HEIGHT;
+}
+
+// Every menu here fills its window and is driven by the window's buttons. Each passes its callbacks
+// as a static const table: building them as a literal in every load function took about 750 bytes
+// more code, which on aplite is app RAM the shortcuts (REQ-WATCH-024) need.
+static MenuLayer *menu_create(Window *window, const MenuLayerCallbacks *callbacks) {
+  Layer *root = window_get_root_layer(window);
+  MenuLayer *menu = menu_layer_create(layer_get_bounds(root));
+  menu_layer_set_callbacks(menu, NULL, *callbacks);
+  menu_layer_set_click_config_onto_window(menu, window);
+  layer_add_child(root, menu_layer_get_layer(menu));
+  return menu;
 }
 
 // ===== Accent-colour sub-window =================================================================
@@ -85,19 +99,17 @@ static void colour_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
   notify_change();
 }
 
+static const MenuLayerCallbacks kColourCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = colour_num_rows,
+  .get_header_height = header_height,
+  .draw_header = colour_header,
+  .draw_row = colour_row,
+  .select_click = colour_select,
+};
+
 static void colour_load(Window *window) {
-  Layer *root = window_get_root_layer(window);
-  s_colour_menu = menu_layer_create(layer_get_bounds(root));
-  menu_layer_set_callbacks(s_colour_menu, NULL, (MenuLayerCallbacks){
-    .get_num_sections = one_section,
-    .get_num_rows = colour_num_rows,
-    .get_header_height = header_height,
-    .draw_header = colour_header,
-    .draw_row = colour_row,
-    .select_click = colour_select,
-  });
-  menu_layer_set_click_config_onto_window(s_colour_menu, window);
-  layer_add_child(root, menu_layer_get_layer(s_colour_menu));
+  s_colour_menu = menu_create(window, &kColourCallbacks);
 }
 
 static void colour_unload(Window *window) {
@@ -239,23 +251,21 @@ static void pack_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
   notify_change();
 }
 
+static const MenuLayerCallbacks kPackCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = pack_num_rows,
+  .get_cell_height = pack_cell_height,
+  .get_header_height = header_height,
+  .draw_header = pack_header,
+  .draw_row = pack_row,
+  .select_click = pack_select,
+};
+
 static void pack_load(Window *window) {
   for (int i = 0; i < GLYPH_PACK_COUNT; i++) {
     s_pack_preview[i] = gbitmap_create_with_resource(pack_preview_resource((GlyphPack)i));
   }
-  Layer *root = window_get_root_layer(window);
-  s_pack_menu = menu_layer_create(layer_get_bounds(root));
-  menu_layer_set_callbacks(s_pack_menu, NULL, (MenuLayerCallbacks){
-    .get_num_sections = one_section,
-    .get_num_rows = pack_num_rows,
-    .get_cell_height = pack_cell_height,
-    .get_header_height = header_height,
-    .draw_header = pack_header,
-    .draw_row = pack_row,
-    .select_click = pack_select,
-  });
-  menu_layer_set_click_config_onto_window(s_pack_menu, window);
-  layer_add_child(root, menu_layer_get_layer(s_pack_menu));
+  s_pack_menu = menu_create(window, &kPackCallbacks);
 }
 
 static void pack_unload(Window *window) {
@@ -312,19 +322,17 @@ static void backlight_colour_select(struct MenuLayer *m, MenuIndex *index, void 
   notify_change();  // re-engages the light so the new tint is visible immediately
 }
 
+static const MenuLayerCallbacks kBacklightColourCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = backlight_colour_num_rows,
+  .get_header_height = header_height,
+  .draw_header = backlight_colour_header,
+  .draw_row = backlight_colour_row,
+  .select_click = backlight_colour_select,
+};
+
 static void backlight_colour_load(Window *window) {
-  Layer *root = window_get_root_layer(window);
-  s_backlight_colour_menu = menu_layer_create(layer_get_bounds(root));
-  menu_layer_set_callbacks(s_backlight_colour_menu, NULL, (MenuLayerCallbacks){
-    .get_num_sections = one_section,
-    .get_num_rows = backlight_colour_num_rows,
-    .get_header_height = header_height,
-    .draw_header = backlight_colour_header,
-    .draw_row = backlight_colour_row,
-    .select_click = backlight_colour_select,
-  });
-  menu_layer_set_click_config_onto_window(s_backlight_colour_menu, window);
-  layer_add_child(root, menu_layer_get_layer(s_backlight_colour_menu));
+  s_backlight_colour_menu = menu_create(window, &kBacklightColourCallbacks);
 }
 
 static void backlight_colour_unload(Window *window) {
@@ -390,19 +398,17 @@ static void backlight_appear(Window *window) {
   }
 }
 
+static const MenuLayerCallbacks kBacklightCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = backlight_num_rows,
+  .get_header_height = header_height,
+  .draw_header = backlight_header,
+  .draw_row = backlight_row,
+  .select_click = backlight_select,
+};
+
 static void backlight_load(Window *window) {
-  Layer *root = window_get_root_layer(window);
-  s_backlight_menu = menu_layer_create(layer_get_bounds(root));
-  menu_layer_set_callbacks(s_backlight_menu, NULL, (MenuLayerCallbacks){
-    .get_num_sections = one_section,
-    .get_num_rows = backlight_num_rows,
-    .get_header_height = header_height,
-    .draw_header = backlight_header,
-    .draw_row = backlight_row,
-    .select_click = backlight_select,
-  });
-  menu_layer_set_click_config_onto_window(s_backlight_menu, window);
-  layer_add_child(root, menu_layer_get_layer(s_backlight_menu));
+  s_backlight_menu = menu_create(window, &kBacklightCallbacks);
 }
 
 static void backlight_unload(Window *window) {
@@ -542,19 +548,17 @@ static void vibe_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
   notify_change();
 }
 
+static const MenuLayerCallbacks kVibeCallbacks = {
+  .get_num_sections = vibe_num_sections,
+  .get_num_rows = vibe_num_rows,
+  .get_header_height = header_height,
+  .draw_header = vibe_header,
+  .draw_row = vibe_row,
+  .select_click = vibe_select,
+};
+
 static void vibe_load(Window *window) {
-  Layer *root = window_get_root_layer(window);
-  s_vibe_menu = menu_layer_create(layer_get_bounds(root));
-  menu_layer_set_callbacks(s_vibe_menu, NULL, (MenuLayerCallbacks){
-    .get_num_sections = vibe_num_sections,
-    .get_num_rows = vibe_num_rows,
-    .get_header_height = header_height,
-    .draw_header = vibe_header,
-    .draw_row = vibe_row,
-    .select_click = vibe_select,
-  });
-  menu_layer_set_click_config_onto_window(s_vibe_menu, window);
-  layer_add_child(root, menu_layer_get_layer(s_vibe_menu));
+  s_vibe_menu = menu_create(window, &kVibeCallbacks);
 }
 
 static void vibe_unload(Window *window) {
@@ -573,6 +577,220 @@ static void push_vibe_window(void) {
   window_stack_push(s_vibe_window, true);
 }
 
+// ===== Shortcuts sub-windows (REQ-WATCH-024, #12) ===============================================
+//
+// The door lists the button shortcuts on every watch and, on a touch watch while the watch delivers
+// touch, a Touch section: the Touch row toggles in place and, while it is On, the five gesture rows
+// follow. Every shortcut row opens the same action list for its slot.
+
+static const char *slot_name(ShortcutSlot slot) {
+  switch (slot) {
+    case SLOT_UP_BUTTON: return "Up button";
+    case SLOT_DOWN_BUTTON: return "Down button";
+    case SLOT_SWIPE_LEFT: return "Swipe left";
+    case SLOT_SWIPE_RIGHT: return "Swipe right";
+    case SLOT_SWIPE_UP: return "Swipe up";
+    case SLOT_SWIPE_DOWN: return "Swipe down";
+    case SLOT_TAP:
+    default: return "Tap";
+  }
+}
+
+static Window *s_action_window;
+static MenuLayer *s_action_menu;
+static ShortcutSlot s_action_slot;
+
+static uint16_t action_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
+  return (uint16_t)shortcut_offered_count(SHORTCUT_RGB_BACKLIGHT);
+}
+
+static void action_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
+  draw_menu_header(ctx, cell, slot_name(s_action_slot));
+}
+
+// Several labels ("Early warning: previous distance") are longer than a menu title, so the rows are
+// laid out by hand: the label wraps onto a second line, with "Selected" under it, and the cell grows
+// to fit (see action_cell_height).
+#define ACTION_SIDE PBL_IF_ROUND_ELSE(16, 5)
+
+static int16_t action_label_height(const char *label, int16_t cell_w) {
+  return graphics_text_layout_get_content_size(
+             label, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+             GRect(0, 0, cell_w - 2 * ACTION_SIDE, 60), GTextOverflowModeWordWrap,
+             PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft))
+      .h;
+}
+
+static int16_t action_cell_height(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  const ShortcutAction action = shortcut_action_for_row(index->row, SHORTCUT_RGB_BACKLIGHT);
+  const int16_t w = layer_get_bounds(menu_layer_get_layer(m)).size.w;
+  const bool active = (action == settings_shortcut(s_action_slot));
+  const int16_t needed = action_label_height(shortcut_action_name(action), w) + (active ? 16 : 0) + 8;
+  return (needed > 36) ? needed : 36;
+}
+
+static void action_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
+  const ShortcutAction action = shortcut_action_for_row(index->row, SHORTCUT_RGB_BACKLIGHT);
+  const bool active = (action == settings_shortcut(s_action_slot));
+  const GRect bounds = layer_get_bounds(cell);
+  const char *label = shortcut_action_name(action);
+  const int16_t label_h = action_label_height(label, bounds.size.w);
+  const int16_t block_h = label_h + (active ? 16 : 0);
+  const int16_t y = (bounds.size.h - block_h) / 2 - 2;
+  const int16_t text_w = bounds.size.w - 2 * ACTION_SIDE;
+  const GTextAlignment align = PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft);
+
+  graphics_context_set_text_color(ctx, menu_cell_layer_is_highlighted(cell) ? GColorWhite
+                                                                             : GColorBlack);
+  graphics_draw_text(ctx, label, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+                     GRect(ACTION_SIDE, y, text_w, label_h), GTextOverflowModeWordWrap, align,
+                     NULL);
+  if (active) {
+    graphics_draw_text(ctx, "Selected", fonts_get_system_font(FONT_KEY_GOTHIC_14),
+                       GRect(ACTION_SIDE, y + label_h - 2, text_w, 18),
+                       GTextOverflowModeTrailingEllipsis, align, NULL);
+  }
+}
+
+static void action_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  settings_set_shortcut(s_action_slot, shortcut_action_for_row(index->row, SHORTCUT_RGB_BACKLIGHT));
+  window_stack_pop(true);  // back to the shortcuts door, which shows the new choice
+}
+
+static const MenuLayerCallbacks kActionCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = action_num_rows,
+  .get_cell_height = action_cell_height,
+  .get_header_height = header_height,
+  .draw_header = action_header,
+  .draw_row = action_row,
+  .select_click = action_select,
+};
+
+static void action_load(Window *window) {
+  s_action_menu = menu_create(window, &kActionCallbacks);
+}
+
+static void action_unload(Window *window) {
+  menu_layer_destroy(s_action_menu);
+  s_action_menu = NULL;
+  window_destroy(s_action_window);
+  s_action_window = NULL;
+}
+
+static void push_action_window(ShortcutSlot slot) {
+  s_action_slot = slot;
+  s_action_window = window_create();
+  window_set_window_handlers(s_action_window, (WindowHandlers){
+    .load = action_load,
+    .unload = action_unload,
+  });
+  window_stack_push(s_action_window, true);
+}
+
+#define SHORTCUT_SECTION_BUTTONS 0
+#define SHORTCUT_SECTION_TOUCH 1
+
+// Touch row first, then the gestures in ShortcutSlot order.
+#define TOUCH_ROW_SWITCH 0
+#define TOUCH_GESTURE_COUNT (SLOT_COUNT - SLOT_SWIPE_LEFT)
+
+static Window *s_shortcuts_window;
+static MenuLayer *s_shortcuts_menu;
+
+// Whether the Touch section is shown: only a touch watch has one, and only while the watch delivers
+// touch to apps.
+static bool touch_available(void) {
+#if defined(PBL_PLATFORM_EMERY)
+  return touch_service_is_enabled();
+#else
+  return false;
+#endif
+}
+
+static uint16_t shortcuts_num_sections(struct MenuLayer *m, void *ctx) {
+  return touch_available() ? 2 : 1;
+}
+
+static uint16_t shortcuts_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
+  if (section == SHORTCUT_SECTION_BUTTONS) {
+    return 2;
+  }
+  return settings_touch_enabled() ? 1 + TOUCH_GESTURE_COUNT : 1;
+}
+
+static void shortcuts_header(GContext *ctx, const Layer *cell, uint16_t section, void *data) {
+  draw_menu_header(ctx, cell, (section == SHORTCUT_SECTION_BUTTONS) ? "Buttons" : "Touch");
+}
+
+// The slot a row stands for; SLOT_COUNT for the Touch row.
+static ShortcutSlot shortcuts_slot(const MenuIndex *index) {
+  if (index->section == SHORTCUT_SECTION_BUTTONS) {
+    return (index->row == 0) ? SLOT_UP_BUTTON : SLOT_DOWN_BUTTON;
+  }
+  if (index->row == TOUCH_ROW_SWITCH) {
+    return SLOT_COUNT;
+  }
+  return (ShortcutSlot)(SLOT_SWIPE_LEFT + index->row - 1);
+}
+
+static void shortcuts_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
+  const ShortcutSlot slot = shortcuts_slot(index);
+  if (slot == SLOT_COUNT) {
+    menu_cell_basic_draw(ctx, cell, "Touch", settings_touch_enabled() ? "On" : "Off", NULL);
+    return;
+  }
+  menu_cell_basic_draw(ctx, cell, slot_name(slot), shortcut_action_name(settings_shortcut(slot)),
+                       NULL);
+}
+
+static void shortcuts_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  const ShortcutSlot slot = shortcuts_slot(index);
+  if (slot == SLOT_COUNT) {
+    settings_set_touch_enabled(!settings_touch_enabled());
+    menu_layer_reload_data(s_shortcuts_menu);
+    return;
+  }
+  push_action_window(slot);
+}
+
+// Returning from the action list: refresh that row's subtitle.
+static void shortcuts_appear(Window *window) {
+  if (s_shortcuts_menu != NULL) {
+    menu_layer_reload_data(s_shortcuts_menu);
+  }
+}
+
+static const MenuLayerCallbacks kShortcutsCallbacks = {
+  .get_num_sections = shortcuts_num_sections,
+  .get_num_rows = shortcuts_num_rows,
+  .get_header_height = header_height,
+  .draw_header = shortcuts_header,
+  .draw_row = shortcuts_row,
+  .select_click = shortcuts_select,
+};
+
+static void shortcuts_load(Window *window) {
+  s_shortcuts_menu = menu_create(window, &kShortcutsCallbacks);
+}
+
+static void shortcuts_unload(Window *window) {
+  menu_layer_destroy(s_shortcuts_menu);
+  s_shortcuts_menu = NULL;
+  window_destroy(s_shortcuts_window);
+  s_shortcuts_window = NULL;
+}
+
+static void push_shortcuts_window(void) {
+  s_shortcuts_window = window_create();
+  window_set_window_handlers(s_shortcuts_window, (WindowHandlers){
+    .load = shortcuts_load,
+    .unload = shortcuts_unload,
+    .appear = shortcuts_appear,
+  });
+  window_stack_push(s_shortcuts_window, true);
+}
+
 // ===== Top-level settings menu ==================================================================
 
 #define ROW_BACKLIGHT 0
@@ -584,8 +802,9 @@ static void push_vibe_window(void) {
 #define ROW_ARROW 6
 #define ROW_GLYPH 7
 #define ROW_UNITS 8
-#define ROW_ABOUT 9
-#define MAIN_ROW_COUNT 10
+#define ROW_SHORTCUTS 9
+#define ROW_ABOUT 10  // About stays last (REQ-WATCH-020)
+#define MAIN_ROW_COUNT 11
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -629,6 +848,15 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_ABOUT:
       menu_cell_basic_draw(ctx, cell, "About", s_about.app_version, NULL);
       break;
+    case ROW_SHORTCUTS: {
+      // The button shortcuts, which every watch has: "Up: None / Down: Invert colours".
+      char summary[80];
+      snprintf(summary, sizeof(summary), "Up: %s / Down: %s",
+               shortcut_action_name(settings_shortcut(SLOT_UP_BUTTON)),
+               shortcut_action_name(settings_shortcut(SLOT_DOWN_BUTTON)));
+      menu_cell_basic_draw(ctx, cell, "Shortcuts", summary, NULL);
+      break;
+    }
     case ROW_BACKLIGHT:
       menu_cell_basic_draw(ctx, cell, "Backlight", backlight_mode_name(settings_backlight()), NULL);
       break;
@@ -682,6 +910,9 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
     case ROW_ABOUT:
       about_window_push(&s_about);
       break;
+    case ROW_SHORTCUTS:
+      push_shortcuts_window();
+      break;
     case ROW_BACKLIGHT:
       // RGB hardware has a tint to pick as well, so the row opens a door; otherwise duration is the
       // only choice and cycles in place.
@@ -700,25 +931,24 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
 }
 
 static void main_appear(Window *window) {
-  // Returning from the Colour / Glyph-pack / Vibration door: refresh those rows' subtitles.
+  // Returning from the Colour / Glyph-pack / Vibration / Shortcuts door: refresh those rows'
+  // subtitles.
   if (s_menu != NULL) {
     menu_layer_reload_data(s_menu);
   }
 }
 
+static const MenuLayerCallbacks kMainCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = main_num_rows,
+  .get_header_height = header_height,
+  .draw_header = main_header,
+  .draw_row = main_row,
+  .select_click = main_select,
+};
+
 static void main_load(Window *window) {
-  Layer *root = window_get_root_layer(window);
-  s_menu = menu_layer_create(layer_get_bounds(root));
-  menu_layer_set_callbacks(s_menu, NULL, (MenuLayerCallbacks){
-    .get_num_sections = one_section,
-    .get_num_rows = main_num_rows,
-    .get_header_height = header_height,
-    .draw_header = main_header,
-    .draw_row = main_row,
-    .select_click = main_select,
-  });
-  menu_layer_set_click_config_onto_window(s_menu, window);
-  layer_add_child(root, menu_layer_get_layer(s_menu));
+  s_menu = menu_create(window, &kMainCallbacks);
 }
 
 static void main_unload(Window *window) {

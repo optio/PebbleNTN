@@ -15,7 +15,7 @@
 ## Platforms and Baselines
 
 - Android: minSdk 31, targetSdk 35 (Play floor gate `verifyReleaseTargetSdk` = 35), compileSdk 36.
-- Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite.
+- Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite. flint and gabbro are not build targets and are not mentioned anywhere in the watchapp; the touch calls are guarded by `PBL_PLATFORM_EMERY`, not by a capability macro, and the RGB backlight by `PBL_RGB_BACKLIGHT`.
 - Build: Gradle 8.13 wrapper, AGP 8.13.2, KSP 2.3.10, JDK 21 (Temurin in CI); pebble-tool with the latest SDK.
 
 ## Frameworks
@@ -32,6 +32,7 @@
 - Android Lint (default rules), CodeQL (java-kotlin).
 - Test stack: JUnit 4, Robolectric 4.14.1, coroutines-test, Compose UI test, room-testing, Espresso (instrumented).
 - No coverage tool, formatter enforcement, ktlint or detekt.
+- Watch emulator tooling: pebble-tool emulators driven by `watchapp/tools/capture_screenshots.py` (buttons and `send-app-message`) and `watchapp/tools/touch_emulator.py` (touch over VNC, a standard-library RFB client, no third-party dependency).
 - No stack change in v0.0.73 or v0.0.74 (watchapp version row), and none implied by making version compare the default update signal: `PackageManager.getInstallSourceInfo` (platform API 30+) is the only new platform call, and the row uses existing Compose Material 3 `ListItem`s.
 
 Library versions and transitive relationships are in [dependencies.md](dependencies.md).

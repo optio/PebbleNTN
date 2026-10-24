@@ -38,5 +38,13 @@
     "scope": "express",
     "status": "complete",
     "request": "d61d3a98"
+  },
+  {
+    "uuid": "01a16ac9-073d-7d79-a817-3e79329c6f87",
+    "slug": "touch-gestures",
+    "dirName": "261023-touch-gestures",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "fb98699e"
   }
 ]

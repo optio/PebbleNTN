@@ -41,8 +41,8 @@
 
 | File | Classification | Pebble APIs |
 |---|---|---|
-| `main.c` | Controller + View + lifecycle | yes (AppMessage, layers, persist, timers, glance) |
-| `settings_window.c/.h` | View (menus) | yes |
+| `main.c` | Controller + View + lifecycle (1,261 lines at 3727ddc) | yes (AppMessage, layers, persist keys 16-18, timers, glance, click config, touch opt-in on emery) |
+| `settings_window.c/.h` | View (menus; 741 lines): main menu `ROW_*` 0-9 plus doors for colour, glyph pack, vibration and, on RGB hardware, backlight with its colour list | yes |
 | `about_window.c/.h` | View | yes |
 | `update_notice_window.c/.h` | View (full-screen #94 notice) | yes |
 | `theme.c/.h` | Configuration + Repository (persist keys 1-15) | yes |
@@ -57,8 +57,11 @@
 - **Dashboard rows**: private composables `Section`, `ToggleRow`, `NavRow` and `InfoRow(title, value, dimmed)` in `DashboardScreen.kt`. The Status section is a master-switch `ToggleRow`, the access chip, then `InfoRow`s "Watch", "Watchapp version" (v0.0.74), "Last navigation notification" and "Last sent to watch"; an absent value falls back to a `*_none` string (`value?.let { ... } ?: stringResource(...)`).
 - **Effect-returning reducer**: `reduce(state, event) -> ReducerResult(state, effects)`, run under a mutex by `NavigationController`.
 - **Watch pure-unit split**: each piece of formatting or decision logic is a Pebble-free `.c/.h` with a host test linked against that unit alone (so `update_notice.c` keeps its own capped copy instead of calling `phone_version.c`). `main.c` owns the persisted state and the UI.
+- **Watch settings pattern**: one `static` value per setting in `theme.c`, a getter, a setter that clamps out-of-range ids to the default and persists at once, and a range-checked read in `settings_load`. Menu rows cycle in place with `(value + 1) % COUNT` (the early-warning pattern skips Off) or open a door (`push_*_window`), then call `notify_change()`.
+- **Watch platform guards**: `PBL_COLOR` (accent list, previews), `PBL_ROUND` (insets, centred headers), `PBL_RGB_BACKLIGHT` (backlight door and tint), `PBL_PLATFORM_EMERY` (touch bridge calls), `!PBL_PLATFORM_APLITE` (app glance). Layout size comes from the runtime screen width (`w >= 200`).
+- **Pure units cannot use Pebble headers**: `scripts/test-watchapp-unit.sh` builds each `test_<unit>.c` with `src/c/<unit>.c` alone, under `gcc -std=c11 -Wall -Wextra -Werror`. `theme.h` includes `pebble.h`, so a pure unit cannot use its enums, names or setters; it takes counts and ids as plain integers.
 - **Requirement tagging**: comments cite REQ IDs and issue numbers throughout.
 
 ## Dependency Graph Notes
 
-There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`. Watch: `main.c` -> all pure units, `update_notice_window`, `settings_window`, `theme`; `settings_window` -> `about_window` -> `about_text`. External libraries are listed in [dependencies.md](dependencies.md).
+There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`. Watch: `main.c` -> all pure units, `update_notice_window`, `settings_window`, `theme`; `settings_window` -> `theme`, `about_window` -> `about_text`; `theme` -> `early_warning` (its enums). External libraries are listed in [dependencies.md](dependencies.md).

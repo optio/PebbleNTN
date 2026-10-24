@@ -12,7 +12,9 @@
 //   - return to the watchface on navigation stop when commanded;
 //   - show a once-per-version notice, idle text and launcher subtitle when the phone reports a
 //     phone app update, or when this watchapp is newer than the phone app (REQ-WATCH-023, #94);
-//   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT.
+//   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT;
+//   - run the user's shortcuts on UP and DOWN, and on a touch watch on swipes and a tap, with a
+//     short notice of what changed (REQ-WATCH-024, #12).
 //
 // Layout: the maneuver arrow and the distance sit side by side in a coloured panel, so the road
 // name gets the whole lower half and rarely has to be truncated; its font shrinks to fit.
@@ -28,6 +30,8 @@
 #include "settings_window.h"
 #include "panel_layout.h"
 #include "phone_version.h"
+#include "qr_code.h"
+#include "shortcut_apply.h"
 #include "stops_text.h"
 #include "theme.h"
 #include "update_notice.h"
@@ -40,8 +44,8 @@ _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 #define PRIMARY_TEXT_MAX 64
 #define SECONDARY_TEXT_MAX 24
 
-// Persist key for the last connected phone app version (REQ-WATCH-020, #103). Keys 1–15 belong to
-// theme.c's settings.
+// Persist key for the last connected phone app version (REQ-WATCH-020, #103). Keys 1–15 and 19–27
+// belong to theme.c's settings.
 #define PERSIST_KEY_PHONE_VERSION 16
 // Persist keys for the phone app update notice (REQ-WATCH-023, #94): the latest phone app version
 // the phone offers, and the version the notice was last shown for.
@@ -53,6 +57,7 @@ static Layer *s_panel_layer;   // maneuver + distance
 static Layer *s_strip_layer;   // ETA + stale marker
 static Layer *s_road_layer;    // road name
 static Layer *s_message_layer; // connecting / no navigation / arrived
+static TextLayer *s_notice_layer;  // what a shortcut just changed, for NOTICE_MS (REQ-WATCH-024)
 
 static GBitmap *s_maneuver_bitmaps[PBNTN_MANEUVER_TRANSIT + 1];
 
@@ -172,15 +177,19 @@ static uint32_t maneuver_resource_id(int maneuver, GlyphPack pack) {
 // whole cache is dropped so the next draw loads the new pack's bitmaps.
 static GlyphPack s_cached_pack = GLYPH_PACK_CLASSIC;
 
+static void drop_maneuver_bitmaps(void) {
+  for (unsigned i = 0; i < ARRAY_LENGTH(s_maneuver_bitmaps); i++) {
+    if (s_maneuver_bitmaps[i] != NULL) {
+      gbitmap_destroy(s_maneuver_bitmaps[i]);
+      s_maneuver_bitmaps[i] = NULL;
+    }
+  }
+}
+
 static GBitmap *maneuver_bitmap(int maneuver) {
   const GlyphPack pack = settings_glyph_pack();
   if (pack != s_cached_pack) {
-    for (unsigned i = 0; i < ARRAY_LENGTH(s_maneuver_bitmaps); i++) {
-      if (s_maneuver_bitmaps[i] != NULL) {
-        gbitmap_destroy(s_maneuver_bitmaps[i]);
-        s_maneuver_bitmaps[i] = NULL;
-      }
-    }
+    drop_maneuver_bitmaps();
     s_cached_pack = pack;
   }
   if (maneuver < 0 || maneuver > PBNTN_MANEUVER_TRANSIT) {
@@ -584,9 +593,13 @@ static void draw_qr_hint(GContext *ctx, const GRect bounds) {
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
   graphics_context_set_text_color(ctx, GColorBlack);
 
+  // Loaded on first draw, and released while another window covers this one (window_disappear).
+  if (s_qr_bitmap == NULL) {
+    s_qr_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CONNECT_QR);
+  }
   GSize qr = GSize(116, 116);
   if (s_qr_bitmap != NULL) {
-    qr = gbitmap_get_bounds(s_qr_bitmap).size;
+    qr = qr_code_size(s_qr_bitmap);
   }
   const int16_t qr_x = (w - qr.w) / 2;
 
@@ -604,9 +617,7 @@ static void draw_qr_hint(GContext *ctx, const GRect bounds) {
   const int16_t qr_y = top + caption_h + gap;
 #endif
 
-  if (s_qr_bitmap != NULL) {
-    graphics_draw_bitmap_in_rect(ctx, s_qr_bitmap, GRect(qr_x, qr_y, qr.w, qr.h));
-  }
+  qr_code_draw(ctx, s_qr_bitmap, GPoint(qr_x, qr_y));
 }
 
 #ifdef PBL_ROUND
@@ -1096,7 +1107,7 @@ static void on_settings_changed(void) {
   apply_backlight();
 }
 
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void open_settings(void) {
   const AboutInfo about = {
     .app_version = APP_VERSION_STR,
     .phone_version = s_phone_version,
@@ -1105,8 +1116,114 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   settings_window_push(on_settings_changed, &about);
 }
 
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  open_settings();
+}
+
+// --- Shortcuts (REQ-WATCH-024, #12) -----------------------------------------------------------
+//
+// UP and DOWN, and on a touch watch the swipes and the tap, each run the action picked for them in
+// Settings > Shortcuts. The action goes through the same setters as the menu, the screen redraws as
+// on returning from Settings, and a small banner over the road area names the new value for
+// NOTICE_MS. A second action within that time replaces the text and restarts the timer.
+#define NOTICE_MS 1500
+static AppTimer *s_notice_timer;
+static char s_notice_buf[32];
+static int16_t s_notice_top;  // top of the road area, set in window_load
+
+static void notice_hide(void *data) {
+  s_notice_timer = NULL;
+  layer_set_hidden(text_layer_get_layer(s_notice_layer), true);
+}
+
+// The banner is the road area's colours swapped, so it stands out from the road it covers on every
+// theme, black-and-white watches included. It is sized to its text, which may wrap to two lines.
+static void notice_show(void) {
+  const Theme theme = theme_current();
+  const int16_t w = layer_get_bounds(window_get_root_layer(s_window)).size.w;
+  const GFont font = fonts_get_system_font((w >= 200) ? FONT_KEY_GOTHIC_24_BOLD : FONT_KEY_GOTHIC_18_BOLD);
+  // As wide as the road text's box (x 4), so no letter of it shows beside the banner; a round display
+  // narrows below the strip.
+  const int16_t side = PBL_IF_ROUND_ELSE(28, 4);
+  const int16_t text_w = w - 2 * side;
+  const GSize size = graphics_text_layout_get_content_size(
+      s_notice_buf, font, GRect(0, 0, text_w, 64), GTextOverflowModeWordWrap, GTextAlignmentCenter);
+#ifdef PBL_ROUND
+  // The round road area is one 30 px line from 2 px down (road_update_proc): cover all of it.
+  const int16_t top = s_notice_top + 2;
+  const int16_t height = (size.h + 6 > 32) ? size.h + 6 : 32;
+#else
+  const int16_t top = s_notice_top + 4;
+  const int16_t height = size.h + 6;
+#endif
+  layer_set_frame(text_layer_get_layer(s_notice_layer), GRect(side, top, text_w, height));
+  text_layer_set_font(s_notice_layer, font);
+  text_layer_set_background_color(s_notice_layer, theme.road_fg);
+  text_layer_set_text_color(s_notice_layer, theme.road_bg);
+  text_layer_set_text(s_notice_layer, s_notice_buf);
+  layer_set_hidden(text_layer_get_layer(s_notice_layer), false);
+  if (s_notice_timer != NULL) {
+    app_timer_cancel(s_notice_timer);
+  }
+  s_notice_timer = app_timer_register(NOTICE_MS, notice_hide, NULL);
+}
+
+static void run_shortcut(ShortcutAction action) {
+  if (action == ACTION_NONE) {
+    return;
+  }
+  const ShortcutResult result = shortcut_apply(action, s_notice_buf, sizeof(s_notice_buf));
+  if (result.open_settings) {
+    open_settings();
+    return;
+  }
+  on_settings_changed();
+  if (result.show_notice) {
+    notice_show();
+  }
+}
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  run_shortcut(settings_shortcut(SLOT_UP_BUTTON));
+}
+
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  run_shortcut(settings_shortcut(SLOT_DOWN_BUTTON));
+}
+
+#if defined(PBL_PLATFORM_EMERY)
+// Gestures count only while Touch is on in Settings > Shortcuts and the watch delivers touch at all,
+// which follows touch navigation in its system settings, as for the menus (REQ-WATCH-021).
+static void run_touch_shortcut(ShortcutSlot slot) {
+  if (settings_touch_enabled() && touch_service_is_enabled()) {
+    run_shortcut(settings_shortcut(slot));
+  }
+}
+
+static void swipe_handler(const Recognizer *recognizer, RecognizerEvent event) {
+  if (event != RecognizerEvent_Completed) {
+    return;
+  }
+  switch (swipe_recognizer_get_direction(recognizer)) {
+    case SwipeDirection_Left: run_touch_shortcut(SLOT_SWIPE_LEFT); break;
+    case SwipeDirection_Right: run_touch_shortcut(SLOT_SWIPE_RIGHT); break;
+    case SwipeDirection_Up: run_touch_shortcut(SLOT_SWIPE_UP); break;
+    case SwipeDirection_Down: run_touch_shortcut(SLOT_SWIPE_DOWN); break;
+    default: break;
+  }
+}
+
+static void tap_handler(const Recognizer *recognizer, RecognizerEvent event) {
+  if (event == RecognizerEvent_Completed) {
+    run_touch_shortcut(SLOT_TAP);
+  }
+}
+#endif
+
 static void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
 static void window_load(Window *window) {
@@ -1145,6 +1262,23 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_message_layer, message_update_proc);
   layer_add_child(root, s_message_layer);
 
+  // The shortcut banner sits on top of everything, hidden until a shortcut changes a setting.
+  s_notice_top = panel_h + strip_h;
+  s_notice_layer = text_layer_create(GRect(0, s_notice_top, w, 30));
+  text_layer_set_text_alignment(s_notice_layer, GTextAlignmentCenter);
+  text_layer_set_overflow_mode(s_notice_layer, GTextOverflowModeWordWrap);
+  layer_set_hidden(text_layer_get_layer(s_notice_layer), true);
+  layer_add_child(root, text_layer_get_layer(s_notice_layer));
+
+#if defined(PBL_PLATFORM_EMERY)
+  // Navigation-screen gestures (REQ-WATCH-024). The window owns its recognizers and destroys them as
+  // it unloads; with the system bridge off here (see init) they are the only ones to see a touch.
+  window_attach_recognizer(window, swipe_recognizer_create(swipe_handler, NULL,
+                                                           SwipeDirection_Up | SwipeDirection_Down |
+                                                           SwipeDirection_Left | SwipeDirection_Right));
+  window_attach_recognizer(window, tap_recognizer_create(tap_handler, NULL));
+#endif
+
   window_set_background_color(window, theme_current().road_bg);
   // Show "Connecting" with the handshake countdown; if the phone has already answered by the time
   // the window loads, the inbox handler will have set s_heard_from_phone and connect_start no-ops.
@@ -1160,6 +1294,23 @@ static void window_unload(Window *window) {
   layer_destroy(s_strip_layer);
   layer_destroy(s_road_layer);
   layer_destroy(s_message_layer);
+  if (s_notice_timer != NULL) {
+    app_timer_cancel(s_notice_timer);
+    s_notice_timer = NULL;
+  }
+  text_layer_destroy(s_notice_layer);
+  s_notice_layer = NULL;
+}
+
+// Settings, About or the update notice now covers the navigation screen. Hand back what its next
+// draw reloads anyway, the cached maneuver glyphs and the QR, so the menus stacked on top fit
+// aplite's heap with the shortcuts in (REQ-WATCH-024, #12).
+static void window_disappear(Window *window) {
+  drop_maneuver_bitmaps();
+  if (s_qr_bitmap != NULL) {
+    gbitmap_destroy(s_qr_bitmap);
+    s_qr_bitmap = NULL;
+  }
 }
 
 // Keeps the clock in the status strip honest.
@@ -1186,20 +1337,19 @@ static void init(void) {
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
     .load = window_load,
+    .disappear = window_disappear,
     .unload = window_unload,
   });
   window_set_click_config_provider(s_window, click_config_provider);
 #if defined(PBL_PLATFORM_EMERY)
   // Not on the navigation screen: there the bridge maps a swipe right to BACK, which would close the
-  // app mid-route on a stray sleeve or raindrop (#53). Navigation-screen gestures are #12's.
+  // app mid-route on a stray sleeve or raindrop (#53). Its own recognizers run the user's gestures
+  // instead (REQ-WATCH-024, #12).
   window_set_touch_bridge_disabled(s_window, true);
 #endif
   window_stack_push(s_window, true);
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
-
-  // Preload the install-hint QR (REQ-WATCH-017) so it is ready if the handshake times out.
-  s_qr_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CONNECT_QR);
 
   // Learn about Pebble-app (dis)connections so the watchdog can restart when the phone comes back.
   connection_service_subscribe((ConnectionHandlers){
@@ -1244,11 +1394,7 @@ static void deinit(void) {
   if (s_qr_bitmap != NULL) {
     gbitmap_destroy(s_qr_bitmap);
   }
-  for (unsigned i = 0; i < ARRAY_LENGTH(s_maneuver_bitmaps); i++) {
-    if (s_maneuver_bitmaps[i]) {
-      gbitmap_destroy(s_maneuver_bitmaps[i]);
-    }
-  }
+  drop_maneuver_bitmaps();
   update_notice_window_deinit();
   window_destroy(s_window);
 }
