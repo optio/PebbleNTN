@@ -1,0 +1,1 @@
+• shortcuts for UP/DOWN and touch gestures (#12)
