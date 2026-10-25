@@ -42,10 +42,15 @@ def render_kotlin(defn: dict) -> str:
     flag_bits = defn["flagBits"]
     maneuvers = defn["maneuvers"]
     error_codes = defn["errorCodes"]
+    capability_bits = defn["watchCapabilityBits"]
+    platforms = defn["watchPlatforms"]
 
     banner = "\n".join(f"// {line}" for line in BANNER_LINES)
     flag_masks = "\n".join(
         f"        const val {name}_MASK = 1 shl {bit}" for name, bit in flag_bits.items()
+    )
+    capability_masks = "\n".join(
+        f"        const val {name}_MASK = 1 shl {bit}" for name, bit in capability_bits.items()
     )
     return f"""{banner}
 package com.pebblentn.app.protocol
@@ -84,6 +89,21 @@ object Protocol {{
     object ErrorCodes {{
 {_kt_const_block("        ", error_codes)}
     }}
+
+    /** Bit positions for the [Keys.WATCH_CAPABILITIES] field. */
+    object CapabilityBits {{
+{_kt_const_block("        ", capability_bits)}
+    }}
+
+    /** Precomputed masks for the [Keys.WATCH_CAPABILITIES] field. */
+    object CapabilityMasks {{
+{capability_masks}
+    }}
+
+    /** Values for the [Keys.WATCH_PLATFORM] field. */
+    object Platforms {{
+{_kt_const_block("        ", platforms)}
+    }}
 }}
 """
 
@@ -96,6 +116,10 @@ def render_c(defn: dict) -> str:
     banner = "\n".join(f"// {line}" for line in BANNER_LINES)
     flag_masks = "\n".join(
         f"#define PBNTN_FLAG_{name}_MASK (1 << {bit})" for name, bit in defn["flagBits"].items()
+    )
+    capability_masks = "\n".join(
+        f"#define PBNTN_CAP_{name}_MASK (1 << {bit})"
+        for name, bit in defn["watchCapabilityBits"].items()
     )
     return f"""{banner}
 #pragma once
@@ -120,6 +144,15 @@ def render_c(defn: dict) -> str:
 
 // Values for the ERROR_CODE key.
 {_c_define_block("PBNTN_ERROR_", defn["errorCodes"])}
+
+// Bit positions for the WATCH_CAPABILITIES key.
+{_c_define_block("PBNTN_CAP_BIT_", defn["watchCapabilityBits"])}
+
+// Precomputed masks for the WATCH_CAPABILITIES key.
+{capability_masks}
+
+// Values for the WATCH_PLATFORM key.
+{_c_define_block("PBNTN_PLATFORM_", defn["watchPlatforms"])}
 """
 
 

@@ -1,6 +1,7 @@
 package com.pebblentn.app.protocol
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -18,6 +19,17 @@ interface WatchTransport {
 
     /** Send one AppMessage to the watch. Delivery is best-effort; see [SendResult]. */
     suspend fun send(message: AppMessage): SendResult
+
+    /**
+     * Send one AppMessage only to a watchapp that is already open: unlike [send], a watchapp that
+     * is not in the foreground is never launched for it, and the send simply fails. Watch settings
+     * go this way, since a send must never relaunch a closed watchapp (REQ-WATCH-006,
+     * REQ-ANDROID-021). Fakes that never relaunch can keep the default.
+     */
+    suspend fun sendToOpenApp(message: AppMessage): SendResult = send(message)
+
+    /** Emits when the watchapp is closed on the watch, as the companion reports it. */
+    val watchappClosed: Flow<Unit> get() = emptyFlow()
 
     /**
      * One-line, human-readable description of the current link (selected companion app, connected

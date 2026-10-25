@@ -8,7 +8,18 @@ presses to reach each appearance configuration and screenshots the result.
 Settings live in persistent storage, so every platform starts from a wiped
 emulator and the script tracks the resulting state to compute button paths.
 
+With --previews it instead writes the phone app's preview images (#102,
+REQ-ANDROID-021): one per value of each visual setting, every other setting at
+its default, for basalt, chalk and emery, into
+android/app/src/main/res/drawable-nodpi/watch_preview_<setting>_<value>_<platform>.png.
+The settings are set the way the phone sets them, with a protocol 1.3 SETTINGS
+message, so the emulator is not wiped (a wipe resets every emulator, emery's
+system touch setting included). PNGs are optimised losslessly when Pillow is
+importable (the pebble tool's own Python has it); otherwise they are kept as the
+emulator wrote them, with a warning.
+
 Usage: python3 tools/capture_screenshots.py [platform ...]
+       python3 tools/capture_screenshots.py --previews [platform ...]
 """
 
 import collections
@@ -41,18 +52,18 @@ ACCENT = {
 PACK = {"classic": 0, "bold": 1, "outline": 2}
 
 # Settings menu row indices (settings_window.c) — keep this order in sync with the #defines there.
-ROW_BACKLIGHT = 0
-ROW_VIBE = 1
-ROW_COLOUR = 2
-ROW_INVERT = 3
-ROW_ETA = 4
-ROW_ETA_LABEL = 5
-ROW_ARROW = 6
-ROW_GLYPH = 7
-ROW_UNITS = 8
-ROW_SHORTCUTS = 9
-ROW_ABOUT = 10
-LAST_MAIN_ROW = ROW_ABOUT
+ROW_ABOUT = 0
+ROW_BACKLIGHT = 1
+ROW_VIBE = 2
+ROW_COLOUR = 3
+ROW_INVERT = 4
+ROW_ETA = 5
+ROW_ETA_LABEL = 6
+ROW_ARROW = 7
+ROW_GLYPH = 8
+ROW_UNITS = 9
+ROW_SHORTCUTS = 10
+LAST_MAIN_ROW = ROW_SHORTCUTS
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.
 CLOCK = "12:35:00"
@@ -275,7 +286,7 @@ def capture_settings_screens(platform):
     click(platform, "back")
 
     # REQ-WATCH-024: the shortcuts door and the action list behind its first row (Up button). The
-    # emulator is wiped, so Touch is Off and only the button rows show, emery included.
+    # emulator is wiped, so Touch is On (its default) and emery also shows the gesture rows.
     row = move_to_row(platform, row, ROW_SHORTCUTS)
     click(platform, "select")               # open the shortcuts door
     shot(platform, "settings-shortcuts")
@@ -354,11 +365,160 @@ def repair_clock_outliers(platform, state, masks):
             print(f"  WARNING: {name} still shows a different clock")
 
 
+# --- Phone app previews (#102, REQ-ANDROID-021) --------------------------------------------------
+
+PREVIEW_DIR = REPO_ROOT / "android" / "app" / "src" / "main" / "res" / "drawable-nodpi"
+
+# Protocol 1.3 (protocol/protocol-definition.json): the SETTINGS event, the revision key, and the
+# first SETTING_* key; a setting's key is that plus its SettingId (watchapp/src/c/settings_sync.h).
+EVENT_SETTINGS = 4
+KEY_SETTINGS_REVISION = 15
+KEY_SETTING_FIRST = 18
+
+# The visual settings: resource name, SettingId, and a name per stored value, in value order. Keep
+# in sync with PreviewCatalog.kt, whose test fails on any image missing or left over.
+PREVIEW_SETTINGS = [
+    ("accent", 0, ["green", "blue", "red", "orange", "purple", "teal", "pink", "yellow",
+                   "cyan", "lime", "tan", "navy", "amber", "grey", "black", "white"]),
+    ("units", 1, ["metric", "imperial"]),
+    ("invert", 2, ["off", "on"]),
+    ("glyph", 3, ["classic", "bold", "outline"]),
+    ("arrow", 4, ["right", "left"]),
+    ("eta", 5, ["arrival", "remaining"]),
+    ("label", 10, ["labelled", "compact"]),
+]
+# Every visual setting's default is its value 0 on a colour watch (Green, metric, …).
+PREVIEW_DEFAULTS = {setting_id: 0 for _, setting_id, _ in PREVIEW_SETTINGS}
+
+
+class SettingsInjector:
+    """Sets the watch's visual settings as the phone does, with SETTINGS messages.
+
+    The watch applies a message only when its revision is newer (1..49 ahead, wrapping at 100).
+    Its stored revision is unknown on an emulator that keeps its data, but of 0, 33 and 66 at least
+    one is newer whatever it is, and after sending all three the watch is at 66 (each one it took
+    moved it on, each one it refused was not newer than where it already was). From there every
+    message is one ahead.
+    """
+
+    def __init__(self, platform):
+        self.platform = platform
+        self.revision = None
+
+    def apply(self, values):
+        if self.revision is None:
+            for revision in (0, 33, 66):
+                self._send(revision, values)
+            self.revision = 66
+        else:
+            self.revision = (self.revision + 1) % 100
+            self._send(self.revision, values)
+
+    def _send(self, revision, values):
+        ints = [f"0={EVENT_SETTINGS}", f"{KEY_SETTINGS_REVISION}={revision}"]
+        ints += [f"{KEY_SETTING_FIRST + setting_id}={value}" for setting_id, value in values.items()]
+        pebble(self.platform, "send-app-message", "--int", *ints)
+        time.sleep(0.5)
+
+
+_pillow_warned = False
+
+
+def optimise_png(path):
+    """Rewrite `path` as a palette PNG with the same pixels, when Pillow is available.
+
+    Emulator screenshots hold at most 64 colours, so an exact palette loses nothing; the result is
+    checked pixel for pixel before it replaces the original.
+    """
+    global _pillow_warned
+    try:
+        from PIL import Image
+    except ImportError:
+        if not _pillow_warned:
+            print("  WARNING: Pillow not found; previews kept unoptimised "
+                  "(run with the pebble tool's Python to optimise)")
+            _pillow_warned = True
+        return
+    rgb = Image.open(path).convert("RGB")
+    colours = rgb.getcolors(256)
+    if colours is None:
+        print(f"  WARNING: {path.name} has over 256 colours; kept unoptimised")
+        return
+    palette = [colour for _, colour in colours]
+    index = {colour: i for i, colour in enumerate(palette)}
+    out = Image.new("P", rgb.size)
+    out.putpalette([channel for colour in palette for channel in colour])
+    out.putdata([index[pixel] for pixel in rgb.getdata()])
+    if out.convert("RGB").tobytes() != rgb.tobytes():
+        print(f"  WARNING: {path.name} would change when optimised; kept unoptimised")
+        return
+    out.save(path, optimize=True)
+
+
+def preview_shot(platform, path):
+    """Pin the clock, grab the screen into `path`, optimise it, and return its clock mask."""
+    try:
+        pebble(platform, "emu-set-time", CLOCK)
+    except Exception as exc:
+        print(f"  WARNING: clock not pinned for {path.name}: {exc}")
+    time.sleep(1.5)  # let the tick + redraw land before grabbing the framebuffer
+    pebble(platform, "screenshot", "--no-open", str(path))
+    mask = clock_mask(path, platform)
+    optimise_png(path)
+    print(f"  {path.name} ({path.stat().st_size} B)")
+    return mask
+
+
+def capture_previews(platform):
+    print(f"\n=== previews: {platform} ({PLATFORMS[platform]}) ===")
+    subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
+    time.sleep(1)
+    pebble(platform, "install")
+    time.sleep(2)
+    send_nav_update(platform)
+    injector = SettingsInjector(platform)
+
+    shots = {}  # path -> (settings, clock mask)
+    for name, setting_id, value_names in PREVIEW_SETTINGS:
+        for value, value_name in enumerate(value_names):
+            settings = dict(PREVIEW_DEFAULTS)
+            settings[setting_id] = value
+            injector.apply(settings)
+            path = PREVIEW_DIR / f"watch_preview_{name}_{value_name}_{platform}.png"
+            shots[path] = (settings, preview_shot(platform, path))
+
+    # As for the screenshots, the majority clock rendering wins and stragglers are re-taken.
+    majority, _ = collections.Counter(mask for _, mask in shots.values()).most_common(1)[0]
+    for path, (settings, mask) in shots.items():
+        for _ in range(3):
+            if mask == majority:
+                break
+            print(f"  re-taking {path.name}: mismatched clock")
+            injector.apply(settings)
+            mask = preview_shot(platform, path)
+        else:
+            print(f"  WARNING: {path.name} still shows a different clock")
+
+    # Leave the emulator on the defaults the previews assume.
+    injector.apply(dict(PREVIEW_DEFAULTS))
+    subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
+
+
 def main():
-    requested = sys.argv[1:] or list(PLATFORMS)
+    args = sys.argv[1:]
+    previews = "--previews" in args
+    requested = [a for a in args if a != "--previews"] or list(PLATFORMS)
     unknown = [p for p in requested if p not in PLATFORMS]
     if unknown:
         sys.exit(f"unknown platform(s): {', '.join(unknown)}")
+    if previews:
+        PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+        for platform in requested:
+            capture_previews(platform)
+        total = sum(p.stat().st_size for p in PREVIEW_DIR.glob("watch_preview_*.png"))
+        count = len(list(PREVIEW_DIR.glob("watch_preview_*.png")))
+        print(f"\n{count} previews ({total} B) written to {PREVIEW_DIR}")
+        return
     OUT_DIR.mkdir(exist_ok=True)
     for platform in requested:
         capture_platform(platform)

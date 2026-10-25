@@ -3,35 +3,57 @@
 #include <stdio.h>
 #include <string.h>
 
+// Name tables rather than switches: a table is about half the code, and code is heap on aplite.
+static const char *const kPatternNames[VIBE_PATTERN_COUNT] = {
+  "Short pulse", "Single", "Double", "Triple", "Long", "Off",
+};
+
+const char *vibe_pattern_name(VibePatternId id) {
+  return kPatternNames[((unsigned)id < VIBE_PATTERN_COUNT) ? id : VIBE_PATTERN_SILENT];
+}
+
+VibePatternId vibe_pattern_next(VibePatternId id) {
+  switch (id) {
+    case VIBE_PATTERN_SILENT: return VIBE_PATTERN_PULSE;
+    case VIBE_PATTERN_LONG: return VIBE_PATTERN_SILENT;
+    default: return ((unsigned)id < VIBE_PATTERN_LONG) ? (VibePatternId)(id + 1) : VIBE_PATTERN_SILENT;
+  }
+}
+
 ShortcutAction shortcut_default(ShortcutSlot slot) {
   switch (slot) {
+    case SLOT_UP_BUTTON:
     case SLOT_SWIPE_LEFT:
     case SLOT_SWIPE_RIGHT:
       return ACTION_ETA_MODE;
+    case SLOT_DOWN_BUTTON:
+    case SLOT_TAP:
+      return ACTION_BACKLIGHT_NOW;
     default:
       return ACTION_NONE;
   }
 }
 
+static const char *const kActionNames[ACTION_COUNT] = {
+  [ACTION_NONE] = "None",
+  [ACTION_ETA_MODE] = "ETA: arrival time / time left",
+  [ACTION_ETA_LABEL] = "ETA label style",
+  [ACTION_NEXT_ACCENT] = "Next colour",
+  [ACTION_PREV_ACCENT] = "Previous colour",
+  [ACTION_INVERT] = "Invert colours",
+  [ACTION_ARROW_SIDE] = "Swap arrow side",
+  [ACTION_NEXT_GLYPH] = "Next glyph pack",
+  [ACTION_VIBRATION] = "Vibration on / off",
+  [ACTION_EARLY_WARN_NEXT] = "Early warning: next distance",
+  [ACTION_EARLY_WARN_PREV] = "Early warning: previous distance",
+  [ACTION_BACKLIGHT_NOW] = "Backlight now",
+  [ACTION_NEXT_BACKLIGHT_COLOUR] = "Next backlight colour",
+  [ACTION_UNITS] = "Units",
+  [ACTION_OPEN_SETTINGS] = "Open settings",
+};
+
 const char *shortcut_action_name(ShortcutAction action) {
-  switch (action) {
-    case ACTION_ETA_MODE: return "ETA: arrival time / time left";
-    case ACTION_ETA_LABEL: return "ETA label style";
-    case ACTION_NEXT_ACCENT: return "Next colour";
-    case ACTION_PREV_ACCENT: return "Previous colour";
-    case ACTION_INVERT: return "Invert colours";
-    case ACTION_ARROW_SIDE: return "Swap arrow side";
-    case ACTION_NEXT_GLYPH: return "Next glyph pack";
-    case ACTION_VIBRATION: return "Vibration on / off";
-    case ACTION_EARLY_WARN_NEXT: return "Early warning: next distance";
-    case ACTION_EARLY_WARN_PREV: return "Early warning: previous distance";
-    case ACTION_BACKLIGHT_NOW: return "Backlight now";
-    case ACTION_NEXT_BACKLIGHT_COLOUR: return "Next backlight colour";
-    case ACTION_UNITS: return "Units";
-    case ACTION_OPEN_SETTINGS: return "Open settings";
-    case ACTION_NONE:
-    default: return "None";
-  }
+  return kActionNames[((unsigned)action < ACTION_COUNT) ? action : ACTION_NONE];
 }
 
 int shortcut_offered_count(bool rgb_backlight) {

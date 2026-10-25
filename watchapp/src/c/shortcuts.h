@@ -44,8 +44,30 @@ typedef enum {
   ACTION_COUNT,
 } ShortcutAction;
 
-// The action a slot has before the user picks one: the left and right swipes toggle the ETA, every
-// other slot does nothing. Touch itself starts Off, so a fresh install reacts to nothing.
+// Shape of a vibration (REQ-WATCH-016): the New instruction buzz and the early warning (which never
+// uses PULSE or SILENT). The stored values are fixed. PULSE is the phone's single short buzz on a
+// turn change; it was labelled "Off" before #102, when the watch had no true Off. SILENT is that
+// true Off, and the default: no buzz, whatever the phone asks for (REQ-WATCH-025, #102).
+typedef enum {
+  VIBE_PATTERN_PULSE = 0,   // the phone's short pulse on a maneuver change
+  VIBE_PATTERN_SINGLE = 1,  // one pulse
+  VIBE_PATTERN_DOUBLE = 2,  // two pulses
+  VIBE_PATTERN_TRIPLE = 3,  // three pulses
+  VIBE_PATTERN_LONG = 4,    // one sustained pulse
+  VIBE_PATTERN_SILENT = 5,  // default, Off: no vibration for a new instruction
+  VIBE_PATTERN_COUNT = 6,
+} VibePatternId;
+
+// Menu label of a pattern: "Short pulse", "Single", …, "Off" for SILENT and for an
+// out-of-range value.
+const char *vibe_pattern_name(VibePatternId id);
+
+// The New instruction pattern after `id` in the menu's order, which lists Off first: Off, Short
+// pulse, Single, Double, Triple, Long, then Off again.
+VibePatternId vibe_pattern_next(VibePatternId id);
+
+// The action a slot has before the user picks one: Up and the left and right swipes toggle the ETA,
+// Down and Tap turn the backlight on, the up and down swipes do nothing. Touch starts On.
 ShortcutAction shortcut_default(ShortcutSlot slot);
 
 // Menu label for an action ("ETA: arrival time / time left"); "None" for an out-of-range value.
@@ -62,7 +84,8 @@ int shortcut_row_for_action(ShortcutAction action, bool rgb_backlight);
 int shortcut_cycle(int current, int count, int step);
 
 // The vibration toggle: a pattern that isn't `off` turns off; `off` turns back on to `last`, or to
-// `fallback` when no pattern was ever chosen (`last` is `off` too).
+// `fallback` when `last` is `off` too. With silent Off (#102) `off` is VIBE_PATTERN_SILENT and both
+// `last` and `fallback` are a pattern that buzzes, Short pulse included.
 int shortcut_vibe_toggle(int current, int last, int off, int fallback);
 
 // A stored byte as an action: kept when in range, ACTION_NONE otherwise.

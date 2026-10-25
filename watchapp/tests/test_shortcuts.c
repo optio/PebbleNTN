@@ -56,11 +56,11 @@ int main(void) {
   printf("defaults (FR2)\n");
   expect_int("swipe left", shortcut_default(SLOT_SWIPE_LEFT), ACTION_ETA_MODE);
   expect_int("swipe right", shortcut_default(SLOT_SWIPE_RIGHT), ACTION_ETA_MODE);
-  expect_int("up button", shortcut_default(SLOT_UP_BUTTON), ACTION_NONE);
-  expect_int("down button", shortcut_default(SLOT_DOWN_BUTTON), ACTION_NONE);
+  expect_int("up button", shortcut_default(SLOT_UP_BUTTON), ACTION_ETA_MODE);
+  expect_int("down button", shortcut_default(SLOT_DOWN_BUTTON), ACTION_BACKLIGHT_NOW);
   expect_int("swipe up", shortcut_default(SLOT_SWIPE_UP), ACTION_NONE);
   expect_int("swipe down", shortcut_default(SLOT_SWIPE_DOWN), ACTION_NONE);
-  expect_int("tap", shortcut_default(SLOT_TAP), ACTION_NONE);
+  expect_int("tap", shortcut_default(SLOT_TAP), ACTION_BACKLIGHT_NOW);
 
   printf("stored values (FR2)\n");
   expect_int("in range kept", shortcut_valid_action(ACTION_INVERT), ACTION_INVERT);
@@ -77,11 +77,53 @@ int main(void) {
   expect_int("black-and-white pair: +1 at White wraps to Black", shortcut_cycle(1, 2, 1), 0);
   expect_int("no values", shortcut_cycle(0, 0, 1), 0);
 
-  printf("vibration toggle (FR3)\n");
-  // 0 Off, 1 Single, 2 Double, 3 Triple, as VibePatternId.
-  expect_int("Double turns off", shortcut_vibe_toggle(2, 2, 0, 1), 0);
-  expect_int("Off with last Triple turns Triple on", shortcut_vibe_toggle(0, 3, 0, 1), 3);
-  expect_int("Off with nothing stored turns Single on", shortcut_vibe_toggle(0, 0, 0, 1), 1);
+  printf("vibration toggle with silent Off (FR3, #102 FR8)\n");
+  // As shortcut_apply calls it: Off is VIBE_PATTERN_SILENT, the fallback is Short pulse.
+  expect_int("Double turns off",
+             shortcut_vibe_toggle(VIBE_PATTERN_DOUBLE, VIBE_PATTERN_DOUBLE, VIBE_PATTERN_SILENT,
+                                  VIBE_PATTERN_PULSE),
+             VIBE_PATTERN_SILENT);
+  expect_int("Short pulse turns off",
+             shortcut_vibe_toggle(VIBE_PATTERN_PULSE, VIBE_PATTERN_PULSE, VIBE_PATTERN_SILENT,
+                                  VIBE_PATTERN_PULSE),
+             VIBE_PATTERN_SILENT);
+  expect_int("Off with last Triple turns Triple on",
+             shortcut_vibe_toggle(VIBE_PATTERN_SILENT, VIBE_PATTERN_TRIPLE, VIBE_PATTERN_SILENT,
+                                  VIBE_PATTERN_PULSE),
+             VIBE_PATTERN_TRIPLE);
+  expect_int("Off with Short pulse last turns Short pulse on",
+             shortcut_vibe_toggle(VIBE_PATTERN_SILENT, VIBE_PATTERN_PULSE, VIBE_PATTERN_SILENT,
+                                  VIBE_PATTERN_PULSE),
+             VIBE_PATTERN_PULSE);
+  expect_int("Off with no last pattern falls back to Short pulse",
+             shortcut_vibe_toggle(VIBE_PATTERN_SILENT, VIBE_PATTERN_SILENT, VIBE_PATTERN_SILENT,
+                                  VIBE_PATTERN_PULSE),
+             VIBE_PATTERN_PULSE);
+
+  printf("vibration patterns (#102 FR8)\n");
+  expect_true("0 is Short pulse",
+              strcmp(vibe_pattern_name(VIBE_PATTERN_PULSE), "Short pulse") == 0);
+  expect_true("5 is Off", strcmp(vibe_pattern_name(VIBE_PATTERN_SILENT), "Off") == 0);
+  expect_true("Double", strcmp(vibe_pattern_name(VIBE_PATTERN_DOUBLE), "Double") == 0);
+  expect_true("out of range reads Off", strcmp(vibe_pattern_name((VibePatternId)9), "Off") == 0);
+  expect_int("stored values are fixed: Off is 5", VIBE_PATTERN_SILENT, 5);
+  expect_int("menu order: Off then Short pulse", vibe_pattern_next(VIBE_PATTERN_SILENT),
+             VIBE_PATTERN_PULSE);
+  expect_int("menu order: Short pulse then Single", vibe_pattern_next(VIBE_PATTERN_PULSE),
+             VIBE_PATTERN_SINGLE);
+  expect_int("menu order: Long wraps to Off", vibe_pattern_next(VIBE_PATTERN_LONG),
+             VIBE_PATTERN_SILENT);
+  expect_int("menu order: out of range goes to Off", vibe_pattern_next((VibePatternId)9),
+             VIBE_PATTERN_SILENT);
+  int visited = 0;
+  VibePatternId walk = VIBE_PATTERN_SILENT;
+  do {
+    walk = vibe_pattern_next(walk);
+    visited++;
+  } while (walk != VIBE_PATTERN_SILENT && visited <= VIBE_PATTERN_COUNT);
+  expect_int("the menu visits every pattern once", visited, VIBE_PATTERN_COUNT);
+  // The shortcut notice for Off still reads "Vibration off" (shortcut_notice matches "Off").
+  expect_notice(ACTION_VIBRATION, vibe_pattern_name(VIBE_PATTERN_SILENT), "Vibration off");
 
   printf("action list (FR3)\n");
   expect_int("RGB backlight: every action offered", shortcut_offered_count(true), ACTION_COUNT);

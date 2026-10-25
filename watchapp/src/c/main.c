@@ -14,7 +14,9 @@
 //     phone app update, or when this watchapp is newer than the phone app (REQ-WATCH-023, #94);
 //   - offer on-watch settings (theme, units, ETA display, backlight, vibration) via SELECT;
 //   - run the user's shortcuts on UP and DOWN, and on a touch watch on swipes and a tap, with a
-//     short notice of what changed (REQ-WATCH-024, #12).
+//     short notice of what changed (REQ-WATCH-024, #12);
+//   - keep the settings in sync with the phone app: send them in WATCH_READY, after each edit on
+//     the watch and on reconnect, and apply a newer set from the phone (REQ-WATCH-025, #102).
 //
 // Layout: the maneuver arrow and the distance sit side by side in a coloured panel, so the road
 // name gets the whole lower half and rarely has to be truncated; its font shrinks to fit.
@@ -31,6 +33,7 @@
 #include "panel_layout.h"
 #include "phone_version.h"
 #include "qr_code.h"
+#include "settings_sync_glue.h"
 #include "shortcut_apply.h"
 #include "stops_text.h"
 #include "theme.h"
@@ -45,7 +48,7 @@ _Static_assert(PBNTN_PROTOCOL_MAJOR == 1, "unexpected protocol major");
 #define SECONDARY_TEXT_MAX 24
 
 // Persist key for the last connected phone app version (REQ-WATCH-020, #103). Keys 1–15 and 19–27
-// belong to theme.c's settings.
+// belong to theme.c's settings, 28 to the settings revision (settings_sync_glue.c).
 #define PERSIST_KEY_PHONE_VERSION 16
 // Persist keys for the phone app update notice (REQ-WATCH-023, #94): the latest phone app version
 // the phone offers, and the version the notice was last shown for.
@@ -119,58 +122,40 @@ static char s_message_buf[96];
 
 // Resource id for a maneuver within the selected glyph pack (REQ-WATCH-012). The pack only chooses
 // which bundled bitmap is drawn; the maneuver code from the phone is unchanged.
+//
+// package.json lists each pack's 13 glyphs in maneuver-code order from STRAIGHT to TRANSIT, then
+// UNKNOWN, and Classic, Bold, Outline one after the other, so the ids are one block per pack and the
+// lookup is arithmetic (a switch per pack took code, which is heap on aplite, #102). The asserts
+// below fail the build if package.json is ever reordered.
+#define GLYPHS_PER_PACK 13
+#define GLYPH_AT(pack, index) (RESOURCE_ID_MANEUVER_STRAIGHT + (pack) * GLYPHS_PER_PACK + (index))
+#define CHECK_GLYPH(prefix, name)                                                            \
+  _Static_assert(RESOURCE_ID_MANEUVER_##prefix##name ==                                        \
+                     GLYPH_AT(GLYPH_PACK_##prefix##ID, PBNTN_MANEUVER_##name - 1),             \
+                 "glyph resources are in maneuver order: " #prefix #name)
+#define GLYPH_PACK_ID GLYPH_PACK_CLASSIC
+#define GLYPH_PACK_BOLD_ID GLYPH_PACK_BOLD
+#define GLYPH_PACK_OUTLINE_ID GLYPH_PACK_OUTLINE
+#define CHECK_PACK(prefix)                                                                     \
+  CHECK_GLYPH(prefix, STRAIGHT); CHECK_GLYPH(prefix, SLIGHT_LEFT); CHECK_GLYPH(prefix, LEFT);   \
+  CHECK_GLYPH(prefix, SHARP_LEFT); CHECK_GLYPH(prefix, SLIGHT_RIGHT); CHECK_GLYPH(prefix, RIGHT); \
+  CHECK_GLYPH(prefix, SHARP_RIGHT); CHECK_GLYPH(prefix, UTURN_LEFT);                            \
+  CHECK_GLYPH(prefix, UTURN_RIGHT); CHECK_GLYPH(prefix, ROUNDABOUT); CHECK_GLYPH(prefix, ARRIVE); \
+  CHECK_GLYPH(prefix, TRANSIT);                                                                \
+  _Static_assert(RESOURCE_ID_MANEUVER_##prefix##UNKNOWN ==                                     \
+                     GLYPH_AT(GLYPH_PACK_##prefix##ID, GLYPHS_PER_PACK - 1),                   \
+                 "UNKNOWN closes each pack's block: " #prefix)
+CHECK_PACK();
+CHECK_PACK(BOLD_);
+CHECK_PACK(OUTLINE_);
+_Static_assert(PBNTN_MANEUVER_STRAIGHT == 1 && PBNTN_MANEUVER_TRANSIT == GLYPHS_PER_PACK - 1,
+               "maneuver codes 1..12 are the glyphs before UNKNOWN");
+
 static uint32_t maneuver_resource_id(int maneuver, GlyphPack pack) {
-  switch (pack) {
-    case GLYPH_PACK_BOLD:
-      switch (maneuver) {
-        case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_BOLD_STRAIGHT;
-        case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_BOLD_SLIGHT_LEFT;
-        case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_BOLD_LEFT;
-        case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_BOLD_SHARP_LEFT;
-        case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_SLIGHT_RIGHT;
-        case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_RIGHT;
-        case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_SHARP_RIGHT;
-        case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_BOLD_UTURN_LEFT;
-        case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_BOLD_UTURN_RIGHT;
-        case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_BOLD_ROUNDABOUT;
-        case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_BOLD_ARRIVE;
-        case PBNTN_MANEUVER_TRANSIT: return RESOURCE_ID_MANEUVER_BOLD_TRANSIT;
-        default: return RESOURCE_ID_MANEUVER_BOLD_UNKNOWN;
-      }
-    case GLYPH_PACK_OUTLINE:
-      switch (maneuver) {
-        case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_STRAIGHT;
-        case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_SLIGHT_LEFT;
-        case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_LEFT;
-        case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_SHARP_LEFT;
-        case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_SLIGHT_RIGHT;
-        case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_RIGHT;
-        case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_SHARP_RIGHT;
-        case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_OUTLINE_UTURN_LEFT;
-        case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_OUTLINE_UTURN_RIGHT;
-        case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_OUTLINE_ROUNDABOUT;
-        case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_OUTLINE_ARRIVE;
-        case PBNTN_MANEUVER_TRANSIT: return RESOURCE_ID_MANEUVER_OUTLINE_TRANSIT;
-        default: return RESOURCE_ID_MANEUVER_OUTLINE_UNKNOWN;
-      }
-    case GLYPH_PACK_CLASSIC:
-    default:
-      switch (maneuver) {
-        case PBNTN_MANEUVER_STRAIGHT: return RESOURCE_ID_MANEUVER_STRAIGHT;
-        case PBNTN_MANEUVER_SLIGHT_LEFT: return RESOURCE_ID_MANEUVER_SLIGHT_LEFT;
-        case PBNTN_MANEUVER_LEFT: return RESOURCE_ID_MANEUVER_LEFT;
-        case PBNTN_MANEUVER_SHARP_LEFT: return RESOURCE_ID_MANEUVER_SHARP_LEFT;
-        case PBNTN_MANEUVER_SLIGHT_RIGHT: return RESOURCE_ID_MANEUVER_SLIGHT_RIGHT;
-        case PBNTN_MANEUVER_RIGHT: return RESOURCE_ID_MANEUVER_RIGHT;
-        case PBNTN_MANEUVER_SHARP_RIGHT: return RESOURCE_ID_MANEUVER_SHARP_RIGHT;
-        case PBNTN_MANEUVER_UTURN_LEFT: return RESOURCE_ID_MANEUVER_UTURN_LEFT;
-        case PBNTN_MANEUVER_UTURN_RIGHT: return RESOURCE_ID_MANEUVER_UTURN_RIGHT;
-        case PBNTN_MANEUVER_ROUNDABOUT: return RESOURCE_ID_MANEUVER_ROUNDABOUT;
-        case PBNTN_MANEUVER_ARRIVE: return RESOURCE_ID_MANEUVER_ARRIVE;
-        case PBNTN_MANEUVER_TRANSIT: return RESOURCE_ID_MANEUVER_TRANSIT;
-        default: return RESOURCE_ID_MANEUVER_UNKNOWN;
-      }
-  }
+  const int index = (maneuver >= PBNTN_MANEUVER_STRAIGHT && maneuver <= PBNTN_MANEUVER_TRANSIT)
+                        ? maneuver - PBNTN_MANEUVER_STRAIGHT
+                        : GLYPHS_PER_PACK - 1;  // UNKNOWN
+  return GLYPH_AT((pack < GLYPH_PACK_COUNT) ? pack : GLYPH_PACK_CLASSIC, index);
 }
 
 // The maneuver bitmaps are cached; the cache belongs to one pack. When the user switches packs the
@@ -793,11 +778,16 @@ static void connect_start(void) {
   s_connect_timer = app_timer_register(1000, connect_tick, NULL);
 }
 
+static void outbox_reconnected(void);
+
 static void app_connection_handler(bool connected) {
   // A fresh Pebble-app connection is a new opportunity to hear from the companion app; rerun the
   // watchdog so a transient disconnect does not strand the user on a stale hint.
   if (connected && !s_heard_from_phone) {
     connect_start();
+  }
+  if (connected) {
+    outbox_reconnected();  // the phone may have missed edits made while it was away (#102)
   }
 }
 
@@ -901,16 +891,18 @@ static void render_navigation(DictionaryIterator *iter) {
   const bool new_info = maneuver_changed || primary_changed;
 
   // Vibration (REQ-WATCH-016): when the user has chosen a watch-side pattern, it fires on new info
-  // with the selected pattern/intensity and supersedes the phone's simple request. Otherwise the
-  // original behaviour stands — a short pulse on a maneuver change, only when the phone asks.
+  // with the selected pattern/intensity and supersedes the phone's simple request. Short pulse, the
+  // default, keeps the original behaviour — a short pulse on a maneuver change, only when the phone
+  // asks — and Off ignores the phone's request altogether (REQ-WATCH-025, #102).
   bool new_info_buzzed = false;
-  if (settings_vibe_pattern() != VIBE_PATTERN_OFF) {
-    if (new_info) {
-      settings_vibe_play();
+  const VibePatternId pattern = settings_vibe_pattern();
+  if (pattern == VIBE_PATTERN_PULSE) {
+    if ((s_flags & PBNTN_FLAG_VIBRATE_ON_MANEUVER_CHANGE_MASK) && maneuver_changed) {
+      vibes_short_pulse();
       new_info_buzzed = true;
     }
-  } else if ((s_flags & PBNTN_FLAG_VIBRATE_ON_MANEUVER_CHANGE_MASK) && maneuver_changed) {
-    vibes_short_pulse();
+  } else if (pattern != VIBE_PATTERN_SILENT && new_info) {
+    settings_vibe_play();
     new_info_buzzed = true;
   }
 
@@ -1017,16 +1009,79 @@ static void handle_stopped(DictionaryIterator *iter) {
 
 // --- AppMessage -------------------------------------------------------------------------------
 
-static void send_ready(void) {
-  DictionaryIterator *out;
-  if (app_message_outbox_begin(&out) != APP_MSG_OK) {
+// The outbox sends one message at a time (REQ-WATCH-025). WATCH_READY and SETTINGS each have a
+// pending bit; a message is built only when it goes out, so it always carries the settings of that
+// moment, and READY, which carries them too, also settles a pending SETTINGS. A failed send is
+// retried once; after a second failure the message stays pending until the phone reconnects.
+#define OUT_READY 1
+#define OUT_SETTINGS 2
+static uint8_t s_out_pending;
+static uint8_t s_out_in_flight;  // the message the outbox is sending, 0 when idle
+static bool s_out_retried;       // the message in flight is already the retry
+static bool s_out_held;          // waiting for the next connection after a failed retry
+
+// The message in flight failed (or was refused): it is pending again. The first failure is retried
+// at once; the second holds it until the phone reconnects.
+static void outbox_failed(AppMessageResult reason) {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "send failed (%d)", (int)reason);
+  s_out_pending |= s_out_in_flight;
+  s_out_in_flight = 0;
+  s_out_held = s_out_retried;
+  s_out_retried = !s_out_retried;
+}
+
+static void outbox_flush(void) {
+  if (s_out_in_flight != 0 || s_out_pending == 0 || s_out_held ||
+      !connection_service_peek_pebble_app_connection()) {
     return;
   }
-  dict_write_int32(out, PBNTN_KEY_EVENT, PBNTN_EVENT_WATCH_READY);
-  dict_write_int32(out, PBNTN_KEY_PROTOCOL_MAJOR, PBNTN_PROTOCOL_MAJOR);
-  dict_write_int32(out, PBNTN_KEY_PROTOCOL_MINOR, PBNTN_PROTOCOL_MINOR);
-  dict_write_cstring(out, PBNTN_KEY_APP_VERSION, APP_VERSION_STR);
-  app_message_outbox_send();
+  DictionaryIterator *out;
+  if (app_message_outbox_begin(&out) != APP_MSG_OK) {
+    return;  // busy: the sent/failed handler flushes again
+  }
+  const uint8_t what = (s_out_pending & OUT_READY) ? OUT_READY : OUT_SETTINGS;
+  dict_write_int32(out, PBNTN_KEY_EVENT,
+                   (what == OUT_READY) ? PBNTN_EVENT_WATCH_READY : PBNTN_EVENT_SETTINGS);
+  if (what == OUT_READY) {
+    dict_write_int32(out, PBNTN_KEY_PROTOCOL_MAJOR, PBNTN_PROTOCOL_MAJOR);
+    dict_write_int32(out, PBNTN_KEY_PROTOCOL_MINOR, PBNTN_PROTOCOL_MINOR);
+    dict_write_cstring(out, PBNTN_KEY_APP_VERSION, APP_VERSION_STR);
+  }
+  settings_sync_write(out);
+  const AppMessageResult sent = app_message_outbox_send();
+  if (sent != APP_MSG_OK) {
+    outbox_failed(sent);  // stays pending; the next request or connection sends it
+    return;
+  }
+  s_out_in_flight = what;
+  s_out_pending = 0;  // READY carries the settings too, so it also settles a pending SETTINGS
+}
+
+static void outbox_request(uint8_t what) {
+  s_out_pending |= what;
+  outbox_flush();
+}
+
+// A watch edit (settings_sync_glue.c) and the reply to a phone SETTINGS both send the settings.
+static void request_settings_send(void) {
+  outbox_request(OUT_SETTINGS);
+}
+
+// The phone is back: send the settings again, along with anything still pending (REQ-WATCH-025).
+static void outbox_reconnected(void) {
+  s_out_held = false;
+  outbox_request(OUT_SETTINGS);
+}
+
+static void outbox_sent_handler(DictionaryIterator *iter, void *context) {
+  s_out_in_flight = 0;
+  s_out_retried = false;
+  outbox_flush();
+}
+
+static void outbox_failed_handler(DictionaryIterator *iter, AppMessageResult reason, void *context) {
+  outbox_failed(reason);
+  outbox_flush();
 }
 
 // Record the phone app version a message carries (key 11) and persist it, but only when it changed:
@@ -1062,6 +1117,8 @@ static void load_phone_version(void) {
   s_phone_version[PHONE_VERSION_MAX] = '\0';
 }
 
+static void on_settings_changed(void);
+
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *event_t = dict_find(iter, PBNTN_KEY_EVENT);
   if (!event_t) {
@@ -1091,6 +1148,16 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
       break;
     case PBNTN_EVENT_PHONE_COMPATIBILITY_ERROR:
       show_message("Update phone app");
+      break;
+    case PBNTN_EVENT_SETTINGS:
+      // An edit made in the phone app (REQ-WATCH-025). A newer one is applied as if chosen in the
+      // menu, without counting as a watch edit; either way the reply is the watch's own settings,
+      // which confirms the change or hands the phone the watch's newer ones.
+      if (settings_sync_apply(iter) == SYNC_APPLY_PHONE) {
+        on_settings_changed();
+        settings_window_refresh();
+      }
+      request_settings_send();
       break;
     default:
       break;
@@ -1128,7 +1195,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 // NOTICE_MS. A second action within that time replaces the text and restarts the timer.
 #define NOTICE_MS 1500
 static AppTimer *s_notice_timer;
-static char s_notice_buf[32];
+static char s_notice_buf[40];  // "Vibration: Short pulse" fits
 static int16_t s_notice_top;  // top of the road area, set in window_load
 
 static void notice_hide(void *data) {
@@ -1331,7 +1398,11 @@ static void init(void) {
   app_touch_navigation_enable(true);
 #endif
 
+  settings_sync_init(request_settings_send);
+
   app_message_register_inbox_received(inbox_received_handler);
+  app_message_register_outbox_sent(outbox_sent_handler);
+  app_message_register_outbox_failed(outbox_failed_handler);
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
   s_window = window_create();
@@ -1356,8 +1427,9 @@ static void init(void) {
     .pebble_app_connection_handler = app_connection_handler,
   });
 
-  // Handshake: tell the phone we are ready and our protocol/app version (REQ-WATCH-003).
-  send_ready();
+  // Handshake: tell the phone we are ready, our protocol/app version and, since protocol 1.3, our
+  // settings (REQ-WATCH-003, REQ-WATCH-025).
+  outbox_request(OUT_READY);
 }
 
 #if !PBL_PLATFORM_APLITE

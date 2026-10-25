@@ -10,7 +10,7 @@
 
 static Window *s_window;
 static ScrollLayer *s_scroll;
-static TextLayer *s_texts[4];
+static TextLayer *s_texts[6];
 static Layer *s_qr_layer;
 static GBitmap *s_qr;  // the module bitmap, drawn scaled by qr_code_draw
 static AboutInfo s_info;
@@ -60,10 +60,17 @@ static void about_load(Window *window) {
                 PBNTN_PROTOCOL_MAJOR, PBNTN_PROTOCOL_MINOR,
                 about_phone_status(connection_service_peek_pebble_app_connection(),
                                    s_info.heard_from_phone));
-  add_text(0, "PebbleNTN", FONT_KEY_GOTHIC_24_BOLD, inset, w, &y);
-  add_text(1, s_details, FONT_KEY_GOTHIC_18, inset, w, &y);
+  // Large fonts so the page reads easily on the wrist.
+  add_text(0, "PebbleNTN", FONT_KEY_GOTHIC_28_BOLD, inset, w, &y);
+  add_text(1, "Change every setting here on the watch or in the PebbleNTN phone app.",
+           FONT_KEY_GOTHIC_24, inset, w, &y);
   y += 4;
-  add_text(2, "Install phone app", FONT_KEY_GOTHIC_18_BOLD, inset, w, &y);
+  add_text(2, s_details, FONT_KEY_GOTHIC_24, inset, w, &y);
+  y += 4;
+  add_text(3, "Ideas or feedback? Send them from the phone app.", FONT_KEY_GOTHIC_24_BOLD, inset, w,
+           &y);
+  y += 4;
+  add_text(4, "Install phone app", FONT_KEY_GOTHIC_24_BOLD, inset, w, &y);
 
   s_qr = gbitmap_create_with_resource(RESOURCE_ID_CONNECT_QR);
   const GSize qr = qr_code_size(s_qr);
@@ -73,7 +80,7 @@ static void about_load(Window *window) {
   y += qr.h + 4;
 
   // For anyone who cannot scan: the same link as text.
-  add_text(3, "github.com/optio/\nPebbleNTN/releases", FONT_KEY_GOTHIC_14, inset, w, &y);
+  add_text(5, "github.com/optio/\nPebbleNTN/releases", FONT_KEY_GOTHIC_18, inset, w, &y);
   y += PBL_IF_ROUND_ELSE(30, 4);
 
   scroll_layer_set_content_size(s_scroll, GSize(bounds.size.w, y));

@@ -9,6 +9,8 @@
 - Vibrate according to settings included in state or protocol capability.
 - Exit to watchface on navigation end when commanded/configured.
 - Persist only minimal display state needed for brief restart continuity.
+- Keep the on-watch settings in sync with the phone app (REQ-WATCH-025): send them in `WATCH_READY`,
+  after each edit on the watch and on reconnect, and apply a newer set from the phone.
 
 ## UI
 
@@ -33,7 +35,8 @@ No continuous animation. Redraw only when state changes.
 ## Startup handshake
 
 1. Watchapp opens AppMessage.
-2. Watchapp sends `WATCH_READY` with protocol version and watchapp version.
+2. Watchapp sends `WATCH_READY` with protocol version and watchapp version, and since protocol 1.3
+   its settings, settings revision, platform and capabilities.
 3. Phone validates compatibility.
 4. Phone sends the current navigation state or `NO_ACTIVE_NAVIGATION`.
 5. Watch acknowledges via AppMessage transport behavior and may send an application-level state receipt if needed.
@@ -73,6 +76,22 @@ send, because otherwise the update cannot reach the watch at all (`PebbleWatchTr
 re-launch is bounded to actual state changes — it is never speculative — so during navigation it
 happens at most as often as the maneuver/distance materially changes, and never while idle. See
 REQ-WATCH-006.
+
+Watch settings edited on the phone (REQ-ANDROID-021) never use that path: they go through
+`WatchTransport.sendToOpenApp`, which never launches or relaunches the watchapp, and only while the
+watchapp is open (it sent its settings in this session and has not closed since). Otherwise they wait
+for the next time it opens.
+
+## Settings sync (protocol 1.3)
+
+The watch's 23 settings are one table (`settings_sync.c`): range, default, capability and persist
+key per setting, in protocol key order. `theme.c` stores the values in that order and saves only a
+changed value; every edit made on the watch moves the settings revision (persist key 28) on and
+queues a `SETTINGS` message. The outbox sends one message at a time; a failed one is retried once
+and then waits for the next connection. A newer phone `SETTINGS` is applied without counting as a
+watch edit, closes any open settings door back to the top menu, and is answered with one `SETTINGS`.
+On aplite the sync costs no heap overall: the table replaced the per-setting storage, getters,
+setters and load code, and the glyph-pack door now loads each preview glyph only while drawing it.
 
 ## Navigation end
 

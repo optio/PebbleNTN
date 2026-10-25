@@ -1,7 +1,7 @@
 {
-  "_comment": "Authoritative AppMessage protocol definition. Single source of truth for generated Kotlin (phone) and C (watch) constants. Regenerate with scripts/generate-protocol.sh; never hand-edit the generated files (AGENTS.md rule 5). The keys/events/versions here MUST stay consistent with examples/protocol-definition.json (checked by scripts/check-protocol.py); this file additionally defines flag bits and maneuver codes that the watch and phone must agree on.",
+  "_comment": "Authoritative AppMessage protocol definition. Single source of truth for generated Kotlin (phone) and C (watch) constants. Regenerate with scripts/generate-protocol.sh; never hand-edit the generated files (AGENTS.md rule 5). The keys/events/versions here MUST stay consistent with examples/protocol-definition.json (checked by scripts/check-protocol.py); this file additionally defines flag bits, maneuver codes, error codes, and the watch capability bits and platform values of the settings sync (1.3) that the watch and phone must agree on.",
   "protocolMajor": 1,
-  "protocolMinor": 2,
+  "protocolMinor": 3,
   "keys": {
     "EVENT": 0,
     "PROTOCOL_MAJOR": 1,
@@ -17,12 +17,39 @@
     "APP_VERSION": 11,
     "ERROR_CODE": 12,
     "STOPS_REMAINING": 13,
-    "LATEST_PHONE_VERSION": 14
+    "LATEST_PHONE_VERSION": 14,
+    "SETTINGS_REVISION": 15,
+    "WATCH_PLATFORM": 16,
+    "WATCH_CAPABILITIES": 17,
+    "SETTING_ACCENT": 18,
+    "SETTING_UNITS": 19,
+    "SETTING_INVERT": 20,
+    "SETTING_GLYPH_PACK": 21,
+    "SETTING_ARROW_LEFT": 22,
+    "SETTING_ETA_MODE": 23,
+    "SETTING_BACKLIGHT": 24,
+    "SETTING_VIBE_PATTERN": 25,
+    "SETTING_VIBE_INTENSITY": 26,
+    "SETTING_BACKLIGHT_COLOR": 27,
+    "SETTING_ETA_LABEL": 28,
+    "SETTING_EARLY_WARN_DISTANCE": 29,
+    "SETTING_EARLY_WARN_REPEAT": 30,
+    "SETTING_EARLY_WARN_PATTERN": 31,
+    "SETTING_EARLY_WARN_INTENSITY": 32,
+    "SETTING_TOUCH": 33,
+    "SETTING_SHORTCUT_UP": 34,
+    "SETTING_SHORTCUT_DOWN": 35,
+    "SETTING_SHORTCUT_SWIPE_LEFT": 36,
+    "SETTING_SHORTCUT_SWIPE_RIGHT": 37,
+    "SETTING_SHORTCUT_SWIPE_UP": 38,
+    "SETTING_SHORTCUT_SWIPE_DOWN": 39,
+    "SETTING_SHORTCUT_TAP": 40
   },
   "events": {
     "NAVIGATION_UPDATE": 1,
     "NAVIGATION_STOPPED": 2,
     "NO_ACTIVE_NAVIGATION": 3,
+    "SETTINGS": 4,
     "WATCH_READY": 10,
     "WATCH_REQUEST_STATE": 11,
     "PHONE_COMPATIBILITY_ERROR": 12
@@ -52,5 +79,19 @@
   "errorCodes": {
     "NONE": 0,
     "INCOMPATIBLE_PROTOCOL_MAJOR": 1
+  },
+  "watchCapabilityBits": {
+    "COLOR": 0,
+    "ROUND": 1,
+    "RGB_BACKLIGHT": 2,
+    "TOUCH": 3
+  },
+  "watchPlatforms": {
+    "UNKNOWN": 0,
+    "APLITE": 1,
+    "BASALT": 2,
+    "CHALK": 3,
+    "DIORITE": 4,
+    "EMERY": 5
   }
 }

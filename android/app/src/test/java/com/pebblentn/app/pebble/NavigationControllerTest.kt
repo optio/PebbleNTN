@@ -2,8 +2,10 @@ package com.pebblentn.app.pebble
 
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.core.WatchSetting
 import com.pebblentn.app.core.WatchSettings
 import com.pebblentn.app.notification.NotificationSnapshot
+import com.pebblentn.app.protocol.WatchMessages
 import com.pebblentn.app.protocol.AppMessage
 import com.pebblentn.app.protocol.FakeWatchTransport
 import com.pebblentn.app.protocol.Protocol
@@ -421,5 +423,55 @@ class NavigationControllerTest {
         runCurrent() // the retry is delivered
 
         assertEquals("only the delivered attempt counts", 1, reached)
+    }
+
+    // --- Watch settings (#102, REQ-ANDROID-021) ---------------------------------------------------
+
+    private fun settingsEvents(transport: FakeWatchTransport) =
+        events(transport).count { it == Protocol.Events.SETTINGS }
+
+    @Test
+    fun noSettingsAreSentToAClosedWatchapp() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = controller(transport, backgroundScope)
+        controller.start()
+        runCurrent()
+
+        // Never opened in this session: only the phone's own READY, which carries no settings.
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        controller.onPhoneSettingEdit(WatchSetting.UNITS, 1)
+        runCurrent()
+        assertEquals(0, settingsEvents(transport))
+
+        // Opened, then closed: still nothing.
+        transport.emitInbound(WatchMessages.ready13(WatchMessages.settings(revision = 1)))
+        runCurrent()
+        transport.emitClosed()
+        runCurrent()
+        controller.onPhoneSettingEdit(WatchSetting.UNITS, 1)
+        runCurrent()
+        assertEquals(0, settingsEvents(transport))
+        assertEquals("never launched for settings", 0, transport.launchCount)
+    }
+
+    @Test
+    fun aRealReadyFlushesTheQueue() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = controller(transport, backgroundScope)
+        controller.start()
+        runCurrent()
+        transport.emitInbound(WatchMessages.ready13(WatchMessages.settings(revision = 20)))
+        runCurrent()
+        transport.emitClosed()
+        runCurrent()
+        controller.onPhoneSettingEdit(WatchSetting.ARROW_LEFT, 1)
+        runCurrent()
+        assertEquals(0, settingsEvents(transport))
+
+        transport.emitInbound(WatchMessages.ready13(WatchMessages.settings(revision = 20)))
+        runCurrent()
+        assertEquals(1, settingsEvents(transport))
+        assertTrue(controller.watchappOpen.value)
     }
 }

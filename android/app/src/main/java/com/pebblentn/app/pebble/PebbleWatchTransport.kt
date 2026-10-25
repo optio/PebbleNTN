@@ -92,6 +92,17 @@ class PebbleWatchTransport(
         }
     }
 
+    override val watchappClosed: Flow<Unit> = WatchInboundBus.closed
+
+    // No relaunch here: FailedDifferentAppOpen means the watchapp is not open, and that is a failure.
+    override suspend fun sendToOpenApp(message: AppMessage): SendResult {
+        val results = trySend(PebbleAppMessageMapper.toDictionary(message))
+        val delivered = results != null && results.isNotEmpty() &&
+            results.values.all { it is TransmissionResult.Success }
+        Timber.i("PebbleKit: send to the open watchapp -> %s", results)
+        return if (delivered) SendResult.SENT else SendResult.FAILED
+    }
+
     /** One send attempt; null means the call threw (no companion bound / not connected). */
     private suspend fun trySend(dict: PebbleDictionary): Map<WatchIdentifier, TransmissionResult>? =
         runCatching { sender.sendDataToPebble(appUuid, dict) }
