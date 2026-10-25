@@ -15,14 +15,14 @@
 ## Platforms and Baselines
 
 - Android: minSdk 31, targetSdk 35 (Play floor gate `verifyReleaseTargetSdk` = 35), compileSdk 36.
-- Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite. flint and gabbro are not build targets and are not mentioned anywhere in the watchapp; the touch calls are guarded by `PBL_PLATFORM_EMERY`, not by a capability macro, and the RGB backlight by `PBL_RGB_BACKLIGHT`.
+- Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite. flint and gabbro are not build targets and are not mentioned anywhere in the watchapp; the touch calls are guarded by `PBL_PLATFORM_EMERY`, not by a capability macro, and the RGB backlight by `PBL_RGB_BACKLIGHT`. Colour versus black-and-white is `PBL_COLOR` (`PBL_IF_COLOR_ELSE`), round is `PBL_ROUND`, and the large layout is a runtime `w >= 200`. The watchapp never calls `watch_info_*`, so nothing reports the platform at runtime today. Pebble apps load their code into the same RAM as their heap, so on aplite every byte of new code or static data comes off the free heap (about 3.9 KB at load after v0.0.76, per the intent brief).
 - Build: Gradle 8.13 wrapper, AGP 8.13.2, KSP 2.3.10, JDK 21 (Temurin in CI); pebble-tool with the latest SDK.
 
 ## Frameworks
 
 - Jetpack Compose (BOM 2024.12.01) with Material 3 and Navigation Compose 2.8.5.
 - AndroidX Lifecycle 2.8.7 and Activity Compose 1.9.3.
-- Room 2.7.2 (KSP) for persistence; SharedPreferences for small settings.
+- Room 2.7.2 (KSP) for persistence; SharedPreferences for small settings (`pebblentn_settings`); DataStore Preferences 1.1.1 is on the `:app` classpath but unused by app code.
 - kotlinx-coroutines 1.9.0 (Flow/StateFlow, Mutex) and kotlinx-serialization-json 1.7.3.
 - PebbleKit Android 2 1.2.0 (vendored).
 - Pebble C SDK: Window/Layer/MenuLayer/ScrollLayer, AppMessage, persist, AppGlance, connection and tick services.
@@ -34,5 +34,8 @@
 - No coverage tool, formatter enforcement, ktlint or detekt.
 - Watch emulator tooling: pebble-tool emulators driven by `watchapp/tools/capture_screenshots.py` (buttons and `send-app-message`) and `watchapp/tools/touch_emulator.py` (touch over VNC, a standard-library RFB client, no third-party dependency).
 - No stack change in v0.0.73 or v0.0.74 (watchapp version row), and none implied by making version compare the default update signal: `PackageManager.getInstallSourceInfo` (platform API 30+) is the only new platform call, and the row uses existing Compose Material 3 `ListItem`s.
+
+- Release builds run R8 and resource shrinking (`isMinifyEnabled`, `isShrinkResources`), which matters for bundled preview drawables (#102); unit tests merge Android resources (`isIncludeAndroidResources = true`), so a JVM test can check resources exist.
+- No stack change is implied by #102: Compose `Image` with `ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })` is in Compose UI already, and the capture tool needs only pebble-tool and the standard library.
 
 Library versions and transitive relationships are in [dependencies.md](dependencies.md).
