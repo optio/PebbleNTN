@@ -52,7 +52,7 @@
     "slug": "settings-sync",
     "dirName": "261025-settings-sync",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "fba85fec"
   }
 ]
