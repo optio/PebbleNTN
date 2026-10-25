@@ -25,6 +25,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.pebblentn.app.PebbleNtnApplication
 import com.pebblentn.app.R
+import com.pebblentn.app.core.WatchSetting
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.export.ExportMode
 import com.pebblentn.app.rules.RuleValidationResult
@@ -46,6 +47,9 @@ import com.pebblentn.app.ui.rules.RulesViewModel
 import com.pebblentn.app.ui.share.ShareDiagnosticsScreen
 import com.pebblentn.app.ui.share.ShareDiagnosticsViewModel
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
+import com.pebblentn.app.ui.watchsettings.OptionListScreen
+import com.pebblentn.app.ui.watchsettings.WatchSettingsScreen
+import com.pebblentn.app.ui.watchsettings.WatchSettingsUi
 import com.pebblentn.app.update.UpdateCheckMessage
 import com.pebblentn.app.update.updateCheckMessage
 
@@ -166,6 +170,7 @@ class MainActivity : ComponentActivity() {
                     onAutoCheckUpdatesChange = ::setAutoCheckUpdates,
                     autoLaunch = autoLaunch,
                     onAutoLaunchChange = container::setWatchAutoLaunch,
+                    onOpenWatchSettings = { navController.navigate("watch-settings") },
                     lastSentToWatch = watchStatus.lastSent.takeIf { watchStatus.navigating },
                     enabledAppCount = discoveredApps.count { it.enabled && it.installed },
                     installedAppCount = discoveredApps.count { it.installed },
@@ -255,6 +260,37 @@ class MainActivity : ComponentActivity() {
                     onCreateRule = { navController.navigate("rule-editor-from/$id") },
                     onShareEvent = { navController.navigate("share-diagnostics?event=$id") },
                 )
+            }
+            composable("watch-settings") {
+                val watchSettings by container.watchSettingsMirror.state.collectAsState()
+                val watchappOpen by container.navigationController.watchappOpen.collectAsState()
+                WatchSettingsScreen(
+                    state = watchSettings,
+                    watchappOpen = watchappOpen,
+                    onOpenSetting = { setting -> navController.navigate("watch-settings/${setting.name}") },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = "watch-settings/{setting}",
+                arguments = listOf(navArgument("setting") { type = NavType.StringType }),
+            ) { entry ->
+                val setting = entry.arguments?.getString("setting")
+                    ?.let { name -> WatchSetting.entries.firstOrNull { it.name == name } }
+                val watchSettings by container.watchSettingsMirror.state.collectAsState()
+                val watchappOpen by container.navigationController.watchappOpen.collectAsState()
+                val mirror = watchSettings.mirror
+                if (setting == null || mirror == null) {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                } else {
+                    OptionListScreen(
+                        setting = setting,
+                        model = mirror,
+                        queued = WatchSettingsUi.showsQueuedNotice(watchSettings, watchappOpen),
+                        onSelect = { value -> container.setWatchSetting(setting, value) },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
             composable("navigation-apps") {
                 val navigationApps by container.enabledAppRepository.observeEnablement()

@@ -22,8 +22,17 @@ object WatchInboundBus {
     private val _messages = MutableSharedFlow<AppMessage>(extraBufferCapacity = 32)
     val messages: Flow<AppMessage> = _messages.asSharedFlow()
 
+    private val _closed = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+
+    /** The watchapp was closed on the watch (REQ-ANDROID-021): no settings go to it until it reopens. */
+    val closed: Flow<Unit> = _closed.asSharedFlow()
+
     fun emit(message: AppMessage) {
         _messages.tryEmit(message)
+    }
+
+    fun emitClosed() {
+        _closed.tryEmit(Unit)
     }
 }
 
@@ -59,6 +68,13 @@ class WatchListenerService : BasePebbleListenerService() {
         Timber.i("PebbleKit: watchapp opened on the watch; requesting state (re)send")
         markWatchappSeen()
         WatchInboundBus.emit(appOpenedReadyMessage())
+    }
+
+    /** Our watchapp left the foreground: queue phone edits of its settings until it reopens (#102). */
+    override fun onAppClosed(watchappUUID: UUID, watch: WatchIdentifier) {
+        if (watchappUUID != PebbleWatchTransport.PEBBLENTN_UUID) return
+        Timber.i("PebbleKit: watchapp closed on the watch")
+        WatchInboundBus.emitClosed()
     }
 
     /** Hearing from our watchapp proves it is installed (setup checklist, #28). */

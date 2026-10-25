@@ -46,5 +46,13 @@
     "scope": "express",
     "status": "complete",
     "request": "fb98699e"
+  },
+  {
+    "uuid": "01a172c5-ae0a-7d02-8312-a7d64155d605",
+    "slug": "settings-sync",
+    "dirName": "261025-settings-sync",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "fba85fec"
   }
 ]

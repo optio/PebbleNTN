@@ -26,6 +26,11 @@ static void notify_change(void) {
   }
 }
 
+// Step `id` to its next value, wrapping, as a watch edit (a row that cycles in place).
+static void cycle_setting(SettingId id) {
+  settings_set(id, (settings_get(id) + 1) % sync_value_count(id));
+}
+
 // menu_cell_basic_header_draw left-aligns the title, which runs straight into the bezel on a round
 // display. Centring it keeps the whole title on screen; rectangular watches keep the stock look.
 static void draw_menu_header(GContext *ctx, const Layer *cell, const char *title) {
@@ -132,7 +137,13 @@ static void push_colour_window(void) {
 
 static Window *s_pack_window;
 static MenuLayer *s_pack_menu;
-static GBitmap *s_pack_preview[GLYPH_PACK_COUNT];
+
+// The preview glyphs' size: the maneuver bitmaps are 48 px, 64 px on emery (package.json).
+#if defined(PBL_PLATFORM_EMERY)
+#define PACK_GLYPH_SIZE 64
+#else
+#define PACK_GLYPH_SIZE 48
+#endif
 
 // The sample glyph previewed for each pack: a right turn reads clearly at menu-icon size.
 static uint32_t pack_preview_resource(GlyphPack pack) {
@@ -163,21 +174,22 @@ static int16_t text_size(const char *text, GFont font, bool want_width) {
 // not fit the icon slot menu_cell_basic_draw reserves — passing it there drew the arrow straight
 // over the pack name. The row is laid out by hand instead: the glyph gets its own column and the
 // name (plus "Selected") is stacked beside it, with the cell grown to fit (see pack_cell_height).
+//
+// The glyph is loaded for the draw and released after it, so the door holds at most one preview at
+// a time: holding all three kept this door within a few bytes of aplite's heap limit (#102).
 static void pack_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
   const GlyphPack pack = (GlyphPack)index->row;
   const bool active = (pack == settings_glyph_pack());
   const GRect bounds = layer_get_bounds(cell);
   const bool highlighted = menu_cell_layer_is_highlighted(cell);
   const GColor fg = highlighted ? GColorWhite : GColorBlack;
-  GBitmap *preview = (index->row < GLYPH_PACK_COUNT) ? s_pack_preview[index->row] : NULL;
+  GBitmap *preview = NULL;
 
-#ifdef PBL_ROUND
   // Unfocused rows on a round display are only ~32px tall — far too short for the glyph — so there
   // the preview belongs to the focused row alone.
-  if (!highlighted) {
-    preview = NULL;
+  if (PBL_IF_ROUND_ELSE(highlighted, true)) {
+    preview = gbitmap_create_with_resource(pack_preview_resource(pack));
   }
-#endif
 
   const char *title = glyph_pack_name(pack);
   const char *subtitle = active ? "Selected" : NULL;
@@ -211,6 +223,7 @@ static void pack_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     graphics_draw_bitmap_in_rect(ctx, preview,
                                  GRect(x, (bounds.size.h - glyph.h) / 2, glyph.w, glyph.h));
     graphics_context_set_compositing_mode(ctx, GCompOpAssign);
+    gbitmap_destroy(preview);
     x += glyph.w + gap;
   }
 
@@ -239,9 +252,7 @@ static int16_t pack_cell_height(struct MenuLayer *m, MenuIndex *index, void *ctx
              ? MENU_CELL_ROUND_FOCUSED_TALL_CELL_HEIGHT
              : MENU_CELL_ROUND_UNFOCUSED_TALL_CELL_HEIGHT;
 #else
-  GBitmap *preview = (index->row < GLYPH_PACK_COUNT) ? s_pack_preview[index->row] : NULL;
-  const int16_t needed = ((preview != NULL) ? gbitmap_get_bounds(preview).size.h : 0) + 8;
-  return (needed > 44) ? needed : 44;
+  return PACK_GLYPH_SIZE + 8;  // never under the 44 px the text alone needs
 #endif
 }
 
@@ -262,21 +273,12 @@ static const MenuLayerCallbacks kPackCallbacks = {
 };
 
 static void pack_load(Window *window) {
-  for (int i = 0; i < GLYPH_PACK_COUNT; i++) {
-    s_pack_preview[i] = gbitmap_create_with_resource(pack_preview_resource((GlyphPack)i));
-  }
   s_pack_menu = menu_create(window, &kPackCallbacks);
 }
 
 static void pack_unload(Window *window) {
   menu_layer_destroy(s_pack_menu);
   s_pack_menu = NULL;
-  for (int i = 0; i < GLYPH_PACK_COUNT; i++) {
-    if (s_pack_preview[i] != NULL) {
-      gbitmap_destroy(s_pack_preview[i]);
-      s_pack_preview[i] = NULL;
-    }
-  }
   window_destroy(s_pack_window);
   s_pack_window = NULL;
 }
@@ -472,74 +474,62 @@ static void vibe_header(GContext *ctx, const Layer *cell, uint16_t section, void
 }
 
 static void vibe_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
-  if (index->section == VIBE_SECTION_NEW) {
-    if (index->row == NEW_ROW_PATTERN) {
-      menu_cell_basic_draw(ctx, cell, "Pattern", vibe_pattern_name(settings_vibe_pattern()), NULL);
-    } else {
-      menu_cell_basic_draw(ctx, cell, "Strength", vibe_intensity_name(settings_vibe_intensity()),
-                           NULL);
-    }
-    return;
-  }
-  switch (index->row) {
-    case WARN_ROW_DISTANCE: {
-      char label[12];
+  // Both sections share the Pattern and Strength rows; the early warning adds Distance and Repeat.
+  const bool warn = index->section != VIBE_SECTION_NEW;
+  const int row = warn ? index->row : index->row + WARN_ROW_PATTERN;
+  char label[12];
+  const char *title = "Strength";
+  const char *value;
+  switch (row) {
+    case WARN_ROW_DISTANCE:
+      title = "Distance";
       early_warn_label(label, sizeof(label));
-      menu_cell_basic_draw(ctx, cell, "Distance", label, NULL);
+      value = label;
       break;
-    }
     case WARN_ROW_REPEAT:
-      menu_cell_basic_draw(ctx, cell, "Repeat",
-                           early_warn_repeat_name(settings_early_warn_repeat()), NULL);
+      title = "Repeat";
+      value = early_warn_repeat_name(settings_early_warn_repeat());
       break;
     case WARN_ROW_PATTERN:
-      menu_cell_basic_draw(ctx, cell, "Pattern",
-                           vibe_pattern_name(settings_early_warn_pattern()), NULL);
+      title = "Pattern";
+      value = vibe_pattern_name(warn ? settings_early_warn_pattern() : settings_vibe_pattern());
       break;
     default:
-      menu_cell_basic_draw(ctx, cell, "Strength",
-                           vibe_intensity_name(settings_early_warn_intensity()), NULL);
+      value = vibe_intensity_name(warn ? settings_early_warn_intensity() : settings_vibe_intensity());
       break;
   }
+  menu_cell_basic_draw(ctx, cell, title, value, NULL);
 }
 
-// The early warning has no Off pattern (that is what an Off distance is for), so it cycles through
-// the audible patterns only.
+// The early warning has no Off or Short pulse pattern (an Off distance is its Off), so it cycles
+// through Single to Long only.
 static VibePatternId next_audible_pattern(VibePatternId id) {
-  const VibePatternId next = (VibePatternId)((id + 1) % VIBE_PATTERN_COUNT);
-  return (next == VIBE_PATTERN_OFF) ? VIBE_PATTERN_SINGLE : next;
+  return (id >= VIBE_PATTERN_SINGLE && id < VIBE_PATTERN_LONG) ? (VibePatternId)(id + 1)
+                                                               : VIBE_PATTERN_SINGLE;
 }
+
+// The setting each early-warning row cycles, in row order.
+static const uint8_t kWarnRowSettings[WARN_ROW_COUNT] = {
+  SET_WARN_DISTANCE, SET_WARN_REPEAT, SET_WARN_PATTERN, SET_WARN_INTENSITY,
+};
 
 static void vibe_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
   if (index->section == VIBE_SECTION_NEW) {
     if (index->row == NEW_ROW_PATTERN) {
-      settings_set_vibe_pattern(
-          (VibePatternId)((settings_vibe_pattern() + 1) % VIBE_PATTERN_COUNT));
+      // Off, Short pulse, Single, … Long, then Off again (#102).
+      settings_set_vibe_pattern(vibe_pattern_next(settings_vibe_pattern()));
     } else {
-      settings_set_vibe_intensity(
-          (VibeIntensity)((settings_vibe_intensity() + 1) % VIBE_INTENSITY_COUNT));
+      cycle_setting(SET_VIBE_INTENSITY);
     }
     menu_layer_reload_data(s_vibe_menu);
-    settings_vibe_play();  // preview the newly selected buzz (no-op when the pattern is Off)
+    settings_vibe_play();  // preview the newly selected buzz (none when the pattern is Off)
     notify_change();
     return;
   }
-  switch (index->row) {
-    case WARN_ROW_DISTANCE:
-      settings_set_early_warn_distance(
-          (EarlyWarnDistance)((settings_early_warn_distance() + 1) % EARLY_WARN_COUNT));
-      break;
-    case WARN_ROW_REPEAT:
-      settings_set_early_warn_repeat(
-          (EarlyWarnRepeat)((settings_early_warn_repeat() + 1) % EARLY_WARN_REPEAT_COUNT));
-      break;
-    case WARN_ROW_PATTERN:
-      settings_set_early_warn_pattern(next_audible_pattern(settings_early_warn_pattern()));
-      break;
-    default:
-      settings_set_early_warn_intensity(
-          (VibeIntensity)((settings_early_warn_intensity() + 1) % VIBE_INTENSITY_COUNT));
-      break;
+  if (index->row == WARN_ROW_PATTERN) {
+    settings_set_early_warn_pattern(next_audible_pattern(settings_early_warn_pattern()));
+  } else {
+    cycle_setting((SettingId)kWarnRowSettings[index->row]);
   }
   menu_layer_reload_data(s_vibe_menu);
   if (index->row != WARN_ROW_REPEAT) {
@@ -754,13 +744,6 @@ static void shortcuts_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
   push_action_window(slot);
 }
 
-// Returning from the action list: refresh that row's subtitle.
-static void shortcuts_appear(Window *window) {
-  if (s_shortcuts_menu != NULL) {
-    menu_layer_reload_data(s_shortcuts_menu);
-  }
-}
-
 static const MenuLayerCallbacks kShortcutsCallbacks = {
   .get_num_sections = shortcuts_num_sections,
   .get_num_rows = shortcuts_num_rows,
@@ -770,40 +753,56 @@ static const MenuLayerCallbacks kShortcutsCallbacks = {
   .select_click = shortcuts_select,
 };
 
-static void shortcuts_load(Window *window) {
-  s_shortcuts_menu = menu_create(window, &kShortcutsCallbacks);
+// The door's menu exists only while the door is on screen. The action list is the third window
+// deep, and on aplite it scrolls only with the door's menu freed behind it (#102), so the menu is
+// built on appear, on the row it was left on, and destroyed when the action list covers it.
+static MenuIndex s_shortcuts_selected;
+
+static void shortcuts_appear(Window *window) {
+  if (s_shortcuts_menu == NULL) {
+    s_shortcuts_menu = menu_create(window, &kShortcutsCallbacks);
+    menu_layer_set_selected_index(s_shortcuts_menu, s_shortcuts_selected, MenuRowAlignCenter, false);
+  }
+}
+
+static void shortcuts_disappear(Window *window) {
+  if (s_shortcuts_menu != NULL) {
+    s_shortcuts_selected = menu_layer_get_selected_index(s_shortcuts_menu);
+    menu_layer_destroy(s_shortcuts_menu);
+    s_shortcuts_menu = NULL;
+  }
 }
 
 static void shortcuts_unload(Window *window) {
-  menu_layer_destroy(s_shortcuts_menu);
-  s_shortcuts_menu = NULL;
+  shortcuts_disappear(window);
   window_destroy(s_shortcuts_window);
   s_shortcuts_window = NULL;
 }
 
 static void push_shortcuts_window(void) {
+  s_shortcuts_selected = (MenuIndex){0, 0};
   s_shortcuts_window = window_create();
   window_set_window_handlers(s_shortcuts_window, (WindowHandlers){
-    .load = shortcuts_load,
-    .unload = shortcuts_unload,
     .appear = shortcuts_appear,
+    .disappear = shortcuts_disappear,
+    .unload = shortcuts_unload,
   });
   window_stack_push(s_shortcuts_window, true);
 }
 
 // ===== Top-level settings menu ==================================================================
 
-#define ROW_BACKLIGHT 0
-#define ROW_VIBE 1
-#define ROW_COLOUR 2
-#define ROW_INVERT 3
-#define ROW_ETA 4
-#define ROW_ETA_LABEL 5
-#define ROW_ARROW 6
-#define ROW_GLYPH 7
-#define ROW_UNITS 8
-#define ROW_SHORTCUTS 9
-#define ROW_ABOUT 10  // About stays last (REQ-WATCH-020)
+#define ROW_ABOUT 0  // About comes first (REQ-WATCH-020)
+#define ROW_BACKLIGHT 1
+#define ROW_VIBE 2
+#define ROW_COLOUR 3
+#define ROW_INVERT 4
+#define ROW_ETA 5
+#define ROW_ETA_LABEL 6
+#define ROW_ARROW 7
+#define ROW_GLYPH 8
+#define ROW_UNITS 9
+#define ROW_SHORTCUTS 10
 #define MAIN_ROW_COUNT 11
 
 static Window *s_window;
@@ -818,62 +817,76 @@ static void main_header(GContext *ctx, const Layer *cell, uint16_t section, void
   draw_menu_header(ctx, cell, "Settings");
 }
 
+// Row titles, in row order. The rows are drawn and selected through tables rather than a case per
+// row, which is less code, and code is heap on aplite (#102).
+static const char *const kMainTitles[MAIN_ROW_COUNT] = {
+  [ROW_ABOUT] = "About",
+  [ROW_BACKLIGHT] = "Backlight",
+  [ROW_VIBE] = "Vibration",
+  [ROW_COLOUR] = "Colour",
+  [ROW_INVERT] = "Invert",
+  [ROW_ETA] = "ETA display",
+  [ROW_ETA_LABEL] = "ETA label",
+  [ROW_ARROW] = "Arrow side",
+  [ROW_GLYPH] = "Glyph pack",
+  [ROW_UNITS] = "Distance units",
+  [ROW_SHORTCUTS] = "Shortcuts",
+};
+
+// The setting each row cycles in place, plus one; 0 for a row that opens a door. Backlight opens a
+// door on RGB hardware, which has a tint to pick as well; elsewhere duration is the only choice.
+static const uint8_t kMainCycles[MAIN_ROW_COUNT] = {
+#ifndef PBL_RGB_BACKLIGHT
+  [ROW_BACKLIGHT] = SET_BACKLIGHT + 1,
+#endif
+  [ROW_INVERT] = SET_INVERT + 1,
+  [ROW_ETA] = SET_ETA_MODE + 1,
+  [ROW_ETA_LABEL] = SET_ETA_LABEL + 1,
+  [ROW_ARROW] = SET_ARROW_LEFT + 1,
+  [ROW_UNITS] = SET_UNITS + 1,
+};
+
 static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
+  char summary[80];
+  const char *value = summary;
   switch (index->row) {
-    case ROW_COLOUR:
-      menu_cell_basic_draw(ctx, cell, "Colour", accent_name(settings_accent()), NULL);
-      break;
-    case ROW_GLYPH:
-      menu_cell_basic_draw(ctx, cell, "Glyph pack", glyph_pack_name(settings_glyph_pack()), NULL);
-      break;
+    case ROW_COLOUR: value = accent_name(settings_accent()); break;
+    case ROW_GLYPH: value = glyph_pack_name(settings_glyph_pack()); break;
     case ROW_ARROW:
-      menu_cell_basic_draw(ctx, cell, "Arrow side",
-                           settings_arrow_left() ? "Left (distance right)" : "Right (distance left)",
-                           NULL);
+      value = settings_arrow_left() ? "Left (distance right)" : "Right (distance left)";
       break;
-    case ROW_INVERT:
-      menu_cell_basic_draw(ctx, cell, "Invert",
-                           settings_inverted() ? "Light on dark" : "Dark on light", NULL);
-      break;
-    case ROW_UNITS:
-      menu_cell_basic_draw(ctx, cell, "Distance units", units_name(settings_units()), NULL);
-      break;
-    case ROW_ETA:
-      menu_cell_basic_draw(ctx, cell, "ETA display", eta_mode_name(settings_eta_mode()), NULL);
-      break;
-    case ROW_ETA_LABEL:
-      menu_cell_basic_draw(ctx, cell, "ETA label", eta_label_style_name(settings_eta_label_style()),
-                           NULL);
-      break;
-    case ROW_ABOUT:
-      menu_cell_basic_draw(ctx, cell, "About", s_about.app_version, NULL);
-      break;
-    case ROW_SHORTCUTS: {
+    case ROW_INVERT: value = settings_inverted() ? "Light on dark" : "Dark on light"; break;
+    case ROW_UNITS: value = units_name(settings_units()); break;
+    case ROW_ETA: value = eta_mode_name(settings_eta_mode()); break;
+    case ROW_ETA_LABEL: value = eta_label_style_name(settings_eta_label_style()); break;
+    case ROW_ABOUT: value = s_about.app_version; break;
+    case ROW_BACKLIGHT: value = backlight_mode_name(settings_backlight()); break;
+    case ROW_SHORTCUTS:
       // The button shortcuts, which every watch has: "Up: None / Down: Invert colours".
-      char summary[80];
       snprintf(summary, sizeof(summary), "Up: %s / Down: %s",
                shortcut_action_name(settings_shortcut(SLOT_UP_BUTTON)),
                shortcut_action_name(settings_shortcut(SLOT_DOWN_BUTTON)));
-      menu_cell_basic_draw(ctx, cell, "Shortcuts", summary, NULL);
-      break;
-    }
-    case ROW_BACKLIGHT:
-      menu_cell_basic_draw(ctx, cell, "Backlight", backlight_mode_name(settings_backlight()), NULL);
       break;
     default: {
       // Both halves of the door in one line: "Double / Warn 50 m", "Off / Warn off".
       char warn[12];
-      char summary[32];
       early_warn_label(warn, sizeof(warn));
       snprintf(summary, sizeof(summary), "%s / Warn %s", vibe_pattern_name(settings_vibe_pattern()),
                (settings_early_warn_distance() == EARLY_WARN_OFF) ? "off" : warn);
-      menu_cell_basic_draw(ctx, cell, "Vibration", summary, NULL);
       break;
     }
   }
+  menu_cell_basic_draw(ctx, cell, kMainTitles[index->row], value, NULL);
 }
 
 static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  const uint8_t cycles = kMainCycles[index->row];
+  if (cycles != 0) {
+    cycle_setting((SettingId)(cycles - 1));
+    menu_layer_reload_data(s_menu);
+    notify_change();
+    return;
+  }
   switch (index->row) {
     case ROW_COLOUR:
       push_colour_window();
@@ -881,49 +894,17 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
     case ROW_GLYPH:
       push_pack_window();
       break;
-    case ROW_ARROW:
-      settings_set_arrow_left(!settings_arrow_left());
-      menu_layer_reload_data(s_menu);
-      notify_change();
-      break;
-    case ROW_INVERT:
-      settings_set_inverted(!settings_inverted());
-      menu_layer_reload_data(s_menu);
-      notify_change();
-      break;
-    case ROW_UNITS:
-      settings_set_units((UnitsId)((settings_units() + 1) % UNITS_COUNT));
-      menu_layer_reload_data(s_menu);
-      notify_change();
-      break;
-    case ROW_ETA:
-      settings_set_eta_mode((EtaMode)((settings_eta_mode() + 1) % ETA_MODE_COUNT));
-      menu_layer_reload_data(s_menu);
-      notify_change();
-      break;
-    case ROW_ETA_LABEL:
-      settings_set_eta_label_style(
-          (EtaLabelStyle)((settings_eta_label_style() + 1) % ETA_LABEL_COUNT));
-      menu_layer_reload_data(s_menu);
-      notify_change();
-      break;
     case ROW_ABOUT:
       about_window_push(&s_about);
       break;
     case ROW_SHORTCUTS:
       push_shortcuts_window();
       break;
-    case ROW_BACKLIGHT:
-      // RGB hardware has a tint to pick as well, so the row opens a door; otherwise duration is the
-      // only choice and cycles in place.
 #ifdef PBL_RGB_BACKLIGHT
+    case ROW_BACKLIGHT:
       push_backlight_window();
-#else
-      settings_set_backlight((BacklightMode)((settings_backlight() + 1) % BACKLIGHT_COUNT));
-      menu_layer_reload_data(s_menu);
-      notify_change();
-#endif
       break;
+#endif
     default:
       push_vibe_window();
       break;
@@ -956,6 +937,20 @@ static void main_unload(Window *window) {
   s_menu = NULL;
   window_destroy(s_window);
   s_window = NULL;
+}
+
+void settings_window_refresh(void) {
+  if (s_window == NULL) {
+    return;  // Settings is not open
+  }
+  // Any open door closes: some doors' rows depend on the values that changed (the early warning
+  // rows, the Touch rows), and the top menu shows every new value and reopens any door. One rule
+  // for all doors keeps this small on aplite, where code is heap.
+  Window *top;
+  while ((top = window_stack_get_top_window()) != s_window && top != NULL) {
+    window_stack_pop(false);
+  }
+  menu_layer_reload_data(s_menu);
 }
 
 void settings_window_push(void (*on_change)(void), const AboutInfo *about) {

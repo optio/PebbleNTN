@@ -1,0 +1,20 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5", "FR6", "FR7", "FR8", "FR9", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "protocol/protocol-definition.json" },
+    { "id": "FR2", "status": "OK", "target": "watchapp/src/c/settings_sync_glue.c" },
+    { "id": "FR3", "status": "OK", "target": "watchapp/src/c/settings_sync.c" },
+    { "id": "FR4", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/core/WatchSettingsSync.kt" },
+    { "id": "FR5", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreen.kt" },
+    { "id": "FR6", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/OptionListScreen.kt" },
+    { "id": "FR7", "status": "OK", "target": "watchapp/tools/capture_screenshots.py" },
+    { "id": "FR8", "status": "OK", "target": "watchapp/src/c/shortcuts.c" },
+    { "id": "FR9", "status": "OK", "target": "requirements/REQ-WATCH.md" },
+    { "id": "NFR1", "status": "OK", "target": "watchapp/src/c/theme.c" },
+    { "id": "NFR2", "status": "OK", "target": "watchapp/src/c/main.c" },
+    { "id": "NFR3", "status": "OK", "target": "watchapp/src/c/theme.c" },
+    { "id": "NFR4", "status": "OK", "target": "watchapp/tests/test_settings_sync.c" },
+    { "id": "NFR5", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/protocol/ProtocolCodecTest.kt" }
+  ]
+}

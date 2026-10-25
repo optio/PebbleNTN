@@ -1,6 +1,91 @@
 # Implementation Status
 
-_Last updated: 2026-10-24_
+_Last updated: 2026-10-25_
+
+## Watch settings synced with the phone app, with previews (2026-10-25, #102)
+
+**Milestone:** post-M12 enhancement across the protocol, the watchapp and the phone app (new
+REQ-WATCH-025 and REQ-ANDROID-021; REQ-WATCH-012/014/015/016/022/024 and REQ-ANDROID-009 amended).
+
+**Requirements implemented.**
+- Protocol 1.3: event `SETTINGS` (4), keys 15 `SETTINGS_REVISION`, 16 `WATCH_PLATFORM`, 17
+  `WATCH_CAPABILITIES`, 18–40 one per watch setting; the capability bits and platform values are new
+  sections of `protocol/protocol-definition.json`, generated like the rest (`generate.py` extended).
+- Watch: the 23 settings are one table (`settings_sync.{h,c}`, pure and host-tested: ranges,
+  capabilities, defaults, persist keys, the revision decision; `revision.{h,c}`: the 0–99 wrap-around
+  rule). `theme.c` stores them as one array, writes only changed values, and calls an edit handler on
+  every watch edit (menus, the Shortcuts door, Touch, shortcut actions), which bumps the revision
+  (persist key 28) and sends `SETTINGS`. `settings_sync_glue.c` writes and applies messages; `main.c`
+  sends READY with the settings, keeps a one-message outbox (sent/failed handlers, one retry, then held
+  until the next connection), resends on reconnect, and answers every phone `SETTINGS` once.
+- FR8: New instruction pattern 0 is now "Short pulse", a new silent "Off" is value 5 and listed first; the Vibration shortcut toggles any pattern to Off and Off back to
+  the last pattern (key 27 now 0–4, Short pulse by default).
+- Changes asked for at Build and Test: fresh-install defaults are now vibration Off; early warning
+  25 m, every update, Double, Medium; Touch On; Up, Swipe left and Swipe right the ETA toggle; Down and
+  Tap Backlight now (`kDefaults` in `settings_sync.c`, mirrored in `WatchSettingsModel`). Stored values
+  are kept, so only settings a user never changed take the new defaults. About is the first Settings
+  row, in larger type, with a line that every setting can be changed on the watch or in the phone app
+  and a feedback reminder. The phone's Watch settings row is now first in the Watch section.
+- aplite fix found while checking those: the Shortcuts action list (three windows deep) stopped
+  scrolling and faulted with the #102 heap. The Shortcuts door now frees its MenuLayer while the action
+  list covers it and rebuilds it on the same row on appear. aplite heap at load: 3597 B.
+- Phone: `WatchSettingsModel` (23 typed fields, rules mirrored from the watch), `WatchSettingsSync`
+  (revision rule, merge, queue), `WatchSettingsMirrorRepository` (SharedPreferences
+  `pebblentn_watch_settings`), `NavigationController` tracks "watchapp open" (settings received this
+  session, cleared by the companion's app-closed callback or a failed send) and sends edits only then,
+  through the new `WatchTransport.sendToOpenApp`, which never relaunches the watchapp. Watch settings
+  screen and option lists with previews (greyscale basalt on aplite/diorite), a dashboard row.
+- Previews: `capture_screenshots.py --previews` sets each value by a SETTINGS message (no wipe, so
+  emery keeps its system touch) and writes 87 losslessly optimised PNGs (29 values × basalt, chalk,
+  emery; 94,235 bytes) to `drawable-nodpi`; `PreviewCatalog` references each one statically, and the
+  release APK keeps all 87.
+
+**aplite memory (REQ-WATCH-025 NFR).** Measured on the aplite emulator with identical temporary
+`heap_bytes_free()` logging in v0.0.76 and in this change (removed afterwards):
+
+| Path | v0.0.76 | #102 |
+|---|---:|---:|
+| Free at load (build report, no logging) | 3916 | 3903 |
+| Settings top menu | 1780 | 1764 |
+| Settings > Vibration | 1036 | 1020 |
+| Settings > Shortcuts | 1036 | 1020 |
+| Settings > Shortcuts > action list | 440 | 424 |
+| Settings > Colour | 1036 | 1020 |
+| Settings > Glyph pack (after its menu) | fault | 1020 |
+
+The sync costs 16 bytes on every path. The v0.0.76 glyph-pack door faulted on aplite with only ~200
+bytes less code (it opens in the clean v0.0.76 build, so its margin was under ~200 bytes); it now
+loads each preview glyph only while drawing it. Behaviour-neutral savings that pay for the sync: the
+settings table replaced per-setting statics/getters/setters/load (−1 KB), name tables instead of
+switches, table-driven top menu and vibration rows, one step helper for shortcut actions, the maneuver
+bitmap lookup by arithmetic (checked at compile time against `package.json` order), and a phone edit
+closes open settings doors back to the top menu instead of reloading each. The AppMessage buffers
+were not resized: on the aplite emulator `app_message_open` with the 8200-byte maxima takes no app
+heap, so there is nothing to win there.
+
+**Commands executed.** `scripts/test-watchapp-unit.sh`; `pebble build` (all five platforms);
+`scripts/generate-protocol.sh` and `--check`; `scripts/validate-spec-assets.sh`;
+`android/gradlew -p android :app:testDebugUnitTest` (scoped and full), `:app:assembleDebug
+:app:assembleRelease :app:lintDebug`; the pebble-tool Python running
+`watchapp/tools/capture_screenshots.py --previews basalt chalk emery`; emulator checks with
+`pebble send-app-message` and `pebble logs -vvv`; `scripts/test-all.sh`.
+
+**Emulator verification (basalt, aplite).** A watch menu edit sends `SETTINGS` (revision moved on);
+a newer phone `SETTINGS` (accent Red, invert off) changes the screen and is answered with revision
+97 and those values; a stale one (revision 60) leaves the screen and is answered with the watch's
+settings; `WATCH_READY` at launch carries protocol 1.3 and all 23 settings; with Off and the phone's
+vibrate flag a maneuver change makes no vibration, with Short pulse it does, without the flag it does
+not (QEMU's vibration trace). Not verified on the emulator: the resend on reconnect
+(`pebble emu-bt-connection --connected yes` times out in Pebble Tool v5.0.40).
+
+**Library versions.** No new library.
+
+**Known blockers.** None. The Android screens and the phone side of the sync are covered by JVM and
+Robolectric Compose tests only; no Android emulator runs in WSL, so the phone-to-watch path end to
+end needs a phone and a watch.
+
+**Next atomic task.** On a phone and a watch: edit a setting on each side while the other is away,
+and check the reconnect resend and the queued edit arriving when the watchapp next opens.
 
 ## Shortcuts: UP/DOWN buttons and touch gestures on the navigation screen (2026-10-24, #12)
 

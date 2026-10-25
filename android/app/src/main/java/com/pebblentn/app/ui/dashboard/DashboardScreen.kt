@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -95,6 +96,8 @@ fun DashboardScreen(
     onAutoCheckUpdatesChange: (Boolean) -> Unit = {},
     autoLaunch: Boolean = true,
     onAutoLaunchChange: (Boolean) -> Unit = {},
+    /** Open the Watch settings screen (REQ-ANDROID-021, #102). */
+    onOpenWatchSettings: () -> Unit = {},
     lastSentToWatch: NavigationInstruction? = null,
     enabledAppCount: Int = 0,
     installedAppCount: Int = 0,
@@ -268,6 +271,14 @@ fun DashboardScreen(
             }
 
             Section(stringResource(R.string.dashboard_section_watch)) {
+                // The watchapp's own settings, changed from the phone (REQ-ANDROID-021, #102).
+                NavRow(
+                    icon = Icons.Filled.Settings,
+                    title = stringResource(R.string.dashboard_watch_settings),
+                    summary = stringResource(R.string.dashboard_watch_settings_summary),
+                    onClick = onOpenWatchSettings,
+                )
+                HorizontalDivider()
                 ToggleRow(
                     icon = Icons.Filled.PlayArrow,
                     title = stringResource(R.string.dashboard_auto_launch),

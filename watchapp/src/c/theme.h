@@ -13,6 +13,7 @@
 #include <pebble.h>
 
 #include "early_warning.h"
+#include "settings_sync.h"
 #include "shortcuts.h"
 
 // Accent colours offered for the maneuver panel. On black-and-white watches only the last two
@@ -115,17 +116,8 @@ typedef enum {
   BACKLIGHT_COLOR_COUNT = 11,
 } BacklightColorId;
 
-// Shape of the vibration played when a new navigation instruction is parsed (REQ-WATCH-016). OFF is
-// the default (no watch-initiated vibration; the phone's maneuver-change request still applies). The
-// other patterns differ in how many pulses are played.
-typedef enum {
-  VIBE_PATTERN_OFF = 0,     // default: no watch-initiated vibration
-  VIBE_PATTERN_SINGLE = 1,  // one pulse
-  VIBE_PATTERN_DOUBLE = 2,  // two pulses
-  VIBE_PATTERN_TRIPLE = 3,  // three pulses
-  VIBE_PATTERN_LONG = 4,    // one sustained pulse
-  VIBE_PATTERN_COUNT = 5,
-} VibePatternId;
+// The shape of the vibration played when a new navigation instruction is parsed (VibePatternId,
+// REQ-WATCH-016) lives in shortcuts.h with its menu labels, so both are host-tested.
 
 // Vibration intensity (REQ-WATCH-016). The Pebble SDK exposes no vibration *amplitude* control, so
 // intensity is expressed as pulse length: a longer buzz reads as stronger. This is the honest proxy
@@ -162,58 +154,73 @@ const char *eta_label_style_name(EtaLabelStyle id);
 // update", "Until app closes") rather than a bare Low/Medium/High, which says nothing on its own.
 const char *backlight_mode_name(BacklightMode id);
 const char *backlight_color_name(BacklightColorId id);
-const char *vibe_pattern_name(VibePatternId id);
 const char *vibe_intensity_name(VibeIntensity id);
 
-// Persisted settings. Load once at startup; each setter saves.
-AccentId settings_accent(void);
-bool settings_inverted(void);
-UnitsId settings_units(void);
-GlyphPack settings_glyph_pack(void);
-EtaMode settings_eta_mode(void);
-EtaLabelStyle settings_eta_label_style(void);
-BacklightMode settings_backlight(void);
-BacklightColorId settings_backlight_color(void);
-VibePatternId settings_vibe_pattern(void);
-VibeIntensity settings_vibe_intensity(void);
-// Early-warning vibration (REQ-WATCH-022): the distance threshold, whether it repeats, and its own
-// pattern and strength, separate from the new-instruction buzz so the two can be told apart.
-EarlyWarnDistance settings_early_warn_distance(void);
-EarlyWarnRepeat settings_early_warn_repeat(void);
-VibePatternId settings_early_warn_pattern(void);
-VibeIntensity settings_early_warn_intensity(void);
-// Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
-// default is the arrow on the right and the distance on the left.
-bool settings_arrow_left(void);
-// The last New instruction pattern that wasn't Off, which the Vibration shortcut turns back on
-// (REQ-WATCH-024); Single when none was ever chosen.
-VibePatternId settings_vibe_last_pattern(void);
-// Shortcuts (REQ-WATCH-024, #12): whether the navigation screen reacts to touch (Off by default),
-// and the action of each button and gesture slot.
-bool settings_touch_enabled(void);
-ShortcutAction settings_shortcut(ShortcutSlot slot);
-void settings_set_touch_enabled(bool enabled);
-void settings_set_shortcut(ShortcutSlot slot, ShortcutAction action);
-void settings_set_accent(AccentId id);
-void settings_set_inverted(bool inverted);
-void settings_set_units(UnitsId id);
-void settings_set_glyph_pack(GlyphPack id);
-void settings_set_arrow_left(bool arrow_left);
-void settings_set_eta_mode(EtaMode id);
-void settings_set_eta_label_style(EtaLabelStyle id);
-void settings_set_backlight(BacklightMode id);
-void settings_set_backlight_color(BacklightColorId id);
-void settings_set_vibe_pattern(VibePatternId id);
-void settings_set_vibe_intensity(VibeIntensity id);
-void settings_set_early_warn_distance(EarlyWarnDistance id);
-void settings_set_early_warn_repeat(EarlyWarnRepeat id);
-void settings_set_early_warn_pattern(VibePatternId id);
-void settings_set_early_warn_intensity(VibeIntensity id);
+// Persisted settings, one value per SettingId (settings_sync.h). Load once at startup.
+//
+// settings_get() reads a value. settings_store() checks a value against its range (an out-of-range
+// one becomes the default, as the old per-setting setters did), saves it only when it changed (flash
+// wear) and says whether it did. settings_set() is the watch's own edit: a store that, when it
+// changed something, also calls the edit handler, which bumps the settings revision and sends the
+// settings to the phone (REQ-WATCH-025, #102). A phone edit is applied with settings_store(), so it
+// is never echoed back as a watch edit.
+int settings_get(SettingId id);
+bool settings_store(SettingId id, int value);
+void settings_set(SettingId id, int value);
+void settings_set_edit_handler(void (*on_edit)(void));
 void settings_load(void);
 
+// The getters and setters by name, as the menus, the shortcuts and the renderer use them.
+#define settings_accent() ((AccentId)settings_get(SET_ACCENT))
+#define settings_inverted() ((bool)settings_get(SET_INVERT))
+#define settings_units() ((UnitsId)settings_get(SET_UNITS))
+#define settings_glyph_pack() ((GlyphPack)settings_get(SET_GLYPH_PACK))
+#define settings_eta_mode() ((EtaMode)settings_get(SET_ETA_MODE))
+#define settings_eta_label_style() ((EtaLabelStyle)settings_get(SET_ETA_LABEL))
+#define settings_backlight() ((BacklightMode)settings_get(SET_BACKLIGHT))
+#define settings_backlight_color() ((BacklightColorId)settings_get(SET_BACKLIGHT_COLOR))
+#define settings_vibe_pattern() ((VibePatternId)settings_get(SET_VIBE_PATTERN))
+#define settings_vibe_intensity() ((VibeIntensity)settings_get(SET_VIBE_INTENSITY))
+// Early-warning vibration (REQ-WATCH-022): the distance threshold, whether it repeats, and its own
+// pattern and strength, separate from the new-instruction buzz so the two can be told apart.
+#define settings_early_warn_distance() ((EarlyWarnDistance)settings_get(SET_WARN_DISTANCE))
+#define settings_early_warn_repeat() ((EarlyWarnRepeat)settings_get(SET_WARN_REPEAT))
+#define settings_early_warn_pattern() ((VibePatternId)settings_get(SET_WARN_PATTERN))
+#define settings_early_warn_intensity() ((VibeIntensity)settings_get(SET_WARN_INTENSITY))
+// Whether the maneuver arrow sits in the top-LEFT corner (with the distance on the right); the
+// default is the arrow on the right and the distance on the left.
+#define settings_arrow_left() ((bool)settings_get(SET_ARROW_LEFT))
+// Shortcuts (REQ-WATCH-024, #12): whether the navigation screen reacts to touch (Off by default),
+// and the action of each button and gesture slot.
+#define settings_touch_enabled() ((bool)settings_get(SET_TOUCH))
+#define settings_shortcut(slot) ((ShortcutAction)settings_get((SettingId)(SET_SHORTCUT_FIRST + (slot))))
+
+#define settings_set_accent(v) settings_set(SET_ACCENT, (v))
+#define settings_set_inverted(v) settings_set(SET_INVERT, (v))
+#define settings_set_units(v) settings_set(SET_UNITS, (v))
+#define settings_set_glyph_pack(v) settings_set(SET_GLYPH_PACK, (v))
+#define settings_set_arrow_left(v) settings_set(SET_ARROW_LEFT, (v))
+#define settings_set_eta_mode(v) settings_set(SET_ETA_MODE, (v))
+#define settings_set_eta_label_style(v) settings_set(SET_ETA_LABEL, (v))
+#define settings_set_backlight(v) settings_set(SET_BACKLIGHT, (v))
+#define settings_set_backlight_color(v) settings_set(SET_BACKLIGHT_COLOR, (v))
+#define settings_set_vibe_pattern(v) settings_set(SET_VIBE_PATTERN, (v))
+#define settings_set_vibe_intensity(v) settings_set(SET_VIBE_INTENSITY, (v))
+#define settings_set_early_warn_distance(v) settings_set(SET_WARN_DISTANCE, (v))
+#define settings_set_early_warn_repeat(v) settings_set(SET_WARN_REPEAT, (v))
+#define settings_set_early_warn_pattern(v) settings_set(SET_WARN_PATTERN, (v))
+#define settings_set_early_warn_intensity(v) settings_set(SET_WARN_INTENSITY, (v))
+#define settings_set_touch_enabled(v) settings_set(SET_TOUCH, (v))
+#define settings_set_shortcut(slot, v) settings_set((SettingId)(SET_SHORTCUT_FIRST + (slot)), (v))
+
+// The last New instruction pattern that wasn't Off, which the Vibration shortcut turns back on
+// (REQ-WATCH-024): Short pulse until another one is chosen. Not synced (persist key 27).
+VibePatternId settings_vibe_last_pattern(void);
+
 // Play the vibration selected for a newly parsed instruction, built from the current pattern and
-// intensity settings (REQ-WATCH-016). No-op when the pattern is OFF. Shared by the navigation path
-// (fired on new info) and the settings menu (fired as a preview when the user changes either row).
+// intensity settings (REQ-WATCH-016): the pattern itself, the phone's short pulse for Short pulse,
+// nothing for Off. Shared by the navigation path (fired on new info) and the settings menu (fired
+// as a preview when the user changes either row).
 void settings_vibe_play(void);
 
 // Play the early-warning buzz from its own pattern and intensity (REQ-WATCH-022). No-op when the

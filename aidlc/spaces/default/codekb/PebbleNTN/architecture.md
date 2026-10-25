@@ -79,8 +79,10 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Privacy by construction**: allowlist before content, no automatic upload, network used only for the update check, which is opt-in for automatic runs.
 - **Vendored PebbleKit 2** for F-Droid reproducibility.
 - **Pure C units** for watch logic that can be tested on the host, one unit per test binary.
-- **Settings change through one path**: every on-watch setting has a `settings_set_*` setter in `theme.c` that writes its persist key at once; the menus call it and then `notify_change()`, which runs `main.c` `on_settings_changed()` (window background, `redraw_all`, `apply_backlight`). Everything else that depends on a setting reads it when it draws (theme colours, units, ETA mode and label, arrow side; the glyph cache flushes itself when the pack changes).
-- **Touch only through the system bridge, on emery only (#53)**: the app opts into the bridge (`app_touch_navigation_enable(true)`) so the menus, sub-lists, About and the update notice take touches as button presses, and disables it on the navigation window, so a stray swipe cannot act as BACK and close the app mid-route. No gesture recognizer or raw touch subscription exists yet (#12).
+- **Settings change through one path**: every on-watch setting has a `settings_set_*` setter in `theme.c` that writes its persist key at once; the menus call it and then `notify_change()`, which runs `main.c` `on_settings_changed()` (window background, `redraw_all`, `apply_backlight`). Since v0.0.76 a Shortcut runs the same setters through `shortcut_apply()` and then `on_settings_changed()` itself. Everything else that depends on a setting reads it when it draws (theme colours, units, ETA mode and label, arrow side; the glyph cache flushes itself when the pack changes). The Shortcuts door's own setters (`settings_set_shortcut`, `settings_set_touch_enabled`) do not call `notify_change()`, so the `theme.c` setters are the only place every watch-side edit passes through (relevant to #102).
+- **Watch settings are watch-only (as of 4779760)**: no setting travels in the protocol; REQ-WATCH-012/014/015/016/022/024 each say so. The phone's `WatchSettings` holds four separate phone-side behaviours that only shape FLAGS bits 0-2, and three of them have no UI (see [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings").
+- **Touch through the system bridge, except on the navigation window (#53, #12)**: the app opts into the bridge (`app_touch_navigation_enable(true)`) so the menus, sub-lists, About and the update notice take touches as button presses, and disables it on the navigation window, so a stray swipe cannot act as BACK and close the app mid-route. Since v0.0.76 that window attaches a swipe and a tap recognizer that run the user's Shortcuts while Touch is on and `touch_service_is_enabled()` (REQ-WATCH-024).
+- **One handshake per launch**: the watch sends `WATCH_READY` once, from `init()`. A Bluetooth reconnect while the app is open only restarts the connection watchdog (`app_connection_handler`); it sends no new READY. The watchapp registers no outbox sent/failed or inbox-dropped handler, so a busy outbox silently drops `send_ready`.
 
 ### Improvement Opportunities
 
@@ -89,29 +91,54 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - Done in v0.0.73: "update available" is now derived on each device from the GitHub result and the version comparison.
 - `DashboardScreen` takes about 40 parameters; grouping the Status section inputs into one small model would ease further rows.
 - Done in v0.0.75: the #94 stale prompt and the manual-check toast take the version-compare result into account (intent `261022-update-by-version-compar`).
-- Navigation-screen gestures (#12, active intent `261023-touch-gestures`): the navigation window has the bridge off and only SELECT subscribed. The gesture-to-action decision belongs in a new pure unit, and the recognizers, a short change notice and the Touch settings in `main.c` and `settings_window.c` (see [code-quality-assessment.md](code-quality-assessment.md)).
+- Done in v0.0.76: navigation-screen Shortcuts (#12) as the pure `shortcuts.c` unit, `shortcut_apply.c`, the banner in `main.c` and the Shortcuts door in `settings_window.c`.
+- Settings sync (#102, active intent `261025-settings-sync`): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
 
 ## Interaction Diagrams
 
-### Watch input and setting changes (current, 3727ddc)
+### Watch input and setting changes (current, 4779760, v0.0.76)
 
-This is the surface the active intent `261023-touch-gestures` (#12) builds on.
+This is the surface the active intent `261025-settings-sync` (#102) hooks into: every path below ends in a `theme.c` setter.
 
 ```mermaid
 flowchart TD
   SEL["SELECT on navigation window"] --> PUSH["settings_window_push(on_settings_changed, AboutInfo)"]
-  PUSH --> MENU["Settings menu: 10 rows, About last"]
+  PUSH --> MENU["Settings menu: 11 rows, Shortcuts then About last"]
   MENU --> SET["theme.c settings_set_*: persist write at once"]
-  SET --> NOTE["notify_change"]
+  SET --> NOTE["notify_change (not for the Shortcuts door rows)"]
   NOTE --> APPLY["on_settings_changed: background, redraw_all, apply_backlight"]
-  UD["UP or DOWN on navigation window"] --> IGN1["not subscribed"]
-  BK["BACK on navigation window"] --> EXIT["default handler: pops the window, app exits"]
-  T["Touch on emery"] --> BR{"Bridge on for this window?"}
-  BR -- "settings, sub-lists, About, update notice" --> BTN["firmware maps touch to button presses"]
-  BR -- "navigation window: disabled" --> IGN2["no recognizer attached: touch ignored"]
+  UD["UP or DOWN on navigation window"] --> RUN["run_shortcut(settings_shortcut(slot))"]
+  T["Swipe or tap on emery, Touch on"] --> RUN
+  RUN --> SA["shortcut_apply: same setters"]
+  SA --> SET
+  SA --> APPLY
+  APPLY --> BAN["notice banner 1.5 s"]
+  BK["BACK on navigation window"] --> EXIT["default handler: app exits"]
 ```
 
-Text fallback: SELECT on the navigation window opens the settings menu with the `on_settings_changed` callback and an About snapshot. A menu choice calls a `theme.c` setter, which persists at once, then `notify_change`, which re-applies the background, redraws every layer and re-applies the backlight. UP and DOWN are not subscribed on the navigation window, and BACK uses the default handler (the app exits). On emery, touches on the settings windows, About and the update notice become button presses through the system bridge, while the navigation window has the bridge disabled and attaches no recognizer, so touches there do nothing today.
+Text fallback: SELECT opens the 11-row settings menu. A menu choice calls a `theme.c` setter (persisted at once) and then `notify_change`, which re-applies the background, redraws and re-applies the backlight; the Shortcuts door's slot and Touch rows save without calling it. UP, DOWN and, on emery while Touch is on, a swipe or a tap run the slot's action through `shortcut_apply`, which uses the same setters, then `on_settings_changed` and a 1.5 s banner. BACK still exits.
+
+### Settings today and the #102 touchpoints (current code, 4779760)
+
+```mermaid
+sequenceDiagram
+  participant W as Watchapp main.c
+  participant TH as theme.c setters + persist 1-15, 19-27
+  participant PK as Pebble companion app
+  participant S as WatchListenerService
+  participant C as NavigationController
+  participant WS as WatchSettingsRepository (prefs pebblentn_settings)
+  W->>TH: settings_load() in init
+  W->>PK: WATCH_READY once (EVENT, MAJOR, MINOR, APP_VERSION)
+  PK-->>S: onAppOpened -> synthetic READY (phone's own MAJOR/MINOR)
+  PK-->>S: onMessageReceived(real READY)
+  S->>C: WatchInboundBus -> handleInbound -> decodeInbound(major, minor)
+  C->>W: state message, FLAGS bits 0-2 from WatchSettings defaults
+  Note over WS: only watch_auto_launch is stored; vibrate, backlight, exit-on-stop are fixed defaults
+  Note over W,TH: a menu or Shortcut edit only persists on the watch; nothing is sent
+```
+
+Text fallback: the watch loads its settings from persist keys 1-15 and 19-27 and sends one READY with protocol and version only. The phone treats both the synthetic READY (which claims the phone's own protocol minor) and the real one as readiness, and sends state whose FLAGS bits 0-2 come from fixed `WatchSettings` defaults (only auto-launch is stored). Watch edits stay on the watch. #102 adds the settings to READY, a two-way SETTINGS event and a phone mirror.
 
 ### Navigation update reaches the watch
 

@@ -1,48 +1,29 @@
 #include "theme.h"
 
-#define PERSIST_KEY_ACCENT 1
-#define PERSIST_KEY_UNITS 2
-#define PERSIST_KEY_INVERT 3
-#define PERSIST_KEY_GLYPH_PACK 4
-#define PERSIST_KEY_ARROW_LEFT 5
-#define PERSIST_KEY_ETA_MODE 6
-#define PERSIST_KEY_BACKLIGHT 7
-#define PERSIST_KEY_VIBE_PATTERN 8
-#define PERSIST_KEY_VIBE_INTENSITY 9
-#define PERSIST_KEY_BACKLIGHT_COLOR 10
-#define PERSIST_KEY_ETA_LABEL_STYLE 11
-#define PERSIST_KEY_EARLY_WARN_DISTANCE 12
-#define PERSIST_KEY_EARLY_WARN_REPEAT 13
-#define PERSIST_KEY_EARLY_WARN_PATTERN 14
-#define PERSIST_KEY_EARLY_WARN_INTENSITY 15
-// Keys 16–18 are taken by main.c: 16 the last connected phone app version (#103), 17 the latest
-// phone app version on offer and 18 the version the update notice was shown for (#94).
-// Shortcuts (REQ-WATCH-024, #12): 19 is Touch on/off, 20–26 one action per slot in ShortcutSlot
-// order, and 27 the last New instruction pattern that wasn't Off. The next setting is 28.
-#define PERSIST_KEY_TOUCH 19
-#define PERSIST_KEY_SHORTCUT_FIRST 20
+// Persist keys 1–15 and 19–26 hold the synced settings, one per SettingId (sync_persist_key). Keys
+// 16–18 are taken by main.c: 16 the last connected phone app version (#103), 17 the latest phone
+// app version on offer and 18 the version the update notice was shown for (#94). 27 is the last New
+// instruction pattern that wasn't Off (REQ-WATCH-024) and 28 the settings revision
+// (settings_sync_glue.c, REQ-WATCH-025). The next key is 29.
 #define PERSIST_KEY_VIBE_LAST 27
 
-static AccentId s_accent = ACCENT_GREEN;
-static bool s_inverted = false;
-static UnitsId s_units = UNITS_METRIC;
-static GlyphPack s_glyph_pack = GLYPH_PACK_CLASSIC;
-static bool s_arrow_left = false;
-static EtaMode s_eta_mode = ETA_MODE_ARRIVAL;
-static EtaLabelStyle s_eta_label_style = ETA_LABEL_LABELLED;
-static BacklightMode s_backlight = BACKLIGHT_OFF;
-static BacklightColorId s_backlight_color = BACKLIGHT_COLOR_DEFAULT;
-static VibePatternId s_vibe_pattern = VIBE_PATTERN_OFF;
-static VibeIntensity s_vibe_intensity = VIBE_INTENSITY_MEDIUM;
-static EarlyWarnDistance s_early_warn_distance = EARLY_WARN_OFF;
-static EarlyWarnRepeat s_early_warn_repeat = EARLY_WARN_REPEAT_ONCE;
-// The early warning only exists once a distance is chosen, so its pattern is never Off.
-static VibePatternId s_early_warn_pattern = VIBE_PATTERN_DOUBLE;
-static VibeIntensity s_early_warn_intensity = VIBE_INTENSITY_MEDIUM;
-// Off while no pattern was ever chosen; settings_vibe_last_pattern() then answers Single.
-static VibePatternId s_vibe_last = VIBE_PATTERN_OFF;
-static bool s_touch_enabled = false;
-static ShortcutAction s_shortcuts[SLOT_COUNT];  // filled with the defaults by settings_load
+// settings_sync.c keeps a value range per setting; these are the enums it stands for.
+_Static_assert(ACCENT_COUNT == 16 && UNITS_COUNT == 2 && GLYPH_PACK_COUNT == 3 &&
+                   ETA_MODE_COUNT == 2 && BACKLIGHT_COUNT == 4 && VIBE_PATTERN_COUNT == 6 &&
+                   VIBE_INTENSITY_COUNT == 3 && BACKLIGHT_COLOR_COUNT == 11 &&
+                   ETA_LABEL_COUNT == 2 && EARLY_WARN_COUNT == 6 && EARLY_WARN_REPEAT_COUNT == 2,
+               "settings_sync.c kRules matches the setting enums");
+
+// Every synced setting, as its enum index (bools as 0/1); settings_load fills in the defaults.
+static uint8_t s_values[SET_COUNT];
+// The last New instruction pattern that buzzed (0–4); Short pulse until another is chosen.
+static VibePatternId s_vibe_last = VIBE_PATTERN_PULSE;
+static void (*s_on_edit)(void);
+
+#define s_accent ((AccentId)s_values[SET_ACCENT])
+#define s_inverted (s_values[SET_INVERT] != 0)
+#define s_backlight ((BacklightMode)s_values[SET_BACKLIGHT])
+#define s_backlight_color ((BacklightColorId)s_values[SET_BACKLIGHT_COLOR])
 
 // On a black-and-white watch the accent list is just {Black, White}; the row indices are offset so
 // the menu never shows a colour the display cannot render.
@@ -139,26 +120,14 @@ Theme theme_current(void) {
   return t;
 }
 
+// Name tables rather than switches: a table is about half the code, and code is heap on aplite.
+static const char *const kAccentNames[ACCENT_COUNT] = {
+  "Green", "Blue", "Red", "Orange", "Purple", "Teal", "Pink", "Yellow",
+  "Cyan", "Lime", "Tan", "Navy", "Amber", "Grey", "Black", "White",
+};
+
 const char *accent_name(AccentId id) {
-  switch (id) {
-    case ACCENT_GREEN: return "Green";
-    case ACCENT_BLUE: return "Blue";
-    case ACCENT_RED: return "Red";
-    case ACCENT_ORANGE: return "Orange";
-    case ACCENT_PURPLE: return "Purple";
-    case ACCENT_TEAL: return "Teal";
-    case ACCENT_PINK: return "Pink";
-    case ACCENT_YELLOW: return "Yellow";
-    case ACCENT_CYAN: return "Cyan";
-    case ACCENT_LIME: return "Lime";
-    case ACCENT_TAN: return "Tan";
-    case ACCENT_NAVY: return "Navy";
-    case ACCENT_AMBER: return "Amber";
-    case ACCENT_GRAY: return "Grey";
-    case ACCENT_WHITE: return "White";
-    case ACCENT_BLACK:
-    default: return "Black";
-  }
+  return kAccentNames[(id < ACCENT_COUNT) ? id : ACCENT_BLACK];
 }
 
 const char *units_name(UnitsId id) {
@@ -195,21 +164,13 @@ const char *backlight_mode_name(BacklightMode id) {
   }
 }
 
+static const char *const kBacklightColorNames[BACKLIGHT_COLOR_COUNT] = {
+  "Watch default", "White", "Warm white", "Red", "Orange", "Yellow",
+  "Green", "Cyan", "Blue", "Purple", "Pink",
+};
+
 const char *backlight_color_name(BacklightColorId id) {
-  switch (id) {
-    case BACKLIGHT_COLOR_WHITE: return "White";
-    case BACKLIGHT_COLOR_WARM: return "Warm white";
-    case BACKLIGHT_COLOR_RED: return "Red";
-    case BACKLIGHT_COLOR_ORANGE: return "Orange";
-    case BACKLIGHT_COLOR_YELLOW: return "Yellow";
-    case BACKLIGHT_COLOR_GREEN: return "Green";
-    case BACKLIGHT_COLOR_CYAN: return "Cyan";
-    case BACKLIGHT_COLOR_BLUE: return "Blue";
-    case BACKLIGHT_COLOR_PURPLE: return "Purple";
-    case BACKLIGHT_COLOR_PINK: return "Pink";
-    case BACKLIGHT_COLOR_DEFAULT:
-    default: return "Watch default";
-  }
+  return kBacklightColorNames[(id < BACKLIGHT_COLOR_COUNT) ? id : BACKLIGHT_COLOR_DEFAULT];
 }
 
 // The tint helpers exist only where the hardware does. On other watches the SDK's light_set_color*
@@ -252,17 +213,6 @@ void settings_apply_backlight_color(void) {}
 
 #endif
 
-const char *vibe_pattern_name(VibePatternId id) {
-  switch (id) {
-    case VIBE_PATTERN_SINGLE: return "Single";
-    case VIBE_PATTERN_DOUBLE: return "Double";
-    case VIBE_PATTERN_TRIPLE: return "Triple";
-    case VIBE_PATTERN_LONG: return "Long";
-    case VIBE_PATTERN_OFF:
-    default: return "Off";
-  }
-}
-
 const char *vibe_intensity_name(VibeIntensity id) {
   switch (id) {
     case VIBE_INTENSITY_LIGHT: return "Light";
@@ -272,42 +222,16 @@ const char *vibe_intensity_name(VibeIntensity id) {
   }
 }
 
-AccentId settings_accent(void) { return s_accent; }
-bool settings_inverted(void) { return s_inverted; }
-UnitsId settings_units(void) { return s_units; }
-GlyphPack settings_glyph_pack(void) { return s_glyph_pack; }
-bool settings_arrow_left(void) { return s_arrow_left; }
-EtaMode settings_eta_mode(void) { return s_eta_mode; }
-EtaLabelStyle settings_eta_label_style(void) { return s_eta_label_style; }
-BacklightMode settings_backlight(void) { return s_backlight; }
-BacklightColorId settings_backlight_color(void) { return s_backlight_color; }
-VibePatternId settings_vibe_pattern(void) { return s_vibe_pattern; }
-VibeIntensity settings_vibe_intensity(void) { return s_vibe_intensity; }
-EarlyWarnDistance settings_early_warn_distance(void) { return s_early_warn_distance; }
-EarlyWarnRepeat settings_early_warn_repeat(void) { return s_early_warn_repeat; }
-VibePatternId settings_early_warn_pattern(void) { return s_early_warn_pattern; }
-VibeIntensity settings_early_warn_intensity(void) { return s_early_warn_intensity; }
-bool settings_touch_enabled(void) { return s_touch_enabled; }
+int settings_get(SettingId id) {
+  return ((unsigned)id < SET_COUNT) ? s_values[id] : 0;
+}
 
 VibePatternId settings_vibe_last_pattern(void) {
-  return (s_vibe_last != VIBE_PATTERN_OFF) ? s_vibe_last : VIBE_PATTERN_SINGLE;
+  return s_vibe_last;
 }
 
-ShortcutAction settings_shortcut(ShortcutSlot slot) {
-  return (slot < SLOT_COUNT) ? s_shortcuts[slot] : ACTION_NONE;
-}
-
-void settings_set_touch_enabled(bool enabled) {
-  s_touch_enabled = enabled;
-  persist_write_bool(PERSIST_KEY_TOUCH, s_touch_enabled);
-}
-
-void settings_set_shortcut(ShortcutSlot slot, ShortcutAction action) {
-  if (slot >= SLOT_COUNT) {
-    return;
-  }
-  s_shortcuts[slot] = shortcut_valid_action(action);
-  persist_write_int(PERSIST_KEY_SHORTCUT_FIRST + slot, s_shortcuts[slot]);
+void settings_set_edit_handler(void (*on_edit)(void)) {
+  s_on_edit = on_edit;
 }
 
 // Remember `id` as the pattern the Vibration shortcut turns back on. Written only when it changes:
@@ -320,87 +244,41 @@ static void record_vibe_last(VibePatternId id) {
   persist_write_int(PERSIST_KEY_VIBE_LAST, s_vibe_last);
 }
 
-void settings_set_accent(AccentId id) {
-  s_accent = (id < ACCENT_COUNT) ? id : ACCENT_GREEN;
-  persist_write_int(PERSIST_KEY_ACCENT, s_accent);
-}
-
-void settings_set_inverted(bool inverted) {
-  s_inverted = inverted;
-  persist_write_bool(PERSIST_KEY_INVERT, s_inverted);
-}
-
-void settings_set_units(UnitsId id) {
-  s_units = (id < UNITS_COUNT) ? id : UNITS_METRIC;
-  persist_write_int(PERSIST_KEY_UNITS, s_units);
-}
-
-void settings_set_glyph_pack(GlyphPack id) {
-  s_glyph_pack = (id < GLYPH_PACK_COUNT) ? id : GLYPH_PACK_CLASSIC;
-  persist_write_int(PERSIST_KEY_GLYPH_PACK, s_glyph_pack);
-}
-
-void settings_set_arrow_left(bool arrow_left) {
-  s_arrow_left = arrow_left;
-  persist_write_bool(PERSIST_KEY_ARROW_LEFT, s_arrow_left);
-}
-
-void settings_set_eta_label_style(EtaLabelStyle id) {
-  s_eta_label_style = (id < ETA_LABEL_COUNT) ? id : ETA_LABEL_LABELLED;
-  persist_write_int(PERSIST_KEY_ETA_LABEL_STYLE, s_eta_label_style);
-}
-
-void settings_set_eta_mode(EtaMode id) {
-  s_eta_mode = (id < ETA_MODE_COUNT) ? id : ETA_MODE_ARRIVAL;
-  persist_write_int(PERSIST_KEY_ETA_MODE, s_eta_mode);
-}
-
-void settings_set_backlight(BacklightMode id) {
-  s_backlight = (id < BACKLIGHT_COUNT) ? id : BACKLIGHT_OFF;
-  persist_write_int(PERSIST_KEY_BACKLIGHT, s_backlight);
-}
-
-void settings_set_backlight_color(BacklightColorId id) {
-  s_backlight_color = (id < BACKLIGHT_COLOR_COUNT) ? id : BACKLIGHT_COLOR_DEFAULT;
-  persist_write_int(PERSIST_KEY_BACKLIGHT_COLOR, s_backlight_color);
-  settings_apply_backlight_color();  // apply live so the choice is visible while the light is on
-}
-
-void settings_set_vibe_pattern(VibePatternId id) {
-  const VibePatternId previous = s_vibe_pattern;
-  s_vibe_pattern = (id < VIBE_PATTERN_COUNT) ? id : VIBE_PATTERN_OFF;
-  persist_write_int(PERSIST_KEY_VIBE_PATTERN, s_vibe_pattern);
-  // Turning it off keeps the pattern it had, which also covers a pattern stored before key 27.
-  if (s_vibe_pattern != VIBE_PATTERN_OFF) {
-    record_vibe_last(s_vibe_pattern);
-  } else if (previous != VIBE_PATTERN_OFF) {
-    record_vibe_last(previous);
+bool settings_store(SettingId id, int value) {
+  if ((unsigned)id >= SET_COUNT) {
+    return false;
   }
+  if (!sync_valid(id, value, SYNC_CAPS_ALL)) {
+    value = sync_default(id, sync_build_caps());
+  }
+  const uint8_t previous = s_values[id];
+  if (value == previous) {
+    return false;  // unchanged: no flash write
+  }
+  s_values[id] = (uint8_t)value;
+  const uint32_t key = sync_persist_key(id);
+  if (sync_is_bool(id)) {
+    persist_write_bool(key, value != 0);
+  } else {
+    persist_write_int(key, value);
+  }
+  if (id == SET_BACKLIGHT_COLOR) {
+    settings_apply_backlight_color();  // apply live so the choice is visible while the light is on
+  } else if (id == SET_VIBE_PATTERN) {
+    // Turning it off keeps the pattern it had, which also covers a pattern stored before key 27.
+    if (value != VIBE_PATTERN_SILENT) {
+      record_vibe_last((VibePatternId)value);
+    } else {
+      record_vibe_last((VibePatternId)previous);
+    }
+  }
+  return true;
 }
 
-void settings_set_vibe_intensity(VibeIntensity id) {
-  s_vibe_intensity = (id < VIBE_INTENSITY_COUNT) ? id : VIBE_INTENSITY_MEDIUM;
-  persist_write_int(PERSIST_KEY_VIBE_INTENSITY, s_vibe_intensity);
-}
-
-void settings_set_early_warn_distance(EarlyWarnDistance id) {
-  s_early_warn_distance = (id < EARLY_WARN_COUNT) ? id : EARLY_WARN_OFF;
-  persist_write_int(PERSIST_KEY_EARLY_WARN_DISTANCE, s_early_warn_distance);
-}
-
-void settings_set_early_warn_repeat(EarlyWarnRepeat id) {
-  s_early_warn_repeat = (id < EARLY_WARN_REPEAT_COUNT) ? id : EARLY_WARN_REPEAT_ONCE;
-  persist_write_int(PERSIST_KEY_EARLY_WARN_REPEAT, s_early_warn_repeat);
-}
-
-void settings_set_early_warn_pattern(VibePatternId id) {
-  s_early_warn_pattern = (id > VIBE_PATTERN_OFF && id < VIBE_PATTERN_COUNT) ? id : VIBE_PATTERN_DOUBLE;
-  persist_write_int(PERSIST_KEY_EARLY_WARN_PATTERN, s_early_warn_pattern);
-}
-
-void settings_set_early_warn_intensity(VibeIntensity id) {
-  s_early_warn_intensity = (id < VIBE_INTENSITY_COUNT) ? id : VIBE_INTENSITY_MEDIUM;
-  persist_write_int(PERSIST_KEY_EARLY_WARN_INTENSITY, s_early_warn_intensity);
+void settings_set(SettingId id, int value) {
+  if (settings_store(id, value) && s_on_edit != NULL) {
+    s_on_edit();
+  }
 }
 
 uint32_t settings_backlight_hold_ms(void) {
@@ -425,7 +303,11 @@ static uint32_t vibe_pulse_ms(VibeIntensity intensity) {
 }
 
 static void vibe_play(VibePatternId id, VibeIntensity intensity) {
-  if (id == VIBE_PATTERN_OFF) {
+  if (id == VIBE_PATTERN_SILENT) {
+    return;
+  }
+  if (id == VIBE_PATTERN_PULSE) {
+    vibes_short_pulse();  // the phone's own buzz, as the navigation path plays it
     return;
   }
   const uint32_t pulse = vibe_pulse_ms(intensity);
@@ -459,116 +341,37 @@ static void vibe_play(VibePatternId id, VibeIntensity intensity) {
 }
 
 void settings_vibe_play(void) {
-  vibe_play(s_vibe_pattern, s_vibe_intensity);
+  vibe_play(settings_vibe_pattern(), settings_vibe_intensity());
 }
 
 void settings_early_warn_play(void) {
-  if (s_early_warn_distance == EARLY_WARN_OFF) {
+  if (settings_early_warn_distance() == EARLY_WARN_OFF) {
     return;
   }
-  vibe_play(s_early_warn_pattern, s_early_warn_intensity);
+  vibe_play(settings_early_warn_pattern(), settings_early_warn_intensity());
 }
 
+// A setting with nothing stored, or a stored value out of range, keeps its default. The range is
+// this watch's whole range, as before the table: a stored colour accent stays on a black-and-white
+// watch, where it draws as Black.
 void settings_load(void) {
-  // Default to an accent this watch can actually show.
-  s_accent = PBL_IF_COLOR_ELSE(ACCENT_GREEN, ACCENT_BLACK);
-  if (persist_exists(PERSIST_KEY_ACCENT)) {
-    const int stored = persist_read_int(PERSIST_KEY_ACCENT);
-    if (stored >= 0 && stored < ACCENT_COUNT) {
-      s_accent = (AccentId)stored;
+  const uint32_t caps = sync_build_caps();
+  for (int i = 0; i < SET_COUNT; i++) {
+    const SettingId id = (SettingId)i;
+    const uint32_t key = sync_persist_key(id);
+    int value = sync_default(id, caps);
+    if (persist_exists(key)) {
+      const int stored = sync_is_bool(id) ? persist_read_bool(key) : persist_read_int(key);
+      if (sync_valid(id, stored, SYNC_CAPS_ALL)) {
+        value = stored;
+      }
     }
-  }
-  if (persist_exists(PERSIST_KEY_INVERT)) {
-    s_inverted = persist_read_bool(PERSIST_KEY_INVERT);
-  }
-  if (persist_exists(PERSIST_KEY_UNITS)) {
-    const int stored = persist_read_int(PERSIST_KEY_UNITS);
-    if (stored >= 0 && stored < UNITS_COUNT) {
-      s_units = (UnitsId)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_GLYPH_PACK)) {
-    const int stored = persist_read_int(PERSIST_KEY_GLYPH_PACK);
-    if (stored >= 0 && stored < GLYPH_PACK_COUNT) {
-      s_glyph_pack = (GlyphPack)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_ARROW_LEFT)) {
-    s_arrow_left = persist_read_bool(PERSIST_KEY_ARROW_LEFT);
-  }
-  if (persist_exists(PERSIST_KEY_ETA_MODE)) {
-    const int stored = persist_read_int(PERSIST_KEY_ETA_MODE);
-    if (stored >= 0 && stored < ETA_MODE_COUNT) {
-      s_eta_mode = (EtaMode)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_ETA_LABEL_STYLE)) {
-    const int stored = persist_read_int(PERSIST_KEY_ETA_LABEL_STYLE);
-    if (stored >= 0 && stored < ETA_LABEL_COUNT) {
-      s_eta_label_style = (EtaLabelStyle)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_BACKLIGHT)) {
-    const int stored = persist_read_int(PERSIST_KEY_BACKLIGHT);
-    if (stored >= 0 && stored < BACKLIGHT_COUNT) {
-      s_backlight = (BacklightMode)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_BACKLIGHT_COLOR)) {
-    const int stored = persist_read_int(PERSIST_KEY_BACKLIGHT_COLOR);
-    if (stored >= 0 && stored < BACKLIGHT_COLOR_COUNT) {
-      s_backlight_color = (BacklightColorId)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_VIBE_PATTERN)) {
-    const int stored = persist_read_int(PERSIST_KEY_VIBE_PATTERN);
-    if (stored >= 0 && stored < VIBE_PATTERN_COUNT) {
-      s_vibe_pattern = (VibePatternId)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_VIBE_INTENSITY)) {
-    const int stored = persist_read_int(PERSIST_KEY_VIBE_INTENSITY);
-    if (stored >= 0 && stored < VIBE_INTENSITY_COUNT) {
-      s_vibe_intensity = (VibeIntensity)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_EARLY_WARN_DISTANCE)) {
-    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_DISTANCE);
-    if (stored >= 0 && stored < EARLY_WARN_COUNT) {
-      s_early_warn_distance = (EarlyWarnDistance)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_EARLY_WARN_REPEAT)) {
-    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_REPEAT);
-    if (stored >= 0 && stored < EARLY_WARN_REPEAT_COUNT) {
-      s_early_warn_repeat = (EarlyWarnRepeat)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_EARLY_WARN_PATTERN)) {
-    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_PATTERN);
-    if (stored > VIBE_PATTERN_OFF && stored < VIBE_PATTERN_COUNT) {
-      s_early_warn_pattern = (VibePatternId)stored;
-    }
-  }
-  if (persist_exists(PERSIST_KEY_EARLY_WARN_INTENSITY)) {
-    const int stored = persist_read_int(PERSIST_KEY_EARLY_WARN_INTENSITY);
-    if (stored >= 0 && stored < VIBE_INTENSITY_COUNT) {
-      s_early_warn_intensity = (VibeIntensity)stored;
-    }
+    s_values[id] = (uint8_t)value;
   }
   if (persist_exists(PERSIST_KEY_VIBE_LAST)) {
     const int stored = persist_read_int(PERSIST_KEY_VIBE_LAST);
-    if (stored > VIBE_PATTERN_OFF && stored < VIBE_PATTERN_COUNT) {
+    if (stored >= VIBE_PATTERN_PULSE && stored < VIBE_PATTERN_SILENT) {
       s_vibe_last = (VibePatternId)stored;
     }
-  }
-  if (persist_exists(PERSIST_KEY_TOUCH)) {
-    s_touch_enabled = persist_read_bool(PERSIST_KEY_TOUCH);
-  }
-  // A slot with nothing stored keeps its default; an out-of-range byte reads as None.
-  for (int slot = 0; slot < SLOT_COUNT; slot++) {
-    const uint32_t key = PERSIST_KEY_SHORTCUT_FIRST + slot;
-    s_shortcuts[slot] = persist_exists(key) ? shortcut_valid_action(persist_read_int(key))
-                                            : shortcut_default((ShortcutSlot)slot);
   }
 }

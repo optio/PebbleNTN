@@ -428,4 +428,161 @@
         <item quantity="other">%d of your rules override newer official rules.</item>
     </plurals>
     <string name="dashboard_rules_updated_action">Review</string>
+
+    <!-- Watch settings: the watchapp's own settings, synced both ways (REQ-ANDROID-021, #102) -->
+    <string name="dashboard_watch_settings">Watch settings</string>
+    <string name="dashboard_watch_settings_summary">Colours, units, vibration and shortcuts of the watchapp</string>
+    <string name="watch_settings_title">Watch settings</string>
+    <string name="watch_settings_explanation">These settings are stored on your watch. A change made here is sent to the watchapp while it is open; one made on the watch shows up here.</string>
+    <string name="watch_settings_waiting">Open PebbleNTN on your watch to load its settings</string>
+    <string name="watch_settings_outdated">Update the watchapp to change these here</string>
+    <string name="watch_settings_queued">Will apply when the watchapp next opens</string>
+    <string name="watch_settings_section_appearance">Appearance</string>
+    <string name="watch_settings_section_eta">Arrival time</string>
+    <string name="watch_settings_section_units">Distance</string>
+    <string name="watch_settings_section_backlight">Backlight</string>
+    <string name="watch_settings_section_vibration">Vibration</string>
+    <string name="watch_settings_section_early_warning">Early warning</string>
+    <string name="watch_settings_section_shortcuts">Shortcuts</string>
+    <string name="watch_setting_accent">Colour</string>
+    <string name="watch_setting_units">Distance units</string>
+    <string name="watch_setting_invert">Invert</string>
+    <string name="watch_setting_glyph_pack">Glyph pack</string>
+    <string name="watch_setting_arrow_left">Arrow side</string>
+    <string name="watch_setting_eta_mode">ETA display</string>
+    <string name="watch_setting_backlight">Backlight duration</string>
+    <string name="watch_setting_vibe_pattern">New instruction pattern</string>
+    <string name="watch_setting_vibe_intensity">New instruction strength</string>
+    <string name="watch_setting_backlight_color">Backlight colour</string>
+    <string name="watch_setting_eta_label">ETA label</string>
+    <string name="watch_setting_early_warn_distance">Early warning distance</string>
+    <string name="watch_setting_early_warn_repeat">Early warning repeat</string>
+    <string name="watch_setting_early_warn_pattern">Early warning pattern</string>
+    <string name="watch_setting_early_warn_intensity">Early warning strength</string>
+    <string name="watch_setting_touch">Touch</string>
+    <string name="watch_setting_shortcut_up">Up button</string>
+    <string name="watch_setting_shortcut_down">Down button</string>
+    <string name="watch_setting_shortcut_swipe_left">Swipe left</string>
+    <string name="watch_setting_shortcut_swipe_right">Swipe right</string>
+    <string name="watch_setting_shortcut_swipe_up">Swipe up</string>
+    <string name="watch_setting_shortcut_swipe_down">Swipe down</string>
+    <string name="watch_setting_shortcut_tap">Tap</string>
+    <string name="cd_watch_setting_change">Change %1$s</string>
+    <string name="cd_watch_preview">Preview: %1$s</string>
+    <string-array name="watch_values_accent">
+        <item>Green</item>
+        <item>Blue</item>
+        <item>Red</item>
+        <item>Orange</item>
+        <item>Purple</item>
+        <item>Teal</item>
+        <item>Pink</item>
+        <item>Yellow</item>
+        <item>Cyan</item>
+        <item>Lime</item>
+        <item>Tan</item>
+        <item>Navy</item>
+        <item>Amber</item>
+        <item>Grey</item>
+        <item>Black</item>
+        <item>White</item>
+    </string-array>
+    <string-array name="watch_values_units">
+        <item>Kilometres / metres</item>
+        <item>Miles / feet</item>
+    </string-array>
+    <string-array name="watch_values_invert">
+        <item>Dark on light</item>
+        <item>Light on dark</item>
+    </string-array>
+    <string-array name="watch_values_glyph_pack">
+        <item>Classic</item>
+        <item>Bold</item>
+        <item>Outline</item>
+    </string-array>
+    <string-array name="watch_values_arrow_left">
+        <item>Right (distance left)</item>
+        <item>Left (distance right)</item>
+    </string-array>
+    <string-array name="watch_values_eta_mode">
+        <item>Arrival time</item>
+        <item>Time to arrival</item>
+    </string-array>
+    <string-array name="watch_values_backlight">
+        <item>Watch default</item>
+        <item>Low - 3s on update</item>
+        <item>Medium - 10s on update</item>
+        <item>High - until app closes</item>
+    </string-array>
+    <string-array name="watch_values_vibe_pattern">
+        <item>Short pulse</item>
+        <item>Single</item>
+        <item>Double</item>
+        <item>Triple</item>
+        <item>Long</item>
+        <item>Off</item>
+    </string-array>
+    <string-array name="watch_values_vibe_intensity">
+        <item>Light</item>
+        <item>Medium</item>
+        <item>Strong</item>
+    </string-array>
+    <string-array name="watch_values_backlight_color">
+        <item>Watch default</item>
+        <item>White</item>
+        <item>Warm white</item>
+        <item>Red</item>
+        <item>Orange</item>
+        <item>Yellow</item>
+        <item>Green</item>
+        <item>Cyan</item>
+        <item>Blue</item>
+        <item>Purple</item>
+        <item>Pink</item>
+    </string-array>
+    <string-array name="watch_values_eta_label">
+        <item>ETA at / ETA in</item>
+        <item>ETA / IN</item>
+    </string-array>
+    <string-array name="watch_values_early_warn_distance_metric">
+        <item>Off</item>
+        <item>10 m</item>
+        <item>25 m</item>
+        <item>50 m</item>
+        <item>100 m</item>
+        <item>200 m</item>
+    </string-array>
+    <string-array name="watch_values_early_warn_distance_imperial">
+        <item>Off</item>
+        <item>30 ft</item>
+        <item>80 ft</item>
+        <item>160 ft</item>
+        <item>330 ft</item>
+        <item>650 ft</item>
+    </string-array>
+    <string-array name="watch_values_early_warn_repeat">
+        <item>Once</item>
+        <item>Every update</item>
+    </string-array>
+    <string-array name="watch_values_on_off">
+        <item>Off</item>
+        <item>On</item>
+    </string-array>
+    <string-array name="watch_values_shortcut">
+        <item>None</item>
+        <item>ETA: arrival time / time left</item>
+        <item>ETA label style</item>
+        <item>Next colour</item>
+        <item>Previous colour</item>
+        <item>Invert colours</item>
+        <item>Swap arrow side</item>
+        <item>Next glyph pack</item>
+        <item>Vibration on / off</item>
+        <item>Early warning: next distance</item>
+        <item>Early warning: previous distance</item>
+        <item>Backlight now</item>
+        <item>Next backlight colour</item>
+        <item>Units</item>
+        <item>Open settings</item>
+    </string-array>
 </resources>

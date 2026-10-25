@@ -4,6 +4,8 @@ import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.core.NavigationState
 import com.pebblentn.app.core.ReducerEvent
+import com.pebblentn.app.core.WatchPlatform
+import com.pebblentn.app.core.WatchSetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -70,8 +72,8 @@ class ProtocolCodecTest {
         assertEquals(Protocol.ManeuverCodes.TRANSIT, msg.intOrNull(Protocol.Keys.MANEUVER))
         assertEquals(5, msg.intOrNull(Protocol.Keys.STOPS_REMAINING))
         assertNull("a ride has no turn distance", msg.intOrNull(Protocol.Keys.DISTANCE_METERS))
-        // #94 (FR1.1): protocol 1.2 adds the update flag and LATEST_PHONE_VERSION.
-        assertEquals(2, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
+        // #94 (FR1.1): protocol 1.2 adds the update flag and LATEST_PHONE_VERSION; #102 makes it 1.3.
+        assertEquals(3, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
     }
 
     @Test
@@ -243,5 +245,61 @@ class ProtocolCodecTest {
             .build()
         assertNull(ProtocolCodec.watchAppVersion(request))
         assertNull(ProtocolCodec.watchAppVersion(AppMessage(emptyMap())))
+    }
+
+    // --- Protocol 1.3: the watch settings (#102, REQ-ANDROID-021) --------------------------------
+
+    @Test
+    fun aProtocol12ReadyStillDecodesAndCarriesNoSettings() {
+        val ready = WatchMessages.ready12()
+        assertEquals(ReducerEvent.WatchReady(1, 2, 5), ProtocolCodec.decodeInbound(ready, 5))
+        assertNull(ProtocolCodec.decodeWatchSettings(ready))
+        assertEquals("a real 1.2 READY", 2, ProtocolCodec.realWatchReadyMinor(ready))
+    }
+
+    @Test
+    fun aProtocol13ReadyDecodesEverySettingTheRevisionThePlatformAndTheCapabilities() {
+        val sent = WatchMessages.settings(
+            revision = 42,
+            overrides = mapOf(
+                WatchSetting.ACCENT to 9,
+                WatchSetting.VIBE_PATTERN to 5,
+                WatchSetting.TOUCH to 1,
+                WatchSetting.SHORTCUT_TAP to 14,
+            ),
+        )
+        val ready = WatchMessages.ready13(sent)
+        assertEquals(ReducerEvent.WatchReady(1, 3, 5), ProtocolCodec.decodeInbound(ready, 5))
+        val decoded = ProtocolCodec.decodeWatchSettings(ready)!!
+        assertEquals(42, decoded.revision)
+        assertEquals(WatchPlatform.EMERY, decoded.platform)
+        assertEquals(WatchMessages.EMERY_CAPS, decoded.capabilities)
+        assertEquals(23, decoded.values.size)
+        assertEquals(sent.values, decoded.values)
+        assertEquals(9, decoded.accent)
+        assertTrue(decoded.touchEnabled)
+    }
+
+    @Test
+    fun theReadyThePhoneMakesUpCarriesNoSettings() {
+        val synthetic = com.pebblentn.app.pebble.WatchListenerService.appOpenedReadyMessage()
+        assertNull(ProtocolCodec.decodeWatchSettings(synthetic))
+        assertNull("not a real READY", ProtocolCodec.realWatchReadyMinor(synthetic))
+    }
+
+    @Test
+    fun settingsRoundTrip() {
+        val values = mapOf(WatchSetting.UNITS to 1, WatchSetting.ACCENT to 3)
+        val message = ProtocolCodec.encodeSettings(revision = 7, values = values)
+        assertEquals(Protocol.Events.SETTINGS, message.intOrNull(Protocol.Keys.EVENT))
+        assertEquals(7, message.intOrNull(Protocol.Keys.SETTINGS_REVISION))
+        assertEquals(1, message.intOrNull(Protocol.Keys.SETTING_UNITS))
+        assertNull("only the edited settings", message.intOrNull(Protocol.Keys.SETTING_INVERT))
+        assertNull("not a reducer event", ProtocolCodec.decodeInbound(message, 0))
+        val decoded = ProtocolCodec.decodeWatchSettings(message)!!
+        assertEquals(7, decoded.revision)
+        assertEquals(1, decoded.units)
+        assertEquals(3, decoded.accent)
+        assertEquals(WatchPlatform.UNKNOWN, decoded.platform)
     }
 }

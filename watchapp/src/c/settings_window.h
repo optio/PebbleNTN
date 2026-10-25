@@ -8,3 +8,7 @@
 // Push the settings menu. `on_change` is called whenever a setting changes so the navigation
 // window can re-apply the theme and redraw; `about` is what its About row shows (#48).
 void settings_window_push(void (*on_change)(void), const AboutInfo *about);
+
+// The settings changed under the open menus (a phone edit, REQ-WATCH-025): close any open door back
+// to the top menu and redraw it with the new values. Does nothing while Settings is closed.
+void settings_window_refresh(void);

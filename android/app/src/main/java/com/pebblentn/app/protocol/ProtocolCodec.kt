@@ -2,6 +2,10 @@ package com.pebblentn.app.protocol
 
 import com.pebblentn.app.core.NavigationState
 import com.pebblentn.app.core.ReducerEvent
+import com.pebblentn.app.core.WatchCapabilities
+import com.pebblentn.app.core.WatchPlatform
+import com.pebblentn.app.core.WatchSetting
+import com.pebblentn.app.core.WatchSettingsModel
 
 /**
  * Translates between the normalized domain state and AppMessage payloads, using the generated
@@ -106,6 +110,46 @@ object ProtocolCodec {
     fun watchAppVersion(message: AppMessage): String? {
         if (message.intOrNull(Protocol.Keys.EVENT) != Protocol.Events.WATCH_READY) return null
         return message.stringOrNull(Protocol.Keys.APP_VERSION)?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * The watch's own settings a message carries (protocol 1.3, REQ-ANDROID-021): a genuine
+     * WATCH_READY or a SETTINGS message with a SETTINGS_REVISION. Null for every other message, for a
+     * 1.2 watchapp's READY, and for the READY the phone makes up itself, which carries no settings
+     * and so never touches the mirror. A setting the message leaves out reads as its default.
+     */
+    fun decodeWatchSettings(message: AppMessage): WatchSettingsModel? {
+        val event = message.intOrNull(Protocol.Keys.EVENT)
+        if (event != Protocol.Events.WATCH_READY && event != Protocol.Events.SETTINGS) return null
+        val revision = message.intOrNull(Protocol.Keys.SETTINGS_REVISION) ?: return null
+        val carried = WatchSetting.entries
+            .mapNotNull { setting -> message.intOrNull(setting.key)?.let { setting to it } }
+            .toMap()
+        return WatchSettingsModel.fromWatch(
+            carried = carried,
+            revision = revision,
+            platform = WatchPlatform.fromCode(message.intOrNull(Protocol.Keys.WATCH_PLATFORM)),
+            capabilities = WatchCapabilities(message.intOrNull(Protocol.Keys.WATCH_CAPABILITIES) ?: 0),
+        )
+    }
+
+    /**
+     * The protocol minor a WATCH_READY the watchapp really sent reports, or null for another message
+     * or for the READY the phone makes up (no APP_VERSION). A minor below 3 is a watchapp too old to
+     * sync its settings (REQ-ANDROID-021).
+     */
+    fun realWatchReadyMinor(message: AppMessage): Int? {
+        if (watchAppVersion(message) == null) return null
+        return message.intOrNull(Protocol.Keys.PROTOCOL_MINOR) ?: 0
+    }
+
+    /** A SETTINGS message from the phone: the phone's [revision] and the edited [values]. */
+    fun encodeSettings(revision: Int, values: Map<WatchSetting, Int>): AppMessage {
+        val builder = AppMessage.builder()
+            .putInt(Protocol.Keys.EVENT, Protocol.Events.SETTINGS)
+            .putInt(Protocol.Keys.SETTINGS_REVISION, revision)
+        for ((setting, value) in values.toSortedMap()) builder.putInt(setting.key, value)
+        return builder.build()
     }
 
     /**

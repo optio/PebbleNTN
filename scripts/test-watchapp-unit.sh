@@ -21,8 +21,13 @@ for test_src in "$REPO_ROOT"/watchapp/tests/test_*.c; do
     echo "ERROR: $test_src has no matching unit at $unit" >&2
     exit 1
   fi
+  # A unit that calls another pure unit names it in its test, on a line "// Links: <unit> ...".
+  links=()
+  for dep in $(sed -n 's|^// Links:||p' "$test_src"); do
+    links+=("$REPO_ROOT/watchapp/src/c/$dep.c")
+  done
   echo "==> $name"
-  "$CC" -std=c11 -Wall -Wextra -Werror -o "$BUILD_DIR/$name" "$test_src" "$unit"
+  "$CC" -std=c11 -Wall -Wextra -Werror -o "$BUILD_DIR/$name" "$test_src" "$unit" "${links[@]}"
   "$BUILD_DIR/$name" || status=1
 done
 

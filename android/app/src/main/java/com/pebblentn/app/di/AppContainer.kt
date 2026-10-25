@@ -160,6 +160,9 @@ class AppContainer(context: Context) {
 
     private val navigationStateRepository = NavigationStateRepository(database.navigationStateDao())
 
+    /** The phone's mirror of the watchapp's own settings and the edits waiting for it (#102). */
+    val watchSettingsMirror = com.pebblentn.app.data.WatchSettingsMirrorRepository(appContext)
+
     val navigationController = NavigationController(
         transport = watchTransport,
         scope = applicationScope,
@@ -172,6 +175,7 @@ class AppContainer(context: Context) {
         latestPhoneUpdate = { updateCheckRepository.state.value.effectiveLatest },
         // A genuine WATCH_READY carries the watchapp version; a newer one means a phone app update.
         onWatchAppVersion = { updateCheckRepository.recordWatchAppVersion(it) },
+        watchSettings = watchSettingsMirror,
     )
 
     init {
@@ -216,6 +220,14 @@ class AppContainer(context: Context) {
      */
     fun setWatchAutoLaunch(enabled: Boolean) {
         watchSettingsRepository.setAutoLaunch(enabled)
+    }
+
+    /**
+     * Change one of the watchapp's own settings from the Watch settings screen (REQ-ANDROID-021): sent
+     * now while the watchapp is open, else when it next opens.
+     */
+    fun setWatchSetting(setting: com.pebblentn.app.core.WatchSetting, value: Int) {
+        applicationScope.launch { navigationController.onPhoneSettingEdit(setting, value) }
     }
 
     private val installedAppsProvider = InstalledAppsProvider(appContext)

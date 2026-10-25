@@ -6,8 +6,13 @@ import com.pebblentn.app.core.NavigationSessionReducer
 import com.pebblentn.app.core.ReducerEffect
 import com.pebblentn.app.core.ReducerEvent
 import com.pebblentn.app.core.ReducerState
+import com.pebblentn.app.core.WatchSetting
 import com.pebblentn.app.core.WatchSettings
+import com.pebblentn.app.core.WatchSettingsModel
+import com.pebblentn.app.core.WatchSettingsSync
+import com.pebblentn.app.data.InMemoryWatchSettingsStore
 import com.pebblentn.app.data.NavigationStateRepository
+import com.pebblentn.app.data.WatchSettingsStore
 import com.pebblentn.app.protocol.AppMessage
 import com.pebblentn.app.protocol.Protocol
 import com.pebblentn.app.protocol.ProtocolCodec
@@ -35,6 +40,12 @@ import timber.log.Timber
  * All reducer access is serialized by a mutex so events from the listener, the watch and settings
  * never interleave. Failed sends are retried with bounded backoff while a newer state supersedes an
  * older pending one naturally, because the next reduction replaces what is sent.
+ *
+ * It also keeps the phone's mirror of the watchapp's own settings in sync (REQ-ANDROID-021, #102):
+ * settings a real WATCH_READY or a SETTINGS message carries are merged by [WatchSettingsSync], and
+ * phone edits go to the watch only while the watchapp is open, meaning it has sent its settings in
+ * this session and has not closed since. Otherwise they wait in the [watchSettings] store for the
+ * next time it opens; a send never relaunches the watchapp ([WatchTransport.sendToOpenApp]).
  */
 class NavigationController(
     private val transport: WatchTransport,
@@ -59,6 +70,8 @@ class NavigationController(
      * up itself, and the one from `onAppOpened`, carry no version and never call it.
      */
     private val onWatchAppVersion: (String) -> Unit = {},
+    /** The mirror of the watchapp's own settings and the phone edits waiting for it (#102). */
+    private val watchSettings: WatchSettingsStore = InMemoryWatchSettingsStore(),
 ) {
     private val mutex = Mutex()
     private var state = ReducerState(settings = initialSettings)
@@ -67,6 +80,17 @@ class NavigationController(
 
     /** What the watch was last sent, for the dashboard (#28); updated after every reduction. */
     val status: StateFlow<WatchLinkStatus> = _status.asStateFlow()
+
+    /** Serializes the settings sync, which runs beside the reducer rather than inside it. */
+    private val settingsMutex = Mutex()
+
+    private val _watchappOpen = MutableStateFlow(false)
+
+    /**
+     * Whether phone edits of the watch settings can go to the watchapp now: it sent its settings in
+     * this session and has not closed or failed a send since (REQ-ANDROID-021).
+     */
+    val watchappOpen: StateFlow<Boolean> = _watchappOpen.asStateFlow()
 
     /**
      * Begin collecting inbound watch messages. A transport failure (no Pebble app installed, a
@@ -78,6 +102,11 @@ class NavigationController(
             transport.inbound
                 .catch { Timber.e(it, "Watch transport failed; inbound watch messages are disabled") }
                 .collect { handleInbound(it) }
+        }
+        scope.launch {
+            transport.watchappClosed
+                .catch { Timber.e(it, "Watch transport failed; watchapp closes are not seen") }
+                .collect { onWatchappClosed() }
         }
     }
 
@@ -108,6 +137,54 @@ class NavigationController(
                 .onFailure { Timber.w(it, "Watchapp version %s not recorded", version) }
         }
         event?.let { dispatch(it) }
+        val watchSettingsSent = ProtocolCodec.decodeWatchSettings(message)
+        if (watchSettingsSent != null) {
+            onWatchSettings(watchSettingsSent)
+        } else {
+            ProtocolCodec.realWatchReadyMinor(message)
+                ?.takeIf { it < SETTINGS_PROTOCOL_MINOR }
+                ?.let { onOutdatedWatchapp(it) }
+        }
+    }
+
+    /**
+     * A setting edited on the phone's Watch settings screen (REQ-ANDROID-021): it goes into the
+     * mirror and to the watchapp if it is open, else it waits for the next time it opens.
+     */
+    suspend fun onPhoneSettingEdit(setting: WatchSetting, value: Int) = settingsMutex.withLock {
+        watchSettings.update { WatchSettingsSync.onPhoneEdit(it, setting, value) }
+        sendPendingSettings()
+    }
+
+    /** The watchapp closed on the watch: edits wait for it to open again. */
+    fun onWatchappClosed() {
+        _watchappOpen.value = false
+    }
+
+    private suspend fun onWatchSettings(incoming: WatchSettingsModel) = settingsMutex.withLock {
+        // It just sent this, so it is open; queued edits that are newer go now, without a relaunch.
+        _watchappOpen.value = true
+        var decision: WatchSettingsSync.Decision? = null
+        watchSettings.update { current ->
+            WatchSettingsSync.onWatchSettings(current, incoming).also { decision = it.decision }.state
+        }
+        Timber.i("Watch settings revision %d: %s", incoming.revision, decision)
+        sendPendingSettings()
+    }
+
+    private fun onOutdatedWatchapp(minor: Int) {
+        Timber.i("Watchapp protocol 1.%d sends no settings; the Watch settings screen asks for an update", minor)
+        watchSettings.update { it.copy(watchappOutdated = true) }
+    }
+
+    /** Send the pending edits, only while the watchapp is open; a failed send waits for it to reopen. */
+    private suspend fun sendPendingSettings() {
+        if (!_watchappOpen.value) return
+        val (revision, values) = WatchSettingsSync.outgoing(watchSettings.state.value) ?: return
+        if (transport.sendToOpenApp(ProtocolCodec.encodeSettings(revision, values)) != SendResult.SENT) {
+            Timber.w("Watch settings not delivered; they wait for the watchapp to open again")
+            _watchappOpen.value = false
+        }
     }
 
     private suspend fun dispatch(event: ReducerEvent) = mutex.withLock {
@@ -175,6 +252,11 @@ class NavigationController(
     }
 
     private fun nowSeconds(): Long = clock.nowMillis() / 1000
+
+    private companion object {
+        /** The protocol minor from which a watchapp sends its settings (protocol 1.3). */
+        const val SETTINGS_PROTOCOL_MINOR = 3
+    }
 }
 
 /**
