@@ -1,5 +1,6 @@
 package com.pebblentn.app.ui.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,16 @@ import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
+import com.pebblentn.app.update.InstallSource
+import com.pebblentn.app.update.UpdatePolicy
+
+/**
+ * The prominent disclosure for an app installed from [source] (REQ-SEC-004): a Google Play install
+ * never runs the GitHub check, so its text has no GitHub sentence (REQ-ANDROID-022).
+ */
+@StringRes
+fun onboardingDisclosure(source: InstallSource): Int =
+    if (UpdatePolicy.forSource(source).allowsGithubCheck) R.string.onboarding_disclosure else R.string.onboarding_disclosure_play
 
 /**
  * Onboarding: product explanation, the prominent notification-access disclosure (REQ-SEC-004,
@@ -27,6 +38,8 @@ fun OnboardingScreen(
     accessGranted: Boolean,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Where this app was installed from; picks the disclosure's network sentence (REQ-ANDROID-022). */
+    installSource: InstallSource = InstallSource.GITHUB,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -59,7 +72,7 @@ fun OnboardingScreen(
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                text = stringResource(R.string.onboarding_disclosure),
+                text = stringResource(onboardingDisclosure(installSource)),
                 style = MaterialTheme.typography.bodyMedium,
             )
 

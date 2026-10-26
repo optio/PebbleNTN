@@ -46,8 +46,11 @@ Pull requests cannot merge unless all required checks pass.
 ## Distribution
 
 - **Android companion:** the GitHub Release APK (`pebble-ntn.apk`). For hands-off updates users add
-  the repository's releases to Obtainium, which tracks and installs each new release. The APK is
-  debug-signed until release keystore secrets are set.
+  the repository's releases to Obtainium, which tracks and installs each new release, or install
+  from F-Droid, which verifies the reproducible build and ships our signature. The APK is
+  debug-signed until release keystore secrets are set. Google Play gets an App Bundle of the same
+  app (REQ-ANDROID-022); a Play install is detected at runtime and updates from Play only. The
+  README's "Distribution" section lists every source and is where the watch's install QR points.
 - **Watchapp:** the GitHub Release `.pbw` (`pebble-ntn.pbw`), installable through the Rebble / Pebble
   mobile app or side-loaded with `pebble install --phone`, and intended for listing on the RePebble
   appstore.
@@ -59,5 +62,11 @@ Pull requests cannot merge unless all required checks pass.
 - Justify notification access as core functionality.
 - Provide prominent disclosure.
 - Build an Android App Bundle.
-- Use Play App Signing and protect upload key.
-- Release automation verifies target SDK policy at release time.
+- Use Play App Signing with the existing release key as the app signing key, so every source ships
+  one signature, and a separate upload key, held only in the `PLAY_UPLOAD_*` secrets of the
+  protected `release` environment; protect and back up both keys offline.
+- Build the bundle with the manual `play-release.yml` workflow for a release tag; it attaches the
+  AAB to the run, and the maintainer uploads it in Play Console.
+- Release automation verifies target SDK policy at release time: `verifyReleaseTargetSdk` runs in
+  `release.yml` and `play-release.yml` and fails the job when targetSdk is below Play's floor.
+- Every Play Console answer and step is in `docs/PLAY_CONSOLE.md` (REQ-ANDROID-022).

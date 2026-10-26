@@ -5,9 +5,10 @@ import timber.log.Timber
 
 /**
  * Where the phone app was installed from, so the update card can send the user back there
- * (REQ-ANDROID-020). Only three sources have an update destination; anything else is [GITHUB].
+ * (REQ-ANDROID-020). Four sources have an update destination; anything else is [GITHUB]. A [PLAY]
+ * install gets its updates from Google Play only: see [UpdatePolicy] (REQ-ANDROID-022).
  */
-enum class InstallSource { GITHUB, FDROID, OBTAINIUM }
+enum class InstallSource { GITHUB, FDROID, OBTAINIUM, PLAY }
 
 /** Install-source detection: a pure installer-package mapping, and the platform lookup. */
 object InstallSources {
@@ -20,6 +21,9 @@ object InstallSources {
         "com.machiav3lli.fdroid",
     )
 
+    /** The Google Play Store's package, the installer of every Play install. */
+    const val PLAY_STORE_PACKAGE = "com.android.vending"
+
     /** Obtainium's package; its builds from other channels add a suffix ("….fdroid"). */
     const val OBTAINIUM_PACKAGE = "dev.imranr.obtainium"
 
@@ -27,11 +31,13 @@ object InstallSources {
     val OBTAINIUM_PACKAGES = listOf(OBTAINIUM_PACKAGE, "$OBTAINIUM_PACKAGE.fdroid")
 
     /**
-     * The source for an installer package name: F-Droid and Obtainium by name, and [InstallSource.GITHUB]
-     * for everything else — no installer, a browser, the package installer, adb, or another store.
+     * The source for an installer package name: Google Play, F-Droid and Obtainium by name, and
+     * [InstallSource.GITHUB] for everything else — no installer, a browser, the package installer, adb,
+     * or another store.
      */
     fun fromInstaller(installerPackage: String?): InstallSource = when {
         installerPackage == null -> InstallSource.GITHUB
+        installerPackage == PLAY_STORE_PACKAGE -> InstallSource.PLAY
         installerPackage in FDROID_INSTALLERS -> InstallSource.FDROID
         installerPackage == OBTAINIUM_PACKAGE || installerPackage.startsWith("$OBTAINIUM_PACKAGE.") ->
             InstallSource.OBTAINIUM

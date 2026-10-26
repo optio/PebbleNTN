@@ -103,7 +103,11 @@ class MainActivity : ComponentActivity() {
                 if (uiState.accessGranted) {
                     AppNavHost()
                 } else {
-                    OnboardingScreen(accessGranted = false, onOpenSettings = ::openNotificationListenerSettings)
+                    OnboardingScreen(
+                        accessGranted = false,
+                        onOpenSettings = ::openNotificationListenerSettings,
+                        installSource = container.installSource,
+                    )
                 }
             }
         }
@@ -194,6 +198,7 @@ class MainActivity : ComponentActivity() {
                         stale = updateCheckStale,
                         autoCheckEnabled = autoCheckUpdates,
                         staleCheckFinished = staleCheckFinished,
+                        githubCheckAllowed = container.updatePolicy.allowsGithubCheck,
                     ),
                     updateNeverChecked = lastUpdateCheck == 0L,
                     onStaleCheck = {
@@ -450,10 +455,20 @@ class MainActivity : ComponentActivity() {
     /**
      * Send the user to [source] for the update (REQ-ANDROID-020): GitHub's latest release page, the
      * F-Droid package page (an installed F-Droid client handles the link, else the browser), or the
-     * Obtainium app's launch screen, falling back to its website when it is not installed.
+     * Obtainium app's launch screen, falling back to its website when it is not installed, or this
+     * app's Google Play listing (the Play app, else the web listing; REQ-ANDROID-022).
      */
     private fun openUpdateSource(source: com.pebblentn.app.update.InstallSource) {
         when (source) {
+            com.pebblentn.app.update.InstallSource.PLAY -> {
+                val market = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(getString(R.string.update_play_market_url, packageName)))
+                try {
+                    startActivity(market)
+                } catch (e: android.content.ActivityNotFoundException) {
+                    timber.log.Timber.w(e, "No app handles market://; opening the Play web listing")
+                    openUrl(getString(R.string.update_play_web_url, packageName))
+                }
+            }
             com.pebblentn.app.update.InstallSource.GITHUB -> openUrl(getString(R.string.update_releases_url))
             com.pebblentn.app.update.InstallSource.FDROID -> openUrl(getString(R.string.update_fdroid_url))
             com.pebblentn.app.update.InstallSource.OBTAINIUM -> {
@@ -472,6 +487,8 @@ class MainActivity : ComponentActivity() {
      * result right away (and that first network call is their explicit action).
      */
     private fun setAutoCheckUpdates(enabled: Boolean) {
+        // Unreachable on Google Play, whose dashboard has no toggle; guarded anyway (REQ-ANDROID-022).
+        if (!container.updatePolicy.allowsGithubCheck) return
         container.updateCheckRepository.setAutoCheckEnabled(enabled)
         if (enabled) checkForUpdate()
     }
@@ -487,6 +504,8 @@ class MainActivity : ComponentActivity() {
      * [onFinished] runs after the outcome is shown, whatever it was (the stale item's follow-up, #94).
      */
     private fun checkForUpdate(onFinished: () -> Unit = {}) {
+        // Unreachable on Google Play, whose dashboard has no check row or stale item (REQ-ANDROID-022).
+        if (!container.updatePolicy.allowsGithubCheck) return
         lifecycleScope.launch {
             val repository = container.updateCheckRepository
             val outcome = repository.checkForUpdate(force = true)

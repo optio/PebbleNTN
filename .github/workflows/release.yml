@@ -66,6 +66,12 @@ jobs:
           ./scripts/version.sh --check
           python3 tools/rule-workbench/workbench.py regression
 
+      # Before anything is built: a release whose targetSdk is below Play's floor fails here
+      # (REQ-ANDROID-022), and the release job needs this job.
+      - name: Verify Play target-SDK policy
+        run: ./gradlew verifyReleaseTargetSdk
+        working-directory: android
+
       - name: Android unit tests + lint
         run: ./gradlew test lint
         working-directory: android

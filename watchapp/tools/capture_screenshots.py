@@ -18,8 +18,15 @@ system touch setting included). PNGs are optimised losslessly when Pillow is
 importable (the pebble tool's own Python has it); otherwise they are kept as the
 emulator wrote them, with a warning.
 
+With --store it writes the raw watch screenshots the Google Play / F-Droid images
+are built from (#114, REQ-ANDROID-022) into tools/play-store-sources/watch/: the
+navigation screen in a few appearances and the settings menu, set the same way
+as --previews (SETTINGS messages, no wipe), then restores the defaults.
+tools/play_store_graphics.py composes them into the store images.
+
 Usage: python3 tools/capture_screenshots.py [platform ...]
        python3 tools/capture_screenshots.py --previews [platform ...]
+       python3 tools/capture_screenshots.py --store [platform ...]
 """
 
 import collections
@@ -504,13 +511,68 @@ def capture_previews(platform):
     subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
 
 
+STORE_DIR = REPO_ROOT / "tools" / "play-store-sources" / "watch"
+
+# Store shots per platform: (name, {PREVIEW_SETTINGS id: value}); "settings-menu" opens the menu.
+# Accent 1 is Blue, 2 Red; invert (id 2) 1 is on. Unlisted settings stay at their defaults.
+STORE_SHOTS = {
+    "basalt": [("nav-green", {}), ("settings-menu", {})],
+    "chalk": [("nav-blue", {0: 1}), ("nav-inverted-red", {0: 2, 2: 1})],
+    "emery": [("nav-green", {})],
+}
+
+
+def store_shot(platform, path):
+    """Pin the clock and grab the screen into `path` (kept exactly as the emulator wrote it)."""
+    try:
+        pebble(platform, "emu-set-time", CLOCK)
+    except Exception as exc:
+        print(f"  WARNING: clock not pinned for {path.name}: {exc}")
+    time.sleep(1.5)
+    pebble(platform, "screenshot", "--no-open", str(path))
+    print(f"  {path.relative_to(REPO_ROOT)}")
+
+
+def capture_store(platform):
+    print(f"\n=== store: {platform} ({PLATFORMS[platform]}) ===")
+    subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
+    time.sleep(1)
+    pebble(platform, "install")
+    time.sleep(2)
+    send_nav_update(platform)
+    injector = SettingsInjector(platform)
+    for name, overrides in STORE_SHOTS[platform]:
+        settings = dict(PREVIEW_DEFAULTS)
+        settings.update(overrides)
+        injector.apply(settings)
+        send_nav_update(platform)
+        path = STORE_DIR / f"{name}-{PLATFORMS[platform]}.png"
+        if name == "settings-menu":
+            click(platform, "select")  # the navigation window's SELECT opens the settings menu
+            time.sleep(0.5)
+            store_shot(platform, path)
+            click(platform, "back")
+        else:
+            store_shot(platform, path)
+    # Leave the emulator on the defaults, as --previews does.
+    injector.apply(dict(PREVIEW_DEFAULTS))
+    subprocess.run(["pebble", "kill"], cwd=WATCHAPP, capture_output=True)
+
+
 def main():
     args = sys.argv[1:]
     previews = "--previews" in args
-    requested = [a for a in args if a != "--previews"] or list(PLATFORMS)
+    store = "--store" in args
+    requested = [a for a in args if a not in ("--previews", "--store")] or list(PLATFORMS)
     unknown = [p for p in requested if p not in PLATFORMS]
     if unknown:
         sys.exit(f"unknown platform(s): {', '.join(unknown)}")
+    if store:
+        STORE_DIR.mkdir(parents=True, exist_ok=True)
+        for platform in requested:
+            capture_store(platform)
+        print(f"\nStore screenshots written to {STORE_DIR}")
+        return
     if previews:
         PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
         for platform in requested:

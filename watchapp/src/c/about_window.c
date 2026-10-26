@@ -79,8 +79,9 @@ static void about_load(Window *window) {
   scroll_layer_add_child(s_scroll, s_qr_layer);
   y += qr.h + 4;
 
-  // For anyone who cannot scan: the same link as text.
-  add_text(5, "github.com/optio/\nPebbleNTN/releases", FONT_KEY_GOTHIC_18, inset, w, &y);
+  // For anyone who cannot scan: the page the QR opens, as text (its install section lists every
+  // source of the phone app, #114).
+  add_text(5, "github.com/optio/\nPebbleNTN", FONT_KEY_GOTHIC_18, inset, w, &y);
   y += PBL_IF_ROUND_ELSE(30, 4);
 
   scroll_layer_set_content_size(s_scroll, GSize(bounds.size.w, y));

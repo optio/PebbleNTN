@@ -16,7 +16,8 @@ sealed interface UpdateCheckMessage {
  * Pick the manual check's message from the GitHub [outcome] and the combined [state] read after it,
  * so the message never contradicts the update card. The version comparison is the default and needs
  * no network: an update the watchapp version reveals is reported even when the GitHub fetch failed.
- * [UpdateCheckOutcome.SKIPPED_NOT_DUE] (never seen on the forced manual path) maps like
+ * [UpdateCheckOutcome.SKIPPED_NOT_DUE] (never seen on the forced manual path) and
+ * [UpdateCheckOutcome.NOT_ALLOWED] (a Google Play install, which has no manual check) map like
  * [UpdateCheckOutcome.UP_TO_DATE].
  */
 fun updateCheckMessage(outcome: UpdateCheckOutcome, state: UpdateState): UpdateCheckMessage {

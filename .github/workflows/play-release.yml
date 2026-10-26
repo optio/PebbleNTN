@@ -2,10 +2,13 @@ name: play-release
 
 # Signed AAB for the Play Console. Manual: the tags this repo pushes come from the `release`
 # workflow (which publishes the GitHub release with an APK + PBW), and a Play upload should be a
-# deliberate act, not a side effect of every push to main.
+# deliberate act, not a side effect of every push to main. The AAB and its checksum are attached to
+# the run as the `release-aab` artifact; the maintainer downloads it and uploads it in Play Console
+# (docs/PLAY_CONSOLE.md, "Release"). Nothing is uploaded to Play and no AAB goes on the GitHub release.
 #
-# Secrets are supplied by a protected GitHub environment; no signing material is stored in the
-# repository (REQ-SEC-007). Without those secrets this workflow fails by design.
+# Secrets are supplied by the protected `release` GitHub environment: the four PLAY_UPLOAD_* secrets
+# hold the Play upload key (REQ-ANDROID-022). No signing material is stored in the repository
+# (REQ-SEC-007). Without those secrets this workflow fails by design.
 on:
   workflow_dispatch:
     inputs:
@@ -33,27 +36,49 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
+      # Fails the job when targetSdk is below Play's floor (REQ-ANDROID-022).
       - name: Verify Play target-SDK policy
-        run: |
-          ./gradlew -q verifyReleaseTargetSdk || echo "TODO(M10) implement release-time target SDK policy check"
+        run: ./gradlew verifyReleaseTargetSdk
         working-directory: android
 
-      - name: Decode signing keystore
+      # The Play upload key, kept apart from the release key that signs the GitHub APK (release.yml).
+      # Google Play re-signs every bundle with the app signing key (the existing release key,
+      # enrolled through PEPK), so the same signature reaches users from every source
+      # (docs/PLAY_CONSOLE.md, "Signing").
+      - name: Decode the Play upload keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          PLAY_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+          PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+          PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "No signing keystore configured; failing release." >&2
+          missing=""
+          for name in PLAY_UPLOAD_KEYSTORE_BASE64 PLAY_UPLOAD_KEYSTORE_PASSWORD PLAY_UPLOAD_KEY_ALIAS PLAY_UPLOAD_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::The Play upload key is not configured. Set these secrets in the 'release' environment:$missing. All four are needed: PLAY_UPLOAD_KEYSTORE_BASE64, PLAY_UPLOAD_KEYSTORE_PASSWORD, PLAY_UPLOAD_KEY_ALIAS and PLAY_UPLOAD_KEY_PASSWORD (docs/PLAY_CONSOLE.md, Signing)."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          ks="$RUNNER_TEMP/play-upload.keystore"
+          # Tolerate line-wrapped base64 (e.g. `base64` without `-w0`) by stripping whitespace.
+          if ! printf '%s' "$PLAY_UPLOAD_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$ks" 2>/dev/null; then
+            echo "::error::PLAY_UPLOAD_KEYSTORE_BASE64 is not valid base64. Recreate it with 'base64 -w0 <keystore>' and paste the entire output as the secret."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$ks" -alias "$PLAY_UPLOAD_KEY_ALIAS" -storepass "$PLAY_UPLOAD_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "::error::The upload keystore decoded, but keytool could not open alias '$PLAY_UPLOAD_KEY_ALIAS' with PLAY_UPLOAD_KEYSTORE_PASSWORD. Check that PLAY_UPLOAD_KEY_ALIAS and PLAY_UPLOAD_KEYSTORE_PASSWORD match the keystore."
+            exit 1
+          fi
 
-      - name: Build signed AAB
+      # The Gradle build reads KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD
+      # (android/app/build.gradle.kts); here they carry the upload key.
+      - name: Build the AAB signed with the upload key
         env:
-          KEYSTORE_PATH: ${{ runner.temp }}/upload.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ runner.temp }}/play-upload.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
         run: ./gradlew bundleRelease
         working-directory: android
 

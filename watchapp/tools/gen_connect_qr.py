@@ -3,15 +3,16 @@
 
 The watchapp shows this QR (REQ-WATCH-017) after the connection handshake times out on a watch
 whose Pebble mobile app IS connected but which never hears back from the PebbleNTN Android app —
-the tell-tale of the companion app not being installed. The QR points at the GitHub releases page
-where the APK lives.
+the tell-tale of the companion app not being installed. The QR points at the README's
+"Distribution" section, the one install page that lists every source of the phone app (Google Play,
+GitHub releases, F-Droid, Obtainium; #114), so the watch never has to change when a source does.
 
 The encoded URL is fixed, so the QR never changes: this tool is run once and its output committed
 as a static resource. It is NOT part of the build — the build consumes the committed PNG, so CI
 needs no QR library. Re-run it only if QR_URL changes.
 
-Encoding: 43-byte URL -> QR version 3, error-correction level L (29x29 modules). Version 3 is the
-smallest that holds the URL, which keeps the modules as large as possible so the code stays
+Encoding: 47-byte URL -> QR version 3, error-correction level L (29x29 modules; it holds up to 53
+bytes). Version 3 is the smallest that holds the URL, which keeps the modules as large as possible so the code stays
 scannable on a 144 px watch. No quiet zone is baked in: the watchapp draws the code on its own white
 backing panel (theme-independent), so the module bitmap is pure black/white.
 
@@ -27,7 +28,7 @@ import sys
 import zlib
 from pathlib import Path
 
-QR_URL = "https://github.com/optio/PebbleNTN/releases"
+QR_URL = "https://github.com/optio/PebbleNTN#distribution"
 MODULE_PX = 1  # one pixel per module; the watchapp scales to 4 px (29 * 4 = 116, fits chalk)
 BLACK, WHITE = 0, 255
 OUT = Path(__file__).resolve().parent.parent / "resources" / "images" / "connect_qr.png"

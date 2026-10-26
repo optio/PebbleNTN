@@ -64,6 +64,7 @@ import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.format.DisplayLabels
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
 import com.pebblentn.app.update.InstallSource
+import com.pebblentn.app.update.UpdatePolicy
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
@@ -128,6 +129,10 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val refreshDoneMessage = stringResource(R.string.dashboard_refresh_app_done)
+    // A Google Play install has no GitHub check: no stale item, no weekly question, no check row and
+    // no weekly toggle, whatever the caller passes (REQ-ANDROID-022).
+    val githubCheckAllowed = UpdatePolicy.forSource(installSource).allowsGithubCheck
+    val prompt = if (githubCheckAllowed) updatePrompt else UpdatePrompt.NONE
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -148,7 +153,7 @@ fun DashboardScreen(
 
             // A stale update check comes first, above the setup checklist, and after a check run from
             // it, the weekly-check question (REQ-ANDROID-018, #94).
-            when (updatePrompt) {
+            when (prompt) {
                 UpdatePrompt.STALE_CHECK -> PromptCard(
                     title = stringResource(R.string.dashboard_stale_check_title),
                     body = stringResource(
@@ -355,24 +360,32 @@ fun DashboardScreen(
             }
 
             Section(stringResource(R.string.dashboard_section_updates)) {
-                // While the check is stale, "Check for updates" is the top card instead (#94).
-                if (updatePrompt != UpdatePrompt.STALE_CHECK) {
-                    NavRow(
-                        icon = Icons.Filled.Refresh,
-                        title = stringResource(R.string.dashboard_check_update),
-                        summary = stringResource(R.string.dashboard_version, appVersion),
-                        onClick = onCheckForUpdate,
-                        showChevron = false,
+                if (!githubCheckAllowed) {
+                    // Google Play updates the app; only the version is shown (REQ-ANDROID-022).
+                    InfoRow(
+                        title = stringResource(R.string.dashboard_app_version),
+                        value = stringResource(R.string.dashboard_app_version_play, appVersion),
                     )
-                    HorizontalDivider()
+                } else {
+                    // While the check is stale, "Check for updates" is the top card instead (#94).
+                    if (prompt != UpdatePrompt.STALE_CHECK) {
+                        NavRow(
+                            icon = Icons.Filled.Refresh,
+                            title = stringResource(R.string.dashboard_check_update),
+                            summary = stringResource(R.string.dashboard_version, appVersion),
+                            onClick = onCheckForUpdate,
+                            showChevron = false,
+                        )
+                        HorizontalDivider()
+                    }
+                    ToggleRow(
+                        icon = Icons.Filled.DateRange,
+                        title = stringResource(R.string.dashboard_auto_update),
+                        summary = stringResource(R.string.dashboard_auto_update_hint),
+                        checked = autoCheckUpdates,
+                        onCheckedChange = onAutoCheckUpdatesChange,
+                    )
                 }
-                ToggleRow(
-                    icon = Icons.Filled.DateRange,
-                    title = stringResource(R.string.dashboard_auto_update),
-                    summary = stringResource(R.string.dashboard_auto_update_hint),
-                    checked = autoCheckUpdates,
-                    onCheckedChange = onAutoCheckUpdatesChange,
-                )
             }
 
         }
@@ -487,14 +500,15 @@ private fun sourceName(source: InstallSource): String = stringResource(
         InstallSource.GITHUB -> R.string.dashboard_update_source_github
         InstallSource.FDROID -> R.string.dashboard_update_source_fdroid
         InstallSource.OBTAINIUM -> R.string.dashboard_update_source_obtainium
+        InstallSource.PLAY -> R.string.dashboard_update_source_play
     },
 )
 
 /**
- * The update-available card (REQ-ANDROID-013, amended by REQ-ANDROID-020): "Update from {source}" for
- * the install source, the F-Droid delay line when that source is F-Droid, and "Other sources", a
- * short list of the other two. A pick is used once; nothing is stored, so the detected source stays
- * the default.
+ * The update-available card (REQ-ANDROID-013, amended by REQ-ANDROID-020 and REQ-ANDROID-022):
+ * "Update from {source}" for the install source, the F-Droid or Google Play delay line, and "Other
+ * sources", a short list of the other two (not on Google Play, whose card has only its own button). A
+ * pick is used once; nothing is stored, so the detected source stays the default.
  */
 @Composable
 private fun UpdateAvailableCard(
@@ -504,14 +518,23 @@ private fun UpdateAvailableCard(
     onOpenSource: (InstallSource) -> Unit,
 ) {
     var pickingSource by remember { mutableStateOf(false) }
-    val body = stringResource(R.string.dashboard_update_body, latestVersion, appVersion)
+    val body = stringResource(
+        if (model.showUninstallHint) R.string.dashboard_update_body else R.string.dashboard_update_body_play,
+        latestVersion,
+        appVersion,
+    )
+    val delay = when {
+        model.showFdroidDelay -> stringResource(R.string.dashboard_update_fdroid_delay)
+        model.showPlayDelay -> stringResource(R.string.dashboard_update_play_delay)
+        else -> null
+    }
     PromptCard(
         title = stringResource(R.string.dashboard_update_title),
-        body = if (model.showFdroidDelay) body + "\n\n" + stringResource(R.string.dashboard_update_fdroid_delay) else body,
+        body = if (delay != null) body + "\n\n" + delay else body,
         action = stringResource(R.string.dashboard_update_from, sourceName(model.main)),
         onAction = { onOpenSource(model.main) },
         primary = true,
-        secondaryAction = stringResource(R.string.dashboard_update_other_sources),
+        secondaryAction = if (model.offersOtherSources) stringResource(R.string.dashboard_update_other_sources) else null,
         onSecondaryAction = { pickingSource = true },
     )
     if (pickingSource) {

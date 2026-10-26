@@ -7,6 +7,8 @@
     <string name="onboarding_intro">PebbleNTN turns navigation-app notifications into turn-by-turn instructions on your Pebble watch.</string>
     <!-- Prominent disclosure required before opening notification-listener settings (REQ-SEC-004). -->
     <string name="onboarding_disclosure">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. PebbleNTN spots new versions offline, by comparing the phone app with your watchapp. It uses the network only for the optional GitHub check (Check for updates, or weekly if you turn it on), which sends no personal data.</string>
+    <!-- The same disclosure on a Google Play install, which never runs the GitHub check (REQ-SEC-004, REQ-ANDROID-022). -->
+    <string name="onboarding_disclosure_play">PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. PebbleNTN spots new versions offline, by comparing the phone app with your watchapp, and Google Play delivers the updates. PebbleNTN makes no network connections of its own.</string>
     <string name="onboarding_open_settings">Grant notification access</string>
     <string name="onboarding_privacy_note">You can turn off any navigation app in Navigation apps, or revoke notification access entirely at any time in system settings.</string>
 
@@ -38,6 +40,9 @@
     <!-- App update check (REQ-ANDROID-013). -->
     <string name="dashboard_update_title">Update available</string>
     <string name="dashboard_update_body">PebbleNTN %1$s is available — you have %2$s. Tap below to get the update. If it won\'t install over the current app, uninstall PebbleNTN first, then install the downloaded version.</string>
+    <!-- The card body on a Google Play install, which updates in place (REQ-ANDROID-022). -->
+    <string name="dashboard_update_body_play">PebbleNTN %1$s is available — you have %2$s. Tap below to get the update from Google Play.</string>
+    <string name="dashboard_update_play_delay">A new version can take a day or two to reach Google Play.</string>
     <!-- REQ-ANDROID-020: the card names the install source; %1$s is a dashboard_update_source_* name. -->
     <string name="dashboard_update_from">Update from %1$s</string>
     <string name="dashboard_update_other_sources">Other sources</string>
@@ -46,6 +51,10 @@
     <string name="dashboard_update_source_github">GitHub</string>
     <string name="dashboard_update_source_fdroid">F-Droid</string>
     <string name="dashboard_update_source_obtainium">Obtainium</string>
+    <string name="dashboard_update_source_play">Google Play</string>
+    <!-- The Updates section on a Google Play install, which has no GitHub check (REQ-ANDROID-022). -->
+    <string name="dashboard_app_version">Phone app version</string>
+    <string name="dashboard_app_version_play">%1$s, updated by Google Play</string>
     <string name="dashboard_check_update">Check for updates now</string>
     <string name="dashboard_auto_update">Check for updates weekly</string>
     <string name="dashboard_auto_update_hint">Optional: also check GitHub about once a week. Nothing is sent.</string>
@@ -67,6 +76,9 @@
     <string name="update_fdroid_url" translatable="false">https://f-droid.org/packages/com.pebblentn.app/</string>
     <!-- Only when the Obtainium app itself is not installed. -->
     <string name="update_obtainium_url" translatable="false">https://obtainium.imranr.dev/</string>
+    <!-- Google Play: the Play app's listing (%1$s is the package name), and the web listing when no app handles market:// (REQ-ANDROID-022). -->
+    <string name="update_play_market_url" translatable="false">market://details?id=%1$s</string>
+    <string name="update_play_web_url" translatable="false">https://play.google.com/store/apps/details?id=%1$s</string>
 
     <!-- Navigation apps (per-app enablement, REQ-ANDROID-004/009) -->
     <string name="navigation_apps_title">Navigation apps</string>

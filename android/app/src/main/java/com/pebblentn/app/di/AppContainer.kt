@@ -34,6 +34,7 @@ import com.pebblentn.app.system.SystemNotificationListenerRefresher
 import com.pebblentn.app.update.InstallSource
 import com.pebblentn.app.update.InstallSources
 import com.pebblentn.app.update.UpdateCheckRepository
+import com.pebblentn.app.update.UpdatePolicy
 import kotlinx.coroutines.CoroutineScope
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -88,18 +89,22 @@ class AppContainer(context: Context) {
     val notificationListenerRefresher: NotificationListenerRefresher =
         SystemNotificationListenerRefresher(appContext)
 
+    /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
+    val installSource: InstallSource = InstallSources.detect(appContext)
+
+    /** What the update features do for [installSource] (REQ-ANDROID-020, REQ-ANDROID-022). */
+    val updatePolicy: UpdatePolicy = UpdatePolicy.forSource(installSource)
+
     /**
      * Update detection: by default offline, comparing the watchapp version with this app's
      * (REQ-ANDROID-019); the GitHub check is an optional extra, on demand or weekly when turned on
-     * (REQ-ANDROID-013).
+     * (REQ-ANDROID-013), and never on a Google Play install (REQ-ANDROID-022).
      */
     val updateCheckRepository = UpdateCheckRepository(
         appContext,
         currentVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
+        installSource = installSource,
     )
-
-    /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
-    val installSource: InstallSource = InstallSources.detect(appContext)
 
     private val ruleEngine = RuleEngine()
 
@@ -252,8 +257,9 @@ class AppContainer(context: Context) {
             // is present and a watch is connected — the usual reason the watchapp stays "Connecting".
             timber.log.Timber.i("Watch link at startup: %s", watchTransport.linkDiagnostics())
             // Weekly, self-throttling app-update check (REQ-ANDROID-013) — only if the user opted in,
-            // so the app makes no network connection on its own by default.
-            if (updateCheckRepository.autoCheckEnabled.value) {
+            // so the app makes no network connection on its own by default; never on a Google Play
+            // install, which gets its updates from Play only (REQ-ANDROID-022).
+            if (updatePolicy.allowsGithubCheck && updateCheckRepository.autoCheckEnabled.value) {
                 updateCheckRepository.checkForUpdate(force = false)
             }
         }
