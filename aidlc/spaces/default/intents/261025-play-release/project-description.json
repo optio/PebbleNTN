@@ -1,0 +1,1 @@
+"Implement GitHub issue #114: prepare the first Google Play release (target SDK 36, Play install source without self-updates, privacy policy and data safety for network use, store graphics, reviewer app access, Play Console answers doc). Commits and the merge must carry [skip ci] so no release or version bump is triggered."

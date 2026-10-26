@@ -14,7 +14,7 @@
 
 ## Platforms and Baselines
 
-- Android: minSdk 31, targetSdk 35 (Play floor gate `verifyReleaseTargetSdk` = 35), compileSdk 36.
+- Android: minSdk 31, targetSdk 35 (Play floor gate `verifyReleaseTargetSdk` = 35), compileSdk 36 (unchanged at 6dec020). Google Play has required targetSdk 36 for new apps and updates since 31 August 2026 (#114); AGP 8.13.2 already compiles against 36, so no toolchain change is needed for it. `:fixture-publisher` (debug only) also targets 35.
 - Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite. flint and gabbro are not build targets and are not mentioned anywhere in the watchapp; the touch calls are guarded by `PBL_PLATFORM_EMERY`, not by a capability macro, and the RGB backlight by `PBL_RGB_BACKLIGHT`. Colour versus black-and-white is `PBL_COLOR` (`PBL_IF_COLOR_ELSE`), round is `PBL_ROUND`, and the large layout is a runtime `w >= 200`. The watchapp never calls `watch_info_*`, so nothing reports the platform at runtime today. Pebble apps load their code into the same RAM as their heap, so on aplite every byte of new code or static data comes off the free heap (about 3.9 KB at load after v0.0.76, per the intent brief).
 - Build: Gradle 8.13 wrapper, AGP 8.13.2, KSP 2.3.10, JDK 21 (Temurin in CI); pebble-tool with the latest SDK.
 
@@ -32,6 +32,7 @@
 - Android Lint (default rules), CodeQL (java-kotlin).
 - Test stack: JUnit 4, Robolectric 4.14.1, coroutines-test, Compose UI test, room-testing, Espresso (instrumented).
 - No coverage tool, formatter enforcement, ktlint or detekt.
+- Robolectric runs at `sdk=34` (`android/app/src/test/resources/robolectric.properties`), independent of targetSdk, so raising targetSdk to 36 does not need a newer Robolectric; it also means JVM tests never run API 36 behaviour.
 - Watch emulator tooling: pebble-tool emulators driven by `watchapp/tools/capture_screenshots.py` (buttons and `send-app-message`) and `watchapp/tools/touch_emulator.py` (touch over VNC, a standard-library RFB client, no third-party dependency).
 - No stack change in v0.0.73 or v0.0.74 (watchapp version row), and none implied by making version compare the default update signal: `PackageManager.getInstallSourceInfo` (platform API 30+) is the only new platform call, and the row uses existing Compose Material 3 `ListItem`s.
 

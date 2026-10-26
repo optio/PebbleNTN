@@ -8,7 +8,7 @@ A two-device monorepo. The Android companion (`android/app`, Kotlin/Compose) obs
 
 ### Architectural Style
 
-A client-side, offline monolith per device, with a hexagonal flavour on the phone. Pure domain cores (`core/NavigationSessionReducer`, `rules/RuleEngine`, `protocol/ProtocolCodec`) are isolated from Android and PebbleKit behind interfaces (`WatchTransport`, `AppAllowlist`, `ReleaseFetcher`, `EpochClock`). Wiring is manual through `di/AppContainer` (no Hilt, by the coding standards). The watch is a single-window event loop that keeps pure, host-testable text modules apart from Pebble API code. There is no backend. The only network call is the GitHub Releases GET.
+A client-side, offline monolith per device, with a hexagonal flavour on the phone. Pure domain cores (`core/NavigationSessionReducer`, `rules/RuleEngine`, `protocol/ProtocolCodec`) are isolated from Android and PebbleKit behind interfaces (`WatchTransport`, `AppAllowlist`, `ReleaseFetcher`, `EpochClock`). Wiring is manual through `di/AppContainer` (no Hilt, by the coding standards). The watch is a single-window event loop that keeps pure, host-testable text modules apart from Pebble API code. There is no backend. The only network call is the GitHub Releases GET (still true at 6dec020: remote official rules have verification code but no download code, see [api-documentation.md](api-documentation.md) "External HTTP API").
 
 ### Component Relationships
 
@@ -78,6 +78,7 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Install-source-aware card (v0.0.73)**: `InstallSources.detect` (installer package, no network) picks the card's main source; `updateCardModel` is the pure choice of main source, other sources and the F-Droid delay line.
 - **Privacy by construction**: allowlist before content, no automatic upload, network used only for the update check, which is opt-in for automatic runs.
 - **Vendored PebbleKit 2** for F-Droid reproducibility.
+- **One APK for every channel, install source decided at runtime**: there are no product flavours; the GitHub release APK is the bytes F-Droid's reproducible build must match (`Binaries:`, `AllowedAPKSigningKeys`), and `InstallSources.detect` picks the update behaviour once per app start. A Play-specific behaviour (#114) can follow the same runtime switch without a second build; the Play AAB from `play-release.yml` is built from the same sources and key.
 - **Pure C units** for watch logic that can be tested on the host, one unit per test binary.
 - **Settings change through one path**: every on-watch setting has a `settings_set_*` setter in `theme.c` that writes its persist key at once; the menus call it and then `notify_change()`, which runs `main.c` `on_settings_changed()` (window background, `redraw_all`, `apply_backlight`). Since v0.0.76 a Shortcut runs the same setters through `shortcut_apply()` and then `on_settings_changed()` itself. Everything else that depends on a setting reads it when it draws (theme colours, units, ETA mode and label, arrow side; the glyph cache flushes itself when the pack changes). The Shortcuts door's own setters (`settings_set_shortcut`, `settings_set_touch_enabled`) do not call `notify_change()`, so the `theme.c` setters are the only place every watch-side edit passes through (relevant to #102).
 - **Watch settings are watch-only (as of 4779760)**: no setting travels in the protocol; REQ-WATCH-012/014/015/016/022/024 each say so. The phone's `WatchSettings` holds four separate phone-side behaviours that only shape FLAGS bits 0-2, and three of them have no UI (see [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings").
@@ -92,9 +93,34 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - `DashboardScreen` takes about 40 parameters; grouping the Status section inputs into one small model would ease further rows.
 - Done in v0.0.75: the #94 stale prompt and the manual-check toast take the version-compare result into account (intent `261022-update-by-version-compar`).
 - Done in v0.0.76: navigation-screen Shortcuts (#12) as the pure `shortcuts.c` unit, `shortcut_apply.c`, the banner in `main.c` and the Shortcuts door in `settings_window.c`.
-- Settings sync (#102, active intent `261025-settings-sync`): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
+- Play release (#114, active intent `261025-play-release`): a `PLAY` install source with a pure "which update UI does this source show" model (in the style of `updateCardModel`) consumed by the dashboard, `MainActivity` and the start-up check; targetSdk 36 and a failing gate; privacy and Data safety docs that match the real network use. Detail in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings".
+- Settings sync (#102, intent `261025-settings-sync`, shipped in v0.0.77): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
 
 ## Interaction Diagrams
+
+### Update UI by install source (current, 6dec020) and the #114 touchpoints
+
+```mermaid
+flowchart TD
+  START[App start: AppContainer] --> DET["InstallSources.detect: installingPackageName"]
+  DET --> MAP{fromInstaller}
+  MAP -- F-Droid clients --> FD[FDROID]
+  MAP -- dev.imranr.obtainium --> OB[OBTAINIUM]
+  MAP -- "null, browser, adb, com.android.vending" --> GH[GITHUB]
+  START --> WK{auto_check_enabled?}
+  WK -- yes --> NET["checkForUpdate(force=false): GitHub GET"]
+  DASH[Dashboard] --> ST{"isCheckStale?"}
+  ST -- yes --> SC["Stale card: check GitHub now"]
+  SC --> WQ["Weekly-check question"]
+  DASH --> UPD["Updates section: Check now + weekly toggle"]
+  WV["watch_app_version (offline)"] --> UA{updateAvailable}
+  LV["latest_version (stored GitHub tag)"] --> UA
+  UA -- yes --> CARD["Update card: Update from source + Other sources"]
+  CARD --> OPEN["openUpdateSource: GitHub page, F-Droid page, Obtainium"]
+  UA -- yes --> BIT["bit 4 + key 14 to the watch"]
+```
+
+Text fallback: at start the app detects its install source; a Play install falls into GITHUB. When weekly checks are on, a GitHub GET runs. The dashboard shows the stale card (and then the weekly question) whenever the last GitHub check is never or over 30 days old, and the Updates section always offers the manual check and the weekly toggle. The stored watchapp version and the stored GitHub tag both make `updateAvailable`, which shows the card ("Update from {source}", "Other sources") and sets bit 4 and key 14 for the watch. For #114, a Play source would hide the stale card, weekly question, Updates rows, start-up check and "Other sources", ignore the stored GitHub tag, and send the card's button to the Play listing; the watch side is unchanged.
 
 ### Watch input and setting changes (current, 4779760, v0.0.76)
 

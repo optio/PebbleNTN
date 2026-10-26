@@ -147,7 +147,24 @@ Main menu rows (`ROW_*`, `MAIN_ROW_COUNT 11` at 4779760, mirrored by hand in `wa
 
 | Call | Location | Contract |
 |---|---|---|
-| `GET https://api.github.com/repos/optio/PebbleNTN/releases/latest` | `update/ReleaseFetcher.kt` `GitHubReleaseFetcher` | Headers `Accept: application/vnd.github+json`, `User-Agent: PebbleNTN-Android`; 8 s timeouts; reads `tag_name` (for example `v0.0.71`); a non-200 response or any exception returns null. No auth and no user data. |
+| `GET https://api.github.com/repos/optio/PebbleNTN/releases/latest` | `update/ReleaseFetcher.kt` `GitHubReleaseFetcher` | Headers `Accept: application/vnd.github+json`, `User-Agent: PebbleNTN-Android`; 8 s timeouts; reads `tag_name` (for example `v0.0.71`); a non-200 response or any exception returns null. No auth and no user data; the request reveals the phone's IP address to GitHub. Triggers: the manual row, the stale card, turning the weekly toggle on, and the start-up check while `auto_check_enabled`. |
+
+It is the only network call at 6dec020. Remote official rules (`update/RuleUpdateRepository.kt`) have no download code: `tryActivate(envelopeJson)` verifies a JSON string it is handed (Ed25519, schema, self-tests), `enabled` defaults to false, `AppContainer` passes no public keys, and nothing in the app calls it.
+
+### Outbound links and drafts (user actions, at 6dec020)
+
+| Action | Code | Destination and what it carries |
+|---|---|---|
+| Update from GitHub | `MainActivity.openUpdateSource` | `https://github.com/optio/PebbleNTN/releases/latest` (`update_releases_url`) |
+| Update from F-Droid | same | `https://f-droid.org/packages/com.pebblentn.app/` |
+| Update from Obtainium | same | Obtainium's launch intent, else `https://obtainium.imranr.dev/` |
+| Report a bug / Request a feature / Suggest a name | `MainActivity.feedbackActions` | GitHub `issues/new` with `app-version` (and `android-version` for bugs) in the query; discussion #45 |
+| Send by email (feedback) | `MainActivity.emailFeedback` | `mailto:` draft to `share_logs_recipient` with app and Android versions |
+| Share diagnostics by email / share sheet | `DiagnosticShareManager` | the reviewed JSON export, prefilled recipient for email, no recipient for the sheet |
+| Get the watchapp | `MainActivity` | `https://apps.repebble.com/ad4971e345854b909b73b1a9` |
+| Get a navigation app | `MainActivity` | `https://play.google.com/store/apps/details?id=<package>` |
+
+None of these sends anything by itself; the browser or mail app does once the user acts.
 
 ## Android Platform Interfaces
 
@@ -157,12 +174,13 @@ Main menu rows (`ROW_*`, `MAIN_ROW_COUNT 11` at 4779760, mirrored by hand in `wa
 - Outbound intents: `MainActivity.openUpdateSource(source)` opens `update_releases_url` (GitHub `releases/latest`), `update_fdroid_url`, or Obtainium's launch intent (`InstallSources.OBTAINIUM_PACKAGES`) falling back to `update_obtainium_url`; also `watchapp_store_url` and notification-listener settings.
 - `<queries>` lists 25 navigation-app packages, which must match `rules/catalog/navigation-apps.json`. `InstallSources.detect` reads the app's own install source (`PackageManager.getInstallSourceInfo`, API 30+, minSdk is 31) with no entry, once per app start in `AppContainer.installSource`.
 - PebbleKit 2 `PebbleInfoRetriever.getConnectedWatches()` gives the watch name and firmware version only, not the watchapp version.
+- Android 16 (API 36) exposure at 6dec020 (targetSdk 35): `MainActivity` calls `enableEdgeToEdge()` and screens use `Scaffold` insets, with no edge-to-edge opt-out; no `onBackPressed` override (one Compose `BackHandler` in the rule editor); no `screenOrientation`/`resizeableActivity`; no foreground services; the one runtime receiver is `RECEIVER_NOT_EXPORTED`; outbound intents are implicit `ACTION_VIEW`/`ACTION_SEND(TO)`. The PebbleKit 2 binding to the companion (vendored) is the path to check on a device after raising targetSdk.
 
 ## Internal Kotlin APIs Relevant to #94, Version Compare and the Watchapp Version Row
 
 - `UpdateCheckRepository(context, currentVersion, fetcher, now)`: `state: StateFlow<UpdateState(currentVersion, latestVersion?, checking, watchAppVersion?)>` with `updateAvailable` (GitHub newer or watch strictly newer) and `effectiveLatest` (the higher of the two, or null); `recordWatchAppVersion(version): Boolean` (trims, ignores blank, writes prefs key `watch_app_version` only on change, true only then; restored into the state at construction; never cleared); `autoCheckEnabled`; `lastCheckMillis: StateFlow<Long>`; `isCheckStale(now)` (over 30 days, or never); `setAutoCheckEnabled`; `suspend checkForUpdate(force): UpdateCheckOutcome {SKIPPED_NOT_DUE, UP_TO_DATE, UPDATE_AVAILABLE, FAILED}` (the outcome compares the GitHub tag only, not the watch version; `MainActivity.checkForUpdate` turns it into the toast `update_check_available` / `_up_to_date` / `_failed`). Prefs `pebblentn_update_check`: `last_check_millis`, `latest_version`, `auto_check_enabled`, `watch_app_version`. `CHECK_INTERVAL_MS` 7 days, `STALE_AFTER_MS` 30 days. A GitHub check keeps the stored watch version.
 - `AppVersions.isNewer(current, latest)` / `compare`: tolerates a leading `v`, uneven component counts and `-pre`/`+build` suffixes; a non-numeric component counts as 0 (used for GitHub tags). `parseStrict(version)` / `isNewerStrict(current, candidate)` (v0.0.73): optional `v`, then dot-separated parts of 1-9 digits and nothing else; unparsable is never newer. Same rule as the watch's `version_parse`.
-- `InstallSource {GITHUB, FDROID, OBTAINIUM}`; `InstallSources.fromInstaller(pkg)` (F-Droid clients `org.fdroid.fdroid`, `org.fdroid.basic`, `com.looker.droidify`, `com.machiav3lli.fdroid`; `dev.imranr.obtainium[.*]`; anything else or null is GitHub) and `detect(context)` (logs and falls back to GitHub on failure).
+- `InstallSource {GITHUB, FDROID, OBTAINIUM}` (no Play value at 6dec020: `com.android.vending` maps to GITHUB, and `InstallSourceTest` pins that); `InstallSources.fromInstaller(pkg)` (F-Droid clients `org.fdroid.fdroid`, `org.fdroid.basic`, `com.looker.droidify`, `com.machiav3lli.fdroid`; `dev.imranr.obtainium[.*]`; anything else or null is GitHub) and `detect(context)` (logs and falls back to GitHub on failure).
 - `updateCardModel(source)` -> `UpdateCardModel(main, others, showFdroidDelay)` (`ui/dashboard/UpdateCard.kt`).
 - `ProtocolCodec.watchAppVersion(message)` and `NavigationController(onWatchAppVersion: (String) -> Unit)`: called from `handleInbound` for every inbound message that yields a version, wrapped in `runCatching` with a warning log. AppContainer wires it to `updateCheckRepository.recordWatchAppVersion`.
 - `updatePrompt(stale, autoCheckEnabled, staleCheckFinished)` → `UpdatePrompt {NONE, STALE_CHECK, WEEKLY_QUESTION}` (`ui/dashboard/UpdatePrompt.kt`).

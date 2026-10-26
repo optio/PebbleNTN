@@ -4,10 +4,10 @@
 
 | Path | Contents |
 |---|---|
-| `android/app/src/main/java/com/pebblentn/app/` | Companion source (114 Kotlin files at c50710e, 116 at 4779760), organised by feature package |
-| `android/app/src/test/`, `src/androidTest/` | 69 JVM/Robolectric test sources (71 at 4779760); 1 instrumented test |
+| `android/app/src/main/java/com/pebblentn/app/` | Companion source (114 Kotlin files at c50710e, 116 at 4779760, 123 at 6dec020), organised by feature package |
+| `android/app/src/test/`, `src/androidTest/` | 69 JVM/Robolectric test sources (71 at 4779760, 79 at 6dec020; Robolectric pinned to `sdk=34` in `src/test/resources/robolectric.properties`); 1 instrumented test |
 | `android/app/schemas/room/` | Exported Room schemas v1-v8 (migration tests) |
-| `android/app/src/main/res/` | Resources; `values/strings.xml` (431 lines at 4779760, English only, content descriptions named `cd_*`); `drawable-nodpi/` holds only the 13 `ic_maneuver_*.png` icons, mapped from the `Maneuver` enum by `ui/format/DisplayLabels.maneuverIcon` |
+| `android/app/src/main/res/` | Resources; `values/strings.xml` (431 lines at 4779760, English only, content descriptions named `cd_*`); `drawable-nodpi/` holds the 13 `ic_maneuver_*.png` icons, mapped from the `Maneuver` enum by `ui/format/DisplayLabels.maneuverIcon`, and since #102 the 87 `watch_preview_*` PNGs (100 files at 6dec020); `values/strings.xml` is 588 lines at 6dec020; `values/themes.xml` is one `android:Theme.Material.NoActionBar` style (Compose draws the rest) |
 | `android/pebblekit/` | Vendored PebbleKit Android 2 1.2.0 (26 Kotlin files + AIDL) |
 | `android/fixture-publisher/` | Debug app with synthetic notifications |
 | `watchapp/src/c/` | Watchapp C (17 `.c` at 4779760, headers, `generated/protocol.h`) |
@@ -18,7 +18,7 @@
 | `tools/rule-workbench/`, `tools/route-capture/` | Maintainer CLIs |
 | `scripts/`, `.githooks/`, `.github/` | Build, test, release automation, CI, issue templates |
 | `spec/`, `requirements/`, `docs/` | Specification, REQ-* IDs, status log, privacy, release checklist |
-| `fastlane/`, `fdroid/`, `screenshots/` | Store metadata, F-Droid recipe, watch screenshots (`screenshots/`: 81 PNGs = 27 names x 3 sizes, 0.9-2.4 KB each, plus README) |
+| `fastlane/`, `fdroid/`, `screenshots/` | Store metadata (`fastlane/metadata/android/en-US/`: title, short and full description, `images/icon.png`, three `phoneScreenshots/`, 62 per-versionCode `changelogs/`; sizes in [code-quality-assessment.md](code-quality-assessment.md) "Play release findings"), F-Droid recipe, watch screenshots (`screenshots/`: 81 PNGs = 27 names x 3 sizes, 0.9-2.4 KB each, plus README) |
 
 ## Android Package Organisation (`com.pebblentn.app`)
 
@@ -35,7 +35,7 @@
 | `system/` | Adapter | notification access, listener refresher, install receiver |
 | `catalog/` | Model | navigation-app catalog |
 | `di/` | Configuration | `AppContainer`, asset catalog source, installed apps provider |
-| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `components/`, `format/`, `theme/` |
+| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `watchsettings/` (#102), `components/`, `format/`, `theme/` |
 
 ## Watchapp Module Organisation
 
