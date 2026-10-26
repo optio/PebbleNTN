@@ -191,6 +191,65 @@ class UpdateCheckRepositoryTest {
         assertEquals("0.0.74", repo.state.value.effectiveLatest)
     }
 
+    // --- REQ-ANDROID-022 (FR2b, FR2c): a Google Play install ignores the GitHub data. ---
+
+    private fun playRepo(fetcher: ReleaseFetcher, current: String = "0.0.13") =
+        UpdateCheckRepository(context, current, fetcher, now = { nowMillis }, installSource = InstallSource.PLAY)
+
+    @Test
+    fun storedGitHubVersionIsAnUpdateForGitHubButNotForPlay() = runTest {
+        // An earlier GitHub install learned 0.0.14 and turned weekly checks on.
+        val github = repo(FakeFetcher("0.0.14"))
+        github.checkForUpdate(force = true)
+        github.setAutoCheckEnabled(true)
+        assertTrue(repo(FakeFetcher(null)).state.value.updateAvailable)
+
+        // The same prefs after the app is updated from Google Play.
+        val play = playRepo(FakeFetcher(null))
+        assertFalse(play.state.value.updateAvailable)
+        assertEquals(null, play.state.value.effectiveLatest)
+        assertEquals(null, play.state.value.latestVersion)
+        assertFalse("the stored weekly setting is ignored", play.autoCheckEnabled.value)
+        assertFalse("nothing to go stale", play.isCheckStale())
+    }
+
+    @Test
+    fun playNeverFetchesAndLeavesThePreferencesAlone() = runTest {
+        val fetcher = FakeFetcher("0.0.14")
+        val play = playRepo(fetcher)
+        assertEquals(UpdateCheckOutcome.NOT_ALLOWED, play.checkForUpdate(force = true))
+        assertEquals(UpdateCheckOutcome.NOT_ALLOWED, play.checkForUpdate(force = false))
+        play.setAutoCheckEnabled(true)
+        assertEquals("no network call", 0, fetcher.calls)
+        assertFalse(play.autoCheckEnabled.value)
+        assertEquals("no check time recorded", 0L, play.lastCheckMillis.value)
+        // A GitHub install over the same prefs sees nothing written by the Play install.
+        assertFalse(repo(FakeFetcher(null)).autoCheckEnabled.value)
+        assertEquals(0L, repo(FakeFetcher(null)).lastCheckMillis.value)
+    }
+
+    @Test
+    fun newerWatchappIsStillAnUpdateOnPlay() = runTest {
+        val github = repo(FakeFetcher("0.0.80"), current = "0.0.71")
+        // A stored GitHub version higher than the watch's must not win on Play.
+        github.checkForUpdate(force = true)
+        github.recordWatchAppVersion("0.0.72")
+        val play = playRepo(FakeFetcher(null), current = "0.0.71")
+        assertTrue(play.state.value.updateAvailable)
+        assertEquals("0.0.72", play.state.value.effectiveLatest)
+        assertTrue(play.recordWatchAppVersion("0.0.73"))
+        assertEquals("0.0.73", play.state.value.effectiveLatest)
+    }
+
+    @Test
+    fun playStateIgnoresAGitHubVersionEvenWhenSet() {
+        val state = UpdateState("0.0.71", latestVersion = "0.0.80", watchAppVersion = "0.0.72", installSource = InstallSource.PLAY)
+        assertTrue(state.updateAvailable)
+        assertEquals("the watch's version, not GitHub's", "0.0.72", state.effectiveLatest)
+        assertFalse(UpdateState("0.0.71", latestVersion = "0.0.80", installSource = InstallSource.PLAY).updateAvailable)
+        assertEquals("0.0.80", UpdateState("0.0.71", latestVersion = "0.0.80").effectiveLatest)
+    }
+
     @Test
     fun latestVersionPersistsAcrossInstances() = runTest {
         repo(FakeFetcher("0.0.14")).checkForUpdate(force = true)

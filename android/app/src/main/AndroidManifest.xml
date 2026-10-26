@@ -3,10 +3,12 @@
 
     <!-- Sole use of the network: the optional app-update check against the GitHub Releases API
          (REQ-ANDROID-013) — on an explicit "Check for updates" tap, or a weekly check the user has
-         opted into. The default update check needs no network: it compares the watchapp version
-         with this app's (REQ-ANDROID-019). INTERNET is a normal install-time permission (no runtime
-         prompt exists), so the opt-in setting, not the permission, gates automatic access. No user
-         data is ever sent. -->
+         opted into — and never on a Google Play install, which gets its updates from Play and makes
+         no network request of its own (REQ-ANDROID-022). The default update check needs no network:
+         it compares the watchapp version with this app's (REQ-ANDROID-019). INTERNET is a normal
+         install-time permission (no runtime prompt exists), so the install source and the opt-in
+         setting, not the permission, gate network access. No user data is ever sent. The app
+         downloads no code and no rules. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Targeted package visibility (Android 11+): the bundled navigation-app packages, so we can

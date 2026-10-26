@@ -35,6 +35,20 @@ class UpdatePromptTest {
         assertEquals(UpdatePrompt.NONE, updatePrompt(stale = false, autoCheckEnabled = true, staleCheckFinished = true))
     }
 
+    /** REQ-ANDROID-022 (FR2a): a Google Play install never gets the stale item or the weekly question. */
+    @Test
+    fun noGitHubCheckMeansNoPrompt() {
+        for (stale in listOf(true, false)) {
+            for (finished in listOf(true, false)) {
+                assertEquals(
+                    "stale=$stale finished=$finished",
+                    UpdatePrompt.NONE,
+                    updatePrompt(stale = stale, autoCheckEnabled = false, staleCheckFinished = finished, githubCheckAllowed = false),
+                )
+            }
+        }
+    }
+
     @Test
     fun nothingPendingShowsNothing() {
         assertEquals(UpdatePrompt.NONE, updatePrompt(stale = false, autoCheckEnabled = false, staleCheckFinished = false))

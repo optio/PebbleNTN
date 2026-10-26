@@ -92,12 +92,12 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### App Update Check
 - **Location**: update/UpdateCheckRepository.kt, update/AppVersions.kt, update/ReleaseFetcher.kt, update/InstallSource.kt
-- **Responsibility**: opt-in weekly or manual GitHub release check (REQ-ANDROID-013); persists last check time, latest tag, the auto-check choice and the last-seen watchapp version (prefs `pebblentn_update_check`, key `watch_app_version`, REQ-ANDROID-019); exposes `UpdateState` (`watchAppVersion`, `updateAvailable`, `effectiveLatest`), `autoCheckEnabled` and `lastCheckMillis` flows and `isCheckStale` (30 days, REQ-ANDROID-018); tolerant (GitHub) and strict (watch) version comparison in `AppVersions`; install-source detection (`InstallSources`, REQ-ANDROID-020). The stored watchapp version has no timestamp and is never cleared. `updateAvailable` (`githubNewer || watchNewer`) needs no online check; `checkForUpdate`'s outcome (and so the manual-check toast) comes from the GitHub tag only; `isCheckStale` reads only `last_check_millis`. The `recordWatchAppVersion` KDoc ("with the Core Devices app WATCH_READY never arrives") is outdated.
+- **Responsibility**: opt-in weekly or manual GitHub release check (REQ-ANDROID-013); persists last check time, latest tag, the auto-check choice and the last-seen watchapp version (prefs `pebblentn_update_check`, key `watch_app_version`, REQ-ANDROID-019); exposes `UpdateState` (`watchAppVersion`, `updateAvailable`, `effectiveLatest`), `autoCheckEnabled` and `lastCheckMillis` flows and `isCheckStale` (30 days, REQ-ANDROID-018); tolerant (GitHub) and strict (watch) version comparison in `AppVersions`; install-source detection (`InstallSources`, REQ-ANDROID-020). The stored watchapp version has no timestamp and is never cleared. `updateAvailable` (`githubNewer || watchNewer`) needs no online check; `checkForUpdate`'s outcome (and so the manual-check toast) comes from the GitHub tag only; `isCheckStale` reads only `last_check_millis`. The `recordWatchAppVersion` KDoc ("with the Core Devices app WATCH_READY never arrives") is outdated. At 6dec020 `UpdateCheckMessage.kt` holds the pure manual-check message choice, and `InstallSources.fromInstaller` has no Play mapping (`com.android.vending` is GitHub); the stored `latest_version` and `auto_check_enabled` survive an update installed over the app, so they would carry into a Play install (#114).
 - **Depends on**: GitHub Releases API, kotlinx-serialization, coroutines.
 
 ### Ruleset Signing and Activation
 - **Location**: update/RuleUpdateRepository.kt, update/SignedRuleset.kt, update/RulesetSignatureVerifier.kt
-- **Responsibility**: disabled-by-default remote official rules: Ed25519 verification, schema validation, embedded self-tests, atomic activation and rollback (REQ-SEC-005/006); no keys are embedded yet.
+- **Responsibility**: disabled-by-default remote official rules: Ed25519 verification, schema validation, embedded self-tests, atomic activation and rollback (REQ-SEC-005/006); no keys are embedded yet. It has no download code: nothing fetches an envelope or calls `tryActivate` (checked at 6dec020), so "online rule updates" are not a current network use.
 
 ### Compose UI
 - **Location**: ui/ (MainActivity, dashboard, rules, debug, share, apps, onboarding, components, format, theme)
@@ -110,6 +110,16 @@ Each component lists its location, responsibility and dependencies. The `###` he
 ### Dependency Container
 - **Location**: di/AppContainer.kt, PebbleNtnApplication.kt
 - **Responsibility**: manual DI and startup: builds every repository, the transport and the controller; forwards `WatchSettings` changes to the controller (`watchSettingsRepository.settings.collect` -> `onSettingsChanged`, `initialSettings`), and passes `isAutoLaunchEnabled` to the transport; on start restores state, starts inbound collection, warms caches, and runs the update check only when auto-check is enabled. Supplies `latestPhoneUpdate` = `updateCheckRepository.state.value.effectiveLatest` (#94, REQ-ANDROID-019), `onWatchAppVersion` = `updateCheckRepository.recordWatchAppVersion`, and `installSource` (detected once per app start).
+
+### Dashboard Update UI
+- **Location**: ui/dashboard/UpdateCard.kt, ui/dashboard/UpdatePrompt.kt, the update parts of ui/dashboard/DashboardScreen.kt (`UpdatePrompt` cards, `UpdateAvailableCard`, `sourceName`, the Updates section), ui/MainActivity.kt (`openUpdateSource`, `checkForUpdate`, `setAutoCheckUpdates`), ui/onboarding/OnboardingScreen.kt (the disclosure)
+- **Responsibility**: shows the #94 stale-check card and weekly-check question, the "Update available" card with "Update from {source}", the F-Droid delay line and "Other sources", and the Updates section's manual check and weekly toggle; opens each source's destination; toasts the manual check's message; shows `onboarding_disclosure` before the notification-access button. Every choice that is not layout is a pure function (`updateCardModel`, `updatePrompt`, `updateCheckMessage`). `sourceName` and `openUpdateSource` are exhaustive `when`s over `InstallSource`. Surfaces and strings: [api-documentation.md](api-documentation.md), and for #114 [code-quality-assessment.md](code-quality-assessment.md) "Play release findings".
+- **Depends on**: App Update Check, Dependency Container (`installSource`).
+
+### Android Build Configuration
+- **Location**: android/build.gradle.kts, android/app/build.gradle.kts, android/gradle/libs.versions.toml, android/gradle/wrapper/gradle-wrapper.properties
+- **Responsibility**: plugin aliases (root), the `:app` module: `compileSdk 36`, `minSdk 31`, `targetSdk 35`, versionCode/versionName (written by `scripts/version.sh`), the `verifyReleaseTargetSdk` task over `playMinTargetSdk = 35`, release signing from `KEYSTORE_*` environment variables, R8 and resource shrinking, reproducibility settings (no dependency-info blob, release ART profile tasks disabled), rule-data staging (`syncRuleData`, `syncTestFixtures`), Room schema export, the unit-test JVM (2 GB, one fork). The version catalog pins every library and plugin (AGP 8.13.2, Kotlin and KSP 2.3.10).
+- **Depends on**: Gradle 8.13, JDK 21, Android SDK 36.
 
 ### PebbleKit 2 Vendored Library
 - **Location**: android/pebblekit/
@@ -139,11 +149,15 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### CI Workflows
 - **Location**: .github/workflows/
-- **Responsibility**: android, watchapp, rules, codeql, release (push to main), play-release (manual). Detail is in [code-quality-assessment.md](code-quality-assessment.md).
+- **Responsibility**: android, watchapp, rules, codeql, release (push to main), play-release (manual: checks out a tag, runs the target-SDK gate but ignores its failure, builds a signed AAB with the `UPLOAD_KEYSTORE_BASE64` secret that `release.yml` also signs the APK with, and uploads it as a workflow artifact, not to Play). Detail is in [code-quality-assessment.md](code-quality-assessment.md).
 
 ### Distribution Metadata
 - **Location**: fastlane/metadata/android/, fdroid/, watchapp/store/, screenshots/
-- **Responsibility**: F-Droid/fastlane descriptions and per-versionCode changelogs, F-Droid recipe (`Binaries:` = the GitHub APK, `UpdateCheckMode: Tags`) and reproducible-build notes, Pebble store art and watch screenshots. The channels (GitHub, F-Droid, Obtainium, Rebble store) are listed in [business-overview.md](business-overview.md).
+- **Responsibility**: F-Droid/fastlane descriptions and per-versionCode changelogs, F-Droid recipe (`Binaries:` = the GitHub APK, `UpdateCheckMode: Tags`) and reproducible-build notes, Pebble store art and watch screenshots. The channels (GitHub, F-Droid, Obtainium, Rebble store, and Google Play planned by #114) are listed in [business-overview.md](business-overview.md). The en-US listing at 6dec020 has a 512x512 icon and three 1080x2280 phone screenshots but no feature graphic; text lengths are within Play's limits (sizes in [code-quality-assessment.md](code-quality-assessment.md) "Play release findings").
+
+### Store and Privacy Documents
+- **Location**: docs/PRIVACY_POLICY.md, docs/PLAY_DATA_SAFETY.md, docs/PRIVACY_REVIEW.md, docs/RELEASE_CHECKLIST.md; normative sources spec/600-security-release/BuildRelease.md, spec/600-security-release/SecurityPrivacy.md, requirements/REQ-SECURITY.md
+- **Responsibility**: the privacy policy (still a template with `[DATE]` and contact placeholders), the draft Play Data safety answers and notification-access justification, the M9 privacy review (boundary → enforcement → test), and the M10 release checklist with its "Store submission" list. None of the three `docs/` files is MANIFEST-protected; the `spec/` and `requirements/` sources are. At 6dec020 they all say nothing leaves the device and none mentions the GitHub check, feedback links or support email; there is no `docs/PLAY_CONSOLE.md`.
 
 ### Specification and Requirements
 - **Location**: spec/, requirements/, docs/, MANIFEST.sha256.json, AGENTS.md, README.md

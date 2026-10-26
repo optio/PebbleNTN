@@ -29,11 +29,26 @@ PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions fro
 | F-Droid | APK (`com.pebblentn.app`) | F-Droid client; builds from tags (`UpdateCheckMode: Tags`, `Binaries:` = the GitHub APK), so it lags a release | README.md, `fdroid/metadata/com.pebblentn.app.yml` |
 | Obtainium | APK, tracking GitHub releases | Obtainium installs each release | README.md |
 | Rebble app store | watchapp only | the watch auto-updates | strings `watchapp_store_url` |
-| Play Store | not in scope | none | README.md |
+| Google Play | planned by #114; not published at 6dec020 (developer account awaiting verification) | Play's own updates only: a Play install may not point to another update source (Device and Network Abuse policy) | issue #114; `.github/workflows/play-release.yml` builds a signed AAB but uploads nothing |
 
 Because the watchapp auto-updates from the store while the phone app needs a manual update, the watch is usually ahead of the phone. Both share one version line (see [dependencies.md](dependencies.md)).
 
-## Business Context for the Active Intent (261025-settings-sync)
+## Business Context for the Active Intent (261025-play-release)
+
+GitHub issue #114 (app version 0.0.77) prepares the **first Google Play release** of the companion app. The developer account exists and is awaiting verification. Items 1-5 of the issue are code or repo work, item 6 is a Play Console answers doc, and items 7-8 (Play App Signing with the existing release key, developer verification, a 12-tester closed test for 14 days) are manual steps for the maintainer. The watchapp is not affected: it stays on the Rebble store.
+
+What the code and docs look like at 6dec020 (v0.0.77) against each item (detail and file:line evidence in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings"):
+
+1. **Target SDK**: `targetSdk = 35`, `compileSdk = 36`, `minSdk = 31`; the Play gate `playMinTargetSdk = 35`, and `play-release.yml` turns a gate failure into an `echo`. Play has required API 36 since 31 August 2026.
+2. **No self-updates on Play**: a Play install (`com.android.vending`) is detected as GitHub today, so it would see the GitHub stale-check card, the weekly-check question and toggle, "Update from GitHub" and "Other sources" (F-Droid, Obtainium). The offline phone-vs-watchapp notice is source-neutral and can stay, pointing at the Play listing.
+3. **Privacy policy and Data safety**: both say nothing leaves the device and neither mentions INTERNET, the GitHub check, the feedback links or the prefilled support email. "Online rule updates" exist only as a disabled, offline verification path with no download code.
+4. **Store listing**: title, short and full descriptions are within Play's limits; the 512x512 icon fits; the feature graphic is missing and the three phone screenshots are 1080x2280 (over 2:1).
+5. **Reviewer access**: onboarding, notification access, Navigation apps, Rules, Debug history and diagnostics work without a watch; navigation on the watch and settings sync need one.
+6. **Play Console doc**: `docs/PLAY_CONSOLE.md` does not exist; `docs/RELEASE_CHECKLIST.md` has a short "Store submission" list.
+
+The users are the same drivers, cyclists and walkers, who would get the app (and its updates) from Play rather than by sideloading. GitHub, F-Droid and Obtainium installs must keep today's behaviour, and the F-Droid build must stay reproducible, which favours a runtime install-source check over a separate Play build flavour.
+
+## Earlier Intent Context (261025-settings-sync, shipped in v0.0.77)
 
 GitHub issue #102 (opened 2026-10-19, groomed on 2026-10-24/25) asks for the watchapp's settings to appear in the Android companion app and stay **in sync both ways**: a change on the phone applies to the watch, and a change in the on-watch menu (or by a Shortcut) shows up in the app. The watch stays the source of truth and the phone keeps a mirror. A revision number that wraps at 99 (compared as RFC 1982 serial numbers, the watch winning ties and a difference of 50) decides which side is newer. `WATCH_READY` carries the watch's settings, revision, platform and capabilities, so the app only offers what that watch supports. Phone edits made while the watchapp is closed are queued for the next `WATCH_READY`. Each setting that changes the look of the navigation screen gets a static emulator screenshot per value, bundled in the app (basalt, chalk and emery sets; the basalt set shown greyscale for black-and-white watches).
 
@@ -62,7 +77,8 @@ Earlier intent (`261022-version-compare-update`, shipped): #94 told users about 
 - **Companion app**: the PebbleNTN Android app (not the Pebble/Core Devices mobile app, which PebbleKit 2 routes through).
 - **App glance**: the watch launcher's subtitle under the app name.
 - **READY handshake**: `WATCH_READY` from the watch, answered with the current state.
-- **Install source**: the installer package Android records for the app (F-Droid client, Obtainium, package installer/browser), mapped by `InstallSources.fromInstaller`.
+- **Install source**: the installer package Android records for the app (F-Droid client, Obtainium, package installer/browser), mapped by `InstallSources.fromInstaller`. At 6dec020 the Play Store's installer, `com.android.vending`, still maps to GitHub; #114 adds a Play source.
+- **Play install**: an install (or update) made by the Google Play Store; Play policy forbids such an install from updating itself or pointing users to updates outside Play.
 - **Touch bridge**: the firmware's mapping of touches to button presses on a window, which an app opts into with `app_touch_navigation_enable(true)` and turns off per window with `window_set_touch_bridge_disabled(window, true)`. With the bridge off, touches go to the app's own gesture recognizers.
 - **Settings revision** (#102, proposed): a number from 0 to 99 that each side bumps on a local settings edit and that wraps to 0; "newer" uses wrap-around (serial number) comparison.
 - **Shortcut**: an action (for example "Next colour") bound to UP, DOWN or, on emery, a swipe or tap on the navigation screen (REQ-WATCH-024).

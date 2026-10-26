@@ -98,7 +98,8 @@ for a missing companion app is simply that nothing answers the WATCH_READY hands
 
 If nothing answers within five seconds, the watch shows a hint. When the Pebble mobile app is
 connected (so the missing piece is most likely the companion app) it shows an **install QR** that
-links to the GitHub releases page holding the APK; the QR is drawn on a white field whatever the
+links to the README's install section (`https://github.com/optio/PebbleNTN#distribution`), which
+lists every source of the phone app; the QR is drawn on a white field whatever the
 theme, so its quiet zone stays scannable, and on a round display it is centred without a caption. When
 the Pebble app is not connected it instead says **"Open the Pebble app"**, since the install QR cannot
 help until the phone link is up. The hint is replaced the moment any real state arrives, and the wait

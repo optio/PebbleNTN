@@ -65,8 +65,10 @@ tasks.configureEach {
 }
 
 // Release automation gate: verify the target SDK still meets the current Play submission floor
-// (spec/600-security-release/BuildRelease.md). Bump PLAY_MIN_TARGET_SDK as Google raises it.
-val playMinTargetSdk = 35
+// (spec/600-security-release/BuildRelease.md, REQ-ANDROID-022). Google Play has required API 36 for
+// new apps and app updates since 31 August 2026; raise playMinTargetSdk when Google raises the floor.
+// release.yml and play-release.yml both run this task and fail the job when it fails.
+val playMinTargetSdk = 36
 tasks.register("verifyReleaseTargetSdk") {
     doLast {
         val target = android.defaultConfig.targetSdk
@@ -86,8 +88,8 @@ android {
     defaultConfig {
         applicationId = "com.pebblentn.app"
         minSdk = 31
-        // Target SDK baseline 35; release automation verifies the Play-required target at release time.
-        targetSdk = 35
+        // Target SDK 36 (Android 16), the Play floor; verifyReleaseTargetSdk checks it at release time.
+        targetSdk = 36
         versionCode = 77
         versionName = "0.0.77"
 

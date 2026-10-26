@@ -1,6 +1,90 @@
 # Implementation Status
 
-_Last updated: 2026-10-25_
+_Last updated: 2026-10-26_
+
+## Prepare the first Google Play release (2026-10-26, #114)
+
+**Milestone:** post-M12 release readiness for a new distribution channel (new REQ-ANDROID-022;
+REQ-ANDROID-013/018/020, REQ-WATCH-017/020 and `spec/600-security-release/SecurityPrivacy.md`
+amended). Not released: versionCode/versionName stay 77 / 0.0.77, and the commits carry `[skip ci]`.
+
+**Requirements being implemented.**
+- Target SDK 36 with a Play target-SDK gate that fails `play-release.yml` and runs in `release.yml`
+  before the build.
+- Google Play as an install source (`com.android.vending` → PLAY), detected at runtime: no GitHub
+  update check, link or stored GitHub update data on Play installs; the watchapp-newer notice opens
+  the Play listing; a Play variant of the onboarding disclosure. Other sources behave as in v0.0.77.
+- Accurate privacy policy, Data safety answers, privacy review and listing text (no online rule
+  updates claimed).
+- `tools/play_store_graphics.py`: Play-sized phone screenshots, watch-screenshot composites and the
+  feature graphic, with a `--check` run by `scripts/test-all.sh` when Pillow is available.
+- A separate Play upload key (`PLAY_UPLOAD_*` secrets) in `play-release.yml`.
+- One install page (README "Distribution") with the watch QR pointing to it, still QR version 3.
+- `docs/PLAY_CONSOLE.md` with every Play Console answer and step.
+
+**What changed.**
+- `targetSdk` and `playMinTargetSdk` 36. `verifyReleaseTargetSdk` passes at 36 and, with a
+  temporary local `targetSdk = 35` (reverted), fails with "targetSdk 35 is below the Play submission
+  floor 36". `play-release.yml` runs it without `|| echo`; `release.yml` runs it in the verify job,
+  which the release job needs. Robolectric stays at sdk 34.
+- `InstallSource.PLAY` (`com.android.vending`) and a pure `UpdatePolicy` per source. On PLAY,
+  `UpdateCheckRepository` never fetches (`UpdateCheckOutcome.NOT_ALLOWED`), loads no stored
+  `latest_version`, ignores `auto_check_enabled`, is never stale and writes no preference;
+  `UpdateState` also ignores a GitHub version for PLAY. `AppContainer` skips the start-up check,
+  `MainActivity` guards the check and the toggle and opens `market://details?id=…` (web listing on
+  `ActivityNotFoundException`). The dashboard shows only "Phone app version: …, updated by Google
+  Play" in Updates and no prompt; the card reads "Update from Google Play" with the Play delay line,
+  no "Other sources" and no uninstall advice. Onboarding uses `onboarding_disclosure_play`.
+- `play-release.yml` signs with the `PLAY_UPLOAD_*` secrets (mapped onto `KEYSTORE_*`), failing with
+  a message naming the four when any is empty, and checks the alias with keytool.
+- Privacy policy (effective 2026-10-26, contact pebblentn@mg.mijnesite.be and the issues page),
+  Data safety, privacy review, manifest comment and listing text rewritten to match the code; no
+  online rule updates claimed.
+- `tools/play_store_graphics.py` (+ `tools/test_play_store_graphics.py`): phone screenshots cropped
+  to 1080×2160 through background rows only (1: 108 top / 12 bottom, 2: 81 / 39, 3: 88 / 32; the
+  status bar is gone and no text is cut), `4.png` and `5.png` watch composites (×4 nearest-neighbour,
+  DejaVu Sans Bold captions), `featureGraphic.png` 1024×500. Two runs give identical bytes.
+  `scripts/test-all.sh` runs the unit tests and `--check` with python3 or the pebble tool's Python,
+  whichever has Pillow, and prints a skip note otherwise; it also parses the workflows as YAML.
+- README "Distribution" lists Google Play ("coming soon"), GitHub releases, F-Droid, Obtainium and
+  the one-signature note. The watch QR encodes `https://github.com/optio/PebbleNTN#distribution`
+  (47 bytes, still version 3-L, 29×29); About's link text is "github.com/optio/\nPebbleNTN".
+- `docs/PLAY_CONSOLE.md` (new) and `docs/RELEASE_CHECKLIST.md` (store submission, Android 16 checks).
+- REQ-ANDROID-013/018/020 and REQ-WATCH-017/020 amended, REQ-ANDROID-022 added;
+  `SecurityPrivacy.md` holds both disclosures, `BuildRelease.md` and `WatchUI.md` updated;
+  `MANIFEST.sha256.json` resynced (README.md is protected too).
+
+- Revision 1 (all store images from the current build; F-Droid shares them): the phone screens are
+  rendered from the current app by `StoreScreenshotsTest` (Robolectric native graphics, 1080×2160,
+  a Play install with a connected Pebble Time 2; skipped unless `PEBBLENTN_STORE_SCREENSHOTS_DIR`
+  is set) into `tools/play-store-sources/phone/`; the watch screens by the new
+  `capture_screenshots.py --store` (no wipe, `SETTINGS` messages) into
+  `tools/play-store-sources/watch/`. The graphics script builds `phoneScreenshots/1.png`–`6.png`
+  (four app screens, two watch images) and the feature graphic from those folders. The
+  `pebblentn-api34` AVD could not start: this WSL no longer exposes KVM ("x86_64 emulation currently
+  requires hardware acceleration"), so no device screenshot or `adb install -i com.android.vending`
+  was possible.
+
+**Library versions.** No new library. The graphics script uses the Pillow 12.3.0 that comes with the
+pebble tool; the system Python has none.
+
+**Commands executed.** `android/gradlew -p android :app:testDebugUnitTest` (baseline: 479 tests,
+0 failures; scoped update/ui runs); `./gradlew verifyReleaseTargetSdk` (at 36 and a temporary 35);
+the pebble tool's Python running `tools/play_store_graphics.py` (twice) and `--check`,
+`watchapp/tools/gen_connect_qr.py` and a QR decode of the PNG and of emulator screenshots;
+`pebble build` (aplite free heap at load 3615 B, was 3597 B); `pebble install`/`emu-button`/
+`screenshot` on basalt and aplite, then `pebble kill`; `scripts/validate-spec-assets.sh`;
+`scripts/test-all.sh` (exit 0; `testDebugUnitTest` and `testReleaseUnitTest` 500 tests each, 0
+failures); a local `:app:bundleRelease` signed with a throwaway upload key through the `KEYSTORE_*`
+variables (verified by jarsigner, then deleted); `:app:assembleDebug`.
+
+**Known blockers.** No Android emulator in WSL: the Android 16 checks (edge-to-edge with 3-button
+and gesture navigation, predictive back in the rule editor, a navigation session through PebbleKit 2)
+run on the maintainer's phone over wireless adb at Build and Test. The Play behaviour itself can only
+be seen on a Play install (internal testing track). context7 was unavailable (invalid API key); the
+Android 16 behaviour changes were read from developer.android.com.
+
+**Next atomic task.** Build and Test: the Android 16 phone checks with the debug APK.
 
 ## Watch settings synced with the phone app, with previews (2026-10-25, #102)
 

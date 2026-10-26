@@ -7,8 +7,12 @@ manual matrix must be completed on hardware because it cannot run in this build 
 
 - [ ] `./scripts/test-all.sh` green (spec integrity, protocol `--check`, catalog + rule schema,
       rule regression, Android unit tests + lint).
-- [ ] `./gradlew verifyReleaseTargetSdk` passes (target SDK ≥ Play floor).
-- [ ] `./gradlew bundleRelease` produces a signed AAB (CI, using the protected environment secrets).
+- [ ] `./gradlew verifyReleaseTargetSdk` passes (target SDK ≥ Play floor, 36). `release.yml` and
+      `play-release.yml` both run it and fail the job when it fails.
+- [ ] `./gradlew bundleRelease` produces an AAB signed with the Play upload key (`play-release.yml`,
+      using the `PLAY_UPLOAD_*` secrets of the protected `release` environment).
+- [ ] `tools/play_store_graphics.py --check` passes (run by `scripts/test-all.sh` when Pillow is
+      available): icon, feature graphic and phone screenshots meet Play's sizes.
 - [ ] `pebble build` produces `watchapp.pbw`.
 - [ ] CodeQL analysis clean.
 - [ ] SBOM / dependency license report generated where practical.
@@ -38,6 +42,18 @@ For each cell verify:
 - [ ] Debug export (rules-only / privacy-safe / full) shares via the sheet; full shows the warning.
 - [ ] Process restart mid-session restores the current state.
 
+### Android 16 (target SDK 36)
+
+Once per target-SDK change, on an Android 16 phone (the behaviour changes for apps targeting 36):
+
+- [ ] Edge-to-edge can no longer be opted out of: onboarding and the dashboard bottoms are not
+      hidden behind the navigation bar, with 3-button navigation and with gesture navigation.
+- [ ] Predictive back is on: back from every screen returns where expected, and the rule editor's
+      back with unsaved changes shows the discard dialog (Compose `BackHandler`).
+- [ ] A navigation session reaches the watch (the PebbleKit 2 binding to the Pebble companion app).
+- [ ] An install from Google Play (internal testing track) shows no "Check for updates" row, weekly
+      toggle or stale-check card, and its update card opens the Play listing.
+
 ## Instrumented tests (device/emulator)
 
 - [ ] `./gradlew connectedDebugAndroidTest` green, including the REQ-ANDROID-003 spy proving the
@@ -45,10 +61,16 @@ For each cell verify:
 
 ## Store submission
 
-- [ ] `docs/PRIVACY_POLICY.md` finalized and hosted; URL added in Play Console.
-- [ ] `docs/PLAY_DATA_SAFETY.md` answers entered accurately.
-- [ ] Notification-access justification + prominent disclosure provided.
-- [ ] Play App Signing enabled; upload key protected.
+Every Play Console answer and step is in [`PLAY_CONSOLE.md`](PLAY_CONSOLE.md).
+
+- [ ] Signing: the release key enrolled in Play App Signing (PEPK), a separate upload key in the
+      `PLAY_UPLOAD_*` secrets, both keystores backed up offline (`PLAY_CONSOLE.md` §1).
+- [ ] App content answered: privacy policy URL (`docs/PRIVACY_POLICY.md`), ads, app access with the
+      demo video, content rating, target audience, Data safety (`docs/PLAY_DATA_SAFETY.md`),
+      notification-access justification and disclosure (`PLAY_CONSOLE.md` §2).
+- [ ] Store listing from `fastlane/metadata/android/en-US/` (`PLAY_CONSOLE.md` §3).
+- [ ] Closed test (12 testers, 14 consecutive days) and Android developer verification of
+      `com.pebblentn.app` and the release signing key (`PLAY_CONSOLE.md` §5).
 
 ## Beta
 

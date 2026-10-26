@@ -16,6 +16,11 @@ enum class UpdateCheckOutcome {
     UPDATE_AVAILABLE,
     /** The fetch failed (offline, error). Last-known state is retained. */
     FAILED,
+    /**
+     * This install source never asks GitHub (a Google Play install, [UpdatePolicy.allowsGithubCheck]
+     * false); nothing was fetched (REQ-ANDROID-022).
+     */
+    NOT_ALLOWED,
 }
 
 /** Update state for the UI. */
@@ -30,10 +35,18 @@ data class UpdateState(
      * phone app has been published.
      */
     val watchAppVersion: String? = null,
+    /**
+     * Where this app was installed from. A Google Play install ignores [latestVersion], which can
+     * only come from a GitHub check an earlier GitHub install made (REQ-ANDROID-022).
+     */
+    val installSource: InstallSource = InstallSource.GITHUB,
 ) {
-    /** GitHub reports a newer version (tolerant tag compare). */
+    /** GitHub reports a newer version (tolerant tag compare), and this install source uses GitHub. */
     private val githubNewer: Boolean
-        get() = latestVersion?.let { AppVersions.isNewer(currentVersion, it) } ?: false
+        get() {
+            if (UpdatePolicy.forSource(installSource).ignoresStoredGithubVersion) return false
+            return latestVersion?.let { AppVersions.isNewer(currentVersion, it) } ?: false
+        }
 
     /** The watch reports a strictly newer version; an unparsable one is ignored (REQ-ANDROID-019). */
     private val watchNewer: Boolean
@@ -69,21 +82,29 @@ data class UpdateState(
  * cadence and last-known latest version are persisted, so the "update available" prompt survives
  * restarts without re-hitting the network every launch. It performs the app's only network access
  * and sends no user data (see [GitHubReleaseFetcher]).
+ *
+ * On a Google Play install ([installSource] PLAY, REQ-ANDROID-022) the GitHub part is off: no check
+ * ever runs, and the GitHub version, weekly setting and check time an earlier GitHub install stored
+ * are ignored (they stay in the preferences untouched, so nothing is lost if the user goes back).
  */
 class UpdateCheckRepository(
     context: Context,
     private val currentVersion: String,
     private val fetcher: ReleaseFetcher = GitHubReleaseFetcher(),
     private val now: () -> Long = { System.currentTimeMillis() },
+    private val installSource: InstallSource = InstallSource.GITHUB,
 ) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    private val policy = UpdatePolicy.forSource(installSource)
+
     private val _state = MutableStateFlow(
         UpdateState(
             currentVersion,
-            prefs.getString(KEY_LATEST_VERSION, null),
+            latestVersion = if (policy.ignoresStoredGithubVersion) null else prefs.getString(KEY_LATEST_VERSION, null),
             watchAppVersion = prefs.getString(KEY_WATCH_APP_VERSION, null),
+            installSource = installSource,
         ),
     )
     val state: StateFlow<UpdateState> = _state.asStateFlow()
@@ -107,7 +128,9 @@ class UpdateCheckRepository(
         return true
     }
 
-    private val _autoCheckEnabled = MutableStateFlow(prefs.getBoolean(KEY_AUTO_CHECK, DEFAULT_AUTO_CHECK))
+    private val _autoCheckEnabled = MutableStateFlow(
+        policy.allowsGithubCheck && prefs.getBoolean(KEY_AUTO_CHECK, DEFAULT_AUTO_CHECK),
+    )
     /**
      * Whether the weekly automatic check may run. Off by default: with it off the app makes NO
      * network connection on its own — only an explicit "Check for updates" tap does. The INTERNET
@@ -116,7 +139,12 @@ class UpdateCheckRepository(
      */
     val autoCheckEnabled: StateFlow<Boolean> = _autoCheckEnabled.asStateFlow()
 
+    /** Turn the weekly check on or off. Ignored on an install source that never asks GitHub. */
     fun setAutoCheckEnabled(enabled: Boolean) {
+        if (!policy.allowsGithubCheck) {
+            timber.log.Timber.w("Weekly update check is not available for %s installs", installSource)
+            return
+        }
         _autoCheckEnabled.value = enabled
         prefs.edit().putBoolean(KEY_AUTO_CHECK, enabled).apply()
     }
@@ -134,6 +162,8 @@ class UpdateCheckRepository(
      * about updates (REQ-ANDROID-018, #94). Reading this makes no network call.
      */
     fun isCheckStale(now: Long = this.now()): Boolean {
+        // A source that never asks GitHub has nothing to go stale (REQ-ANDROID-022).
+        if (!policy.allowsGithubCheck) return false
         val last = _lastCheckMillis.value
         return last == 0L || now - last > STALE_AFTER_MS
     }
@@ -141,9 +171,11 @@ class UpdateCheckRepository(
     /**
      * Check for a newer version. When [force] is false the network is only hit if at least a week
      * has passed since the last attempt; a manual check passes [force] = true. Safe to call on every
-     * launch — it self-throttles.
+     * launch — it self-throttles. On a source that never asks GitHub it returns
+     * [UpdateCheckOutcome.NOT_ALLOWED] without touching the network or the preferences.
      */
     suspend fun checkForUpdate(force: Boolean): UpdateCheckOutcome {
+        if (!policy.allowsGithubCheck) return UpdateCheckOutcome.NOT_ALLOWED
         val lastCheck = prefs.getLong(KEY_LAST_CHECK, 0L)
         val timestamp = now()
         if (!force && timestamp - lastCheck < CHECK_INTERVAL_MS) {

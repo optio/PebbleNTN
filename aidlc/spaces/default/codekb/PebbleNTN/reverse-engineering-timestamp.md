@@ -2,22 +2,88 @@
 
 ## Run Record
 
-- Date: 2026-10-25
-- Commit: 4779760ac7d0cba527fe1c14753ef2839d426720
-- Breadth requested: focused scan (snapshot paths: `protocol/`, `watchapp/src/c/`, `watchapp/tests/`, `watchapp/tools/`, `watchapp/package.json`, `android/app/src/main/`, `android/app/src/test/`, `android/app/build.gradle.kts`, `scripts/test-all.sh`, `scripts/generate-protocol.sh`, `spec/200-architecture/`, `requirements/`); depth Minimal
-- Intent: `261025-settings-sync` (GitHub issue #102, sync the watchapp settings with the companion app both ways, with per-value preview screenshots)
-- Coverage: the protocol definition, generator and consistency check with the generated `protocol.h`; on the watch, the AppMessage open, `send_ready`, `inbox_received_handler`, the connection watchdog, `on_settings_changed`, the shortcut run path and `init()` in `main.c` (the drawing procedures only skimmed), every persisted setting in `theme.c/.h` with its key, range, default and load check, `shortcuts.c/.h`, `shortcut_apply.c/.h`, the change paths and main rows of `settings_window.c` (the door drawing code skimmed), the early-warning enums, `package.json` and `capture_screenshots.py`; on the phone, the whole `pebble/` package, `ProtocolCodec`, `AppMessage`, `WatchTransport`, `WatchSettings` and its repository, `AppContainer` and the release build settings; `Protocol.md` and `Pebble.md`; `scripts/test-all.sh` and `generate-protocol.sh`. Skimmed: the reducer's READY and flag code, the dashboard row helpers and Watch section, `MainActivity` routes, `DisplayLabels`, strings conventions, the test helpers, `test_shortcuts.c`, `touch_emulator.py`, REQ-WATCH (011, 024 and every "SHALL NOT change the protocol" line), REQ-ANDROID headings and 009, the MANIFEST key list, `AGENTS.md` rules 15-18 (outside the snapshot), `scripts/test-watchapp-unit.sh` (outside the snapshot) and the `screenshots/` listing (outside the snapshot; listed only). Issue #102 came from GitHub.
-- Merge: focused merge into a STALE store (prior focused scan at 3727ddc for `261023-touch-gestures`, since shipped in v0.0.76). Prior prose outside the settings, protocol and phone-transport area is kept. Added or updated: the #102 business context, the 4779760 watch input diagram and a "settings today" sequence, the persist-key table rows 19-27, the 11-row menu and Shortcuts door, the handshake, buffer and inbound-parse facts, the phone-side `WatchSettings` table, the preview capture surface, a new "Watchapp Shortcuts" component, and the "Settings sync findings". The prior analyzed paths are demoted to shallow, except those re-analyzed in this run. Build outputs (`watchapp/build/`, `watchapp/tools/__pycache__/`, `scripts/__pycache__/`), ignored files and the AI-DLC install were left out.
+- Date: 2026-10-26
+- Commit: 6dec020c6548a0cdcbd39c0d1846ef164a45068a
+- Breadth requested: focused scan (snapshot paths: `android/app/build.gradle.kts`, `android/build.gradle.kts`, `android/gradle/`, `android/app/src/main/`, `android/app/src/test/`, `.github/workflows/`, `docs/`, `fastlane/`, `fdroid/`, `spec/600-security-release/`, `requirements/`, `scripts/`); depth Minimal
+- Intent: `261025-play-release` (GitHub issue #114, prepare the first Google Play release)
+- Coverage: the Android build files and version catalog, the manifest, the `update/` install-source, GitHub-check, manual-message and rule-update code, `AppContainer` and the application class, `MainActivity` (update source, check, feedback and email actions), the dashboard update card and prompt models, the onboarding screen, `DiagnosticShareManager`, the Robolectric configuration and `InstallSourceTest`, the `play-release` workflow, the privacy policy, Data safety, privacy review and release checklist docs, the whole `fastlane/` listing (text lengths and image sizes), the F-Droid recipe, `spec/600-security-release/` and REQ-SECURITY, and `validate-spec-assets.sh`. Skimmed: the update parts of `DashboardScreen.kt`, the update, onboarding, feedback and URL strings, a search of all phone packages for network I/O, outbound intents and Android 16 exposure, the test listing, `release.yml` and `android.yml`, REQ-ANDROID-001/013/017-020, the F-Droid notes, the status log header, and (outside the snapshot) `MANIFEST.sha256.json`, the `:pebblekit` and `:fixture-publisher` SDK lines, the `screenshots/` listing and the watch QR generator's docstring. Issue #114 came from GitHub.
+- Merge: focused merge into a STALE store (prior focused scan at 4779760 for `261025-settings-sync`, since shipped in v0.0.77). Prior prose outside the update, install-source, build, privacy and store-listing area is kept. Added or updated: the #114 business context and the Google Play channel row, the "Update UI by install source" diagram, a one-build runtime-source design decision, the outbound links table and the Android 16 exposure note, three new components (Dashboard Update UI, Android Build Configuration, Store and Privacy Documents), SDK and Robolectric facts, and the "Play release findings". The prior analyzed paths are demoted to shallow, except those re-analyzed in this run. Build outputs (`android/app/build/`, `android/.gradle/`, `scripts/__pycache__/`), the wrapper jar, ignored files and the AI-DLC install were left out.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: settings-sync
-fingerprint: 7a4ce27ba5a8188361590cabaab1a6a727f31768
+intent: play-release
+fingerprint: 95f135304ff638724223b429f4444a103534ff17
 analyzed:
   paths:
+    - android/app/build.gradle.kts
+    - android/build.gradle.kts
+    - android/gradle/libs.versions.toml
+    - android/gradle/wrapper/gradle-wrapper.properties
+    - android/app/src/main/AndroidManifest.xml
+    - android/app/src/main/res/values/themes.xml
+    - android/app/src/main/java/com/pebblentn/app/PebbleNtnApplication.kt
+    - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
+    - android/app/src/main/java/com/pebblentn/app/update/InstallSource.kt
+    - android/app/src/main/java/com/pebblentn/app/update/ReleaseFetcher.kt
+    - android/app/src/main/java/com/pebblentn/app/update/UpdateCheckRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/update/UpdateCheckMessage.kt
+    - android/app/src/main/java/com/pebblentn/app/update/RuleUpdateRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdateCard.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdatePrompt.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/onboarding/OnboardingScreen.kt
+    - android/app/src/main/java/com/pebblentn/app/export/DiagnosticShareManager.kt
+    - android/app/src/test/resources/robolectric.properties
+    - android/app/src/test/java/com/pebblentn/app/update/InstallSourceTest.kt
+    - .github/workflows/play-release.yml
+    - docs/PRIVACY_POLICY.md
+    - docs/PLAY_DATA_SAFETY.md
+    - docs/PRIVACY_REVIEW.md
+    - docs/RELEASE_CHECKLIST.md
+    - fastlane/
+    - fdroid/metadata/com.pebblentn.app.yml
+    - spec/600-security-release/BuildRelease.md
+    - spec/600-security-release/SecurityPrivacy.md
+    - requirements/REQ-SECURITY.md
+    - scripts/validate-spec-assets.sh
+  components:
+    - App Update Check
+    - Ruleset Signing and Activation
+    - Dependency Container
+    - Dashboard Update UI
+    - Android Build Configuration
+    - CI Workflows
+    - Distribution Metadata
+    - Store and Privacy Documents
+shallow:
+  paths:
+    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/FeedbackCard.kt
+    - android/app/src/main/java/com/pebblentn/app/data/FeedbackCampaign.kt
+    - android/app/src/main/java/com/pebblentn/app/update/AppVersions.kt
+    - android/app/src/main/java/com/pebblentn/app/update/SignedRuleset.kt
+    - android/app/src/main/java/com/pebblentn/app/update/RulesetSignatureVerifier.kt
+    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleWatchTransport.kt
+    - android/app/src/main/java/
+    - android/app/src/main/res/values/strings.xml
+    - android/app/src/main/res/
+    - android/app/src/test/
+    - .github/workflows/release.yml
+    - .github/workflows/android.yml
+    - docs/IMPLEMENTATION_STATUS.md
+    - docs/FOR-HUMAN.md
+    - fdroid/README.md
+    - fdroid/REPRODUCIBLE_BUILDS.md
+    - requirements/REQ-ANDROID.md
+    - scripts/
+    - MANIFEST.sha256.json
+    - android/fixture-publisher/build.gradle.kts
+    - android/pebblekit/build.gradle.kts
+    - screenshots/
+    - watchapp/tools/gen_connect_qr.py
     - protocol/
     - scripts/generate-protocol.sh
     - scripts/test-all.sh
@@ -40,23 +106,8 @@ analyzed:
     - android/app/src/main/java/com/pebblentn/app/protocol/WatchTransport.kt
     - android/app/src/main/java/com/pebblentn/app/core/WatchSettings.kt
     - android/app/src/main/java/com/pebblentn/app/data/WatchSettingsRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
-    - android/app/build.gradle.kts
     - spec/200-architecture/Protocol.md
     - spec/200-architecture/Pebble.md
-  components:
-    - Protocol Definition and Generator
-    - Watchapp Main Renderer
-    - Watchapp Settings Menu
-    - Watchapp Settings Store and Theme
-    - Watchapp Shortcuts
-    - Watchapp Emulator Test Tools
-    - Phone Protocol Codec
-    - Phone Watch Transport
-    - Navigation Controller
-    - Dependency Container
-shallow:
-  paths:
     - watchapp/src/c/
     - watchapp/tests/
     - watchapp/tools/
@@ -86,30 +137,17 @@ shallow:
     - watchapp/wscript
     - scripts/test-watchapp-unit.sh
     - requirements/REQ-WATCH.md
-    - requirements/REQ-ANDROID.md
     - spec/200-architecture/Android.md
-    - MANIFEST.sha256.json
     - AGENTS.md
-    - screenshots/
     - android/app/src/main/java/com/pebblentn/app/protocol/Protocol.kt
     - android/app/src/main/java/com/pebblentn/app/core/NavigationSessionReducer.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt
     - android/app/src/main/java/com/pebblentn/app/ui/format/DisplayLabels.kt
     - android/app/src/main/java/com/pebblentn/app/ui/apps/NavigationAppsScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/update/UpdateCheckRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/update/ReleaseFetcher.kt
-    - android/app/src/main/java/com/pebblentn/app/update/AppVersions.kt
-    - android/app/src/main/java/com/pebblentn/app/update/InstallSource.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdatePrompt.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdateCard.kt
     - android/app/src/main/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRow.kt
     - android/app/src/main/java/com/pebblentn/app/ui/
     - android/app/src/main/java/com/pebblentn/app/system/
     - android/app/src/main/java/com/pebblentn/app/core/
     - android/app/src/main/java/com/pebblentn/app/di/
-    - android/app/src/main/AndroidManifest.xml
-    - android/app/src/main/res/values/strings.xml
     - android/app/src/main/res/drawable-nodpi/
     - android/app/src/test/java/com/pebblentn/app/
     - android/app/src/test/java/com/pebblentn/app/protocol/FakeWatchTransport.kt
@@ -123,10 +161,8 @@ shallow:
     - android/app/src/test/java/com/pebblentn/app/ui/dashboard/UpdatePromptTest.kt
     - android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt
     - android/app/src/test/java/com/pebblentn/app/ui/apps/NavigationAppsScreenTest.kt
-    - docs/IMPLEMENTATION_STATUS.md
     - README.md
     - fdroid/
     - scripts/version.sh
-    - .github/workflows/release.yml
     - android/pebblekit/
 ```

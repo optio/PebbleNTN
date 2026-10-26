@@ -18,9 +18,17 @@ enum class UpdatePrompt {
 /**
  * Pick the prompt. The weekly question wins only after a check started from the stale item
  * finished ([staleCheckFinished]) while weekly checks are off; turning them on, or dismissing
- * the question, clears [staleCheckFinished]. Otherwise a stale check shows the stale item.
+ * the question, clears [staleCheckFinished]. Otherwise a stale check shows the stale item. An
+ * install source that never asks GitHub ([githubCheckAllowed] false, a Google Play install,
+ * REQ-ANDROID-022) gets neither.
  */
-fun updatePrompt(stale: Boolean, autoCheckEnabled: Boolean, staleCheckFinished: Boolean): UpdatePrompt = when {
+fun updatePrompt(
+    stale: Boolean,
+    autoCheckEnabled: Boolean,
+    staleCheckFinished: Boolean,
+    githubCheckAllowed: Boolean = true,
+): UpdatePrompt = when {
+    !githubCheckAllowed -> UpdatePrompt.NONE
     staleCheckFinished && !autoCheckEnabled -> UpdatePrompt.WEEKLY_QUESTION
     stale -> UpdatePrompt.STALE_CHECK
     else -> UpdatePrompt.NONE

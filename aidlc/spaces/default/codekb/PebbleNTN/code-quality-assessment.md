@@ -4,7 +4,7 @@
 
 | Area | Tests | Framework |
 |---|---|---|
-| Android app | 69 test sources under `android/app/src/test/` covering core, data (including the Room v1-v8 migration test), notification, icon, rules (per-app regression suites), export, protocol, pebble controller, system, ui view models, update | JUnit 4 + Robolectric + coroutines-test + Compose UI test |
+| Android app | 69 test sources (79 at 6dec020) under `android/app/src/test/` covering core, data (including the Room v1-v8 migration test), notification, icon, rules (per-app regression suites), export, protocol, pebble controller, system, ui view models, update | JUnit 4 + Robolectric + coroutines-test + Compose UI test |
 | Android instrumented | `ManualOpenWithAutoLaunchOffTest` | AndroidJUnit4 |
 | Watchapp | 10 host tests at 4779760 (about_text, early_warning, eta_text, glance_text, panel_layout, phone_version, shortcuts, stops_text, update_notice, version_compare) | plain C, `-Werror` |
 | Rules | fixtures through `workbench.py regression` and Kotlin `*RulesRegressionTest` | Python + JUnit |
@@ -27,7 +27,7 @@ Coverage measurement: **none configured** (no JaCoCo or Kover, no gcov). Unteste
 | rules.yml | push/PR on rules, schemas, examples | spec-asset integrity, schema validation, rule regression |
 | codeql.yml | push/PR on main, weekly | CodeQL analysis |
 | release.yml | push to main (not docs/tools/md) or manual | verify job (spec assets, protocol, rules, version sync, tests, lint), then version bump, changelog, signed or debug APK, PBW, SHA256SUMS, tag `v<version>`, GitHub release |
-| play-release.yml | manual | signed AAB from a protected environment |
+| play-release.yml | manual (input `tag`) | target-SDK gate whose failure is echoed, not failed (`|| echo "TODO(M10) ..."`); signed AAB from the protected `release` environment, uploaded as a workflow artifact only |
 
 `.githooks/pre-commit` runs secrets/keystore scanning, MANIFEST integrity, protocol `--check`, version sync, rules, syntax checks and Android tests + lint. Watchapp host tests run only in `scripts/test-all.sh`, not in any CI workflow.
 
@@ -55,7 +55,9 @@ Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a M
 - `PebbleNtnDatabase` KDoc is stale (lists v1-v5; the schema is v8).
 - `scripts/__pycache__/changelog.cpython-312.pyc` is committed against `.gitignore`.
 - `rules/test-cases/` is documented but has no tracked content.
-- `play-release.yml` swallows the target-SDK gate failure (`|| echo "TODO(M10) ..."`).
+- `play-release.yml` swallows the target-SDK gate failure (`|| echo "TODO(M10) ..."`), and `release.yml` never runs the gate, although `docs/RELEASE_CHECKLIST.md` lists it as automated.
+- `docs/PRIVACY_REVIEW.md:17` says the app has no network code, and the AndroidManifest INTERNET comment and REQ-ANDROID-013 call the GitHub check the "only" network use; these become wrong or Play-specific with #114.
+- The onboarding disclosure string and the normative text in `spec/600-security-release/SecurityPrivacy.md` have drifted apart; nothing checks them against each other.
 - No coverage tooling, so the org-default 80% floor (non-express scopes) cannot be measured.
 - Pebble SDK version unpinned in CI (`pebble sdk install latest`).
 - A committed binary `.dex` helper sits in `tools/route-capture/device/`.
@@ -92,7 +94,29 @@ Status at 8f08e02 (v0.0.74): shipped as a pure `watchAppVersionText` (`WatchAppV
 6. **No signal when no watchapp version ever arrived.** If the phone never received a real READY (watchapp not installed, older companion), version compare has nothing to compare on the phone; only the optional online check (or the watch's own notice) can reveal an update. `watch_app_version` is never cleared, but `watchNewer` compares against the running phone version, so updating the phone clears the card.
 7. **Two comparison rules** stay by design: tolerant `isNewer` for GitHub tags, strict `isNewerStrict` / `version_newer` for versions exchanged between the apps.
 
+### Play release findings (intent 261025-play-release, focused scan at 6dec020)
+
+Issue #114 against the code at 6dec020 (v0.0.77):
+
+1. **Target SDK.** `android/app/build.gradle.kts:90` `targetSdk = 35`, `:84` `compileSdk = 36`, `:88` `minSdk = 31`; the gate `:69` `playMinTargetSdk = 35` and task `verifyReleaseTargetSdk` (`:70-79`). `play-release.yml:38` runs it as `./gradlew -q verifyReleaseTargetSdk || echo "TODO(M10) ..."`, so the job never fails on it. AGP 8.13.2 and compileSdk 36 need no change. Robolectric is pinned to `sdk=34`, so the JVM suite is unaffected by the bump and covers none of API 36's behaviour; the device check is the only API 36 test.
+2. **Android 16 exposure is low.** Edge-to-edge is already on (`enableEdgeToEdge()`, `Scaffold` insets everywhere, no opt-out attribute); there is no `onBackPressed` override (predictive back), no orientation lock, no foreground service and no exported runtime receiver. Points to check on a device: screen bottoms with 3-button navigation, the rule editor's `BackHandler` discard dialog, and the PebbleKit 2 companion binding under Android 16's stricter intent matching (vendored code, not rescanned).
+3. **Play installs count as GitHub.** `InstallSources.fromInstaller` maps `com.android.vending` to GITHUB (`InstallSource.kt:33-39`), pinned by `InstallSourceTest.kt:26` and by REQ-ANDROID-020's acceptance ("Play give GitHub"). Adding `PLAY` breaks two exhaustive `when`s (`MainActivity.openUpdateSource`, `DashboardScreen.sourceName`) and must be added to or left out of `UpdateCard.kt` `SOURCE_ORDER` deliberately, since `updateCardModel` lists every other source under "Other sources".
+4. **What a Play install would see today.** The stale-check card and weekly question (`DashboardScreen.kt:151-169`, strings name GitHub), the Updates section's "Check for updates now" and weekly toggle (`:357-375`), the start-up weekly check (`AppContainer.kt:256-258`), "Update from GitHub" plus "Other sources" F-Droid and Obtainium (`:195-201`, `:500-540`), and the card body's "uninstall PebbleNTN first, then install the downloaded version" (`strings.xml:40`). All of it is driven from `MainActivity.AppNavHost`, which has `container.installSource` at hand.
+5. **Stored GitHub state carries over.** Prefs `pebblentn_update_check` (`latest_version`, `auto_check_enabled`, `last_check_millis`) survive a Play update installed over a GitHub install with the same key. `effectiveLatest` uses a stored `latest_version` whenever it is newer, so a Play install could show a GitHub-only version in the card and send it to the watch as key 14. Play mode needs to ignore that stored tag and never run the weekly check, not only hide the toggle.
+6. **The offline notice is source-neutral.** `UpdateState.watchNewer` (strict compare with the stored watchapp version) needs no network, and the watch's notice text ("Open the mobile app to find the update.") names no source, so it can stay on Play with the card's button opening `market://details?id=com.pebblentn.app` (web fallback `https://play.google.com/store/apps/details?id=com.pebblentn.app`). The existing `openUrl` swallows a failure with `runCatching`, so the fallback must be an explicit second try.
+7. **Network use, as it really is.** One HTTP call (the GitHub GET, no user data, IP visible to GitHub). Feedback opens GitHub URLs carrying the app and Android versions, or an email draft to `pebblentn@mg.mijnesite.be` (`strings.xml:131`) with the same versions; diagnostics can be emailed to that address after review. "Online rule updates" have no download code (`RuleUpdateRepository`: disabled, no keys, nothing calls it): the docs and review notes should say they are not active (data, not code, when they come), and the listing's "More apps can be added without a new release" overstates today's app.
+8. **Privacy docs.** `docs/PRIVACY_POLICY.md` is a template (`[DATE]`, `[MAINTAINER EMAIL / URL]`) and says nothing is uploaded and there is no tracking, with no word on INTERNET, GitHub, feedback or email. `docs/PLAY_DATA_SAFETY.md` says no data leaves the device and "encrypted in transit: not applicable", and lists permissions without INTERNET. Neither is MANIFEST-protected. The policy needs a public URL (for example the file on GitHub). `docs/PRIVACY_REVIEW.md:17` ("no network code") is also outdated.
+9. **Disclosure text.** `onboarding_disclosure` (`strings.xml:9`) ends "It uses the network only for the optional GitHub check (Check for updates, or weekly if you turn it on), which sends no personal data." A Play install needs a version without the GitHub check (a second string chosen by install source). The normative disclosure in `spec/600-security-release/SecurityPrivacy.md:11` is shorter than the app's and is MANIFEST-protected.
+10. **Listing graphics and text.** Title 9/30 characters, short description 71/80, full description 2,272/4,000; `icon.png` 512x512; phone screenshots 1080x2280 (ratio 2.11, over Play's 2:1; 1080x2160 fits); no `featureGraphic.png` (1024x500 required). The watch shots in `screenshots/` are 144x168 to 200x228, below Play's 320 px minimum side, so watch images for the listing must be scaled or composed. Changelogs: 62 files, none over Play's 500 characters, written per versionCode by `release.yml`. The full description's "Internet — used only for ... GitHub" line is wrong for a Play install.
+11. **Signing and upload.** `play-release.yml` and `release.yml` both decode `UPLOAD_KEYSTORE_BASE64`, so the release key is the upload key today. The F-Droid recipe pins `AllowedAPKSigningKeys: 75efa3ea...`; enrolling Play App Signing with that same key keeps the three channels interchangeable (manual, #114 item 7). There is no Play upload step.
+12. **Coupled protected files.** Changing REQ-ANDROID-020 (Play acceptance), REQ-ANDROID-013 ("only network access", "download the latest release from GitHub"), REQ-ANDROID-018 or `SecurityPrivacy.md` needs `MANIFEST.sha256.json` updated in the same commit (`scripts/validate-spec-assets.sh`, run by `release.yml` and pre-commit). The next free requirement ID is REQ-ANDROID-022.
+13. **Release triggers.** `release.yml` runs on every push to `main` except Markdown, `docs/**`, `fdroid/**`, `tools/**` and `scripts/test-all.sh`; build or `fastlane/` image changes release unless the commit carries `[skip ci]`, which this intent requires.
+14. **Reviewer access without a watch.** Onboarding, notification access, dashboard, Navigation apps, Rules, Debug history and detail, and the three diagnostic exports work with no watch; the Watch settings screen pops back without a settings mirror (`MainActivity.kt:283-284`); navigation on the watch, the watchapp version row and settings sync need a watch and the Core Devices app. The feedback card shows only after a first navigation and until 2026-12-31.
+
 ### Settings sync findings (intent 261025-settings-sync, focused scan at 4779760)
+
+Status at 6dec020 (v0.0.77): shipped (#102, REQ-WATCH-025 and REQ-ANDROID-021). The findings below are kept as they were written before the work.
+
 
 Issue #102 (groomed 2026-10-24/25) against the code at 4779760 (v0.0.76):
 

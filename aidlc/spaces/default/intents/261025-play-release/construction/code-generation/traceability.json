@@ -1,0 +1,18 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5", "FR6", "FR7", "FR8", "NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "android/app/build.gradle.kts" },
+    { "id": "FR2", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/update/UpdatePolicy.kt" },
+    { "id": "FR3", "status": "OK", "target": "docs/PRIVACY_POLICY.md" },
+    { "id": "FR4", "status": "OK", "target": "tools/play_store_graphics.py" },
+    { "id": "FR5", "status": "OK", "target": ".github/workflows/play-release.yml" },
+    { "id": "FR6", "status": "OK", "target": "watchapp/tools/gen_connect_qr.py" },
+    { "id": "FR7", "status": "OK", "target": "docs/PLAY_CONSOLE.md" },
+    { "id": "FR8", "status": "OK", "target": "requirements/REQ-ANDROID.md" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/update/UpdateCheckRepository.kt" },
+    { "id": "NFR2", "status": "OK", "target": "android/app/build.gradle.kts" },
+    { "id": "NFR3", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/update/UpdatePolicyTest.kt" },
+    { "id": "NFR4", "status": "OK", "target": "scripts/test-all.sh" }
+  ]
+}

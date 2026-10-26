@@ -11,7 +11,7 @@ Supported navigation apps:
 
 Full maneuver arrows and ETA for these apps depend on data they don't currently put in the notification text; support may improve in a future update.
 
-More apps can be added without a new release: PebbleNTN uses a small, declarative rule set to recognise each app's notifications. You can write your own rules for an unsupported app, or share an anonymised capture log to help add official support.
+PebbleNTN recognises each app's notifications with a small, declarative rule set that ships with the app, so support for more apps can come in future releases. You can write your own rules for an unsupported app, or share an anonymised capture log to help add official support.
 
 Features:
 
@@ -25,6 +25,6 @@ Features:
 Permissions:
 
 * Notification access — to read the navigation app's turn-by-turn notification (this is the core function)
-* Internet — used only for an optional, off-by-default weekly check for a newer version on GitHub; it sends no personal data
+* Internet — not used on Google Play installs, which get their updates from Google Play. Installs from GitHub, F-Droid or Obtainium use it only for an optional check for a newer version on GitHub (when you tap Check for updates, or weekly if you turn it on); it sends no personal data
 
 Requires a paired Pebble watch and the Pebble/Rebble companion app installed on the phone. The matching Pebble watchapp is distributed separately (Rebble app store / .pbw).

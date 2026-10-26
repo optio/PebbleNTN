@@ -6,9 +6,15 @@ The listener receives system callbacks broadly, but the app checks `StatusBarNot
 
 ## User disclosure
 
-Before opening notification-listener settings, show:
+Before opening notification-listener settings, show (string `onboarding_disclosure`):
 
-> PebbleNTN reads notifications from navigation apps you enable, extracts upcoming turn information, and sends it to your Pebble watch. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them.
+> PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. PebbleNTN spots new versions offline, by comparing the phone app with your watchapp. It uses the network only for the optional GitHub check (Check for updates, or weekly if you turn it on), which sends no personal data.
+
+On a Google Play install, which never runs the GitHub check (REQ-ANDROID-022), show this variant instead (string `onboarding_disclosure_play`):
+
+> PebbleNTN reads notifications from supported navigation apps, extracts upcoming turn information, and sends it to your Pebble watch. Every supported app is enabled by default when installed; you can turn any of them off in Navigation apps. Processing occurs on this device. Notification content is not uploaded automatically. Diagnostic files are shared only when you explicitly export them. PebbleNTN spots new versions offline, by comparing the phone app with your watchapp, and Google Play delivers the updates. PebbleNTN makes no network connections of its own.
+
+The disclosure states every network use of the app. Any new network use SHALL be added to both texts, to `docs/PRIVACY_POLICY.md` and to `docs/PLAY_DATA_SAFETY.md` in the same change.
 
 ## Debug-data explanation
 
