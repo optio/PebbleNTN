@@ -90,8 +90,8 @@ android {
         minSdk = 31
         // Target SDK 36 (Android 16), the Play floor; verifyReleaseTargetSdk checks it at release time.
         targetSdk = 36
-        versionCode = 77
-        versionName = "0.0.77"
+        versionCode = 78
+        versionName = "0.0.78"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

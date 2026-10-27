@@ -1,0 +1,2 @@
+• support MicroG Maps with the Google Maps rules (#113)
+• prepare the first Google Play release (#114) [skip ci]
