@@ -20,6 +20,7 @@ PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions fro
 - Phone app update notice on the watch (#94, REQ-WATCH-023): a once-per-version full-screen notice, update idle text and an "Update: <version>" launcher subtitle while the phone reports a newer phone app.
 - Version-compare update detection (v0.0.73, REQ-ANDROID-019/020, REQ-WATCH-023): the watch compares its own version with the phone's (`version_compare.c`, strict parse), and the phone compares the watchapp version from a genuine `WATCH_READY` (stored as `watch_app_version`) with its own. Either signal raises the update notice or card with no internet check. Forwarding of the watch's `WATCH_READY` through the Core Devices app is confirmed working (v0.0.74, with `companionApp` declared), so the phone half is not limited to other companions. The card says "Update from {source}" for the detected install source (GitHub, F-Droid, Obtainium), adds the F-Droid delay line, and offers "Other sources".
 - Diagnostics export (rules only, privacy-safe, full) through the share sheet.
+- Supported navigation apps come from one bundled catalog (`rules/catalog/navigation-apps.json`, 19 entries at 1c7f4c1). An app may publish under several package names (alternative builds such as F-Droid, GitHub, nightly or AppGallery, #54); all of them share one switch on the Navigation apps screen and one set of official rules.
 
 ## Distribution Channels
 
@@ -29,15 +30,21 @@ PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions fro
 | F-Droid | APK (`com.pebblentn.app`) | F-Droid client; builds from tags (`UpdateCheckMode: Tags`, `Binaries:` = the GitHub APK), so it lags a release | README.md, `fdroid/metadata/com.pebblentn.app.yml` |
 | Obtainium | APK, tracking GitHub releases | Obtainium installs each release | README.md |
 | Rebble app store | watchapp only | the watch auto-updates | strings `watchapp_store_url` |
-| Google Play | planned by #114; not published at 6dec020 (developer account awaiting verification) | Play's own updates only: a Play install may not point to another update source (Device and Network Abuse policy) | issue #114; `.github/workflows/play-release.yml` builds a signed AAB but uploads nothing |
+| Google Play | prepared by #114 (merged as #115 at 1c7f4c1, no release yet; not rescanned in this run); not published at 6dec020 (developer account awaiting verification) | Play's own updates only: a Play install may not point to another update source (Device and Network Abuse policy) | issue #114; `.github/workflows/play-release.yml` builds a signed AAB but uploads nothing |
 
 Because the watchapp auto-updates from the store while the phone app needs a manual update, the watch is usually ahead of the phone. Both share one version line (see [dependencies.md](dependencies.md)).
 
-## Business Context for the Active Intent (261025-play-release)
+## Business Context for the Active Intent (261026-microg-maps)
+
+GitHub issue #113 ("Request: Compatibility with Microg Maps", reported on app version 0.7.7) asks for MicroG Maps: Google Maps re-packaged to run with microG instead of Google Play services. The "Google Maps for MicroG-RE" Morphe patch produces it under the package `app.morphe.android.apps.maps`. The reporter notes it is "just google maps, same navigation" and suggests a custom package name setting; the maintainer answered on the issue that it will become an alias of Google Maps so the existing Google Maps rules apply. The decision for this intent: add the package to the Google Maps catalog entry as a variant, with every Google Maps rule (all languages, `any.json`, the icon mapping) and the regression behaviour applying to it. There is no custom-package feature.
+
+The users are drivers, cyclists and walkers who avoid Google Play services (de-Googled phones, often F-Droid or Obtainium users) but still navigate with Google Maps. Today their notifications are ignored: the package is not in the catalog, so it is never discovered, enabled or allowlisted, and no rule names it. What the change touches and why is in [code-quality-assessment.md](code-quality-assessment.md), "MicroG Maps findings".
+
+## Earlier Intent Context (261025-play-release, merged at 1c7f4c1)
 
 GitHub issue #114 (app version 0.0.77) prepares the **first Google Play release** of the companion app. The developer account exists and is awaiting verification. Items 1-5 of the issue are code or repo work, item 6 is a Play Console answers doc, and items 7-8 (Play App Signing with the existing release key, developer verification, a 12-tester closed test for 14 days) are manual steps for the maintainer. The watchapp is not affected: it stays on the Rebble store.
 
-What the code and docs look like at 6dec020 (v0.0.77) against each item (detail and file:line evidence in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings"):
+What the code and docs looked like at 6dec020 (v0.0.77) against each item (detail and file:line evidence in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings"; the merged result was not rescanned in the 261026-microg-maps run):
 
 1. **Target SDK**: `targetSdk = 35`, `compileSdk = 36`, `minSdk = 31`; the Play gate `playMinTargetSdk = 35`, and `play-release.yml` turns a gate failure into an `echo`. Play has required API 36 since 31 August 2026.
 2. **No self-updates on Play**: a Play install (`com.android.vending`) is detected as GitHub today, so it would see the GitHub stale-check card, the weekly-check question and toggle, "Update from GitHub" and "Other sources" (F-Droid, Obtainium). The offline phone-vs-watchapp notice is source-neutral and can stay, pointing at the Play listing.
@@ -83,3 +90,6 @@ Earlier intent (`261022-version-compare-update`, shipped): #94 told users about 
 - **Settings revision** (#102, proposed): a number from 0 to 99 that each side bumps on a local settings edit and that wraps to 0; "newer" uses wrap-around (serial number) comparison.
 - **Shortcut**: an action (for example "Next colour") bound to UP, DOWN or, on emery, a swipe or tap on the navigation screen (REQ-WATCH-024).
 - **Watchapp version (last seen)**: the `APP_VERSION` from the last genuine `WATCH_READY` the phone received, persisted as `watch_app_version`; null when none ever arrived.
+- **Catalog entry**: one supported navigation app in `rules/catalog/navigation-apps.json` (`appId`, display name, package names, official-rules and default flags). Settings, enablement and the Navigation apps screen work per entry.
+- **Package variant**: another Android package name of the same navigation app (an F-Droid, GitHub, nightly, AppGallery or patched build). It is listed in the app's catalog entry and in every rule of that app, and behaves exactly like the main package.
+- **MicroG Maps**: Google Maps re-packaged by the "Google Maps for MicroG-RE" Morphe patch to run with microG; package `app.morphe.android.apps.maps` (#113).

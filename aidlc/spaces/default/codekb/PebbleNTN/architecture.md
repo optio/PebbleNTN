@@ -84,6 +84,7 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Watch settings are watch-only (as of 4779760)**: no setting travels in the protocol; REQ-WATCH-012/014/015/016/022/024 each say so. The phone's `WatchSettings` holds four separate phone-side behaviours that only shape FLAGS bits 0-2, and three of them have no UI (see [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings").
 - **Touch through the system bridge, except on the navigation window (#53, #12)**: the app opts into the bridge (`app_touch_navigation_enable(true)`) so the menus, sub-lists, About and the update notice take touches as button presses, and disables it on the navigation window, so a stray swipe cannot act as BACK and close the app mid-route. Since v0.0.76 that window attaches a swipe and a tap recognizer that run the user's Shortcuts while Touch is on and `touch_service_is_enabled()` (REQ-WATCH-024).
 - **One handshake per launch**: the watch sends `WATCH_READY` once, from `init()`. A Bluetooth reconnect while the app is open only restarts the connection watchdog (`app_connection_handler`); it sends no new READY. The watchapp registers no outbox sent/failed or inbox-dropped handler, so a busy outbox silently drops `send_ready`.
+- **Package names are data, matched exactly, with no alias layer (checked at 1c7f4c1)**: a catalog entry lists every package an app publishes under, and every rule lists its own `packageNames`; the engine, the large-icon recognizer and the ruleset-version record each test `snapshot.packageName in rule.packageNames` (REQ-RULE-003, REQ-RULE-015). Nothing maps one package onto another app's rules. Enablement, the allowlist and the Navigation apps row work per catalog entry, so all packages of an app share one switch. A package variant (#54's alternative builds, #113's MicroG Maps) is therefore added to the catalog entry, to every rule of that app, to the manifest `<queries>` and to the fixtures, and a JVM test plus a Python check keep those in step. See [code-quality-assessment.md](code-quality-assessment.md), "MicroG Maps findings".
 
 ### Improvement Opportunities
 
@@ -93,10 +94,38 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - `DashboardScreen` takes about 40 parameters; grouping the Status section inputs into one small model would ease further rows.
 - Done in v0.0.75: the #94 stale prompt and the manual-check toast take the version-compare result into account (intent `261022-update-by-version-compar`).
 - Done in v0.0.76: navigation-screen Shortcuts (#12) as the pure `shortcuts.c` unit, `shortcut_apply.c`, the banner in `main.c` and the Shortcuts door in `settings_window.c`.
-- Play release (#114, active intent `261025-play-release`): a `PLAY` install source with a pure "which update UI does this source show" model (in the style of `updateCardModel`) consumed by the dashboard, `MainActivity` and the start-up check; targetSdk 36 and a failing gate; privacy and Data safety docs that match the real network use. Detail in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings".
+- Play release (#114, intent `261025-play-release`, merged at 1c7f4c1): a `PLAY` install source with a pure "which update UI does this source show" model (in the style of `updateCardModel`) consumed by the dashboard, `MainActivity` and the start-up check; targetSdk 36 and a failing gate; privacy and Data safety docs that match the real network use. Detail in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings".
 - Settings sync (#102, intent `261025-settings-sync`, shipped in v0.0.77): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
+- MicroG Maps (#113, active intent `261026-microg-maps`): append `app.morphe.android.apps.maps` to the `google-maps` catalog entry, to the 150 Google Maps rules, to `<queries>` and to the fixtures, keeping `com.google.android.apps.maps` first. A catalog-driven alias (rules expanded from the catalog at load time) would remove the copies but changes the engine and the test that pins the package sets; the #54 data-only pattern needs no Kotlin production change.
 
 ## Interaction Diagrams
+
+### A MicroG Maps notification through the Google Maps rules (#113 target, 1c7f4c1)
+
+```mermaid
+sequenceDiagram
+  participant MM as MicroG Maps (app.morphe.android.apps.maps)
+  participant L as Listener + NotificationDispatcher
+  participant EA as EnabledAppRepository (allowlist)
+  participant SF as NotificationSnapshotFactory
+  participant IR as RuleDrivenLargeIconRecognizer
+  participant E as RuleEngine
+  participant C as NavigationController
+  MM->>L: notification posted (sbn.packageName)
+  L->>EA: isEnabled(package): google-maps entry enabled?
+  EA-->>L: yes, once the package is in the entry's packageNames
+  L->>SF: build snapshot (content read only now)
+  SF->>IR: recognize(package, notification)
+  IR->>IR: IconCandidates.forPackage: rules listing the package
+  IR->>MM: createPackageContext + getIdentifier(maneuver_*)
+  IR-->>SF: iconDrawable or NoMatch
+  SF-->>L: NotificationSnapshot
+  L->>E: evaluate(snapshot, layered rules, locale)
+  E->>E: skip rules whose packageNames lack the package
+  E-->>C: NavigationInstruction (same rules as Google Maps)
+```
+
+Text fallback: today the package is unknown, so it is never discovered and the allowlist drops it before content is read. Once `app.morphe.android.apps.maps` is in the `google-maps` catalog entry, the Google Maps switch enables it, the dispatcher admits it and the snapshot is built. The icon recognizer takes its drawable candidates from the rules that list the package and loads the `maneuver_*` drawables from MicroG Maps itself; whether they resolve under the renamed package is unverified, and without a match the card falls back to the neutral arrow with distance, road and ETA. The engine then evaluates only rules that list the package, so all 150 Google Maps rules must list it. The rest of the path to the watch is unchanged.
 
 ### Update UI by install source (current, 6dec020) and the #114 touchpoints
 
@@ -288,7 +317,7 @@ Text fallback: the companion forwards the watch's real WATCH_READY (confirmed wi
 
 ### Update signals and the #94 prompts on the dashboard (current, 8f08e02)
 
-This is the interplay the active intent `261022-update-by-version-compar` changes: version compare should be the default signal, with the GitHub check kept as an optional extra.
+This is the interplay the intent `261022-update-by-version-compar` changed: version compare should be the default signal, with the GitHub check kept as an optional extra.
 
 ```mermaid
 flowchart TD

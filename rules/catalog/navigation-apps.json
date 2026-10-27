@@ -12,6 +12,19 @@
       "defaultEnabled": true
     },
     {
+      "appId": "microg-maps",
+      "displayName": "MicroG Maps",
+      "packageNames": [
+        "app.morphe.android.apps.maps"
+      ],
+      "rulesFrom": "google-maps",
+      "website": "https://github.com/fangkampanat/gmaps-patches",
+      "playListed": false,
+      "hasOfficialRules": true,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
       "appId": "waze",
       "displayName": "Waze",
       "packageNames": [

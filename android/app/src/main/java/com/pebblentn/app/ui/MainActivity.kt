@@ -311,6 +311,8 @@ class MainActivity : ComponentActivity() {
                         installedApps.map { it.appId }.toSet(),
                     ),
                     onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
+                    // Only non-Play installs have websites in their catalog (#113).
+                    onOpenWebsite = ::openUrl,
                     onViewRules = { appId -> navController.navigate("rules?app=$appId") },
                     languagesByApp = rulesViewModel.languagesByApp,
                 )

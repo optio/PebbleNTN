@@ -1,5 +1,6 @@
 package com.pebblentn.app.rules
 
+import com.pebblentn.app.catalog.RuleFamilies
 import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.notification.NotificationSnapshot
@@ -59,12 +60,20 @@ data class RuleEvaluation(
  * rule's output into a [NavigationInstruction]. A rule whose regex times out is disabled for that
  * run and recorded as ERROR (RuleEngine "Regex safety"). Produces a structured trace for every
  * evaluated rule. Pure: no I/O.
+ *
+ * A rule is selected when the snapshot's package is in the same [RuleFamilies] family as any package
+ * the rule lists (REQ-RULE-015, #113): a Google Maps rule applies to MicroG Maps and the other way
+ * round. With [RuleFamilies.NONE] only the listed packages match.
  */
 class RuleEngine(
     regexBudgetMillis: Long = SafeRegex.DEFAULT_BUDGET_MILLIS,
+    private val families: RuleFamilies = RuleFamilies.NONE,
 ) {
     private val conditions = ConditionEvaluator(regexBudgetMillis)
     private val extractors = ExtractorRunner(regexBudgetMillis)
+
+    /** True when [rule] is a candidate for a notification posted by [packageName]. */
+    fun appliesTo(rule: Rule, packageName: String): Boolean = families.applies(packageName, rule.packageNames)
 
     companion object {
         /** Safety bound on rules evaluated per source package (RuleEngine "Regex safety"). */
@@ -83,7 +92,7 @@ class RuleEngine(
         var evaluatedForPackage = 0
 
         for ((rule, layer) in rules.inPrecedenceOrder()) {
-            if (snapshot.packageName !in rule.packageNames) continue // not evaluated; not traced
+            if (!appliesTo(rule, snapshot.packageName)) continue // not evaluated; not traced
             // Bound work per package (RuleEngine "Maximum rules per package").
             if (evaluatedForPackage >= MAX_RULES_PER_PACKAGE) break
             evaluatedForPackage++

@@ -1,5 +1,6 @@
 package com.pebblentn.app.notification.icon
 
+import com.pebblentn.app.catalog.RuleFamilies
 import com.pebblentn.app.rules.LayeredRules
 import com.pebblentn.app.rules.ManeuverMapExtractor
 
@@ -14,11 +15,15 @@ object IconCandidates {
     /** The snapshot field holding the matched drawable's name (see [com.pebblentn.app.rules.SnapshotFields]). */
     const val FIELD = "iconDrawable"
 
-    /** Drawable name → maneuver for [packageName]; empty when no enabled rule maps icons. */
-    fun forPackage(rules: LayeredRules, packageName: String): Map<String, String> {
+    /**
+     * Drawable name → maneuver for [packageName]; empty when no enabled rule maps icons. The rules of
+     * the package's whole [families] family count (#113), so MicroG Maps gets the Google Maps table;
+     * the drawables are still looked up in [packageName] itself ([AppIconReferences]).
+     */
+    fun forPackage(rules: LayeredRules, packageName: String, families: RuleFamilies = RuleFamilies.NONE): Map<String, String> {
         val out = LinkedHashMap<String, String>()
         for ((rule, _) in rules.inPrecedenceOrder()) {
-            if (!rule.enabled || packageName !in rule.packageNames) continue
+            if (!rule.enabled || !families.applies(packageName, rule.packageNames)) continue
             val extractor = rule.output.maneuver as? ManeuverMapExtractor ?: continue
             if (extractor.field != FIELD) continue
             // Higher-precedence rules come first and win a disagreement about a drawable.

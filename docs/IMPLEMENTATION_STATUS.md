@@ -1,6 +1,59 @@
 # Implementation Status
 
-_Last updated: 2026-10-26_
+_Last updated: 2026-10-27_
+
+## MicroG Maps as a Google Maps variant (2026-10-27, #113)
+
+**Milestone:** post-M12 enhancement of the navigation-app catalog and rule selection (REQ-RULE-015
+and the catalog / Navigation apps requirements amended). Not released: versionCode/versionName stay
+77 / 0.0.77.
+
+**Requirements being implemented.**
+- Rule families: a catalog entry may reuse another entry's rules (`rulesFrom`), and a rule applies to
+  every package of its family, for bundled and user rules alike. No rule file and no rule package
+  list changes.
+- A `microg-maps` catalog entry (MicroG Maps, `app.morphe.android.apps.maps`) using the Google Maps
+  rules, with a `website` link to the patch project instead of Google Play.
+- Its own Navigation apps row and switch on GitHub, F-Droid and Obtainium installs; on Google Play
+  installs (`playListed: false`) it is never listed or linked, and its notifications follow the Google
+  Maps switch with the Google Maps rules.
+- Manifest `<queries>` (26 navigation packages), catalog schema, Kotlin parser and
+  `scripts/validate_catalog.py` checks, package-variant fixtures, README item (the shared fastlane
+  description stays unchanged).
+
+**What changed.**
+- Catalog: optional `rulesFrom`, `website`, `playListed` (schema, `NavigationAppEntry`, parse checks:
+  `rulesFrom` names another app with its own rules and no `rulesFrom`, not itself; `website` is
+  https). `NavigationAppCatalog.ruleFamilies()` and the pure `RuleFamilies` resolver;
+  `forGooglePlay()` drops unlisted entries and appends their packages to their `rulesFrom` entry, and
+  clears every website. `AppContainer` uses that view on `InstallSource.PLAY`, so enablement, the
+  lists, the install receiver and the debug labels all follow it.
+- Matching: `RuleEngine(families)` (`appliesTo`), `IconCandidates.forPackage`, `rulesetVersionsFor`,
+  the override analysis and the rule preview use the family. The icon references are still read
+  from the posting package.
+- Navigation apps: an app with `rulesFrom` shows and opens the rules it uses; an uninstalled app with
+  a `website` opens it ("Open the … website" accessibility action) instead of Google Play.
+- `scripts/validate_catalog.py` checks the families (+ `scripts/test_validate_catalog.py`, run by
+  `test-all.sh`); the rule workbench mirrors the families; four
+  `package-variant-app.morphe.android.apps.maps-*` fixtures. No rule file changed.
+- REQ-RULE-015 amended, REQ-ANDROID-023 added, `spec/200-architecture/Android.md` and README updated,
+  `MANIFEST.sha256.json` resynced. The fastlane description is unchanged.
+
+**Library versions.** No new library.
+
+**Commands executed.** `android/gradlew -p android :app:testDebugUnitTest` (baseline: 504 tests,
+0 failures, 4 skipped; then scoped catalog/rules/notification/data/ui runs; final 537 tests, 0
+failures, 4 skipped); `scripts/validate-rules.sh`; `python3 -m unittest` on
+`scripts/test_validate_catalog.py` (10 tests); `tools/rule-workbench/workbench.py regression`
+(google-maps 195/195); `scripts/validate-spec-assets.sh`; `scripts/test-all.sh` (exit 0; debug and
+release unit tests 537 each, lint clean); `:app:assembleDebug`.
+
+**Known blockers.** No Android emulator (no KVM in WSL) and no phone connected: JVM and Robolectric
+tests only. Whether the icon-only card's turn arrows resolve under the renamed package
+(`getIdentifier` in `app.morphe.android.apps.maps`) can only be seen on a device with MicroG Maps;
+without a match the card shows distance, road and ETA with the fallback arrow.
+
+**Next atomic task.** Build and Test: review, then a device check with MicroG Maps if one is at hand.
 
 ## Prepare the first Google Play release (2026-10-26, #114)
 

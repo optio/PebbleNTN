@@ -7,10 +7,12 @@
 | Android app | 69 test sources (79 at 6dec020) under `android/app/src/test/` covering core, data (including the Room v1-v8 migration test), notification, icon, rules (per-app regression suites), export, protocol, pebble controller, system, ui view models, update | JUnit 4 + Robolectric + coroutines-test + Compose UI test |
 | Android instrumented | `ManualOpenWithAutoLaunchOffTest` | AndroidJUnit4 |
 | Watchapp | 10 host tests at 4779760 (about_text, early_warning, eta_text, glance_text, panel_layout, phone_version, shortcuts, stops_text, update_notice, version_compare) | plain C, `-Werror` |
-| Rules | fixtures through `workbench.py regression` and Kotlin `*RulesRegressionTest` | Python + JUnit |
+| Rules | fixtures through `workbench.py regression` and Kotlin `*RulesRegressionTest`; catalog and rule-package consistency in `NavigationAppCatalogTest`; schema and `<queries>` checks in `scripts/validate-rules.sh` | Python + JUnit |
 | Tools | `tools/route-capture/tests/test_routecap.py` | unittest |
 
 Coverage measurement: **none configured** (no JaCoCo or Kover, no gcov). Untested by design: `PebbleWatchTransport` (needs a bound companion) and the Pebble API parts of `main.c`, `settings_window.c` and `about_window.c`, which are verified in the emulator per the REQ acceptance criteria. `UpdateCheckRepository` is covered by Robolectric tests (throttle, force, failure retention, persistence, auto-check default off, and staleness since #94). `AppVersionsTest` covers newer, equal or lower, leading `v`, component counts, pre-release suffixes, and junk `latest`. `UpdatePromptTest`, `ProtocolCodecTest` (bit 4 / key 14) and `NavigationControllerTest` (`latestPhoneUpdate`) cover the #94 phone side. `test_update_notice.c` and `test_glance_text.c` cover the watch side. Since v0.0.73: `UpdateCheckRepositoryTest` covers the stored watchapp version (first write, no rewrite of the same value, blank ignored, unparsable or older is no update, GitHub/watch precedence); `ProtocolCodecTest` covers `watchAppVersion`; `NavigationControllerTest` covers that a genuine READY reports the version and the synthetic READYs do not; `InstallSourceTest` and `UpdateCardTest` cover install-source mapping and the card model. Since v0.0.74: `WatchAppVersionRowTest` (3) covers the row text. No test covers the stale prompt or the manual-check outcome against a version-compare update. `DashboardScreen` itself has no test; its logic is tested through pure helpers beside it.
+
+Catalog and Google Maps rules (checked at 1c7f4c1): `NavigationAppCatalogTest` (10 tests) parses the bundled catalog, locks a package-to-appId table (every package except Google Maps, which `googleMapsHasOfficialRulesAndOthersAreCaptureOnly` checks), derives `hasOfficialRules` from the bundled rules and requires each rule's package set to equal its app's. `GoogleMapsRulesRegressionTest` loads all 10 Google Maps files and runs the 185 fixtures of `rules/fixtures/google-maps.json` through the engine, taking each fixture's `packageName`; two more tests pin the ETA-in-subText regressions with `com.google.android.apps.maps` hard-coded (lines 156, 171), and one pins the localized ARRIVE ordering. `RulesetVersionsTest` covers the per-package ruleset-version list. The icon path is covered by `IconCandidatesTest` and `IconMatcherTest`; `AppIconReferences` (cross-package resource loading) has no test.
 
 ## Linting and Static Analysis
 
@@ -43,7 +45,7 @@ Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a M
 | Function size | fair | most functions are small; `panel_update_proc`, `strip_update_proc` and `DashboardScreen` are long |
 | Error handling | good | best-effort network returns null, transport failures are caught and logged, persist errors are logged; watch tuple types are not validated in `render_navigation` |
 | Test presence | good | pure logic is tested on both devices; Pebble UI is emulator-verified only |
-| Duplication | fair | three near-identical switch tables in `maneuver_resource_id`; repeated SharedPreferences repository boilerplate |
+| Duplication | fair | three near-identical switch tables in `maneuver_resource_id`; repeated SharedPreferences repository boilerplate; each app's package list copied into every one of its rules |
 | Dead code | good | none found; datastore in `:app` is the one unused declared dependency |
 
 ## Technical Debt
@@ -54,13 +56,30 @@ Good. There is a requirement-ID discipline (REQ-* with acceptance criteria), a M
 - Phone-wide flags: resolved for the update bit by #94 (`encodeState` ORs bit 4 into every state message). Compatibility errors still carry no flags.
 - `PebbleNtnDatabase` KDoc is stale (lists v1-v5; the schema is v8).
 - `scripts/__pycache__/changelog.cpython-312.pyc` is committed against `.gitignore`.
-- `rules/test-cases/` is documented but has no tracked content.
+- `rules/test-cases/` is documented (`rules/README.md`) but has no tracked content.
 - `play-release.yml` swallows the target-SDK gate failure (`|| echo "TODO(M10) ..."`), and `release.yml` never runs the gate, although `docs/RELEASE_CHECKLIST.md` lists it as automated.
 - `docs/PRIVACY_REVIEW.md:17` says the app has no network code, and the AndroidManifest INTERNET comment and REQ-ANDROID-013 call the GitHub check the "only" network use; these become wrong or Play-specific with #114.
 - The onboarding disclosure string and the normative text in `spec/600-security-release/SecurityPrivacy.md` have drifted apart; nothing checks them against each other.
 - No coverage tooling, so the org-default 80% floor (non-express scopes) cannot be measured.
 - Pebble SDK version unpinned in CI (`pebble sdk install latest`).
 - A committed binary `.dex` helper sits in `tools/route-capture/device/`.
+- An app's package list is copied into its catalog entry, every one of its rules (150 for Google Maps), the manifest `<queries>` and the fixtures. Two checks keep the first three in step, but the copies are hand-maintained, and `tools/rule-workbench/gen_localized_google_maps.py:37` hard-codes a single `PACKAGE`, so regenerating would undo a variant in seven files.
+- `rules/README.md` still says "Rule engine and schemas land in M4; Google Maps rules in M6", which is history rather than status.
+
+### MicroG Maps findings (intent 261026-microg-maps, focused scan at 1c7f4c1)
+
+Issue #113 against the code at 1c7f4c1; the decision is to treat `app.morphe.android.apps.maps` as a Google Maps package variant.
+
+1. **No alias mechanism exists.** `RuleEngine.evaluate` skips every rule whose own `packageNames` lacks the snapshot's package (`rules/RuleEngine.kt:86`), `IconCandidates.forPackage` filters the same way (`notification/icon/IconCandidates.kt:21`), and `AssetRuleRepository` flattens the bundled files without the catalog (`rules/RuleRepository.kt:22-45`). The catalog's `packageNames` drive discovery, enablement and display names only. So the new package must be listed in each Google Maps rule, as #54 did for OsmAnd, Organic Maps and CoMaps variants (commit d73d903).
+2. **The change set (data only).** (a) `rules/catalog/navigation-apps.json:7-9`: append the package to `google-maps`. (b) All 10 files of `rules/bundled/google-maps/`: append it to every rule's `packageNames`, 150 rules (any 2, de 13, en 45, es 13, fr 13, it 13, nl 13, pl 13, pt 13, zh 12). (c) `android/app/src/main/AndroidManifest.xml:19`: a `<package android:name="app.morphe.android.apps.maps" />` next to Google Maps. (d) `rules/fixtures/google-maps.json`: at least one `package-variant-app.morphe.android.apps.maps` fixture (#54 convention; AGENTS.md rule 14). (e) `NavigationAppCatalogTest.kt:45-70`: a lock-table row `"app.morphe.android.apps.maps" to "google-maps"`. No Kotlin production code changes.
+3. **The tests that force it.** `everyBundledRuleCoversExactlyItsAppsPackages` (`NavigationAppCatalogTest.kt:102-121`) fails if the catalog and any rule disagree, in either direction; `validate_catalog.py:67-90` fails if `<queries>` misses the package (its message moves from 25 to 26 packages). Neither checks fixtures.
+4. **Keep the Google Maps package first.** `packageNames.first()` is the settings row's stored package (`EnabledAppRepository.kt:56`), the Play "Get" link (`NavigationAppsScreen.kt:117`), the Rules screen grouping key (`RulesViewModel.kt:204-205`), the canonical rule sort key (`RulesetCodec.kt:56-60`) and a stored user rule's package (`UserRuleRepository.kt:52`). Appending keeps all of them unchanged; prepending would move the Play link to MicroG Maps, which is not on Play.
+5. **Enablement and privacy.** Enablement is per `appId`: one row and one switch cover both packages, and a phone with only MicroG Maps installed gets the Google Maps row on discovery (`EnabledAppRepository.kt:48-80`, REQ-ANDROID-004). The allowlist then admits the package before any content is read (`NotificationDispatcher.kt:26-30`, REQ-ANDROID-003); nothing else in the privacy gate changes.
+6. **Icon matching under the renamed package is unverified.** The classic card's turn comes only from the large icon (`google-maps-icon-step`, `any.json`, #74). `AppIconReferences.render` loads the drawables with `createPackageContext("app.morphe.android.apps.maps")` and `getIdentifier(name, "drawable", "app.morphe.android.apps.maps")` (`AppIconReferences.kt:35-38`). If the Morphe patch renames only the manifest package and the resource table keeps `com.google.android.apps.maps`, the lookup by the new name may return 0 and every icon step falls back to the neutral arrow with distance, road and ETA (#83). This needs a check on a device with MicroG Maps (debug history shows the `iconMatch` diagnostic); a fallback that also tries the catalog entry's first package as the resource package is a possible follow-up, not part of the data-only change. (Hypothesis, not tested.)
+7. **Ruleset versions.** Nothing compares bundled `rulesetVersion`s; they are only recorded per debug event for the event's package (`RuleRepository.kt:68-69`, `RulesetVersionsTest.kt:34-40`). #54 added packages without bumping versions. Bumping is optional and only helps diagnostics tell builds apart.
+8. **The generator.** `gen_localized_google_maps.py` writes `"packageNames": [PACKAGE]` (line 186) for it, fr, es, de, nl, pt and pl and regenerates all of them when run (lines 234-242). Turn `PACKAGE` into a list that matches the catalog (or read the catalog), or a future regeneration drops MicroG Maps; the catalog test would catch it.
+9. **Requirements and protection.** REQ-RULE-003, REQ-RULE-013 and REQ-RULE-015 already allow several packages per rule and per app, and no requirement lists supported packages, so no MANIFEST-protected file has to change. Of the touched files, none is in `MANIFEST.sha256.json` (it covers `requirements/`, `schemas/ruleset.schema.json`, `examples/` and the spec). A new requirement ID would need its hash in the same commit.
+10. **Things that stay as they are.** User rules in Room keep their own package lists, so a user rule written for Google Maps does not apply to MicroG Maps until copied again. The route-capture harness and icon probe know only the Google Maps package (`tools/route-capture/routecap/apps.py:116`, `device/icon-probe/AndroidManifest.xml:10`) and run on emulators, so they need no change. README.md:20 and `fastlane/metadata/android/en-US/full_description.txt:7` list Google Maps without variants; naming MicroG Maps there is optional.
 
 ### Version-compare update findings (intent 261022-version-compare-update, focused scan at 1ad9ec8)
 
@@ -95,6 +114,8 @@ Status at 8f08e02 (v0.0.74): shipped as a pure `watchAppVersionText` (`WatchAppV
 7. **Two comparison rules** stay by design: tolerant `isNewer` for GitHub tags, strict `isNewerStrict` / `version_newer` for versions exchanged between the apps.
 
 ### Play release findings (intent 261025-play-release, focused scan at 6dec020)
+
+Status at 1c7f4c1: the #114 work is merged (#115) with no release yet. Which findings it addressed was not rescanned by the 261026-microg-maps run; the findings are kept as they were written.
 
 Issue #114 against the code at 6dec020 (v0.0.77):
 

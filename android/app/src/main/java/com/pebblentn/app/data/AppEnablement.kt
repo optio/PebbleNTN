@@ -13,4 +13,6 @@ data class AppEnablement(
     val captureOnly: Boolean,
     /** False once the app is uninstalled: its row (and the user's choice) is kept for a reinstall. */
     val installed: Boolean = true,
+    /** The app whose official rules apply ([com.pebblentn.app.catalog.NavigationAppEntry.rulesAppId], #113). */
+    val rulesAppId: String = appId,
 )

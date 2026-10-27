@@ -49,11 +49,67 @@ def main() -> int:
         print("Catalog validation FAILED.", file=sys.stderr)
         return 1
 
+    if not check_catalog_consistency():
+        return 1
+
     if not check_manifest_queries():
         return 1
 
     print("Catalog validation OK.")
     return 0
+
+
+CATALOG_PATH = REPO_ROOT / "rules" / "catalog" / "navigation-apps.json"
+BUNDLED_DIR = REPO_ROOT / "rules" / "bundled"
+
+
+def rule_family_errors(apps: list[dict], bundled_app_dirs: set[str]) -> list[str]:
+    """What the schema cannot express about rule families (#113), mirroring NavigationAppCatalog.parse.
+
+    `rulesFrom` names another entry that has its own rules and no `rulesFrom` itself (no chains), and
+    an entry using another's rules has no `rules/bundled/<appId>/` folder of its own. A package belongs
+    to exactly one entry, so every package has exactly one rule family.
+    """
+    errors = []
+    by_id = {app.get("appId"): app for app in apps}
+    seen_packages: dict[str, str] = {}
+    for app in apps:
+        app_id = app.get("appId")
+        for pkg in app.get("packageNames", []):
+            if pkg in seen_packages:
+                errors.append(f"{pkg} is claimed by both {seen_packages[pkg]} and {app_id}")
+            seen_packages[pkg] = app_id
+        source = app.get("rulesFrom")
+        if source is None:
+            continue
+        target = by_id.get(source)
+        if source == app_id:
+            errors.append(f"{app_id}: rulesFrom names itself")
+        elif target is None:
+            errors.append(f"{app_id}: rulesFrom names unknown app {source}")
+        elif target.get("rulesFrom") is not None:
+            errors.append(f"{app_id}: rulesFrom {source} uses another app's rules itself (no chains)")
+        elif not target.get("hasOfficialRules"):
+            errors.append(f"{app_id}: rulesFrom {source} has no rules of its own")
+        if app_id in bundled_app_dirs:
+            errors.append(f"{app_id}: uses {source}'s rules, so rules/bundled/{app_id}/ must not exist")
+    return errors
+
+
+def check_catalog_consistency() -> bool:
+    if not CATALOG_PATH.exists():
+        return True
+    apps = json.loads(CATALOG_PATH.read_text(encoding="utf-8")).get("apps", [])
+    bundled = {p.name for p in BUNDLED_DIR.iterdir() if p.is_dir()} if BUNDLED_DIR.exists() else set()
+    errors = rule_family_errors(apps, bundled)
+    if errors:
+        print("Catalog validation FAILED: rule families are inconsistent:", file=sys.stderr)
+        for error in errors:
+            print(f"  INVALID  {error}", file=sys.stderr)
+        return False
+    families = sum(1 for app in apps if app.get("rulesFrom"))
+    print(f"OK       rule families consistent ({families} app(s) use another app's rules).")
+    return True
 
 
 # The bundled catalog and the Android manifest's <queries> must agree: on Android 11+ a package that
@@ -64,22 +120,24 @@ MANIFEST_PATH = REPO_ROOT / "android" / "app" / "src" / "main" / "AndroidManifes
 QUERIES_EXEMPT = {"com.pebblentn.fixturepublisher"}
 
 
+def queried_catalog_packages(apps: list[dict]) -> set[str]:
+    """The catalog packages that must be declared in the manifest <queries>."""
+    return {pkg for app in apps for pkg in app.get("packageNames", [])} - QUERIES_EXEMPT
+
+
+def missing_manifest_packages(apps: list[dict], manifest: str) -> list[str]:
+    """Catalog packages the manifest <queries> does not declare, sorted."""
+    declared = set(re.findall(r'<package\s+android:name="([^"]+)"', manifest))
+    return sorted(queried_catalog_packages(apps) - declared)
+
+
 def check_manifest_queries() -> bool:
-    catalog_path = REPO_ROOT / "rules" / "catalog" / "navigation-apps.json"
-    if not MANIFEST_PATH.exists() or not catalog_path.exists():
+    if not MANIFEST_PATH.exists() or not CATALOG_PATH.exists():
         return True  # Android app not present in this checkout; nothing to cross-check.
 
-    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-    catalog_packages = {
-        pkg
-        for app in catalog.get("apps", [])
-        for pkg in app.get("packageNames", [])
-    } - QUERIES_EXEMPT
-
-    manifest = MANIFEST_PATH.read_text(encoding="utf-8")
-    declared = set(re.findall(r'<package\s+android:name="([^"]+)"', manifest))
-
-    missing = sorted(catalog_packages - declared)
+    apps = json.loads(CATALOG_PATH.read_text(encoding="utf-8")).get("apps", [])
+    catalog_packages = queried_catalog_packages(apps)
+    missing = missing_manifest_packages(apps, MANIFEST_PATH.read_text(encoding="utf-8"))
     if missing:
         print("Catalog validation FAILED: packages missing from AndroidManifest <queries>:", file=sys.stderr)
         for pkg in missing:

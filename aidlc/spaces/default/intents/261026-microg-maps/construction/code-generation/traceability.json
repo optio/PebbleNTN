@@ -1,0 +1,14 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/catalog/NavigationAppCatalog.kt" },
+    { "id": "FR2", "status": "OK", "target": "rules/catalog/navigation-apps.json" },
+    { "id": "FR3", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt" },
+    { "id": "FR4", "status": "OK", "target": "README.md" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/rules/RuleFamiliesMatchingTest.kt" },
+    { "id": "NFR2", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/rules/GoogleMapsRulesRegressionTest.kt" },
+    { "id": "NFR3", "status": "OK", "target": "scripts/test-all.sh" },
+    { "id": "NFR4", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/ui/apps/MicrogMapsNavigationAppsTest.kt" }
+  ]
+}

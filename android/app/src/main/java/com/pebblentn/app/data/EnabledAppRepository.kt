@@ -17,6 +17,10 @@ import kotlinx.coroutines.flow.combine
  * [isEnabled] — never the database (REQ-ANDROID-003, REQ-ANDROID-006). The cache is refreshed
  * whenever enablement changes; callers must [refreshCache] (or [syncInstalledApps]) at least once
  * on startup before relying on the gate.
+ *
+ * Enablement follows the [catalog] it is given: on a Google Play install that is
+ * [NavigationAppCatalog.forGooglePlay], where MicroG Maps' package belongs to the Google Maps entry,
+ * so the Google Maps switch gates it (#113).
  */
 class EnabledAppRepository(
     private val dao: AppEnablementDao,
@@ -96,6 +100,7 @@ class EnabledAppRepository(
                     enabled = row.enabled,
                     captureOnly = entry.captureOnly,
                     installed = installed == null || entry.packageNames.any { it in installed },
+                    rulesAppId = entry.rulesAppId,
                 )
             }
         }

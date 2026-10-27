@@ -53,6 +53,23 @@
             "minLength": 1
           }
         },
+        "rulesFrom": {
+          "description": "The appId of another entry whose rules this app uses: the apps form one rule family, and every rule of the family applies to all of their packages. The named entry has its own rules and no rulesFrom of its own; this entry has no rules/bundled/<appId>/ folder.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 60
+        },
+        "website": {
+          "description": "An https page where the app is obtained, shown instead of the Google Play link.",
+          "type": "string",
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 200
+        },
+        "playListed": {
+          "description": "False hides the app on Google Play installs: it is not listed and never linked. Its packages then follow the switch of the rulesFrom app.",
+          "type": "boolean",
+          "default": true
+        },
         "hasOfficialRules": {
           "type": "boolean"
         },

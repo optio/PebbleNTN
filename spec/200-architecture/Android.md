@@ -25,7 +25,14 @@ Bundled declarative catalog entries define:
 - capture availability;
 - official-rules availability;
 - optional channel hints;
-- default enabled policy.
+- default enabled policy;
+- optionally the app whose rules it uses (`rulesFrom`, its rule family, REQ-RULE-015), a `website`
+  linked instead of Google Play, and whether it is listed on Google Play installs (`playListed`,
+  REQ-ANDROID-023).
+
+On a Google Play install the app uses the catalog's Google Play view: an entry that is not listed
+there is dropped, and its packages join the entry whose rules it uses, so they follow that entry's
+switch.
 
 Installed entries are shown first. All installed catalog apps default to enabled on first run. Users can disable them independently.
 

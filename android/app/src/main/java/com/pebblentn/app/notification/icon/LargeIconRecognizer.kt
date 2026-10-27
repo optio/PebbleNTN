@@ -3,6 +3,7 @@ package com.pebblentn.app.notification.icon
 import android.app.Notification
 import android.content.Context
 import android.os.SystemClock
+import com.pebblentn.app.catalog.RuleFamilies
 import com.pebblentn.app.rules.LayeredRules
 import timber.log.Timber
 
@@ -24,10 +25,12 @@ class RuleDrivenLargeIconRecognizer(
     private val context: Context,
     private val rules: () -> LayeredRules,
     private val references: AppIconReferences = AppIconReferences(context),
+    /** Packages that share rules (#113); the icon itself is always read from the posting package. */
+    private val families: RuleFamilies = RuleFamilies.NONE,
 ) : LargeIconRecognizer {
 
     override fun recognize(packageName: String, notification: Notification): IconMatch? {
-        val candidates = IconCandidates.forPackage(rules(), packageName)
+        val candidates = IconCandidates.forPackage(rules(), packageName, families)
         if (candidates.isEmpty()) return null
         val start = SystemClock.elapsedRealtimeNanos()
         val icon = AppIconReferences.largeIconAlpha(context, notification) ?: return IconMatch.NoMatch("no large icon")

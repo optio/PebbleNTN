@@ -43,6 +43,7 @@ class NavigationAppCatalogTest {
         // removal fails loudly. Whether each is capture-only is checked against the bundled rules in
         // captureOnlyMatchesTheBundledRules.
         val expected = mapOf(
+            "app.morphe.android.apps.maps" to "microg-maps", // Google Maps patched for microG (#113)
             "com.waze" to "waze",
             "net.osmand" to "osmand",
             "net.osmand.plus" to "osmand",
@@ -87,24 +88,31 @@ class NavigationAppCatalogTest {
             .flatMap { com.pebblentn.app.rules.RulesetCodec.parse(it.readText()).rules.asSequence() }
             .flatMap { it.packageNames.asSequence() }
             .toSet()
+        val families = catalog.ruleFamilies()
         for (app in catalog.apps) {
-            val hasRules = app.packageNames.any { it in packagesWithRules }
+            // An app using another's rules (#113) has rules exactly when its family has.
+            val hasRules = app.packageNames.any { pkg -> families.familyOf(pkg).any { it in packagesWithRules } }
             assertEquals("${app.appId}: hasOfficialRules must match the bundled rules", hasRules, app.hasOfficialRules)
         }
     }
 
     /**
      * Each bundled ruleset lives in `rules/bundled/<appId>/`, and every rule in it must list exactly
-     * that app's catalog packages. Alternative builds (GitHub, IzzyOnDroid, nightly, AppGallery) use
-     * other package names; one added to the catalog but not to a ruleset was detected yet never
-     * matched (#54). This fails as soon as one place is forgotten.
+     * that app's own catalog packages. Alternative builds (GitHub, IzzyOnDroid, nightly, AppGallery)
+     * use other package names; one added to the catalog but not to a ruleset was detected yet never
+     * matched (#54). This fails as soon as one place is forgotten. An app that uses another app's
+     * rules (`rulesFrom`, #113) gets them through its rule family, so it has no folder and no rule
+     * lists its packages.
      */
     @Test
-    fun everyBundledRuleCoversExactlyItsAppsPackages() {
+    fun everyBundledRuleCoversExactlyItsRootAppsOwnPackages() {
         val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
         val bundledDir = java.io.File(javaClass.getResource("/rules/bundled")!!.toURI())
         val appDirs = bundledDir.listFiles()!!.filter { it.isDirectory }
         assertTrue(appDirs.isNotEmpty())
+        for (variant in catalog.apps.filter { it.rulesFrom != null }) {
+            assertFalse("${variant.appId} uses ${variant.rulesFrom}'s rules: no folder of its own", appDirs.any { it.name == variant.appId })
+        }
         for (dir in appDirs) {
             val app = catalog.apps.firstOrNull { it.appId == dir.name }
             assertNotNull("rules/bundled/${dir.name} has no catalog entry with that appId", app)
@@ -157,5 +165,128 @@ class NavigationAppCatalogTest {
     fun unsupportedSchemaVersionIsRejected() {
         val json = """{"schemaVersion":2,"apps":[]}"""
         assertThrows(IllegalArgumentException::class.java) { NavigationAppCatalog.parse(json) }
+    }
+
+    // --- Rule families and MicroG Maps (#113) ---------------------------------------------------
+
+    private fun catalogJson(vararg apps: String) = """{"schemaVersion":1,"apps":[${apps.joinToString(",")}]}"""
+
+    private fun app(id: String, pkg: String, rules: Boolean = true, extra: String = "") =
+        """{"appId":"$id","displayName":"$id","packageNames":["$pkg"],"hasOfficialRules":$rules,"captureAvailable":true,"defaultEnabled":true$extra}"""
+
+    @Test
+    fun microgMapsUsesTheGoogleMapsRulesWithItsWebsiteAndIsHiddenOnPlay() {
+        val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
+        val microg = catalog.entryForPackage("app.morphe.android.apps.maps")!!
+        assertEquals("microg-maps", microg.appId)
+        assertEquals("MicroG Maps", microg.displayName)
+        assertEquals("google-maps", microg.rulesFrom)
+        assertEquals("google-maps", microg.rulesAppId)
+        assertEquals("https://github.com/fangkampanat/gmaps-patches", microg.website)
+        assertFalse(microg.playListed)
+        assertTrue(microg.defaultEnabled)
+        assertFalse(microg.captureOnly)
+        // Google Maps itself is unchanged: its own rules, Play link, listed everywhere.
+        val maps = catalog.entryForPackage("com.google.android.apps.maps")!!
+        assertEquals(listOf("com.google.android.apps.maps"), maps.packageNames)
+        assertNull(maps.rulesFrom)
+        assertNull(maps.website)
+        assertTrue(maps.playListed)
+        assertTrue("only MicroG Maps has a website", catalog.apps.filter { it.website != null }.map { it.appId } == listOf("microg-maps"))
+    }
+
+    @Test
+    fun rulesFromAnUnknownAppIsRejected() {
+        val json = catalogJson(app("a", "p.a", extra = ""","rulesFrom":"nowhere""""))
+        val error = assertThrows(IllegalArgumentException::class.java) { NavigationAppCatalog.parse(json) }
+        assertTrue(error.message!!.contains("unknown app nowhere"))
+    }
+
+    @Test
+    fun rulesFromItselfIsRejected() {
+        val json = catalogJson(app("a", "p.a", extra = ""","rulesFrom":"a""""))
+        val error = assertThrows(IllegalArgumentException::class.java) { NavigationAppCatalog.parse(json) }
+        assertTrue(error.message!!.contains("names itself"))
+    }
+
+    @Test
+    fun aRulesFromChainIsRejected() {
+        val json = catalogJson(
+            app("root", "p.root"),
+            app("middle", "p.middle", extra = ""","rulesFrom":"root""""),
+            app("leaf", "p.leaf", extra = ""","rulesFrom":"middle""""),
+        )
+        val error = assertThrows(IllegalArgumentException::class.java) { NavigationAppCatalog.parse(json) }
+        assertTrue(error.message!!.contains("leaf"))
+    }
+
+    @Test
+    fun rulesFromAnAppWithoutRulesIsRejected() {
+        val json = catalogJson(app("root", "p.root", rules = false), app("v", "p.v", extra = ""","rulesFrom":"root""""))
+        val error = assertThrows(IllegalArgumentException::class.java) { NavigationAppCatalog.parse(json) }
+        assertTrue(error.message!!.contains("no rules of its own"))
+    }
+
+    @Test
+    fun aWebsiteThatIsNotHttpsIsRejected() {
+        val json = catalogJson(app("a", "p.a", extra = ""","website":"http://example.org""""))
+        assertThrows(IllegalArgumentException::class.java) { NavigationAppCatalog.parse(json) }
+    }
+
+    @Test
+    fun theOptionalFieldsDefaultToAnOrdinaryApp() {
+        val entry = NavigationAppCatalog.parse(catalogJson(app("a", "p.a"))).apps.single()
+        assertNull(entry.rulesFrom)
+        assertNull(entry.website)
+        assertTrue(entry.playListed)
+        assertEquals("a", entry.rulesAppId)
+    }
+
+    @Test
+    fun ruleFamiliesJoinGoogleMapsAndMicrogMapsAndLeaveOthersAlone() {
+        val families = NavigationAppCatalog.parse(bundledCatalogJson()).ruleFamilies()
+        val maps = setOf("com.google.android.apps.maps", "app.morphe.android.apps.maps")
+        assertEquals(maps, families.familyOf("com.google.android.apps.maps"))
+        assertEquals(maps, families.familyOf("app.morphe.android.apps.maps"))
+        assertEquals(setOf("app.comaps.google", "app.comaps.fdroid", "app.comaps", "app.comaps.huawei"), families.familyOf("app.comaps"))
+        assertEquals(setOf("com.waze"), families.familyOf("com.waze"))
+        assertEquals(setOf("com.example.unknown"), families.familyOf("com.example.unknown"))
+    }
+
+    @Test
+    fun aRuleAppliesToEveryPackageOfItsFamilyOnly() {
+        val families = NavigationAppCatalog.parse(bundledCatalogJson()).ruleFamilies()
+        val googleRule = listOf("com.google.android.apps.maps")
+        val microgRule = listOf("app.morphe.android.apps.maps")
+        assertTrue(families.applies("app.morphe.android.apps.maps", googleRule))
+        assertTrue(families.applies("com.google.android.apps.maps", microgRule))
+        assertTrue(families.applies("com.google.android.apps.maps", googleRule))
+        assertFalse(families.applies("com.waze", googleRule))
+        assertFalse(families.applies("com.example.unknown", microgRule))
+        assertTrue("an unknown package still matches a rule naming it", families.applies("com.example.unknown", listOf("com.example.unknown")))
+        assertFalse(RuleFamilies.NONE.applies("app.morphe.android.apps.maps", googleRule))
+    }
+
+    @Test
+    fun onGooglePlayMicrogMapsIsNoEntryAndItsPackageJoinsGoogleMaps() {
+        val play = NavigationAppCatalog.parse(bundledCatalogJson()).forGooglePlay()
+        assertTrue(play.apps.none { it.appId == "microg-maps" })
+        assertTrue("no website is linked on Play", play.apps.all { it.website == null })
+        val maps = play.entryForPackage("app.morphe.android.apps.maps")!!
+        assertEquals("google-maps", maps.appId)
+        assertEquals("Google Maps", maps.displayName)
+        assertEquals(listOf("com.google.android.apps.maps", "app.morphe.android.apps.maps"), maps.packageNames)
+        assertEquals(26, play.allPackageNames.size - 1) // the fixture publisher aside, nothing is lost
+        assertEquals(
+            NavigationAppCatalog.parse(bundledCatalogJson()).ruleFamilies().familyOf("com.google.android.apps.maps"),
+            play.ruleFamilies().familyOf("com.google.android.apps.maps"),
+        )
+    }
+
+    @Test
+    fun anUnlistedAppWithoutRulesFromIsLeftOutOnPlay() {
+        val catalog = NavigationAppCatalog.parse(catalogJson(app("a", "p.a"), app("b", "p.b", extra = ""","playListed":false""")))
+        assertEquals(listOf("a"), catalog.forGooglePlay().apps.map { it.appId })
+        assertEquals(listOf("a", "b"), catalog.apps.map { it.appId })
     }
 }
