@@ -3,26 +3,71 @@
 ## Run Record
 
 - Date: 2026-10-26
-- Commit: 6dec020c6548a0cdcbd39c0d1846ef164a45068a
-- Breadth requested: focused scan (snapshot paths: `android/app/build.gradle.kts`, `android/build.gradle.kts`, `android/gradle/`, `android/app/src/main/`, `android/app/src/test/`, `.github/workflows/`, `docs/`, `fastlane/`, `fdroid/`, `spec/600-security-release/`, `requirements/`, `scripts/`); depth Minimal
-- Intent: `261025-play-release` (GitHub issue #114, prepare the first Google Play release)
-- Coverage: the Android build files and version catalog, the manifest, the `update/` install-source, GitHub-check, manual-message and rule-update code, `AppContainer` and the application class, `MainActivity` (update source, check, feedback and email actions), the dashboard update card and prompt models, the onboarding screen, `DiagnosticShareManager`, the Robolectric configuration and `InstallSourceTest`, the `play-release` workflow, the privacy policy, Data safety, privacy review and release checklist docs, the whole `fastlane/` listing (text lengths and image sizes), the F-Droid recipe, `spec/600-security-release/` and REQ-SECURITY, and `validate-spec-assets.sh`. Skimmed: the update parts of `DashboardScreen.kt`, the update, onboarding, feedback and URL strings, a search of all phone packages for network I/O, outbound intents and Android 16 exposure, the test listing, `release.yml` and `android.yml`, REQ-ANDROID-001/013/017-020, the F-Droid notes, the status log header, and (outside the snapshot) `MANIFEST.sha256.json`, the `:pebblekit` and `:fixture-publisher` SDK lines, the `screenshots/` listing and the watch QR generator's docstring. Issue #114 came from GitHub.
-- Merge: focused merge into a STALE store (prior focused scan at 4779760 for `261025-settings-sync`, since shipped in v0.0.77). Prior prose outside the update, install-source, build, privacy and store-listing area is kept. Added or updated: the #114 business context and the Google Play channel row, the "Update UI by install source" diagram, a one-build runtime-source design decision, the outbound links table and the Android 16 exposure note, three new components (Dashboard Update UI, Android Build Configuration, Store and Privacy Documents), SDK and Robolectric facts, and the "Play release findings". The prior analyzed paths are demoted to shallow, except those re-analyzed in this run. Build outputs (`android/app/build/`, `android/.gradle/`, `scripts/__pycache__/`), the wrapper jar, ignored files and the AI-DLC install were left out.
+- Commit: 1c7f4c12d94dc7dab324eb4fd89180f25061eede
+- Breadth requested: focused scan (snapshot paths: `rules/`, `schemas/`, `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/java/com/pebblentn/app/catalog/`, `android/app/src/main/java/com/pebblentn/app/rules/`, `android/app/src/main/java/com/pebblentn/app/notification/`, `android/app/src/test/java/com/pebblentn/app/catalog/`, `android/app/src/test/java/com/pebblentn/app/rules/`, `android/app/src/test/java/com/pebblentn/app/notification/`, `scripts/`, `requirements/`, `tools/`); depth Minimal
+- Intent: `261026-microg-maps` (GitHub issue #113, MicroG Maps `app.morphe.android.apps.maps` as a Google Maps package variant)
+- Coverage: the navigation-app catalog and its schema, all ten Google Maps rulesets (package lists, counts, versions), the Google Maps fixtures and the rules READMEs, the manifest `<queries>`, the catalog model, `RuleEngine` and `AssetRuleRepository`, the notification listener, dispatcher and snapshot factory, the large-icon candidates, references and recognizer, `NavigationAppCatalogTest`, `GoogleMapsRulesRegressionTest`, `RulesetVersionsTest`, the catalog, rule and spec-asset validators, and the localized Google Maps generator. Skimmed: the ruleset schema's package block, the rest of `rules/` and `notification/` (main and test) by file list and grep, the other apps' rulesets and fixtures (package counts), REQ-RULES and REQ-ANDROID (package requirements), the workbench and route-capture tools (package grep), `test-all.sh`, and, outside the snapshot, the `MANIFEST.sha256.json` key list, the Gradle rule-data staging, `EnabledAppRepository`, `AppContainer`, `RulesViewModel`, `NavigationAppsScreen`, `DisplayLabels`, AGENTS.md rule 14, README.md, the fastlane full description and the #54 commit d73d903. Issue #113 and its comment came from GitHub.
+- Merge: focused merge into a STALE store (prior focused scan at 6dec020 for `261025-play-release`, merged since as #115 with no release). Prior prose outside the catalog, rule-package and notification area is kept. Added or updated: the #113 business context and glossary entries, the "no alias layer" design decision and the MicroG Maps interaction diagram, the catalog and rule package contracts and the `<queries>` and cross-package resource interfaces, a new Navigation App Catalog component and updated Notification Pipeline, Rule Engine, Persistence Layer, Rule Data and Schemas, Rule Workbench, Route Capture Harness and Build and Release Scripts entries, the package-list consistency dependencies, and the "MicroG Maps findings". The prior analyzed paths are demoted to shallow, except the two re-analyzed in this run (`android/app/src/main/AndroidManifest.xml`, `scripts/validate-spec-assets.sh`). Caches (`scripts/__pycache__/`, `tools/__pycache__/`, `tools/rule-workbench/__pycache__/`, `tools/route-capture/__pycache__/`), the git-ignored `tools/route-capture/out/` and the AI-DLC install were left out.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: play-release
-fingerprint: 95f135304ff638724223b429f4444a103534ff17
+intent: microg-maps
+fingerprint: a0c2be838f253dbc9ad9e1bf2b6b2de31ea9333a
 analyzed:
   paths:
+    - rules/catalog/navigation-apps.json
+    - rules/bundled/google-maps/
+    - rules/fixtures/google-maps.json
+    - rules/fixtures/README.md
+    - rules/README.md
+    - schemas/app-catalog.schema.json
+    - android/app/src/main/AndroidManifest.xml
+    - android/app/src/main/java/com/pebblentn/app/catalog/
+    - android/app/src/main/java/com/pebblentn/app/rules/RuleEngine.kt
+    - android/app/src/main/java/com/pebblentn/app/rules/RuleRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NotificationDispatcher.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NavigationNotificationListenerService.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshotFactory.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/icon/IconCandidates.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/icon/AppIconReferences.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/icon/LargeIconRecognizer.kt
+    - android/app/src/test/java/com/pebblentn/app/catalog/
+    - android/app/src/test/java/com/pebblentn/app/rules/GoogleMapsRulesRegressionTest.kt
+    - android/app/src/test/java/com/pebblentn/app/rules/RulesetVersionsTest.kt
+    - scripts/validate_catalog.py
+    - scripts/validate_rules.py
+    - scripts/validate-rules.sh
+    - scripts/validate-spec-assets.sh
+    - tools/rule-workbench/gen_localized_google_maps.py
+  components:
+    - Navigation App Catalog
+    - Rule Engine
+    - Notification Pipeline
+    - Rule Data and Schemas
+shallow:
+  paths:
+    - schemas/ruleset.schema.json
+    - android/app/src/main/java/com/pebblentn/app/rules/
+    - android/app/src/main/java/com/pebblentn/app/notification/
+    - android/app/src/test/java/com/pebblentn/app/rules/
+    - android/app/src/test/java/com/pebblentn/app/notification/
+    - rules/bundled/osmand/
+    - rules/bundled/comaps/
+    - rules/bundled/organic-maps/
+    - rules/fixtures/
+    - requirements/REQ-RULES.md
+    - tools/rule-workbench/workbench.py
+    - tools/route-capture/
+    - android/app/src/main/java/com/pebblentn/app/data/EnabledAppRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/rules/RulesViewModel.kt
+    - fastlane/metadata/android/en-US/full_description.txt
     - android/app/build.gradle.kts
     - android/build.gradle.kts
     - android/gradle/libs.versions.toml
     - android/gradle/wrapper/gradle-wrapper.properties
-    - android/app/src/main/AndroidManifest.xml
     - android/app/src/main/res/values/themes.xml
     - android/app/src/main/java/com/pebblentn/app/PebbleNtnApplication.kt
     - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
@@ -48,18 +93,6 @@ analyzed:
     - spec/600-security-release/BuildRelease.md
     - spec/600-security-release/SecurityPrivacy.md
     - requirements/REQ-SECURITY.md
-    - scripts/validate-spec-assets.sh
-  components:
-    - App Update Check
-    - Ruleset Signing and Activation
-    - Dependency Container
-    - Dashboard Update UI
-    - Android Build Configuration
-    - CI Workflows
-    - Distribution Metadata
-    - Store and Privacy Documents
-shallow:
-  paths:
     - android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt
     - android/app/src/main/java/com/pebblentn/app/ui/dashboard/FeedbackCard.kt
     - android/app/src/main/java/com/pebblentn/app/data/FeedbackCampaign.kt

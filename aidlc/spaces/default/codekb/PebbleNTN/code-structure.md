@@ -14,9 +14,9 @@
 | `watchapp/tests/` | Host C tests, `test_<unit>.c` paired 1:1 with `src/c/<unit>.c` |
 | `watchapp/tools/`, `resources/`, `store/` | Python asset generators, bitmaps and QR, store art |
 | `protocol/` | Protocol JSON and generator |
-| `rules/` (`catalog/`, `bundled/<app>/<lang>.json`, `fixtures/`), `schemas/`, `examples/` | Rule data and JSON Schemas |
-| `tools/rule-workbench/`, `tools/route-capture/` | Maintainer CLIs |
-| `scripts/`, `.githooks/`, `.github/` | Build, test, release automation, CI, issue templates |
+| `rules/` (`catalog/`, `bundled/<app>/<lang>.json`, `fixtures/`), `schemas/`, `examples/` | Rule data and JSON Schemas. At 1c7f4c1: `catalog/navigation-apps.json` (19 entries, 26 package names); `bundled/` holds `google-maps/` (10 files: `any` plus de, en, es, fr, it, nl, pl, pt, zh; 150 rules), `osmand/` (9 files), `comaps/` and `organic-maps/` (1 each); `fixtures/<app>.json` per app with official rules (`google-maps.json` has 185 fixtures) and a provenance README; `schemas/app-catalog.schema.json` and `ruleset.schema.json` |
+| `tools/rule-workbench/`, `tools/route-capture/` | Maintainer CLIs (`gen_localized_google_maps.py` generates 7 of the Google Maps language files) |
+| `scripts/`, `.githooks/`, `.github/` | Build, test, release automation, CI, issue templates; `validate-rules.sh` runs `validate_catalog.py` (schema + manifest `<queries>` cross-check) then `validate_rules.py` (schema of every bundled ruleset and the example) |
 | `spec/`, `requirements/`, `docs/` | Specification, REQ-* IDs, status log, privacy, release checklist |
 | `fastlane/`, `fdroid/`, `screenshots/` | Store metadata (`fastlane/metadata/android/en-US/`: title, short and full description, `images/icon.png`, three `phoneScreenshots/`, 62 per-versionCode `changelogs/`; sizes in [code-quality-assessment.md](code-quality-assessment.md) "Play release findings"), F-Droid recipe, watch screenshots (`screenshots/`: 81 PNGs = 27 names x 3 sizes, 0.9-2.4 KB each, plus README) |
 
@@ -27,13 +27,13 @@
 | `core/` | Model/Entity + Service (pure) | `NavigationSessionReducer`, `NavigationState`, `NavigationInstruction`, `Maneuver`, `WatchSettings` (phone-side flags config, not the watchapp's settings), `DistanceQuantizer`, `EpochClock`, `Hashing`, `AppAllowlist`; #102 asks for its Kotlin wrap-around revision helper here |
 | `protocol/` | Utility (pure codec) + interface | `ProtocolCodec`, `AppMessage`, `WatchTransport`/`WatchLink`/`SendResult`, generated `Protocol.kt` |
 | `pebble/` | Adapter + Service | `NavigationController`, `PebbleWatchTransport`, `PebbleAppMessageMapper`, `WatchListenerService` + `WatchInboundBus` |
-| `notification/`, `notification/icon/` | Controller/Handler + Service | listener, dispatcher (privacy gate), queue, snapshot factory, capture processor, maneuver heuristic, large-icon matcher |
+| `notification/`, `notification/icon/` | Controller/Handler + Service | listener, dispatcher (privacy gate), queue, snapshot factory, capture processor, maneuver heuristic, large-icon matcher (`IconCandidates`, `AppIconReferences`, `IconMatcher`, `LargeIconRecognizer`) |
 | `rules/` | Service (pure) | engine, conditions, extractors, parsers, `SafeRegex`, codec, validator, preview, asset repository |
-| `data/`, `data/db/` | Repository/DAO + Migration | Room entities and DAOs (v8 with 7 migrations), SharedPreferences repositories |
+| `data/`, `data/db/` | Repository/DAO + Migration | Room entities and DAOs (v8 with 7 migrations), SharedPreferences repositories; `EnabledAppRepository` is the per-app enablement and the allowlist |
 | `update/` | Service + Adapter | `UpdateCheckRepository` (also the stored watchapp version), `AppVersions` (tolerant and strict compare), `InstallSource`/`InstallSources` (v0.0.73), `ReleaseFetcher`/`GitHubReleaseFetcher`, `RuleUpdateRepository`, signature verifier |
 | `export/` | Service | export builder, redactor, exporter, share manager |
 | `system/` | Adapter | notification access, listener refresher, install receiver |
-| `catalog/` | Model | navigation-app catalog |
+| `catalog/` | Model | navigation-app catalog: `NavigationAppEntry`, `NavigationAppCatalog` (strict parse, one app per package, `entryForPackage`, `allPackageNames`) and `supportedNotInstalled` (one 82-line file) |
 | `di/` | Configuration | `AppContainer`, asset catalog source, installed apps provider |
 | `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `watchsettings/` (#102), `components/`, `format/`, `theme/` |
 
@@ -64,7 +64,9 @@
 - **Watch platform guards**: `PBL_COLOR` (accent list, previews), `PBL_ROUND` (insets, centred headers), `PBL_RGB_BACKLIGHT` (backlight door and tint), `PBL_PLATFORM_EMERY` (touch bridge calls), `!PBL_PLATFORM_APLITE` (app glance). Layout size comes from the runtime screen width (`w >= 200`).
 - **Pure units cannot use Pebble headers**: `scripts/test-watchapp-unit.sh` builds each `test_<unit>.c` with `src/c/<unit>.c` alone, under `gcc -std=c11 -Wall -Wextra -Werror`. `theme.h` includes `pebble.h`, so a pure unit cannot use its enums, names or setters; it takes counts and ids as plain integers.
 - **Requirement tagging**: comments cite REQ IDs and issue numbers throughout.
+- **Package lists, first entry is the main build**: an app's packages are an ordered list, and code that needs one package takes the first: the settings row (`EnabledAppRepository`), the Navigation apps "Get" link, the Rules screen's grouping by app, the canonical rule order (`RulesetCodec.RULE_ORDER`) and stored user rules. New variants are appended (#54 kept `app.comaps.google` first; #113 keeps `com.google.android.apps.maps` first).
+- **Rule data as classpath resources in tests**: `syncRuleData` stages `rules/catalog` and `rules/bundled` as app assets and test resources, `syncTestFixtures` stages `rules/fixtures` for unit tests only, so `NavigationAppCatalogTest` and the `*RulesRegressionTest`s read the real files (`/catalog/navigation-apps.json`, `/rules/bundled/...`, `/fixtures/<app>.json`).
 
 ## Dependency Graph Notes
 
-There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`. Watch: `main.c` -> all pure units, `update_notice_window`, `settings_window`, `shortcut_apply`, `qr_code`, `theme`; `settings_window` -> `theme`, `shortcut_apply`; `shortcut_apply` -> `shortcuts`, `theme`; `about_window` -> `about_text`; `theme` -> `early_warning`, `shortcuts` (their enums). External libraries are listed in [dependencies.md](dependencies.md).
+There are no circular package dependencies. `ui` -> `di` -> everything; `pebble` -> `core`, `protocol`, `data`; `notification` -> `rules`, `data`; `update` -> `rules`, `data.db`; `catalog` depends on nothing but kotlinx-serialization and is read by `data` (enablement), `di` (which hands `allPackageNames` to the `system` install receiver and the installed-apps query) and `ui` (display names, grouping). Watch: `main.c` -> all pure units, `update_notice_window`, `settings_window`, `shortcut_apply`, `qr_code`, `theme`; `settings_window` -> `theme`, `shortcut_apply`; `shortcut_apply` -> `shortcuts`, `theme`; `about_window` -> `about_text`; `theme` -> `early_warning`, `shortcuts` (their enums). External libraries are listed in [dependencies.md](dependencies.md).

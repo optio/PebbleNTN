@@ -78,17 +78,23 @@ Each component lists its location, responsibility and dependencies. The `###` he
 - **Location**: core/NavigationSessionReducer.kt, NavigationState.kt, NavigationInstruction.kt, Maneuver.kt, DistanceQuantizer.kt, WatchSettings.kt
 - **Responsibility**: pure session logic: start/stop, dedupe, quantization, launch-once, READY sync and major-version check, 30 s staleness, ETA carry-over (300 s), flag computation (`flagsForNavigating`, `flagsForStopped`).
 
+### Navigation App Catalog
+- **Location**: android/app/src/main/java/com/pebblentn/app/catalog/NavigationAppCatalog.kt; data in rules/catalog/navigation-apps.json (asset `catalog/navigation-apps.json`, read by `di/AssetCatalogSource`); tested by android/app/src/test/java/com/pebblentn/app/catalog/NavigationAppCatalogTest.kt
+- **Responsibility**: `NavigationAppEntry` (`appId`, `displayName`, ordered `packageNames`, `hasOfficialRules`, `captureAvailable`, `defaultEnabled`, `channelHints`; `captureOnly = !hasOfficialRules`) and `NavigationAppCatalog.parse`, which rejects unknown fields, a schema version other than 1, duplicate app ids and a package claimed by two apps. `entryForPackage` maps a package to its app (display names, Rules grouping); `allPackageNames` feeds the installed-apps query and the install receiver; `supportedNotInstalled` lists the Navigation apps screen's "supported" section (official rules first, the fixture publisher hidden). The test suite pins the parse rules, a package-to-appId table for every non-Google package, `hasOfficialRules` against the bundled rules, and that every rule under `rules/bundled/<appId>/` lists exactly the entry's package set (#54). At 1c7f4c1 the Google Maps entry has one package; #113 appends `app.morphe.android.apps.maps`.
+- **Depends on**: kotlinx-serialization; read by Persistence Layer (`EnabledAppRepository`), Dependency Container and Compose UI.
+
 ### Notification Pipeline
 - **Location**: notification/ (+ icon/), core/AppAllowlist.kt, system/
-- **Responsibility**: listener service, master switch and allowlist gate before content, minimal snapshot, serial queue, capture processor, maneuver heuristic, rule-driven large-icon recognition (#74), listener refresh, install receiver.
+- **Responsibility**: listener service, master switch and allowlist gate before content, minimal snapshot, serial queue, capture processor, maneuver heuristic, rule-driven large-icon recognition (#74), listener refresh, install receiver. The listener passes only `sbn.packageName` to `NotificationDispatcher`, which checks the master switch and `AppAllowlist.isEnabled(package)` before the snapshot lambda reads any content. For the large icon, `IconCandidates.forPackage` collects the `iconDrawable` maneuver maps of the enabled rules that list the package, and `AppIconReferences` renders those drawables from the navigation app itself (`createPackageContext(package)`, `getIdentifier(name, "drawable", package)`, cached per package, version code and density); it needs the package in the manifest `<queries>`. No code names a specific navigation app.
+- **Depends on**: Rule Engine (rules for candidates), Persistence Layer (allowlist), Android package visibility.
 
 ### Rule Engine
 - **Location**: rules/
-- **Responsibility**: strict ruleset codec and canonicalisation, validation, layered precedence (user > downloaded > bundled), condition evaluation, extractors, distance/duration parsing, `SafeRegex` time budget, preview.
+- **Responsibility**: strict ruleset codec and canonicalisation, validation, layered precedence (user > downloaded > bundled), condition evaluation, extractors, distance/duration parsing, `SafeRegex` time budget, preview. `RuleEngine.evaluate` considers only rules whose `packageNames` contain the snapshot's package (at most 500 per package) and returns the first match in precedence order (layer, then descending priority, then id). `AssetRuleRepository` loads every `.json` under the `rules/bundled` asset tree recursively into one bundled layer, skipping a malformed file, and `rulesetVersionsFor(package)` lists the rulesets holding a rule for a package (recorded per debug event, #84). There is no package alias: a package matches only the rules that name it.
 
 ### Persistence Layer
 - **Location**: data/, data/db/, android/app/schemas/room/
-- **Responsibility**: Room database v8 (supported_app_settings, notification_debug_event, user_rule, navigation_state, official_ruleset) with migration tests; SharedPreferences repositories (`pebblentn_settings`: master switch, watch settings, appearance, presence, feedback); debug history with hashed keys and grouping. `WatchSettingsRepository` stores only `watch_auto_launch`; the other three `WatchSettings` fields are fixed defaults (see [api-documentation.md](api-documentation.md) "Phone-side Watch Settings").
+- **Responsibility**: Room database v8 (supported_app_settings, notification_debug_event, user_rule, navigation_state, official_ruleset) with migration tests; SharedPreferences repositories (`pebblentn_settings`: master switch, watch settings, appearance, presence, feedback); debug history with hashed keys and grouping. `WatchSettingsRepository` stores only `watch_auto_launch`; the other three `WatchSettings` fields are fixed defaults (see [api-documentation.md](api-documentation.md) "Phone-side Watch Settings"). `EnabledAppRepository` keeps one `supported_app_settings` row per catalog app (keyed by `appId`, `packageName` = the first package) once any of its packages is installed, and enables every package of an enabled app.
 
 ### App Update Check
 - **Location**: update/UpdateCheckRepository.kt, update/AppVersions.kt, update/ReleaseFetcher.kt, update/InstallSource.kt
@@ -133,19 +139,19 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Rule Data and Schemas
 - **Location**: rules/catalog/, rules/bundled/, rules/fixtures/, schemas/, examples/
-- **Responsibility**: catalog of 19 entries (18 navigation apps, 4 of them with official rules, plus the fixture publisher), bundled rulesets per app and language, sanitised fixtures; staged into the APK by Gradle `syncRuleData`.
+- **Responsibility**: catalog of 19 entries (18 navigation apps, 4 of them with official rules, plus the fixture publisher; 26 package names at 1c7f4c1, 25 of them in the manifest `<queries>`), bundled rulesets per app and language, sanitised fixtures; staged into the APK by Gradle `syncRuleData`. Google Maps: 10 files, 150 rules, each listing exactly `["com.google.android.apps.maps"]`, `rulesetVersion` `google-maps-<lang>-<date>` (any 2026.10.16, en and zh 2026.10.19, the seven generated languages 2026.10.4); `fixtures/google-maps.json` has 185 fixtures, all for that package. `schemas/app-catalog.schema.json` allows 1-20 packages per app and no other fields; `schemas/ruleset.schema.json` allows 1-20 packages per rule. Only `schemas/ruleset.schema.json` and `examples/` are MANIFEST-protected here; the catalog, the rules, the fixtures and the catalog schema are not.
 
 ### Rule Workbench
 - **Location**: tools/rule-workbench/
-- **Responsibility**: Python rule inspect/validate/diff/scaffold/sanitize/promote/test/regression, plus localised Google Maps ruleset generation.
+- **Responsibility**: Python rule inspect/validate/diff/scaffold/sanitize/promote/test/regression, plus localised Google Maps ruleset generation. `gen_localized_google_maps.py` rewrites it, fr, es, de, nl, pt and pl in full from a keyword table, with one hard-coded `PACKAGE` (`com.google.android.apps.maps`) and per-language `RULESET_DATES`; it has no options and regenerates every language when run.
 
 ### Route Capture Harness
 - **Location**: tools/route-capture/
-- **Responsibility**: plays fixed routes in an Android emulator, records notifications, checks them against bundled rules, files per-app GitHub issues (#55); includes device helpers (locale setter, icon probe).
+- **Responsibility**: plays fixed routes in an Android emulator, records notifications, checks them against bundled rules, files per-app GitHub issues (#55); includes device helpers (locale setter, icon probe). Its Google Maps adapter and the icon probe know only `com.google.android.apps.maps`.
 
 ### Build and Release Scripts
 - **Location**: scripts/, .githooks/pre-commit, VERSION
-- **Responsibility**: build-all, build-watchapp, test-all, test-watchapp-unit, validate-*, generate-protocol, version sync (`version.sh`), changelog, bootstrap, emulator and install helpers, manual-open E2E; pre-commit gate.
+- **Responsibility**: build-all, build-watchapp, test-all, test-watchapp-unit, validate-*, generate-protocol, version sync (`version.sh`), changelog, bootstrap, emulator and install helpers, manual-open E2E; pre-commit gate. `validate-rules.sh` runs `validate_catalog.py` (catalog schema, then every catalog package except the fixture publisher must appear in the manifest `<queries>`) and `validate_rules.py` (schema of `examples/example-ruleset.json` and every `rules/bundled/**/*.json`); `validate-spec-assets.sh` checks every `MANIFEST.sha256.json` hash.
 
 ### CI Workflows
 - **Location**: .github/workflows/
@@ -153,7 +159,7 @@ Each component lists its location, responsibility and dependencies. The `###` he
 
 ### Distribution Metadata
 - **Location**: fastlane/metadata/android/, fdroid/, watchapp/store/, screenshots/
-- **Responsibility**: F-Droid/fastlane descriptions and per-versionCode changelogs, F-Droid recipe (`Binaries:` = the GitHub APK, `UpdateCheckMode: Tags`) and reproducible-build notes, Pebble store art and watch screenshots. The channels (GitHub, F-Droid, Obtainium, Rebble store, and Google Play planned by #114) are listed in [business-overview.md](business-overview.md). The en-US listing at 6dec020 has a 512x512 icon and three 1080x2280 phone screenshots but no feature graphic; text lengths are within Play's limits (sizes in [code-quality-assessment.md](code-quality-assessment.md) "Play release findings").
+- **Responsibility**: F-Droid/fastlane descriptions and per-versionCode changelogs, F-Droid recipe (`Binaries:` = the GitHub APK, `UpdateCheckMode: Tags`) and reproducible-build notes, Pebble store art and watch screenshots. The channels (GitHub, F-Droid, Obtainium, Rebble store, and Google Play planned by #114) are listed in [business-overview.md](business-overview.md). The en-US listing at 6dec020 has a 512x512 icon and three 1080x2280 phone screenshots but no feature graphic; text lengths are within Play's limits (sizes in [code-quality-assessment.md](code-quality-assessment.md) "Play release findings"). The full description's supported-apps list names Google Maps with its languages and no variants (`full_description.txt:7`).
 
 ### Store and Privacy Documents
 - **Location**: docs/PRIVACY_POLICY.md, docs/PLAY_DATA_SAFETY.md, docs/PRIVACY_REVIEW.md, docs/RELEASE_CHECKLIST.md; normative sources spec/600-security-release/BuildRelease.md, spec/600-security-release/SecurityPrivacy.md, requirements/REQ-SECURITY.md
