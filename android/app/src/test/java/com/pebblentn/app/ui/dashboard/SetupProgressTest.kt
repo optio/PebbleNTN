@@ -26,8 +26,12 @@ class SetupProgressTest {
         assertFalse("installed apps are not repeated", list.any { it.appId == "google-maps" })
         assertFalse("our own test app is never offered", list.any { it.appId == "pebblentn-fixtures" })
         val withDirections = list.takeWhile { it.hasOfficialRules }.map { it.appId }
-        assertEquals(listOf("comaps", "organic-maps", "osmand"), withDirections)
+        // MicroG Maps uses the Google Maps rules (#113), so it has directions too.
+        assertEquals(listOf("comaps", "microg-maps", "organic-maps", "osmand"), withDirections)
         assertTrue("then capture-only apps", list.drop(withDirections.size).none { it.hasOfficialRules })
+        // A Google Play install never offers MicroG Maps (#113).
+        val play = supportedNotInstalled(catalog.forGooglePlay(), installedAppIds = setOf("google-maps"))
+        assertEquals(listOf("comaps", "organic-maps", "osmand"), play.takeWhile { it.hasOfficialRules }.map { it.appId })
     }
 
     @Test

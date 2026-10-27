@@ -17,6 +17,7 @@
          getPackageInfo and so never discovered/enabled. -->
     <queries>
         <package android:name="com.google.android.apps.maps" />
+        <package android:name="app.morphe.android.apps.maps" />
         <package android:name="com.waze" />
         <package android:name="net.osmand" />
         <package android:name="net.osmand.plus" />

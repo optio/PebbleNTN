@@ -61,11 +61,19 @@ class GoogleMapsRulesRegressionTest {
     private data class FixtureFile(val note: String = "", val fixtures: List<Fixture>)
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val engine = RuleEngine()
 
     private fun resource(path: String): String =
         javaClass.getResourceAsStream(path)?.bufferedReader()?.use { it.readText() }
             ?: error("resource not found: $path")
+
+    /**
+     * The engine as the app runs it: with the bundled catalog's rule families, so the
+     * `package-variant-app.morphe.android.apps.maps-*` fixtures (MicroG Maps, #113) get the Google
+     * Maps rules although no rule lists that package.
+     */
+    private val engine = RuleEngine(
+        families = com.pebblentn.app.catalog.NavigationAppCatalog.parse(resource("/catalog/navigation-apps.json")).ruleFamilies(),
+    )
 
     /** Every bundled Google Maps locale; the engine filters by each fixture's locale. */
     private val locales = listOf("en", "it", "fr", "es", "de", "nl", "zh", "pt", "pl")

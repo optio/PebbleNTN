@@ -355,6 +355,8 @@
     <string name="navigation_apps_also_supported_hint">Install one of these and PebbleNTN picks it up automatically.</string>
     <string name="navigation_apps_directions">Turn-by-turn directions</string>
     <string name="navigation_apps_get">Get %1$s</string>
+    <!-- Accessibility action of an app linked to its own website instead of Google Play (#113). -->
+    <string name="navigation_apps_get_website">Open the %1$s website</string>
     <string name="navigation_apps_store_url" translatable="false">https://play.google.com/store/apps/details?id=%1$s</string>
     <!-- Rule authors (#28). -->
     <string name="rule_editor_preview_title">Preview</string>

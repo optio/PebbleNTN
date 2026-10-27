@@ -113,7 +113,7 @@ object RuleOverrides {
     ): RuleOverride? {
         val mineOnly = LayeredRules(user = listOf(rule))
         val taken = captures.asSequence()
-            .filter { it.packageName in rule.packageNames }
+            .filter { engine.appliesTo(rule, it.packageName) }
             .filter { engine.evaluate(it, mineOnly, locale).matched }
             .mapNotNull { engine.evaluate(it, officialLayer, locale).matchedRuleId }
             .distinct()

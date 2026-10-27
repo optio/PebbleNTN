@@ -54,7 +54,18 @@ class AppContainer(context: Context) {
 
     val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
+    val installSource: InstallSource = InstallSources.detect(appContext)
+
+    /**
+     * The navigation-app catalog as this install uses it: on Google Play, apps that are not listed
+     * there (MicroG Maps, #113) join the app whose rules they use and are never shown or linked.
+     */
     val catalog: NavigationAppCatalog = AssetCatalogSource(appContext).load()
+        .let { if (installSource == InstallSource.PLAY) it.forGooglePlay() else it }
+
+    /** Packages that share rules (#113): every rule applies to its whole family. */
+    private val ruleFamilies = catalog.ruleFamilies()
 
     /** Master switch (REQ-ANDROID-011); on by default. */
     val appEnabledRepository = AppEnabledRepository(appContext)
@@ -67,7 +78,7 @@ class AppContainer(context: Context) {
 
     val enabledAppRepository = EnabledAppRepository(database.appEnablementDao(), catalog)
 
-    private val assetRuleRepository = AssetRuleRepository(appContext)
+    private val assetRuleRepository = AssetRuleRepository(appContext, families = ruleFamilies)
 
     val debugHistoryRepository = DebugHistoryRepository(
         database.debugEventDao(),
@@ -89,9 +100,6 @@ class AppContainer(context: Context) {
     val notificationListenerRefresher: NotificationListenerRefresher =
         SystemNotificationListenerRefresher(appContext)
 
-    /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
-    val installSource: InstallSource = InstallSources.detect(appContext)
-
     /** What the update features do for [installSource] (REQ-ANDROID-020, REQ-ANDROID-022). */
     val updatePolicy: UpdatePolicy = UpdatePolicy.forSource(installSource)
 
@@ -106,7 +114,7 @@ class AppContainer(context: Context) {
         installSource = installSource,
     )
 
-    private val ruleEngine = RuleEngine()
+    private val ruleEngine = RuleEngine(families = ruleFamilies)
 
     val userRuleRepository = UserRuleRepository(database.userRuleDao())
 
@@ -127,12 +135,12 @@ class AppContainer(context: Context) {
 
     /** Recognises the maneuver in large icons for apps whose rules map icons (#74). */
     val largeIconRecognizer: com.pebblentn.app.notification.icon.LargeIconRecognizer =
-        com.pebblentn.app.notification.icon.RuleDrivenLargeIconRecognizer(appContext, ruleRepository::current)
+        com.pebblentn.app.notification.icon.RuleDrivenLargeIconRecognizer(appContext, ruleRepository::current, families = ruleFamilies)
 
     /** Bundled official rules, for the Rules screen's official tab. */
     val bundledOfficialRules: List<Rule> get() = assetRuleRepository.current().bundled
 
-    val rulePreviewService = RulePreviewService(localeProvider = { Locale.getDefault().toLanguageTag() })
+    val rulePreviewService = RulePreviewService(engine = ruleEngine, localeProvider = { Locale.getDefault().toLanguageTag() })
 
     val diagnosticExporter = DiagnosticExporter(
         debugHistory = debugHistoryRepository,

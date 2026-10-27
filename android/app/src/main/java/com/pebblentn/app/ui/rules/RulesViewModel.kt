@@ -81,6 +81,9 @@ class RulesViewModel(
      * behind a newer official rule) and other rules that take over notifications an official rule
      * handles, judged on recent captures.
      */
+    /** Judges overrides with the live rule families (#113), as the listener does. */
+    private val overrideEngine = com.pebblentn.app.rules.RuleEngine(families = catalog.ruleFamilies())
+
     val overrides: StateFlow<Map<String, RuleOverride>> =
         combine(userRuleRepository.observeUserRules(), debugHistoryRepository.observeRecent(OVERRIDE_CAPTURES)) { rules, events ->
             RuleOverrides.analyze(
@@ -88,6 +91,7 @@ class RulesViewModel(
                 official = officialRules,
                 captures = events.mapNotNull { it.snapshot },
                 locale = java.util.Locale.getDefault().toLanguageTag(),
+                engine = overrideEngine,
             ).associateBy { it.userRuleId }
         }
             .flowOn(Dispatchers.Default)

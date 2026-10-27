@@ -19,6 +19,9 @@ echo "==> Watchapp C unit tests"
 echo "==> Rule schema validation"
 "$REPO_ROOT/scripts/validate-rules.sh"
 
+echo "==> Catalog validator unit tests"
+python3 -m unittest discover -s "$REPO_ROOT/scripts" -p 'test_validate_catalog.py'
+
 echo "==> Rule regression (rule-workbench)"
 python3 "$REPO_ROOT/tools/rule-workbench/workbench.py" regression
 

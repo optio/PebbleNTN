@@ -57,6 +57,8 @@ fun NavigationAppsScreen(
     /** Supported apps that aren't installed (#28), and how to get one by package name. */
     notInstalled: List<NavigationAppEntry> = emptyList(),
     onGetApp: (String) -> Unit = {},
+    /** Open an app's own website (its catalog `website`, #113), linked instead of Google Play. */
+    onOpenWebsite: (String) -> Unit = {},
     /** Open an app's official rules, pre-filtered (#28); only offered for apps with rules. */
     onViewRules: (String) -> Unit = {},
     /** Language codes the official rules cover, per app id (#28). */
@@ -98,8 +100,9 @@ fun NavigationAppsScreen(
                 NavigationAppRow(
                     app = app,
                     onToggle = { enabled -> onToggle(app.appId, enabled) },
-                    onViewRules = { onViewRules(app.appId) }.takeUnless { app.captureOnly },
-                    languages = languagesByApp[app.appId].orEmpty(),
+                    // An app using another's rules (#113) shows and opens those rules.
+                    onViewRules = { onViewRules(app.rulesAppId) }.takeUnless { app.captureOnly },
+                    languages = languagesByApp[app.rulesAppId].orEmpty(),
                 )
                 HorizontalDivider()
             }
@@ -114,7 +117,12 @@ fun NavigationAppsScreen(
                     )
                 }
                 items(notInstalled, key = { "supported-${it.appId}" }) { entry ->
-                    SupportedAppRow(entry, languagesByApp[entry.appId].orEmpty(), onGet = { onGetApp(entry.packageNames.first()) })
+                    val website = entry.website
+                    SupportedAppRow(
+                        entry,
+                        languagesByApp[entry.rulesAppId].orEmpty(),
+                        onGet = { if (website != null) onOpenWebsite(website) else onGetApp(entry.packageNames.first()) },
+                    )
                     HorizontalDivider()
                 }
             }
@@ -132,10 +140,16 @@ private fun SectionTitle(text: String) {
     )
 }
 
-/** A supported app that isn't installed: what PebbleNTN does with it, and a link to get it. */
+/**
+ * A supported app that isn't installed: what PebbleNTN does with it, and a link to get it — Google
+ * Play, or the app's own website when the catalog names one (#113).
+ */
 @Composable
 private fun SupportedAppRow(entry: NavigationAppEntry, languages: List<String>, onGet: () -> Unit) {
-    val action = stringResource(R.string.navigation_apps_get, entry.displayName)
+    val action = stringResource(
+        if (entry.website != null) R.string.navigation_apps_get_website else R.string.navigation_apps_get,
+        entry.displayName,
+    )
     ListItem(
         modifier = Modifier.clickable(role = Role.Button, onClickLabel = action, onClick = onGet),
         headlineContent = { Text(entry.displayName) },

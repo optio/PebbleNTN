@@ -1,6 +1,8 @@
 # rules
 
-- `catalog/`   — bundled navigation-app catalog entries (app id, packages, capture/official flags).
+- `catalog/`   — bundled navigation-app catalog entries (app id, packages, capture/official flags;
+  optionally `rulesFrom`, `website`, `playListed`). An entry with `rulesFrom` (MicroG Maps →
+  `google-maps`) uses that app's rules through its rule family and has no `bundled/<appId>/` folder.
 - `bundled/`   — official rulesets shipped in the app, organized **per app then per language**:
   `bundled/<app>/<language>.json` (e.g. `bundled/google-maps/en.json`). The app loads every
   `.json` under `bundled/` recursively and flattens the rules into one bundled layer, and the Rules

@@ -271,10 +271,33 @@ def run_extractor(ext: dict, snap: dict):
     return None
 
 
-def evaluate(snap: dict, rules: list, locale: str):
+CATALOG = REPO_ROOT / "rules" / "catalog" / "navigation-apps.json"
+
+
+def rule_families(catalog_path: Path = CATALOG) -> dict[str, set[str]]:
+    """Package -> every package sharing its rules (#113), mirroring NavigationAppCatalog.ruleFamilies.
+
+    An app's family is its own packages plus those of every entry whose `rulesFrom` names it.
+    """
+    apps = json.loads(catalog_path.read_text(encoding="utf-8")).get("apps", [])
+    groups: dict[str, set[str]] = {}
+    for app in apps:
+        groups.setdefault(app.get("rulesFrom") or app["appId"], set()).update(app.get("packageNames", []))
+    return {pkg: group for group in groups.values() for pkg in group}
+
+
+def rule_applies(package: str | None, rule: dict, families: dict[str, set[str]] | None) -> bool:
+    """Mirror RuleFamilies.applies: the package, or any package of its family, is listed by the rule."""
+    listed = rule.get("packageNames", [])
+    if package in listed:
+        return True
+    return any(p in listed for p in (families or {}).get(package, ()))
+
+
+def evaluate(snap: dict, rules: list, locale: str, families: dict[str, set[str]] | None = None):
     ordered = sorted(rules, key=lambda r: (-r.get("priority", 0), r.get("id", "")))
     for rule in ordered:
-        if snap.get("packageName") not in rule.get("packageNames", []):
+        if not rule_applies(snap.get("packageName"), rule, families):
             continue
         if not rule.get("enabled", True):
             continue
@@ -329,12 +352,14 @@ def check_fixture(result: dict | None, expected: dict) -> str | None:
     return None
 
 
-def run_fixtures(rules: list, fixtures: list) -> int:
+def run_fixtures(rules: list, fixtures: list, families: dict[str, set[str]] | None = None) -> int:
+    if families is None:
+        families = rule_families() if CATALOG.exists() else {}
     failures = 0
     for fx in fixtures:
         snap = dict(fx["snapshot"])
         snap["packageName"] = fx["packageName"]
-        result = evaluate(snap, rules, fx.get("locale", "en"))
+        result = evaluate(snap, rules, fx.get("locale", "en"), families)
         reason = check_fixture(result, fx["expected"])
         if reason is None:
             print(f"  PASS  {fx['name']:32} -> {result}")

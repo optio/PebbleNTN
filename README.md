@@ -18,6 +18,7 @@ Turn-by-turn directions from your phone's nav app, on your pebble.
 PebbleNTN reads your navigation app's notifications and shows the next turn, distance, road, and ETA on your Pebble. No need to reach for your phone!
 
 - Google Maps supported now, more coming soon
+- MicroG Maps ([Google Maps patched for microG](https://github.com/fangkampanat/gmaps-patches)), with the Google Maps rules
 - Walking and public-transit directions (Google Maps, English)
 - Automatic watchapp launch when navigation starts (configurable in companion app settings)
 - Accent colours, light/dark, and three arrow styles

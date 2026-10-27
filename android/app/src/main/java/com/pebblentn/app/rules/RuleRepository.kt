@@ -1,6 +1,7 @@
 package com.pebblentn.app.rules
 
 import android.content.Context
+import com.pebblentn.app.catalog.RuleFamilies
 
 /** Supplies the active rules, grouped by precedence layer, to the engine. */
 fun interface RuleRepository {
@@ -17,6 +18,8 @@ fun interface RuleRepository {
 class AssetRuleRepository(
     private val context: Context,
     private val onParseError: (String, Throwable) -> Unit = { _, _ -> },
+    /** Packages that share rules (#113), for [rulesetVersions]. */
+    private val families: RuleFamilies = RuleFamilies.NONE,
 ) : RuleRepository {
 
     private val rulesets: List<Ruleset> by lazy { loadBundled() }
@@ -25,7 +28,7 @@ class AssetRuleRepository(
     override fun current(): LayeredRules = LayeredRules(bundled = bundled)
 
     /** The versions of the bundled rulesets holding a rule for [packageName] (recorded per debug event, #84). */
-    fun rulesetVersions(packageName: String): List<String> = rulesetVersionsFor(rulesets, packageName)
+    fun rulesetVersions(packageName: String): List<String> = rulesetVersionsFor(rulesets, packageName, families)
 
     private fun loadBundled(): List<Ruleset> {
         val assets = context.assets
@@ -64,8 +67,15 @@ class AssetRuleRepository(
     companion object {
         private const val BUNDLED_DIR = "rules/bundled"
 
-        /** The versions of the [rulesets] that hold at least one rule for [packageName], in load order. */
-        fun rulesetVersionsFor(rulesets: List<Ruleset>, packageName: String): List<String> =
-            rulesets.filter { set -> set.rules.any { packageName in it.packageNames } }.map { it.rulesetVersion }
+        /**
+         * The versions of the [rulesets] that hold at least one rule for [packageName], in load order;
+         * a rule counts when it applies to the package's rule family ([families], #113).
+         */
+        fun rulesetVersionsFor(
+            rulesets: List<Ruleset>,
+            packageName: String,
+            families: RuleFamilies = RuleFamilies.NONE,
+        ): List<String> =
+            rulesets.filter { set -> set.rules.any { families.applies(packageName, it.packageNames) } }.map { it.rulesetVersion }
     }
 }
