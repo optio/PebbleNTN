@@ -1,6 +1,91 @@
 # Implementation Status
 
-_Last updated: 2026-10-27_
+_Last updated: 2026-10-28_
+
+## MicroG Maps turn arrows on icon-only cards (2026-10-28, #113 follow-up)
+
+**Milestone:** post-M12 fix of the large-icon recognition (#74) for rule families (#113). Shipped as
+v0.0.79 by the release workflow on merge; versionCode/versionName are not changed here (78 / 0.0.78).
+
+**Requirements being implemented.**
+- FR1: the rule families record each `rulesFrom` package's root package (the first package of the
+  app whose rules it uses), outside Play and in the `forGooglePlay()` view, whatever the catalog
+  order. `familyOf` / `applies` are unchanged.
+- FR2: `AppIconReferences` looks a drawable up under the posting package first, then under that
+  root package name, in the posting app's own context only; the first hit wins and the cache key is
+  unchanged. Other apps (CoMaps, Organic Maps, OsmAnd variants, unknown packages) get no retry.
+- FR3: released as v0.0.79 through the normal release workflow.
+
+**What changed.**
+- `RuleFamilies` records a root package per `rulesFrom` package and exposes
+  `resourceFallbackFor(pkg)` (null for every other package, the root included); `of(groups, roots)`
+  rejects a root outside the package's family. `ruleFamilies()` takes the root from the `rulesFrom`
+  target's first package; `forGooglePlay()` records each joined package's root (the entry's first
+  package) in the catalog's `@Transient joinedRoots`, so the Play view keeps it although it has no
+  `rulesFrom` left.
+- New pure `resourcePackagesToTry(posting, families)` (`notification/icon/IconResourcePackages.kt`).
+  `AppIconReferences(context, families, identifiers)` tries each name under those packages in the
+  posting app's context, through an injectable `DrawableIdentifiers` lookup (default
+  `Resources.getIdentifier`); the cache key is unchanged. `AppContainer` gives it the same families.
+- Tests: four in `NavigationAppCatalogTest`, `IconResourcePackagesTest` (5),
+  `AppIconReferencesTest` (Robolectric, 5).
+
+**Library versions.** No new library.
+
+**Commands executed.** `android/gradlew -p android :app:testDebugUnitTest --tests
+'com.pebblentn.app.catalog.*' --tests 'com.pebblentn.app.notification.*'` (baseline 63 tests, 0
+failures; after the change 77, 0 failures); `scripts/test-all.sh` (exit 0; debug and release unit
+tests 551 each, 0 failures, 4 skipped; lint without new issues); `android/gradlew -p android
+:app:assembleDebug`.
+
+**Known blockers.** No Android emulator (no KVM in WSL) and no phone with MicroG Maps: JVM and
+Robolectric tests only. Whether the patched app kept `com.google.android.apps.maps` as its resource
+package name can only be seen on a device (debug history "no match: no references" means the lookup
+still missed).
+
+**Next atomic task.** Build and Test, then the v0.0.79 release on merge.
+
+### Revision 1 — user-added package names (2026-10-28, FR4–FR7)
+
+**Requirements being implemented.** REQ-ANDROID-023 amended ("User-added package names") and the
+new REQ-DEBUG-014 ("Packages in exports"); `spec/300-data/ExportFormat.md` gains "User-added
+packages (schema 4)"; `MANIFEST.sha256.json` resynced.
+- FR4: a "Packages" link next to "View its rules" for every app with rules, installed or under "Also
+  supported" (accessibility label "Package names for <app>"); on Google Play only listed apps, so
+  never MicroG Maps.
+- FR5: the Packages screen: built-in names locked, user-added ones removable, an add field with inline
+  refusal messages (format; a name used by any app, built in or user-added). Stored in private
+  SharedPreferences (`pebblentn_custom_packages`), so they survive restarts and updates.
+- FR6: the effective catalog (`catalog/EffectiveCatalog.kt`): the bundled catalog with each app's
+  user-added packages after its own, then the Play view. It feeds the rule families (a live
+  `RuleFamilies.live` view; `RuleFamilies` is now an interface), enablement/allowlist, discovery, the
+  install receiver and the debug labels; a change re-renders the icon references and re-runs
+  discovery, no restart. A user-added package counts its app as installed and gets the icon fallback
+  under the app's first built-in package. No `QUERY_ALL_PACKAGES`.
+- FR7: export schema 4: `metadata.userAddedPackages` per app id, and `customPackage: true` on events
+  from a user-added package (no field for built-in ones), as of export time.
+
+**Library versions.** No new library.
+
+**Commands executed.** `android/gradlew -p android :app:testDebugUnitTest --tests …` per layer (the
+validator and repository, the effective catalog, the UI, the export); `scripts/validate-spec-assets.sh`;
+`scripts/test-all.sh`; `android/gradlew -p android :app:assembleDebug`. One incremental compile after
+`RuleFamilies` became an interface left stale Compose stability bytecode (`NoSuchFieldError
+RuleFamilies.$stable` in `RulePreviewService`), which the Gradle build cache then restored after a
+clean; `--no-build-cache` with `:app:clean` fixed it. A fresh checkout (CI) is not affected.
+
+**Known blockers.** No emulator or phone with a renamed MicroG build: JVM and Robolectric only.
+
+**Next atomic task.** Build and Test, then the v0.0.79 release on merge.
+
+### Revision 2 — case-sensitive package names (2026-10-28)
+
+Android package names are case-sensitive, so a user-added name is now only trimmed and stored
+exactly as typed (`com.baidu.BaiduMap` keeps its capitals and matches); the duplicate check across
+every built-in and user-added package stays case-insensitive (`com.baidu.baidumap` is then refused).
+The format accepts capitals. REQ-ANDROID-023 reworded, `MANIFEST.sha256.json` resynced. The Google
+Play hiding of MicroG Maps is unchanged (policy risk). Commands: the catalog/UI test packages,
+`scripts/validate-spec-assets.sh`, `scripts/test-all.sh`.
 
 ## MicroG Maps as a Google Maps variant (2026-10-27, #113)
 

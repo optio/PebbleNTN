@@ -76,6 +76,52 @@ class ExportBuilderTest {
         assertTrue(out.contains("Turn right"))
     }
 
+    // --- FR7: user-added packages -----------------------------------------------------------------
+
+    private val customPackage = "app.revanced.android.apps.maps"
+
+    private val userAdded = mapOf("microg-maps" to listOf(customPackage), "osmand" to listOf("net.osmand.patched"))
+
+    private fun exported(mode: ExportMode, added: Map<String, List<String>> = userAdded) = Json.parseToJsonElement(
+        builder.build(
+            mode,
+            emptyList(),
+            listOf(event, event.copy(id = 2, packageName = customPackage, snapshot = event.snapshot?.copy(packageName = customPackage))),
+            appVersion = "0.0.79",
+            androidRelease = "15",
+            exportedAt = "2026-10-28T00:00:00Z",
+            userAddedPackages = added,
+        ),
+    ).jsonObject
+
+    @Test
+    fun anEventFromAUserAddedPackageIsFlaggedCustomAndABuiltInOneIsNot() {
+        for (mode in listOf(ExportMode.PRIVACY_SAFE, ExportMode.FULL)) {
+            val (builtIn, custom) = exported(mode).getValue("events").jsonArray.map { it.jsonObject }
+            assertEquals("com.google.android.apps.maps", builtIn.getValue("packageName").jsonPrimitive.content)
+            assertFalse("no flag on a built-in package", "customPackage" in builtIn)
+            assertEquals(customPackage, custom.getValue("packageName").jsonPrimitive.content)
+            assertEquals("true", custom.getValue("customPackage").jsonPrimitive.content)
+        }
+    }
+
+    @Test
+    fun theHeaderListsTheUserAddedPackagesPerAppInEveryMode() {
+        for (mode in ExportMode.entries) {
+            val listed = exported(mode).getValue("metadata").jsonObject.getValue("userAddedPackages").jsonObject
+            assertEquals(setOf("microg-maps", "osmand"), listed.keys)
+            assertEquals(listOf(customPackage), listed.getValue("microg-maps").jsonArray.map { it.jsonPrimitive.content })
+            assertEquals(listOf("net.osmand.patched"), listed.getValue("osmand").jsonArray.map { it.jsonPrimitive.content })
+        }
+    }
+
+    @Test
+    fun withoutUserAddedPackagesTheHeaderListIsEmptyAndNoEventIsFlagged() {
+        val root = exported(ExportMode.FULL, added = emptyMap())
+        assertTrue(root.getValue("metadata").jsonObject.getValue("userAddedPackages").jsonObject.isEmpty())
+        assertTrue(root.getValue("events").jsonArray.none { "customPackage" in it.jsonObject })
+    }
+
     @Test
     fun metadataRecordsMode() {
         assertTrue(build(ExportMode.FULL).contains("\"mode\": \"FULL\""))
@@ -97,7 +143,7 @@ class ExportBuilderTest {
                 builder.build(mode, emptyList(), listOf(recorded), appVersion = "0.0.60", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z", appVersionCode = 60),
             ).jsonObject
             val metadata = root.getValue("metadata").jsonObject
-            assertEquals(3L, metadata.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals(4L, metadata.getValue("schemaVersion").jsonPrimitive.long)
             assertEquals(60L, metadata.getValue("appVersionCode").jsonPrimitive.long)
             // Version strings are not personal data: privacy-safe keeps them unredacted.
             val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject

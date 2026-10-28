@@ -51,6 +51,8 @@ class RulesViewModel(
     private val previewService: RulePreviewService,
     private val catalog: NavigationAppCatalog,
     val officialRules: List<Rule>,
+    /** The live rule families (user-added packages included); by default the [catalog]'s. */
+    private val families: com.pebblentn.app.catalog.RuleFamilies = catalog.ruleFamilies(),
 ) : ViewModel() {
 
     /**
@@ -82,7 +84,7 @@ class RulesViewModel(
      * handles, judged on recent captures.
      */
     /** Judges overrides with the live rule families (#113), as the listener does. */
-    private val overrideEngine = com.pebblentn.app.rules.RuleEngine(families = catalog.ruleFamilies())
+    private val overrideEngine = com.pebblentn.app.rules.RuleEngine(families = families)
 
     val overrides: StateFlow<Map<String, RuleOverride>> =
         combine(userRuleRepository.observeUserRules(), debugHistoryRepository.observeRecent(OVERRIDE_CAPTURES)) { rules, events ->

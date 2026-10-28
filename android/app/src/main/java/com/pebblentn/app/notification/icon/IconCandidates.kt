@@ -18,7 +18,7 @@ object IconCandidates {
     /**
      * Drawable name → maneuver for [packageName]; empty when no enabled rule maps icons. The rules of
      * the package's whole [families] family count (#113), so MicroG Maps gets the Google Maps table;
-     * the drawables are still looked up in [packageName] itself ([AppIconReferences]).
+     * the drawables are still read from [packageName]'s own context ([AppIconReferences]).
      */
     fun forPackage(rules: LayeredRules, packageName: String, families: RuleFamilies = RuleFamilies.NONE): Map<String, String> {
         val out = LinkedHashMap<String, String>()

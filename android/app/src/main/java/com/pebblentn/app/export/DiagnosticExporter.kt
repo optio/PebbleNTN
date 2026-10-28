@@ -34,6 +34,8 @@ class DiagnosticExporter(
     private val androidRelease: String = Build.VERSION.RELEASE ?: "unknown",
     private val now: () -> String = { Instant.now().toString() },
     private val locale: () -> String = { java.util.Locale.getDefault().toLanguageTag() },
+    /** The user-added package names per app id at export time (FR7). */
+    private val userAddedPackages: () -> Map<String, List<String>> = { emptyMap() },
 ) {
     suspend fun build(mode: ExportMode): String {
         val rules = userRules.observeUserRules().first().mapNotNull { it.rule }
@@ -47,6 +49,7 @@ class DiagnosticExporter(
             exportedAt = now(),
             locale = locale(),
             appVersionCode = appVersionCode,
+            userAddedPackages = userAddedPackages(),
         )
     }
 
@@ -66,6 +69,7 @@ class DiagnosticExporter(
         val exportedAt = now()
 
         val localeTag = locale()
+        val added = userAddedPackages()
         fun render(events: List<DebugEvent>): String = builder.build(
             mode = mode,
             userRules = rules,
@@ -75,6 +79,7 @@ class DiagnosticExporter(
             exportedAt = exportedAt,
             locale = localeTag,
             appVersionCode = appVersionCode,
+            userAddedPackages = added,
         )
 
         fun fits(json: String): Boolean = json.toByteArray(Charsets.UTF_8).size <= maxBytes

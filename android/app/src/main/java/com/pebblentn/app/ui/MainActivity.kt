@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
                         previewService = container.rulePreviewService,
                         catalog = container.catalog,
                         officialRules = container.bundledOfficialRules,
+                        families = container.ruleFamilies,
                     )
                 }
             },
@@ -300,6 +301,7 @@ class MainActivity : ComponentActivity() {
             composable("navigation-apps") {
                 val navigationApps by container.enabledAppRepository.observeEnablement()
                     .collectAsState(initial = emptyList())
+                val catalog by container.effectiveCatalog.catalog.collectAsState()
                 // An uninstalled app keeps its row; it is listed with the apps that aren't installed.
                 val installedApps = navigationApps.filter { it.installed }
                 NavigationAppsScreen(
@@ -307,7 +309,7 @@ class MainActivity : ComponentActivity() {
                     onToggle = ::setNavigationAppEnabled,
                     onBack = { navController.popBackStack() },
                     notInstalled = com.pebblentn.app.catalog.supportedNotInstalled(
-                        container.catalog,
+                        catalog,
                         installedApps.map { it.appId }.toSet(),
                     ),
                     onGetApp = { pkg -> openUrl(getString(R.string.navigation_apps_store_url, pkg)) },
@@ -315,7 +317,32 @@ class MainActivity : ComponentActivity() {
                     onOpenWebsite = ::openUrl,
                     onViewRules = { appId -> navController.navigate("rules?app=$appId") },
                     languagesByApp = rulesViewModel.languagesByApp,
+                    // Only listed apps are offered, so never MicroG Maps on Google Play (FR4).
+                    onOpenPackages = { appId -> navController.navigate("app-packages/$appId") },
                 )
+            }
+            composable(
+                route = "app-packages/{appId}",
+                arguments = listOf(navArgument("appId") { type = NavType.StringType }),
+            ) { entry ->
+                val appId = entry.arguments?.getString("appId").orEmpty()
+                val effective = container.effectiveCatalog
+                // Recompose with every added or removed package.
+                val catalog by effective.catalog.collectAsState()
+                val app = effective.builtIn.apps.firstOrNull { it.appId == appId && it.hasOfficialRules }
+                if (app == null) {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                } else {
+                    com.pebblentn.app.ui.apps.AppPackagesScreen(
+                        appName = app.displayName,
+                        builtIn = app.packageNames,
+                        userAdded = catalog.userAddedByApp()[appId].orEmpty(),
+                        onAdd = { input -> container.addCustomPackage(appId, input) },
+                        onRemove = { pkg -> container.removeCustomPackage(appId, pkg) },
+                        onBack = { navController.popBackStack() },
+                        ownerName = effective::displayNameOf,
+                    )
+                }
             }
             composable(
                 route = "rules?app={app}",

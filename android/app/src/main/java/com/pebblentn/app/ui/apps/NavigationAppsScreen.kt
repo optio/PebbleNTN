@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.pebblentn.app.R
 import com.pebblentn.app.catalog.NavigationAppEntry
@@ -63,6 +65,11 @@ fun NavigationAppsScreen(
     onViewRules: (String) -> Unit = {},
     /** Language codes the official rules cover, per app id (#28). */
     languagesByApp: Map<String, List<String>> = emptyMap(),
+    /**
+     * Open an app's package names (FR4), by app id; offered for every app with rules, installed or
+     * not, so an installed app that wasn't detected can be set up. Null offers no link.
+     */
+    onOpenPackages: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -103,6 +110,7 @@ fun NavigationAppsScreen(
                     // An app using another's rules (#113) shows and opens those rules.
                     onViewRules = { onViewRules(app.rulesAppId) }.takeUnless { app.captureOnly },
                     languages = languagesByApp[app.rulesAppId].orEmpty(),
+                    onOpenPackages = onOpenPackages?.let { open -> { open(app.appId) } }?.takeUnless { app.captureOnly },
                 )
                 HorizontalDivider()
             }
@@ -122,6 +130,7 @@ fun NavigationAppsScreen(
                         entry,
                         languagesByApp[entry.rulesAppId].orEmpty(),
                         onGet = { if (website != null) onOpenWebsite(website) else onGetApp(entry.packageNames.first()) },
+                        onOpenPackages = onOpenPackages?.let { open -> { open(entry.appId) } }?.takeIf { entry.hasOfficialRules },
                     )
                     HorizontalDivider()
                 }
@@ -145,11 +154,17 @@ private fun SectionTitle(text: String) {
  * Play, or the app's own website when the catalog names one (#113).
  */
 @Composable
-private fun SupportedAppRow(entry: NavigationAppEntry, languages: List<String>, onGet: () -> Unit) {
+private fun SupportedAppRow(
+    entry: NavigationAppEntry,
+    languages: List<String>,
+    onGet: () -> Unit,
+    onOpenPackages: (() -> Unit)? = null,
+) {
     val action = stringResource(
         if (entry.website != null) R.string.navigation_apps_get_website else R.string.navigation_apps_get,
         entry.displayName,
     )
+    Column {
     ListItem(
         modifier = Modifier.clickable(role = Role.Button, onClickLabel = action, onClick = onGet),
         headlineContent = { Text(entry.displayName) },
@@ -166,6 +181,18 @@ private fun SupportedAppRow(entry: NavigationAppEntry, languages: List<String>, 
         },
         trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
     )
+    // Outside the clickable row, so it doesn't open the store.
+    onOpenPackages?.let { PackagesLink(entry.displayName, it, Modifier.padding(start = 8.dp)) }
+    }
+}
+
+/** The "Packages" link (FR4); its accessibility label names the app. */
+@Composable
+private fun PackagesLink(appName: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val label = stringResource(R.string.cd_navigation_apps_packages, appName)
+    TextButton(onClick = onClick, modifier = modifier.semantics { contentDescription = label }) {
+        Text(stringResource(R.string.navigation_apps_packages))
+    }
 }
 
 @Composable
@@ -174,6 +201,7 @@ private fun NavigationAppRow(
     onToggle: (Boolean) -> Unit,
     onViewRules: (() -> Unit)?,
     languages: List<String>,
+    onOpenPackages: (() -> Unit)? = null,
 ) {
     Column {
     // The whole row toggles, so TalkBack reads the app name with the switch state and a tap on the
@@ -213,10 +241,15 @@ private fun NavigationAppRow(
         }
         Switch(checked = app.enabled, onCheckedChange = null)
     }
-    // Outside the toggle row, so it can't flip the switch.
-    onViewRules?.let {
-        TextButton(onClick = it, modifier = Modifier.padding(start = 8.dp)) {
-            Text(stringResource(R.string.navigation_apps_view_rules))
+    // Outside the toggle row, so they can't flip the switch.
+    if (onViewRules != null || onOpenPackages != null) {
+        Row(modifier = Modifier.padding(start = 8.dp)) {
+            onViewRules?.let {
+                TextButton(onClick = it) {
+                    Text(stringResource(R.string.navigation_apps_view_rules))
+                }
+            }
+            onOpenPackages?.let { PackagesLink(app.displayName, it) }
         }
     }
     }

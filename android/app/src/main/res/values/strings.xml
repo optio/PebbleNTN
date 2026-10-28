@@ -374,6 +374,28 @@
     <string name="undo">Undo</string>
     <string name="debug_share_event">Share this event</string>
     <string name="navigation_apps_view_rules">View its rules</string>
+    <!-- User-added package names per navigation app (#113 follow-up, REQ-ANDROID-023). -->
+    <string name="navigation_apps_packages">Packages</string>
+    <string name="cd_navigation_apps_packages">Package names for %1$s</string>
+    <string name="app_packages_title">%1$s packages</string>
+    <string name="app_packages_explanation">PebbleNTN recognises %1$s by these package names. If your version of the app uses another one, add it here.</string>
+    <string name="app_packages_limit">Android may not let PebbleNTN see an added package as installed or read its turn arrows. Its notifications are still recognised by their text.</string>
+    <string name="app_packages_built_in_title">Default package names</string>
+    <string name="app_packages_built_in">Built in, can\'t be removed</string>
+    <string name="app_packages_added_title">Added by you</string>
+    <string name="app_packages_added">Yours, can be removed</string>
+    <string name="app_packages_added_none">No package names added yet.</string>
+    <string name="app_packages_add_label">Package name</string>
+    <string name="app_packages_add_placeholder" translatable="false">com.example.maps</string>
+    <string name="app_packages_add">Add</string>
+    <string name="cd_app_packages_remove">Remove %1$s</string>
+    <string name="app_packages_error_empty">Enter a package name.</string>
+    <string name="app_packages_error_too_long">This package name is too long.</string>
+    <string name="app_packages_error_format">This isn\'t a package name. Use at least two parts separated by dots, each starting with a letter followed by letters, digits or underscores, like com.example.maps.</string>
+    <string name="app_packages_error_built_in_here">This is already one of the default package names.</string>
+    <string name="app_packages_error_built_in_elsewhere">This is a default package name of %1$s. A package name can belong to only one app.</string>
+    <string name="app_packages_error_added_here">This package name is already added.</string>
+    <string name="app_packages_error_added_elsewhere">This package name is already added to %1$s. A package name can belong to only one app.</string>
     <!-- Leftovers of #28, part 2. -->
     <string name="dashboard_watch">Watch</string>
     <string name="dashboard_watch_checking">Checking…</string>

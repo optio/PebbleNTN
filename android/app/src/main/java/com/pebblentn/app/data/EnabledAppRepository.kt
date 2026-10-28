@@ -1,12 +1,14 @@
 package com.pebblentn.app.data
 
 import com.pebblentn.app.catalog.NavigationAppCatalog
+import com.pebblentn.app.catalog.NavigationAppEntry
 import com.pebblentn.app.core.AppAllowlist
 import com.pebblentn.app.core.EpochClock
 import com.pebblentn.app.data.db.AppEnablementDao
 import com.pebblentn.app.data.db.SupportedAppSettingsEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 
 /**
@@ -18,15 +20,27 @@ import kotlinx.coroutines.flow.combine
  * whenever enablement changes; callers must [refreshCache] (or [syncInstalledApps]) at least once
  * on startup before relying on the gate.
  *
- * Enablement follows the [catalog] it is given: on a Google Play install that is
+ * Enablement follows the catalog it is given: on a Google Play install that is
  * [NavigationAppCatalog.forGooglePlay], where MicroG Maps' package belongs to the Google Maps entry,
- * so the Google Maps switch gates it (#113).
+ * so the Google Maps switch gates it (#113). The catalog may change at runtime (user-added packages,
+ * [com.pebblentn.app.catalog.EffectiveCatalog]): every call reads its current value, and the owner
+ * re-runs [syncInstalledApps] when it changes. An app with a user-added package counts as installed:
+ * Android may not let PebbleNTN see that package, and the user said it is there.
  */
 class EnabledAppRepository(
     private val dao: AppEnablementDao,
-    private val catalog: NavigationAppCatalog,
+    private val catalogs: StateFlow<NavigationAppCatalog>,
     private val clock: EpochClock = EpochClock.SYSTEM,
 ) : AppAllowlist {
+
+    /** A repository over a fixed [catalog]. */
+    constructor(dao: AppEnablementDao, catalog: NavigationAppCatalog, clock: EpochClock = EpochClock.SYSTEM) :
+        this(dao, MutableStateFlow(catalog), clock)
+
+    private val catalog: NavigationAppCatalog get() = catalogs.value
+
+    private fun NavigationAppCatalog.hasUserAdded(entry: NavigationAppEntry): Boolean =
+        entry.packageNames.any(::isUserAdded)
 
     @Volatile
     private var enabledPackages: Set<String> = emptySet()
@@ -52,8 +66,9 @@ class EnabledAppRepository(
     suspend fun syncInstalledApps(installedPackages: Set<String>) {
         this.installedPackages.value = installedPackages
         val now = clock.nowMillis()
+        val catalog = catalog
         for (entry in catalog.apps) {
-            if (entry.packageNames.any { it in installedPackages }) {
+            if (entry.packageNames.any { it in installedPackages } || catalog.hasUserAdded(entry)) {
                 dao.insertIfAbsent(
                     SupportedAppSettingsEntity(
                         appId = entry.appId,
@@ -89,7 +104,7 @@ class EnabledAppRepository(
      * settings UI. Before the first sync every app counts as installed, as nothing is known yet.
      */
     fun observeEnablement(): Flow<List<AppEnablement>> =
-        combine(dao.observeAll(), installedPackages) { rows, installed ->
+        combine(dao.observeAll(), installedPackages, catalogs) { rows, installed, catalog ->
             val byAppId = rows.associateBy { it.appId }
             catalog.apps.mapNotNull { entry ->
                 val row = byAppId[entry.appId] ?: return@mapNotNull null
@@ -99,7 +114,7 @@ class EnabledAppRepository(
                     packageNames = entry.packageNames,
                     enabled = row.enabled,
                     captureOnly = entry.captureOnly,
-                    installed = installed == null || entry.packageNames.any { it in installed },
+                    installed = installed == null || entry.packageNames.any { it in installed } || catalog.hasUserAdded(entry),
                     rulesAppId = entry.rulesAppId,
                 )
             }
