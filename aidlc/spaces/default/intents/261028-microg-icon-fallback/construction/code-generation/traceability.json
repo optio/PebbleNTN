@@ -1,0 +1,16 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5", "FR6", "FR7", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/catalog/NavigationAppCatalog.kt" },
+    { "id": "FR2", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/notification/icon/AppIconReferences.kt" },
+    { "id": "FR3", "status": "Deferred", "target": "Deployment: the release workflow makes v0.0.79 on merge; versionCode/versionName are not changed in Code Generation" },
+    { "id": "FR4", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/apps/NavigationAppsScreen.kt" },
+    { "id": "FR5", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/apps/AppPackagesScreen.kt" },
+    { "id": "FR6", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/catalog/EffectiveCatalog.kt" },
+    { "id": "FR7", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/export/ExportBuilder.kt" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/rules/RuleFamiliesMatchingTest.kt" },
+    { "id": "NFR2", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/notification/icon/IconResourcePackages.kt" },
+    { "id": "NFR3", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/catalog/EffectiveCatalogTest.kt" }
+  ]
+}

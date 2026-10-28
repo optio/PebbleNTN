@@ -34,7 +34,12 @@ PebbleNTN ("Pebble Notification To Navigation") puts turn-by-turn directions fro
 
 Because the watchapp auto-updates from the store while the phone app needs a manual update, the watch is usually ahead of the phone. Both share one version line (see [dependencies.md](dependencies.md)).
 
-## Business Context for the Active Intent (261026-microg-maps)
+## Business Context for the Active Intent (261028-microg-icon-fallback)
+
+A follow-up to #113 (shipped in v0.0.78 as the `microg-maps` catalog entry with `rulesFrom: google-maps`). Google Maps' classic card carries the turn only in its large icon, which PebbleNTN recognises by loading Google Maps' own `maneuver_*` drawables by name from the posting app. If the Morphe patch kept `com.google.android.apps.maps` as the resource-table package name, the lookup under `app.morphe.android.apps.maps` finds nothing and MicroG Maps users see the neutral fallback arrow (with distance, road and ETA) instead of the turn. The planned fix retries the lookup with the Google Maps package name in the same MicroG Maps package context. The users are the same de-Googled Google Maps users as #113. Detail: [code-quality-assessment.md](code-quality-assessment.md), "MicroG icon fallback findings".
+
+## Earlier Intent Context (261026-microg-maps, shipped in v0.0.78)
+
 
 GitHub issue #113 ("Request: Compatibility with Microg Maps", reported on app version 0.7.7) asks for MicroG Maps: Google Maps re-packaged to run with microG instead of Google Play services. The "Google Maps for MicroG-RE" Morphe patch produces it under the package `app.morphe.android.apps.maps`. The reporter notes it is "just google maps, same navigation" and suggests a custom package name setting; the maintainer answered on the issue that it will become an alias of Google Maps so the existing Google Maps rules apply. The decision for this intent: add the package to the Google Maps catalog entry as a variant, with every Google Maps rule (all languages, `any.json`, the icon mapping) and the regression behaviour applying to it. There is no custom-package feature.
 
@@ -92,4 +97,6 @@ Earlier intent (`261022-version-compare-update`, shipped): #94 told users about 
 - **Watchapp version (last seen)**: the `APP_VERSION` from the last genuine `WATCH_READY` the phone received, persisted as `watch_app_version`; null when none ever arrived.
 - **Catalog entry**: one supported navigation app in `rules/catalog/navigation-apps.json` (`appId`, display name, package names, official-rules and default flags). Settings, enablement and the Navigation apps screen work per entry.
 - **Package variant**: another Android package name of the same navigation app (an F-Droid, GitHub, nightly, AppGallery or patched build). It is listed in the app's catalog entry and in every rule of that app, and behaves exactly like the main package.
+- **Rule family** (#113): the packages that share one app's rules: the app's own packages plus those of every catalog entry whose `rulesFrom` names it (`RuleFamilies`). A rule applies to any package of its family.
+- **Root package** (proposed, this intent): the first package of the entry whose rules a family uses (`com.google.android.apps.maps` for the Google Maps family); not recorded in code at 2fa2aa5.
 - **MicroG Maps**: Google Maps re-packaged by the "Google Maps for MicroG-RE" Morphe patch to run with microG; package `app.morphe.android.apps.maps` (#113).

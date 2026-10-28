@@ -33,7 +33,7 @@
 | `update/` | Service + Adapter | `UpdateCheckRepository` (also the stored watchapp version), `AppVersions` (tolerant and strict compare), `InstallSource`/`InstallSources` (v0.0.73), `ReleaseFetcher`/`GitHubReleaseFetcher`, `RuleUpdateRepository`, signature verifier |
 | `export/` | Service | export builder, redactor, exporter, share manager |
 | `system/` | Adapter | notification access, listener refresher, install receiver |
-| `catalog/` | Model | navigation-app catalog: `NavigationAppEntry`, `NavigationAppCatalog` (strict parse, one app per package, `entryForPackage`, `allPackageNames`) and `supportedNotInstalled` (one 82-line file) |
+| `catalog/` | Model | navigation-app catalog: `NavigationAppEntry` (`rulesFrom`, `website`, `playListed` since #113), `NavigationAppCatalog` (strict parse, one app per package, `entryForPackage`, `allPackageNames`, `ruleFamilies()`, `forGooglePlay()`), `RuleFamilies` and `supportedNotInstalled` (one 171-line file at 2fa2aa5) |
 | `di/` | Configuration | `AppContainer`, asset catalog source, installed apps provider |
 | `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `watchsettings/` (#102), `components/`, `format/`, `theme/` |
 
