@@ -3,10 +3,12 @@ package com.pebblentn.app.notification.icon
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import com.pebblentn.app.catalog.RuleFamilies
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -14,8 +16,30 @@ import java.util.concurrent.ConcurrentHashMap
  * way the apps draw their notification icon (intrinsic size, ARGB_8888). Cached per package,
  * version, screen density and candidate set, so an app update or a density change re-renders.
  * Needs the package in the manifest's `<queries>` (package visibility, Android 11+).
+ *
+ * Drawables are always read from the posting app's own context. For an app that uses another app's
+ * rules (#113 follow-up), a name not found under the posting package is retried under the family's
+ * root package name ([resourcePackagesToTry]), in that same context.
+ *
+ * @param families the rule families; [RuleFamilies.NONE] means no retry.
+ * @param identifiers the by-name identifier lookup; replaceable in tests.
  */
-class AppIconReferences(private val context: Context) {
+class AppIconReferences(
+    private val context: Context,
+    private val families: RuleFamilies = RuleFamilies.NONE,
+    private val identifiers: DrawableIdentifiers = DrawableIdentifiers.SYSTEM,
+) {
+
+    /** Looks a drawable up by name: 0 when [resources] has no drawable [name] under [resourcePackage]. */
+    fun interface DrawableIdentifiers {
+        fun identifier(resources: Resources, name: String, resourcePackage: String): Int
+
+        companion object {
+            // Resource names are part of the apps' public build output; the lookup is by name on purpose.
+            @SuppressLint("DiscouragedApi")
+            val SYSTEM = DrawableIdentifiers { resources, name, resourcePackage -> resources.getIdentifier(name, "drawable", resourcePackage) }
+        }
+    }
 
     private data class Key(val packageName: String, val versionCode: Long, val density: Int, val candidates: Map<String, String>)
 
@@ -30,13 +54,21 @@ class AppIconReferences(private val context: Context) {
         }
     }
 
-    // Resource names are part of the apps' public build output; the lookup is by name on purpose.
-    @SuppressLint("DiscouragedApi")
+    /**
+     * Forget every rendered result. Called when the catalog changes (a user-added package), since the
+     * packages a name is looked up under may then differ for a package already rendered.
+     */
+    fun clear() = cache.clear()
+
     private fun render(packageName: String, candidates: Map<String, String>): List<IconReference> {
         val other = runCatching { context.createPackageContext(packageName, 0) }.getOrNull() ?: return emptyList()
+        // A pure function of the posting package and the catalog, which [clear]s the cache when it
+        // changes, so the cache key needs nothing more.
+        val resourcePackages = resourcePackagesToTry(packageName, families)
         return candidates.mapNotNull { (name, maneuver) ->
-            val id = other.resources.getIdentifier(name, "drawable", packageName)
-            if (id == 0) return@mapNotNull null
+            val id = resourcePackages.firstNotNullOfOrNull { pkg ->
+                identifiers.identifier(other.resources, name, pkg).takeIf { it != 0 }
+            } ?: return@mapNotNull null
             val drawable = runCatching { other.getDrawable(id) }.getOrNull() ?: return@mapNotNull null
             alphaOf(drawable)?.let { IconReference(name, maneuver, it.scaledTo(IconMatcher.SIZE)) }
         }

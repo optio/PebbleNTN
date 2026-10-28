@@ -3,6 +3,8 @@ package com.pebblentn.app.export
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.rules.Rule
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -20,7 +22,10 @@ enum class ExportMode {
 
 @Serializable
 data class ExportMetadata(
-    /** 2 adds [appVersionCode] and the per-event versions (#84); 3 the grouped occurrences (#86). */
+    /**
+     * 2 adds [appVersionCode] and the per-event versions (#84); 3 the grouped occurrences (#86); 4
+     * [userAddedPackages] and the per-event [ExportedEvent.customPackage].
+     */
     val schemaVersion: Int = SCHEMA_VERSION,
     val mode: String,
     val exportedAt: String,
@@ -33,9 +38,14 @@ data class ExportMetadata(
      * tells a maintainer which language's rules a shared log can improve (spec/300-data/ExportFormat).
      */
     val locale: String = "und",
+    /**
+     * The package names the user added, per app id, at export time (FR7), so maintainers can consider
+     * making them built in. Package names are not personal data; present in every mode.
+     */
+    val userAddedPackages: Map<String, List<String>> = emptyMap(),
 ) {
     companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 4
     }
 }
 
@@ -67,9 +77,16 @@ data class ExportedWatchOutput(
     val stopsRemaining: Int? = null,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class ExportedEvent(
+    /** The package that posted the notification, the one used to detect the app. */
     val packageName: String,
+    /**
+     * True when [packageName] is one the user added (FR7), as of the export. Omitted for a built-in
+     * package, so those events read exactly as before.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val customPackage: Boolean = false,
     val eventType: String,
     val disposition: String,
     val matchedRuleId: String? = null,
@@ -112,6 +129,8 @@ class ExportBuilder(
         exportedAt: String,
         locale: String = "und",
         appVersionCode: Long? = null,
+        /** The user-added package names per app id (FR7). */
+        userAddedPackages: Map<String, List<String>> = emptyMap(),
     ): String {
         val metadata = ExportMetadata(
             mode = mode.name,
@@ -120,16 +139,18 @@ class ExportBuilder(
             appVersionCode = appVersionCode,
             androidRelease = androidRelease,
             locale = locale,
+            userAddedPackages = userAddedPackages,
         )
+        val custom = userAddedPackages.values.flatten().toSet()
         val bundle = when (mode) {
             ExportMode.RULES_ONLY -> ExportBundle(metadata, userRules = userRules)
-            ExportMode.PRIVACY_SAFE -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = true) })
-            ExportMode.FULL -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = false) })
+            ExportMode.PRIVACY_SAFE -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = true, custom) })
+            ExportMode.FULL -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = false, custom) })
         }
         return json.encodeToString(ExportBundle.serializer(), bundle)
     }
 
-    private fun toExported(event: DebugEvent, redact: Boolean): ExportedEvent {
+    private fun toExported(event: DebugEvent, redact: Boolean, customPackages: Set<String>): ExportedEvent {
         val snapshot = event.snapshot?.let { if (redact) redactor.redact(it) else it }
         val lastSnapshot = event.lastSnapshot?.let { if (redact) redactor.redact(it) else it }
         // The maneuver and distance are already normalized (no free text), so they survive
@@ -145,6 +166,7 @@ class ExportBuilder(
         }
         return ExportedEvent(
             packageName = event.packageName,
+            customPackage = event.packageName in customPackages,
             eventType = event.eventType.name,
             disposition = event.disposition,
             matchedRuleId = event.matchedRuleId,

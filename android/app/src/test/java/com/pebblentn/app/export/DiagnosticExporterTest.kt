@@ -119,6 +119,42 @@ class DiagnosticExporterTest {
     }
 
     @Test
+    fun bothExportsCarryTheUserAddedPackagesAtExportTime() = runTest {
+        val custom = "app.revanced.android.apps.maps"
+        debugHistory.recordPosted(
+            PostedNotification(
+                snapshot = NotificationSnapshot(packageName = custom, notificationId = 2, title = "Turn left", text = "onto Oak Road"),
+                notificationKey = "k2",
+                tag = null,
+                receivedAtMillis = 2,
+            ),
+        )
+        var added = emptyMap<String, List<String>>()
+        val withPackages = DiagnosticExporter(
+            debugHistory,
+            UserRuleRepository(db.userRuleDao()),
+            appVersion = "0.0.79",
+            androidRelease = "15",
+            now = { "2026-10-28T00:00:00Z" },
+            userAddedPackages = { added },
+        )
+        added = mapOf("google-maps" to listOf(custom))
+
+        for (out in listOf(withPackages.build(ExportMode.PRIVACY_SAFE), withPackages.buildCapped(ExportMode.PRIVACY_SAFE, DiagnosticExporter.EMAIL_MAX_BYTES).json)) {
+            val root = kotlinx.serialization.json.Json.parseToJsonElement(out) as kotlinx.serialization.json.JsonObject
+            assertEquals(
+                "{\"google-maps\":[\"$custom\"]}",
+                (root.getValue("metadata") as kotlinx.serialization.json.JsonObject).getValue("userAddedPackages").toString(),
+            )
+            val flags = (root.getValue("events") as kotlinx.serialization.json.JsonArray).associate { event ->
+                val obj = event as kotlinx.serialization.json.JsonObject
+                obj.getValue("packageName").toString().trim('"') to obj["customPackage"]?.toString()
+            }
+            assertEquals(mapOf(custom to "true", "com.google.android.apps.maps" to null), flags)
+        }
+    }
+
+    @Test
     fun cappedExportCanBeLimitedToOneEvent() = runTest {
         val all = exporter.buildCapped(ExportMode.FULL, DiagnosticExporter.EMAIL_MAX_BYTES)
         val id = debugHistory.observeRecent(1).first().single().id

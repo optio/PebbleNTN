@@ -25,7 +25,10 @@ class RuleDrivenLargeIconRecognizer(
     private val context: Context,
     private val rules: () -> LayeredRules,
     private val references: AppIconReferences = AppIconReferences(context),
-    /** Packages that share rules (#113); the icon itself is always read from the posting package. */
+    /**
+     * Packages that share rules (#113); the icon itself is always read from the posting package. Give
+     * [references] the same families so it can retry a name under the family's root package.
+     */
     private val families: RuleFamilies = RuleFamilies.NONE,
 ) : LargeIconRecognizer {
 

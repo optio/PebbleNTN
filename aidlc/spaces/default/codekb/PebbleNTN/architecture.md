@@ -84,7 +84,8 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Watch settings are watch-only (as of 4779760)**: no setting travels in the protocol; REQ-WATCH-012/014/015/016/022/024 each say so. The phone's `WatchSettings` holds four separate phone-side behaviours that only shape FLAGS bits 0-2, and three of them have no UI (see [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings").
 - **Touch through the system bridge, except on the navigation window (#53, #12)**: the app opts into the bridge (`app_touch_navigation_enable(true)`) so the menus, sub-lists, About and the update notice take touches as button presses, and disables it on the navigation window, so a stray swipe cannot act as BACK and close the app mid-route. Since v0.0.76 that window attaches a swipe and a tap recognizer that run the user's Shortcuts while Touch is on and `touch_service_is_enabled()` (REQ-WATCH-024).
 - **One handshake per launch**: the watch sends `WATCH_READY` once, from `init()`. A Bluetooth reconnect while the app is open only restarts the connection watchdog (`app_connection_handler`); it sends no new READY. The watchapp registers no outbox sent/failed or inbox-dropped handler, so a busy outbox silently drops `send_ready`.
-- **Package names are data, matched exactly, with no alias layer (checked at 1c7f4c1)**: a catalog entry lists every package an app publishes under, and every rule lists its own `packageNames`; the engine, the large-icon recognizer and the ruleset-version record each test `snapshot.packageName in rule.packageNames` (REQ-RULE-003, REQ-RULE-015). Nothing maps one package onto another app's rules. Enablement, the allowlist and the Navigation apps row work per catalog entry, so all packages of an app share one switch. A package variant (#54's alternative builds, #113's MicroG Maps) is therefore added to the catalog entry, to every rule of that app, to the manifest `<queries>` and to the fixtures, and a JVM test plus a Python check keep those in step. See [code-quality-assessment.md](code-quality-assessment.md), "MicroG Maps findings".
+- **Rule families instead of copied package lists (#113, checked at 2fa2aa5)**: #113 did not follow the data-only plan recorded in the next bullet. A catalog entry may name another entry in `rulesFrom` (`microg-maps` -> `google-maps`); `NavigationAppCatalog.ruleFamilies()` groups packages by `rulesAppId`, and `RuleEngine`, `AssetRuleRepository`, `RulesViewModel`'s override engine and `IconCandidates` apply a rule to every package of its family (`RuleFamilies.applies`). On Google Play, `forGooglePlay()` merges an unlisted `rulesFrom` app's packages into its target entry instead, so the same family results. Resource lookups for the large icon still use the posting package only (`AppIconReferences`), which is what this intent changes. `RuleFamilies` records membership only, not which package is the root. Detail: [code-quality-assessment.md](code-quality-assessment.md), "MicroG icon fallback findings".
+- **Package names are data, matched exactly, with no alias layer (checked at 1c7f4c1; superseded by the rule families above)**: a catalog entry lists every package an app publishes under, and every rule lists its own `packageNames`; the engine, the large-icon recognizer and the ruleset-version record each test `snapshot.packageName in rule.packageNames` (REQ-RULE-003, REQ-RULE-015). Nothing maps one package onto another app's rules. Enablement, the allowlist and the Navigation apps row work per catalog entry, so all packages of an app share one switch. A package variant (#54's alternative builds, #113's MicroG Maps) is therefore added to the catalog entry, to every rule of that app, to the manifest `<queries>` and to the fixtures, and a JVM test plus a Python check keep those in step. See [code-quality-assessment.md](code-quality-assessment.md), "MicroG Maps findings".
 
 ### Improvement Opportunities
 
@@ -96,9 +97,37 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - Done in v0.0.76: navigation-screen Shortcuts (#12) as the pure `shortcuts.c` unit, `shortcut_apply.c`, the banner in `main.c` and the Shortcuts door in `settings_window.c`.
 - Play release (#114, intent `261025-play-release`, merged at 1c7f4c1): a `PLAY` install source with a pure "which update UI does this source show" model (in the style of `updateCardModel`) consumed by the dashboard, `MainActivity` and the start-up check; targetSdk 36 and a failing gate; privacy and Data safety docs that match the real network use. Detail in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings".
 - Settings sync (#102, intent `261025-settings-sync`, shipped in v0.0.77): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
-- MicroG Maps (#113, active intent `261026-microg-maps`): append `app.morphe.android.apps.maps` to the `google-maps` catalog entry, to the 150 Google Maps rules, to `<queries>` and to the fixtures, keeping `com.google.android.apps.maps` first. A catalog-driven alias (rules expanded from the catalog at load time) would remove the copies but changes the engine and the test that pins the package sets; the #54 data-only pattern needs no Kotlin production change.
+- MicroG icon fallback (active intent `261028-microg-icon-fallback`): record each family's root package explicitly (not by set order) and let `AppIconReferences` retry a missing drawable with it in the posting package's context; add a test seam for the identifier lookup.
+- MicroG Maps (#113, intent `261026-microg-maps`, shipped in v0.0.78 with `rulesFrom` families rather than the data-only copies below): append `app.morphe.android.apps.maps` to the `google-maps` catalog entry, to the 150 Google Maps rules, to `<queries>` and to the fixtures, keeping `com.google.android.apps.maps` first. A catalog-driven alias (rules expanded from the catalog at load time) would remove the copies but changes the engine and the test that pins the package sets; the #54 data-only pattern needs no Kotlin production change.
 
 ## Interaction Diagrams
+
+### Large-icon lookup for MicroG Maps with the proposed fallback (current code + this intent, 2fa2aa5)
+
+```mermaid
+sequenceDiagram
+  participant SF as NotificationSnapshotFactory
+  participant IR as RuleDrivenLargeIconRecognizer
+  participant IC as IconCandidates
+  participant AR as AppIconReferences
+  participant MM as MicroG Maps package context
+  participant IM as IconMatcher
+  SF->>IR: recognize(app.morphe.android.apps.maps, notification)
+  IR->>IC: forPackage(rules, pkg, families)
+  IC-->>IR: 64 Google Maps maneuver_* names (family rules)
+  IR->>AR: references(pkg, candidates)
+  AR->>AR: cache hit on (pkg, versionCode, density, candidates)?
+  AR->>MM: createPackageContext(pkg)
+  AR->>MM: getIdentifier(name, drawable, pkg)
+  MM-->>AR: 0 if the resource table kept the Google name
+  AR->>MM: proposed retry getIdentifier(name, drawable, com.google.android.apps.maps)
+  MM-->>AR: id, then getDrawable(id) and alpha mask
+  AR-->>IR: IconReference list (cached under pkg)
+  IR->>IM: match(large icon, references)
+  IM-->>SF: Matched or NoMatch (no references)
+```
+
+Text fallback: the recognizer takes its candidates from every enabled rule of the posting package's family, so MicroG Maps already gets the Google Maps drawable table. `AppIconReferences` opens MicroG Maps' own package context and looks each name up under `app.morphe.android.apps.maps`. Today a 0 there skips the drawable, and with none found the matcher returns "no references" and the card shows the fallback arrow. The proposed fix retries the same name with the family's root package (`com.google.android.apps.maps`) in the same MicroG Maps context, never in Google Maps' own context. The result is cached under the posting package as before.
 
 ### A MicroG Maps notification through the Google Maps rules (#113 target, 1c7f4c1)
 

@@ -289,4 +289,45 @@ class NavigationAppCatalogTest {
         assertEquals(listOf("a"), catalog.forGooglePlay().apps.map { it.appId })
         assertEquals(listOf("a", "b"), catalog.apps.map { it.appId })
     }
+
+    @Test
+    fun microgMapsFallsBackToTheGoogleMapsPackageOutsideAndOnPlay() {
+        val bundled = NavigationAppCatalog.parse(bundledCatalogJson())
+        for (families in listOf(bundled.ruleFamilies(), bundled.forGooglePlay().ruleFamilies())) {
+            assertEquals("com.google.android.apps.maps", families.resourceFallbackFor("app.morphe.android.apps.maps"))
+        }
+    }
+
+    @Test
+    fun onlyAPackageUsingAnotherAppsRulesHasAFallback() {
+        val bundled = NavigationAppCatalog.parse(bundledCatalogJson())
+        for (families in listOf(bundled.ruleFamilies(), bundled.forGooglePlay().ruleFamilies())) {
+            assertNull("the root itself", families.resourceFallbackFor("com.google.android.apps.maps"))
+            assertNull("a CoMaps variant", families.resourceFallbackFor("app.comaps.fdroid"))
+            assertNull("an Organic Maps variant", families.resourceFallbackFor("app.organicmaps.web"))
+            assertNull("an OsmAnd variant", families.resourceFallbackFor("net.osmand.plus"))
+            assertNull("an unknown package", families.resourceFallbackFor("com.example.unknown"))
+        }
+        assertNull(RuleFamilies.NONE.resourceFallbackFor("app.morphe.android.apps.maps"))
+    }
+
+    @Test
+    fun theFallbackIsTheRootsFirstPackageWhateverTheCatalogOrder() {
+        val json = """{"schemaVersion":1,"apps":[
+            {"appId":"m","displayName":"m","packageNames":["p.m"],"hasOfficialRules":true,"captureAvailable":true,"defaultEnabled":true,"rulesFrom":"g","playListed":false},
+            {"appId":"g","displayName":"g","packageNames":["p.g1","p.g2"],"hasOfficialRules":true,"captureAvailable":true,"defaultEnabled":true}
+        ]}"""
+        val catalog = NavigationAppCatalog.parse(json)
+        assertEquals("p.g1", catalog.ruleFamilies().resourceFallbackFor("p.m"))
+        assertEquals(listOf("p.g1", "p.g2", "p.m"), catalog.forGooglePlay().apps.single().packageNames)
+        assertEquals("p.g1", catalog.forGooglePlay().ruleFamilies().resourceFallbackFor("p.m"))
+        assertNull("the root's other package does not use another app's rules", catalog.ruleFamilies().resourceFallbackFor("p.g2"))
+    }
+
+    @Test
+    fun aRootOutsideThePackagesFamilyIsRejected() {
+        assertThrows(IllegalArgumentException::class.java) {
+            RuleFamilies.of(listOf(setOf("p.a", "p.b"), setOf("p.c")), roots = mapOf("p.a" to "p.c"))
+        }
+    }
 }

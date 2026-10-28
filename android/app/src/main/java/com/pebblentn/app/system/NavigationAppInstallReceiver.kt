@@ -14,17 +14,22 @@ import androidx.core.content.ContextCompat
  *
  * Registered at runtime for the lifetime of the process: package broadcasts cannot be received by a
  * manifest receiver since Android 8. Package visibility (`<queries>` in the manifest) already limits
- * delivery to catalog apps; [catalogPackages] filters again so nothing else triggers discovery.
+ * delivery to catalog apps; [catalogPackages] filters again so nothing else triggers discovery. It is
+ * read on every broadcast, so user-added packages count as soon as they are added.
  */
 class NavigationAppInstallReceiver(
-    private val catalogPackages: Set<String>,
+    private val catalogPackages: () -> Set<String>,
     private val onCatalogAppInstalled: () -> Unit,
 ) : BroadcastReceiver() {
+
+    /** A receiver for a fixed set of packages. */
+    constructor(catalogPackages: Set<String>, onCatalogAppInstalled: () -> Unit) :
+        this({ catalogPackages }, onCatalogAppInstalled)
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in ACTIONS) return
         val packageName = intent.data?.schemeSpecificPart ?: return
-        if (packageName in catalogPackages) onCatalogAppInstalled()
+        if (packageName in catalogPackages()) onCatalogAppInstalled()
     }
 
     /** Start listening; package broadcasts come from the system, so the receiver stays unexported. */

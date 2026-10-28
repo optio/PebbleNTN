@@ -2,21 +2,30 @@
 
 ## Run Record
 
-- Date: 2026-10-26
-- Commit: 1c7f4c12d94dc7dab324eb4fd89180f25061eede
-- Breadth requested: focused scan (snapshot paths: `rules/`, `schemas/`, `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/java/com/pebblentn/app/catalog/`, `android/app/src/main/java/com/pebblentn/app/rules/`, `android/app/src/main/java/com/pebblentn/app/notification/`, `android/app/src/test/java/com/pebblentn/app/catalog/`, `android/app/src/test/java/com/pebblentn/app/rules/`, `android/app/src/test/java/com/pebblentn/app/notification/`, `scripts/`, `requirements/`, `tools/`); depth Minimal
-- Intent: `261026-microg-maps` (GitHub issue #113, MicroG Maps `app.morphe.android.apps.maps` as a Google Maps package variant)
-- Coverage: the navigation-app catalog and its schema, all ten Google Maps rulesets (package lists, counts, versions), the Google Maps fixtures and the rules READMEs, the manifest `<queries>`, the catalog model, `RuleEngine` and `AssetRuleRepository`, the notification listener, dispatcher and snapshot factory, the large-icon candidates, references and recognizer, `NavigationAppCatalogTest`, `GoogleMapsRulesRegressionTest`, `RulesetVersionsTest`, the catalog, rule and spec-asset validators, and the localized Google Maps generator. Skimmed: the ruleset schema's package block, the rest of `rules/` and `notification/` (main and test) by file list and grep, the other apps' rulesets and fixtures (package counts), REQ-RULES and REQ-ANDROID (package requirements), the workbench and route-capture tools (package grep), `test-all.sh`, and, outside the snapshot, the `MANIFEST.sha256.json` key list, the Gradle rule-data staging, `EnabledAppRepository`, `AppContainer`, `RulesViewModel`, `NavigationAppsScreen`, `DisplayLabels`, AGENTS.md rule 14, README.md, the fastlane full description and the #54 commit d73d903. Issue #113 and its comment came from GitHub.
-- Merge: focused merge into a STALE store (prior focused scan at 6dec020 for `261025-play-release`, merged since as #115 with no release). Prior prose outside the catalog, rule-package and notification area is kept. Added or updated: the #113 business context and glossary entries, the "no alias layer" design decision and the MicroG Maps interaction diagram, the catalog and rule package contracts and the `<queries>` and cross-package resource interfaces, a new Navigation App Catalog component and updated Notification Pipeline, Rule Engine, Persistence Layer, Rule Data and Schemas, Rule Workbench, Route Capture Harness and Build and Release Scripts entries, the package-list consistency dependencies, and the "MicroG Maps findings". The prior analyzed paths are demoted to shallow, except the two re-analyzed in this run (`android/app/src/main/AndroidManifest.xml`, `scripts/validate-spec-assets.sh`). Caches (`scripts/__pycache__/`, `tools/__pycache__/`, `tools/rule-workbench/__pycache__/`, `tools/route-capture/__pycache__/`), the git-ignored `tools/route-capture/out/` and the AI-DLC install were left out.
+- Date: 2026-10-28
+- Commit: 2fa2aa53a3f4f1c167407a84967c91add183de2c
+- Breadth requested: focused scan (snapshot paths: `android/app/src/main/java/com/pebblentn/app/notification/icon/`, `android/app/src/main/java/com/pebblentn/app/catalog/`, `android/app/src/test/java/com/pebblentn/app/notification/`); depth Minimal; lead-only (developer link wrote the nine artifacts)
+- Intent: `261028-microg-icon-fallback` (follow-up to #113: MicroG Maps large-icon lookup falls back to the root app's package name when the posting package's resource lookup fails)
+- Coverage: the large-icon recognizer, candidates, references and matcher; the catalog model with `rulesFrom`, `forGooglePlay` and `RuleFamilies`; `IconCandidatesTest`, `IconMatcherTest` and `NotificationSnapshotFactoryTest`. Skimmed: the other notification tests (names and grep), `AppContainer` wiring (lines 55-70, 130-140), `NotificationSnapshotFactory.recognizeIcon`, `NavigationAppCatalogTest` (family and Play tests) and `RuleFamiliesMatchingTest` by grep, the catalog entry order, the Google Maps rule package lists, the manifest `<queries>` and the Robolectric version.
+- Merge: focused merge into a STALE store (prior focused scan at 1c7f4c1 for `261026-microg-maps`, which shipped in v0.0.78 with `rulesFrom` families rather than its recorded data-only plan). Prior prose is kept; superseded statements ("no alias layer", "no package alias") are marked as superseded rather than deleted. Added or updated: the active-intent business context and the rule family and root package glossary entries, the rule-families design decision, the improvement opportunity and a large-icon fallback interaction diagram, the catalog row in code structure, the large-icon and rule-family API section, the Navigation App Catalog, Notification Pipeline and Rule Engine entries, a rule-families dependency note, and the "MicroG icon fallback findings". The prior analyzed paths are demoted to shallow, except those this run re-analyzed (the icon files and `catalog/`). Build outputs, `.gradle/` and the AI-DLC install were left out.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: microg-maps
-fingerprint: a0c2be838f253dbc9ad9e1bf2b6b2de31ea9333a
+intent: microg-icon-fallback
+fingerprint: d61501eead19ad081b6494d23aef0be9c01d5b6e
 analyzed:
+  paths:
+    - android/app/src/main/java/com/pebblentn/app/notification/icon/
+    - android/app/src/main/java/com/pebblentn/app/catalog/
+    - android/app/src/test/java/com/pebblentn/app/notification/icon/
+    - android/app/src/test/java/com/pebblentn/app/notification/NotificationSnapshotFactoryTest.kt
+  components:
+    - Navigation App Catalog
+    - Notification Pipeline
+shallow:
   paths:
     - rules/catalog/navigation-apps.json
     - rules/bundled/google-maps/
@@ -25,15 +34,11 @@ analyzed:
     - rules/README.md
     - schemas/app-catalog.schema.json
     - android/app/src/main/AndroidManifest.xml
-    - android/app/src/main/java/com/pebblentn/app/catalog/
     - android/app/src/main/java/com/pebblentn/app/rules/RuleEngine.kt
     - android/app/src/main/java/com/pebblentn/app/rules/RuleRepository.kt
     - android/app/src/main/java/com/pebblentn/app/notification/NotificationDispatcher.kt
     - android/app/src/main/java/com/pebblentn/app/notification/NavigationNotificationListenerService.kt
     - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshotFactory.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/icon/IconCandidates.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/icon/AppIconReferences.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/icon/LargeIconRecognizer.kt
     - android/app/src/test/java/com/pebblentn/app/catalog/
     - android/app/src/test/java/com/pebblentn/app/rules/GoogleMapsRulesRegressionTest.kt
     - android/app/src/test/java/com/pebblentn/app/rules/RulesetVersionsTest.kt
@@ -42,13 +47,6 @@ analyzed:
     - scripts/validate-rules.sh
     - scripts/validate-spec-assets.sh
     - tools/rule-workbench/gen_localized_google_maps.py
-  components:
-    - Navigation App Catalog
-    - Rule Engine
-    - Notification Pipeline
-    - Rule Data and Schemas
-shallow:
-  paths:
     - schemas/ruleset.schema.json
     - android/app/src/main/java/com/pebblentn/app/rules/
     - android/app/src/main/java/com/pebblentn/app/notification/
@@ -198,4 +196,7 @@ shallow:
     - fdroid/
     - scripts/version.sh
     - android/pebblekit/
+    - android/app/src/test/java/com/pebblentn/app/catalog/NavigationAppCatalogTest.kt
+    - android/app/src/test/java/com/pebblentn/app/rules/RuleFamiliesMatchingTest.kt
+    - rules/bundled/google-maps/any.json
 ```

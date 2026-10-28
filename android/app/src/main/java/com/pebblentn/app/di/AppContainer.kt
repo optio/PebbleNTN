@@ -2,8 +2,12 @@ package com.pebblentn.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.pebblentn.app.catalog.EffectiveCatalog
 import com.pebblentn.app.catalog.NavigationAppCatalog
+import com.pebblentn.app.catalog.PackageCheck
+import com.pebblentn.app.catalog.RuleFamilies
 import com.pebblentn.app.data.AppEnabledRepository
+import com.pebblentn.app.data.CustomPackagesRepository
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.EnabledAppRepository
 import com.pebblentn.app.data.NavigationStateRepository
@@ -40,6 +44,7 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -57,15 +62,26 @@ class AppContainer(context: Context) {
     /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
     val installSource: InstallSource = InstallSources.detect(appContext)
 
-    /**
-     * The navigation-app catalog as this install uses it: on Google Play, apps that are not listed
-     * there (MicroG Maps, #113) join the app whose rules they use and are never shown or linked.
-     */
-    val catalog: NavigationAppCatalog = AssetCatalogSource(appContext).load()
-        .let { if (installSource == InstallSource.PLAY) it.forGooglePlay() else it }
+    /** The package names the user added to navigation apps (FR5). */
+    private val customPackagesRepository = CustomPackagesRepository(appContext)
 
-    /** Packages that share rules (#113): every rule applies to its whole family. */
-    private val ruleFamilies = catalog.ruleFamilies()
+    /**
+     * The navigation-app catalog as this install uses it, with the user-added packages after each
+     * app's own (FR6). On Google Play, apps that are not listed there (MicroG Maps, #113) join the app
+     * whose rules they use and are never shown or linked. It changes when the user adds or removes a
+     * package; see [observeCatalogChanges].
+     */
+    val effectiveCatalog = EffectiveCatalog(
+        bundled = AssetCatalogSource(appContext).load(),
+        googlePlay = installSource == InstallSource.PLAY,
+        store = customPackagesRepository,
+    )
+
+    /** The current effective catalog. */
+    val catalog: NavigationAppCatalog get() = effectiveCatalog.current
+
+    /** Packages that share rules (#113): every rule applies to its whole family; always current. */
+    val ruleFamilies: RuleFamilies = effectiveCatalog.families
 
     /** Master switch (REQ-ANDROID-011); on by default. */
     val appEnabledRepository = AppEnabledRepository(appContext)
@@ -76,7 +92,7 @@ class AppContainer(context: Context) {
         PebbleNtnDatabase.NAME,
     ).addMigrations(*PebbleNtnDatabase.ALL_MIGRATIONS).build()
 
-    val enabledAppRepository = EnabledAppRepository(database.appEnablementDao(), catalog)
+    val enabledAppRepository = EnabledAppRepository(database.appEnablementDao(), effectiveCatalog.catalog)
 
     private val assetRuleRepository = AssetRuleRepository(appContext, families = ruleFamilies)
 
@@ -133,9 +149,17 @@ class AppContainer(context: Context) {
         )
     }
 
+    // The same families, so a MicroG Maps drawable is also looked up under the Google Maps name.
+    private val iconReferences = com.pebblentn.app.notification.icon.AppIconReferences(appContext, families = ruleFamilies)
+
     /** Recognises the maneuver in large icons for apps whose rules map icons (#74). */
     val largeIconRecognizer: com.pebblentn.app.notification.icon.LargeIconRecognizer =
-        com.pebblentn.app.notification.icon.RuleDrivenLargeIconRecognizer(appContext, ruleRepository::current, families = ruleFamilies)
+        com.pebblentn.app.notification.icon.RuleDrivenLargeIconRecognizer(
+            appContext,
+            ruleRepository::current,
+            references = iconReferences,
+            families = ruleFamilies,
+        )
 
     /** Bundled official rules, for the Rules screen's official tab. */
     val bundledOfficialRules: List<Rule> get() = assetRuleRepository.current().bundled
@@ -147,6 +171,8 @@ class AppContainer(context: Context) {
         userRules = userRuleRepository,
         appVersion = com.pebblentn.app.BuildConfig.VERSION_NAME,
         appVersionCode = com.pebblentn.app.BuildConfig.VERSION_CODE.toLong(),
+        // FR7: the export says which packages the user added, per app and per event.
+        userAddedPackages = { effectiveCatalog.current.userAddedByApp() },
     )
 
     val diagnosticShareManager = DiagnosticShareManager(appContext)
@@ -248,8 +274,9 @@ class AppContainer(context: Context) {
     /** Restore state, warm the caches, and begin listening for watch messages on app start. */
     fun start() {
         // A navigation app installed while we run must be picked up without a restart (REQ-ANDROID-004).
-        com.pebblentn.app.system.NavigationAppInstallReceiver(catalog.allPackageNames, ::discoverInstalledApps)
+        com.pebblentn.app.system.NavigationAppInstallReceiver({ catalog.allPackageNames }, ::discoverInstalledApps)
             .register(appContext)
+        observeCatalogChanges()
         applicationScope.launch {
             navigationController.restore()
             navigationController.start()
@@ -272,6 +299,26 @@ class AppContainer(context: Context) {
             }
         }
     }
+
+    /**
+     * A user-added package takes effect without a restart (FR6): the families already answer with the
+     * new catalog; this re-renders the icon references and re-runs discovery, which creates the app's
+     * row and rebuilds the allowlist from the new catalog.
+     */
+    private fun observeCatalogChanges() {
+        applicationScope.launch {
+            effectiveCatalog.catalog.drop(1).collect {
+                iconReferences.clear()
+                discoverInstalledApps()
+            }
+        }
+    }
+
+    /** Add a package name to a navigation app (FR5); the result says why it was refused. */
+    fun addCustomPackage(appId: String, input: String): PackageCheck = effectiveCatalog.add(appId, input)
+
+    /** Remove a user-added package name from a navigation app (FR5). */
+    fun removeCustomPackage(appId: String, packageName: String) = effectiveCatalog.remove(appId, packageName)
 
     /** Called when the listener connects: discover installed catalog apps. */
     fun onListenerConnected() = discoverInstalledApps()
