@@ -14,7 +14,7 @@
 
 ## Platforms and Baselines
 
-- Android: minSdk 31, targetSdk 35 (Play floor gate `verifyReleaseTargetSdk` = 35), compileSdk 36 (unchanged at 6dec020). Google Play has required targetSdk 36 for new apps and updates since 31 August 2026 (#114); AGP 8.13.2 already compiles against 36, so no toolchain change is needed for it. `:fixture-publisher` (debug only) also targets 35.
+- Android: minSdk 31, targetSdk 36 at 494a6dd (35 at 6dec020; #114 raised it with the Play floor gate `verifyReleaseTargetSdk`), compileSdk 36. Google Play has required targetSdk 36 for new apps and updates since 31 August 2026 (#114); AGP 8.13.2 already compiles against 36, so no toolchain change is needed for it. `:fixture-publisher` (debug only) also targets 35.
 - Package visibility (Android 11+): the app declares each navigation package in the manifest `<queries>` instead of `QUERY_ALL_PACKAGES`, so a package missing there cannot be discovered, and its drawables cannot be loaded for icon matching.
 - Pebble: aplite, basalt, chalk (round), diorite, emery (200x228, touch, RGB backlight). App glance on everything except aplite. flint and gabbro are not build targets and are not mentioned anywhere in the watchapp; the touch calls are guarded by `PBL_PLATFORM_EMERY`, not by a capability macro, and the RGB backlight by `PBL_RGB_BACKLIGHT`. Colour versus black-and-white is `PBL_COLOR` (`PBL_IF_COLOR_ELSE`), round is `PBL_ROUND`, and the large layout is a runtime `w >= 200`. The watchapp never calls `watch_info_*`, so nothing reports the platform at runtime today. Pebble apps load their code into the same RAM as their heap, so on aplite every byte of new code or static data comes off the free heap (about 3.9 KB at load after v0.0.76, per the intent brief).
 - Build: Gradle 8.13 wrapper, AGP 8.13.2, KSP 2.3.10, JDK 21 (Temurin in CI); pebble-tool with the latest SDK.
@@ -41,5 +41,6 @@
 - Release builds run R8 and resource shrinking (`isMinifyEnabled`, `isShrinkResources`), which matters for bundled preview drawables (#102); unit tests merge Android resources (`isIncludeAndroidResources = true`), so a JVM test can check resources exist.
 - No stack change is implied by #102: Compose `Image` with `ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })` is in Compose UI already, and the capture tool needs only pebble-tool and the standard library.
 - No stack change is implied by #113: adding a package variant is JSON data, one manifest line and tests, with no new library or platform call.
+- No stack change is implied by #119: `InstallSourceInfo` (API 30) and `PackageInfo.firstInstallTime` / `lastUpdateTime` are platform APIs below minSdk 31, and ISO 8601 times come from `java.time.Instant` (already used for `exportedAt`). `getUpdateOwnerPackageName` (API 34) and `getPackageSource` (API 33) would need a version check.
 
 Library versions and transitive relationships are in [dependencies.md](dependencies.md).

@@ -35,6 +35,8 @@ import com.pebblentn.app.system.NotificationAccess
 import com.pebblentn.app.system.NotificationListenerRefresher
 import com.pebblentn.app.system.SystemNotificationAccess
 import com.pebblentn.app.system.SystemNotificationListenerRefresher
+import com.pebblentn.app.update.InstallRecord
+import com.pebblentn.app.update.InstallRecords
 import com.pebblentn.app.update.InstallSource
 import com.pebblentn.app.update.InstallSources
 import com.pebblentn.app.update.UpdateCheckRepository
@@ -61,6 +63,12 @@ class AppContainer(context: Context) {
 
     /** Where this app was installed from, detected once per app start (REQ-ANDROID-020). */
     val installSource: InstallSource = InstallSources.detect(appContext)
+
+    /**
+     * What installed or last updated the running version, with the install times, detected once per
+     * app start for the "Phone app version" row and debug exports (REQ-ANDROID-020, REQ-DEBUG-015).
+     */
+    val installRecord: InstallRecord = InstallRecords.detect(appContext)
 
     /** The package names the user added to navigation apps (FR5). */
     private val customPackagesRepository = CustomPackagesRepository(appContext)
@@ -173,6 +181,8 @@ class AppContainer(context: Context) {
         appVersionCode = com.pebblentn.app.BuildConfig.VERSION_CODE.toLong(),
         // FR7: the export says which packages the user added, per app and per event.
         userAddedPackages = { effectiveCatalog.current.userAddedByApp() },
+        // #119: what installed or last updated this version, in every export mode.
+        installRecord = { installRecord },
     )
 
     val diagnosticShareManager = DiagnosticShareManager(appContext)

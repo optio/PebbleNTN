@@ -1,0 +1,15 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/update/InstallRecord.kt" },
+    { "id": "FR2", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/ui/dashboard/PhoneAppVersionRow.kt" },
+    { "id": "FR3", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/export/ExportBuilder.kt" },
+    { "id": "FR4", "status": "OK", "target": "rules/catalog/navigation-apps.json" },
+    { "id": "FR5", "status": "OK", "target": "requirements/REQ-DEBUG.md" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/update/InstallRecord.kt" },
+    { "id": "NFR2", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/update/InstallSourceTest.kt" },
+    { "id": "NFR3", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/update/InstallRecordTest.kt" }
+  ],
+  "reverse": []
+}

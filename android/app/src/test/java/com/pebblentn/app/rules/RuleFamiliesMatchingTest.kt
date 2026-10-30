@@ -90,6 +90,20 @@ class RuleFamiliesMatchingTest {
     }
 
     @Test
+    fun theSecondMicrogPackageMatchesTheGoogleMapsRules() {
+        // org.ungoogled.android.apps.maps.microg, the second built-in MicroG Maps package (#113).
+        val ungoogled = "org.ungoogled.android.apps.maps.microg"
+        for (name in listOf("classic-icon-turn-left", "fr-turn-right")) {
+            val (_, locale, fields) = fixture(name)
+            val asGoogle = engine.evaluate(snapshot(google, fields), bundled, locale)
+            val asUngoogled = engine.evaluate(snapshot(ungoogled, fields), bundled, locale)
+            assertTrue("$name should match", asUngoogled.matched)
+            assertEquals(name, asGoogle.matchedRuleId, asUngoogled.matchedRuleId)
+            assertEquals(name, asGoogle.instruction, asUngoogled.instruction)
+        }
+    }
+
+    @Test
     fun noBundledRuleListsTheMicrogPackage() {
         assertTrue(googleRulesets.flatMap { it.rules }.none { microg in it.packageNames })
     }

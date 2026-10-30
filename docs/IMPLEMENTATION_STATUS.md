@@ -1,6 +1,56 @@
 # Implementation Status
 
-_Last updated: 2026-10-28_
+_Last updated: 2026-10-30_
+
+## Install/update source and a second MicroG Maps package (2026-10-30, #119, #113)
+
+**Milestone:** post-M12 enhancement. Released as v0.0.80 by the release workflow on merge;
+versionCode/versionName are not changed here.
+
+**Requirements being implemented.**
+- FR1: a once-per-start install record (`update/InstallRecord.kt`): the installing, initiating and
+  originating packages, the first-install and last-update times, and a classification (play,
+  fdroid, obtainium, manual, other, unknown). The existing `InstallSource` (update destinations,
+  REQ-ANDROID-020) is unchanged.
+- FR2: a "Phone app version" row at the top of the Updates section for every source ("0.0.80,
+  installed by F-Droid", "updated manually", the raw package for another installer, only the version
+  after a failed lookup); "Check for updates now" shows a hint instead of "Version …".
+- FR3: an `install` object in the metadata of every export mode; export schema 5.
+- FR4: `org.ungoogled.android.apps.maps.microg` as a second built-in MicroG Maps package (catalog
+  and manifest `<queries>`).
+- FR5: REQ-ANDROID-020, REQ-ANDROID-023, the new REQ-DEBUG-015, `spec/300-data/ExportFormat.md`,
+  the privacy docs, and `MANIFEST.sha256.json`.
+
+**What changed.**
+- New `update/InstallRecord.kt`: `InstallKind`, `InstallRecord` (with `updatedSinceInstall`) and
+  `InstallRecords.classify` / `from` / `detectWith` / `detect`. `AppContainer.installRecord` is read
+  once per start; `installSource` is untouched.
+- New pure `phoneAppVersionText` (`ui/dashboard/PhoneAppVersionRow.kt`). `DashboardScreen` takes an
+  `installRecord` and starts the Updates section with the row for every source; the check row's
+  summary is "Compare with the latest GitHub release". Strings `dashboard_app_version_installed_by`,
+  `_updated_by`, `_installed_manually`, `_updated_manually`, `dashboard_check_update_hint`;
+  `dashboard_app_version_play` and `dashboard_version` removed.
+- `ExportMetadata.install: ExportInstall` (schema 5); `DiagnosticExporter(installRecord = …)` in both
+  `build` and `buildCapped`.
+- `microg-maps` lists `org.ungoogled.android.apps.maps.microg`; manifest `<queries>` declares it.
+- Tests: `InstallRecordTest` (7), `PhoneAppVersionRowTest` (5), `DashboardUpdatesScreenTest` (+2,
+  two updated), `ExportBuilderTest` (+3), `DiagnosticExporterTest` (+2), catalog, families,
+  enablement and validator tests updated for the 27th package.
+
+**Library versions.** No new library.
+
+**Commands executed.** `android/gradlew -p android :app:testDebugUnitTest --tests
+'com.pebblentn.app.update.*' --tests 'com.pebblentn.app.export.*' --tests
+'com.pebblentn.app.ui.dashboard.*' --tests 'com.pebblentn.app.catalog.*'` (baseline 146 tests, 0
+failures); `android/gradlew -p android :app:testDebugUnitTest` (611 tests, 0 failures, 4 skipped);
+`scripts/validate-rules.sh` (OK; manifest covers 27 catalog packages); `scripts/validate-spec-assets.sh`
+(OK, 34 files); `scripts/test-all.sh` (exit 0; debug and release unit tests 611 each, 0 failures, 4
+skipped; lint without new issues); `android/gradlew -p android :app:assembleDebug`.
+
+**Known blockers.** No Android emulator in WSL: JVM and Robolectric tests only. What the F-Droid
+privileged extension and some stores report as installer is unverified on a device.
+
+**Next atomic task.** Build and Test, then the v0.0.80 release on merge.
 
 ## MicroG Maps turn arrows on icon-only cards (2026-10-28, #113 follow-up)
 

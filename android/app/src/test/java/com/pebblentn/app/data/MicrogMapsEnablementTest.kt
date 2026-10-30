@@ -74,7 +74,7 @@ class MicrogMapsEnablementTest {
         val row = repo.observeEnablement().first().single()
         assertEquals("microg-maps", row.appId)
         assertEquals("MicroG Maps", row.displayName)
-        assertEquals(listOf(microg), row.packageNames)
+        assertEquals(listOf(microg, "org.ungoogled.android.apps.maps.microg"), row.packageNames)
         assertEquals("its rules are the Google Maps rules", "google-maps", row.rulesAppId)
         assertFalse(row.captureOnly)
 

@@ -79,6 +79,8 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Privacy by construction**: allowlist before content, no automatic upload, network used only for the update check, which is opt-in for automatic runs.
 - **Vendored PebbleKit 2** for F-Droid reproducibility.
 - **One APK for every channel, install source decided at runtime**: there are no product flavours; the GitHub release APK is the bytes F-Droid's reproducible build must match (`Binaries:`, `AllowedAPKSigningKeys`), and `InstallSources.detect` picks the update behaviour once per app start. A Play-specific behaviour (#114) can follow the same runtime switch without a second build; the Play AAB from `play-release.yml` is built from the same sources and key.
+- **Install source as an enum, decided once (checked at 494a6dd)**: `AppContainer.installSource` calls `InstallSources.detect` once per process; it keeps only the mapped enum (`GITHUB`, `FDROID`, `OBTAINIUM`, `PLAY`) and drops the installer package. A pure `UpdatePolicy.forSource` table (#114) turns the enum into update behaviour (GitHub check allowed, stored GitHub data ignored, other sources offered, delay note), read by `UpdateCheckRepository`, `updateCardModel`, `updatePrompt` and `DashboardScreen`. `GITHUB` is the fallback for a manual install, another store and a failed lookup, which is right for the card's destination but too coarse for #119's "installed manually" and export `unknown`. Detail: [code-quality-assessment.md](code-quality-assessment.md), "Install source findings".
+- **Export metadata is mode-independent**: `ExportBuilder.build` writes one `ExportMetadata` for all three modes, so header data (versions, locale, user-added packages, and #119's install section) is in rules-only exports too; each schema bump adds a section to `spec/300-data/ExportFormat.md`.
 - **Pure C units** for watch logic that can be tested on the host, one unit per test binary.
 - **Settings change through one path**: every on-watch setting has a `settings_set_*` setter in `theme.c` that writes its persist key at once; the menus call it and then `notify_change()`, which runs `main.c` `on_settings_changed()` (window background, `redraw_all`, `apply_backlight`). Since v0.0.76 a Shortcut runs the same setters through `shortcut_apply()` and then `on_settings_changed()` itself. Everything else that depends on a setting reads it when it draws (theme colours, units, ETA mode and label, arrow side; the glyph cache flushes itself when the pack changes). The Shortcuts door's own setters (`settings_set_shortcut`, `settings_set_touch_enabled`) do not call `notify_change()`, so the `theme.c` setters are the only place every watch-side edit passes through (relevant to #102).
 - **Watch settings are watch-only (as of 4779760)**: no setting travels in the protocol; REQ-WATCH-012/014/015/016/022/024 each say so. The phone's `WatchSettings` holds four separate phone-side behaviours that only shape FLAGS bits 0-2, and three of them have no UI (see [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings").
@@ -97,10 +99,37 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - Done in v0.0.76: navigation-screen Shortcuts (#12) as the pure `shortcuts.c` unit, `shortcut_apply.c`, the banner in `main.c` and the Shortcuts door in `settings_window.c`.
 - Play release (#114, intent `261025-play-release`, merged at 1c7f4c1): a `PLAY` install source with a pure "which update UI does this source show" model (in the style of `updateCardModel`) consumed by the dashboard, `MainActivity` and the start-up check; targetSdk 36 and a failing gate; privacy and Data safety docs that match the real network use. Detail in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings".
 - Settings sync (#102, intent `261025-settings-sync`, shipped in v0.0.77): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
-- MicroG icon fallback (active intent `261028-microg-icon-fallback`): record each family's root package explicitly (not by set order) and let `AppIconReferences` retry a missing drawable with it in the posting package's context; add a test seam for the identifier lookup.
+- Install source (#119, active intent `261029-install-source`): detect once per start a plain install record (mapped source, installing, initiating and originating packages, first install and last update times) beside the enum, with a pure mapper and a pure row-text helper (the `watchAppVersionText` pattern), so the dashboard row and export schema 5 read one value; keep `InstallSource` and `UpdatePolicy` as they are for the card.
+- MicroG icon fallback (intent `261028-microg-icon-fallback`, shipped in v0.0.79, not rescanned): record each family's root package explicitly (not by set order) and let `AppIconReferences` retry a missing drawable with it in the posting package's context; add a test seam for the identifier lookup.
 - MicroG Maps (#113, intent `261026-microg-maps`, shipped in v0.0.78 with `rulesFrom` families rather than the data-only copies below): append `app.morphe.android.apps.maps` to the `google-maps` catalog entry, to the 150 Google Maps rules, to `<queries>` and to the fixtures, keeping `com.google.android.apps.maps` first. A catalog-driven alias (rules expanded from the catalog at load time) would remove the copies but changes the engine and the test that pins the package sets; the #54 data-only pattern needs no Kotlin production change.
 
 ## Interaction Diagrams
+
+### Install source to the dashboard row and the export (current 494a6dd, with the #119 touchpoints)
+
+```mermaid
+flowchart TD
+  START["AppContainer init (once per process)"] --> DET["InstallSources.detect: getInstallSourceInfo(own package)"]
+  DET --> MAP{"fromInstaller(installingPackageName)"}
+  MAP -- com.android.vending --> PLAY[PLAY]
+  MAP -- "F-Droid, Droid-ify, Neo Store" --> FD[FDROID]
+  MAP -- "dev.imranr.obtainium(.*)" --> OB[OBTAINIUM]
+  MAP -- "null, package installer, other store" --> GH[GITHUB]
+  DET -- exception --> GH
+  PLAY --> POL["UpdatePolicy.forSource"]
+  FD --> POL
+  OB --> POL
+  GH --> POL
+  POL --> UPD{"Updates section: allowsGithubCheck?"}
+  UPD -- "no (Play)" --> ROW["InfoRow Phone app version: X, updated by Google Play"]
+  UPD -- yes --> NAV["Check for updates now: Version X (hidden while stale) + weekly toggle"]
+  EXP["DiagnosticExporter.build / buildCapped"] --> META["ExportMetadata schema 4: no install data"]
+  NEW["Issue 119: install record (source, installing, initiating, originating, first install, last update)"] -.-> ROW2["row for every source: installed by / updated by"]
+  NEW -.-> META5["metadata install section, schema 5, every mode"]
+  DET -.-> NEW
+```
+
+Text fallback: once per process `AppContainer` asks `PackageManager.getInstallSourceInfo` for its own package and maps only `installingPackageName`: the Play Store to PLAY, the three F-Droid clients to FDROID, Obtainium and its suffixed builds to OBTAINIUM, everything else and any failure to GITHUB. `UpdatePolicy` decides the update UI; only a Play install, which has no GitHub check, gets the "Phone app version" row, and other sources see the version only in the "Check for updates now" summary, which disappears while the stale item is shown. Exports carry no install data. #119 adds one install record, read from the same lookup plus `PackageInfo` times, that feeds a row for every source and an install section in every export (schema 5).
 
 ### Large-icon lookup for MicroG Maps with the proposed fallback (current code + this intent, 2fa2aa5)
 
@@ -156,7 +185,9 @@ sequenceDiagram
 
 Text fallback: today the package is unknown, so it is never discovered and the allowlist drops it before content is read. Once `app.morphe.android.apps.maps` is in the `google-maps` catalog entry, the Google Maps switch enables it, the dispatcher admits it and the snapshot is built. The icon recognizer takes its drawable candidates from the rules that list the package and loads the `maneuver_*` drawables from MicroG Maps itself; whether they resolve under the renamed package is unverified, and without a match the card falls back to the neutral arrow with distance, road and ETA. The engine then evaluates only rules that list the package, so all 150 Google Maps rules must list it. The rest of the path to the watch is unchanged.
 
-### Update UI by install source (current, 6dec020) and the #114 touchpoints
+### Update UI by install source (as at 6dec020) and the #114 touchpoints
+
+Superseded for Play at 494a6dd: `com.android.vending` maps to PLAY and the #114 behaviour below is implemented (see the first diagram).
 
 ```mermaid
 flowchart TD

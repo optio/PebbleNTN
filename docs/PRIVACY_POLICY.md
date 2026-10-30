@@ -83,8 +83,11 @@ privacy policies. PebbleNTN sends them nothing beyond opening the page.
 - **Sharing diagnostics.** You can share a diagnostic file by email (the same address, prefilled) or
   with any app through the Android share sheet. You see what it contains before you share it. A
   "privacy-safe" export replaces road names and destinations; a "full" export includes the raw
-  selected notification fields and asks you to confirm a warning first. Files are written to the
-  app's temporary storage and removed at the next export.
+  selected notification fields and asks you to confirm a warning first. Every export also names
+  what installed or last updated PebbleNTN on your phone (for example Google Play, F-Droid or a
+  manual install, with the installer's package name) and when it was first installed and last
+  updated, as your phone's package manager reports them. Files are written to the app's temporary
+  storage and removed at the next export.
 
 When you send an email or a file to the developer, it is used only to answer you and to improve
 PebbleNTN, is not shared with anyone else, and is deleted on request.

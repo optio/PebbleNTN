@@ -3,6 +3,10 @@ package com.pebblentn.app.export
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.rules.Rule
+import com.pebblentn.app.update.InstallKind
+import com.pebblentn.app.update.InstallRecord
+import java.time.Instant
+import java.util.Locale
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -24,7 +28,7 @@ enum class ExportMode {
 data class ExportMetadata(
     /**
      * 2 adds [appVersionCode] and the per-event versions (#84); 3 the grouped occurrences (#86); 4
-     * [userAddedPackages] and the per-event [ExportedEvent.customPackage].
+     * [userAddedPackages] and the per-event [ExportedEvent.customPackage]; 5 [install] (#119).
      */
     val schemaVersion: Int = SCHEMA_VERSION,
     val mode: String,
@@ -43,9 +47,40 @@ data class ExportMetadata(
      * making them built in. Package names are not personal data; present in every mode.
      */
     val userAddedPackages: Map<String, List<String>> = emptyMap(),
+    /** What installed or last updated this version, and when (REQ-DEBUG-015); present in every mode. */
+    val install: ExportInstall = ExportInstall.from(InstallRecord.UNKNOWN),
 ) {
     companion object {
-        const val SCHEMA_VERSION = 4
+        const val SCHEMA_VERSION = 5
+    }
+}
+
+/**
+ * The install record at export time (REQ-DEBUG-015, #119), from the device's package manager only.
+ * [installSource] is the lower-case [InstallKind]; the times are ISO 8601 UTC. Package names and
+ * install times are not notification content, so they are in every mode. Nulls are written as
+ * `null`: Android gave no value, or the lookup failed.
+ */
+@Serializable
+data class ExportInstall(
+    val installSource: String,
+    val installingPackage: String?,
+    val initiatingPackage: String?,
+    val originatingPackage: String?,
+    val firstInstallTime: String?,
+    val lastUpdateTime: String?,
+    val updatedSinceInstall: Boolean?,
+) {
+    companion object {
+        fun from(record: InstallRecord): ExportInstall = ExportInstall(
+            installSource = record.kind.name.lowercase(Locale.ROOT),
+            installingPackage = record.installingPackage,
+            initiatingPackage = record.initiatingPackage,
+            originatingPackage = record.originatingPackage,
+            firstInstallTime = record.firstInstallTime?.let { Instant.ofEpochMilli(it).toString() },
+            lastUpdateTime = record.lastUpdateTime?.let { Instant.ofEpochMilli(it).toString() },
+            updatedSinceInstall = record.updatedSinceInstall,
+        )
     }
 }
 
@@ -131,6 +166,8 @@ class ExportBuilder(
         appVersionCode: Long? = null,
         /** The user-added package names per app id (FR7). */
         userAddedPackages: Map<String, List<String>> = emptyMap(),
+        /** What installed or last updated this version (REQ-DEBUG-015). */
+        installRecord: InstallRecord = InstallRecord.UNKNOWN,
     ): String {
         val metadata = ExportMetadata(
             mode = mode.name,
@@ -140,6 +177,7 @@ class ExportBuilder(
             androidRelease = androidRelease,
             locale = locale,
             userAddedPackages = userAddedPackages,
+            install = ExportInstall.from(installRecord),
         )
         val custom = userAddedPackages.values.flatten().toSet()
         val bundle = when (mode) {

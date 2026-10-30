@@ -31,7 +31,6 @@
     <string name="dashboard_refresh_app">Reconnect notification access</string>
     <string name="dashboard_refresh_app_explanation">Use this if navigation runs on your phone but your watch isn\'t picking it up.</string>
     <string name="dashboard_refresh_app_done">Reconnecting notification access…</string>
-    <string name="dashboard_version">Version %1$s</string>
 
     <!-- Watch settings (REQ-WATCH-005, REQ-ANDROID-009) -->
     <string name="dashboard_auto_launch">Launch watchapp when navigation starts</string>
@@ -52,10 +51,16 @@
     <string name="dashboard_update_source_fdroid">F-Droid</string>
     <string name="dashboard_update_source_obtainium">Obtainium</string>
     <string name="dashboard_update_source_play">Google Play</string>
-    <!-- The Updates section on a Google Play install, which has no GitHub check (REQ-ANDROID-022). -->
+    <!-- REQ-ANDROID-020 (#119): the Updates section's first row, for every install source. %1$s is the
+         version; %2$s a dashboard_update_source_* name or another installer's package name (not translated). -->
     <string name="dashboard_app_version">Phone app version</string>
-    <string name="dashboard_app_version_play">%1$s, updated by Google Play</string>
+    <string name="dashboard_app_version_installed_by">%1$s, installed by %2$s</string>
+    <string name="dashboard_app_version_updated_by">%1$s, updated by %2$s</string>
+    <string name="dashboard_app_version_installed_manually">%1$s, installed manually</string>
+    <string name="dashboard_app_version_updated_manually">%1$s, updated manually</string>
     <string name="dashboard_check_update">Check for updates now</string>
+    <!-- The check row's summary; the version is on the row above (REQ-ANDROID-020). -->
+    <string name="dashboard_check_update_hint">Compare with the latest GitHub release</string>
     <string name="dashboard_auto_update">Check for updates weekly</string>
     <string name="dashboard_auto_update_hint">Optional: also check GitHub about once a week. Nothing is sent.</string>
     <!-- The manual check's message combines GitHub and the watchapp version; %1$s is the version without a leading "v". -->

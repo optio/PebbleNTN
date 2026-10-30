@@ -21,6 +21,8 @@ import com.pebblentn.app.ui.dashboard.DashboardScreen
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
 import com.pebblentn.app.ui.watchsettings.OptionListScreen
 import com.pebblentn.app.ui.watchsettings.WatchSettingsScreen
+import com.pebblentn.app.update.InstallKind
+import com.pebblentn.app.update.InstallRecord
 import com.pebblentn.app.update.InstallSource
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -93,6 +95,7 @@ class StoreScreenshotsTest {
             // A recent afternoon; it is only shown as a date and time.
             lastEligibleAtMillis = 1_792_946_100_000L,
             installSource = InstallSource.PLAY,
+            installRecord = InstallRecord(InstallKind.PLAY, "com.android.vending", firstInstallTime = 1L, lastUpdateTime = 2L),
             appVersion = "0.0.77",
             watchAppVersion = "0.0.77",
             watchappInstalled = true,

@@ -12,6 +12,8 @@ import com.pebblentn.app.rules.ConditionOperator
 import com.pebblentn.app.rules.LiteralExtractor
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleOutput
+import com.pebblentn.app.update.InstallKind
+import com.pebblentn.app.update.InstallRecord
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -152,6 +154,34 @@ class DiagnosticExporterTest {
             }
             assertEquals(mapOf(custom to "true", "com.google.android.apps.maps" to null), flags)
         }
+    }
+
+    @Test
+    fun bothExportsCarryTheInstallRecord() = runTest {
+        val record = InstallRecord(InstallKind.OTHER, "com.aurora.store", "com.aurora.store", null, 1_000L, 1_000L)
+        val withInstall = DiagnosticExporter(
+            debugHistory,
+            UserRuleRepository(db.userRuleDao()),
+            appVersion = "0.0.80",
+            androidRelease = "15",
+            now = { "2026-10-30T00:00:00Z" },
+            installRecord = { record },
+        )
+        for (out in listOf(withInstall.build(ExportMode.RULES_ONLY), withInstall.buildCapped(ExportMode.PRIVACY_SAFE, DiagnosticExporter.EMAIL_MAX_BYTES).json)) {
+            val install = (kotlinx.serialization.json.Json.parseToJsonElement(out) as kotlinx.serialization.json.JsonObject)
+                .getValue("metadata").let { it as kotlinx.serialization.json.JsonObject }
+                .getValue("install") as kotlinx.serialization.json.JsonObject
+            assertEquals("\"other\"", install.getValue("installSource").toString())
+            assertEquals("\"com.aurora.store\"", install.getValue("installingPackage").toString())
+            assertEquals("false", install.getValue("updatedSinceInstall").toString())
+        }
+    }
+
+    @Test
+    fun withoutAnInstallRecordTheExportSaysUnknown() = runTest {
+        val metadata = (kotlinx.serialization.json.Json.parseToJsonElement(exporter.build(ExportMode.FULL)) as kotlinx.serialization.json.JsonObject)
+            .getValue("metadata") as kotlinx.serialization.json.JsonObject
+        assertEquals("\"unknown\"", (metadata.getValue("install") as kotlinx.serialization.json.JsonObject).getValue("installSource").toString())
     }
 
     @Test

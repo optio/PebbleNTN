@@ -40,7 +40,7 @@ delete all data on the device (Debug history > Delete all, clearing the app's da
 | Data type | Collected | Shared | Notes |
 |---|---|---|---|
 | App activity / other actions (turn information from navigation notifications) | No | No | Processed and kept on the device only; notification identifiers stored as hashes; the user deletes the debug history at any time. |
-| App info and performance (diagnostics) | No | No | Only in a file the user reviews and sends; never sent automatically. |
+| App info and performance (diagnostics) | No | No | Only in a file the user reviews and sends; never sent automatically. The file also names the app's installer package and its install and update times, read from the device's package manager. |
 | Personal info (email address) | No | No | The feedback email is a draft the user sends from their own email app. |
 | Location | No | No | The app has no location permission; it reads only the text of navigation notifications. |
 | Contacts, messages, photos, files | No | No | Not read. |
