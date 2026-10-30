@@ -9,7 +9,11 @@ import com.pebblentn.app.rules.ConditionOperator
 import com.pebblentn.app.rules.LiteralExtractor
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.rules.RuleOutput
+import com.pebblentn.app.update.InstallKind
+import com.pebblentn.app.update.InstallRecord
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -122,6 +126,56 @@ class ExportBuilderTest {
         assertTrue(root.getValue("events").jsonArray.none { "customPackage" in it.jsonObject })
     }
 
+    // --- REQ-DEBUG-015 (#119): the install section -------------------------------------------------
+
+    private fun installSection(mode: ExportMode, record: InstallRecord) = Json.parseToJsonElement(
+        builder.build(
+            mode,
+            listOf(userRule),
+            listOf(event),
+            appVersion = "0.0.80",
+            androidRelease = "15",
+            exportedAt = "2026-10-30T00:00:00Z",
+            installRecord = record,
+        ),
+    ).jsonObject.getValue("metadata").jsonObject.getValue("install").jsonObject
+
+    @Test
+    fun theInstallSectionIsInEveryModeWithEveryField() {
+        // 2026-10-01T10:00:00Z and 2026-10-29T08:30:00Z.
+        val record = InstallRecord(InstallKind.FDROID, "org.fdroid.fdroid", "org.fdroid.fdroid", null, 1_790_848_800_000L, 1_793_262_600_000L)
+        for (mode in ExportMode.entries) {
+            val install = installSection(mode, record)
+            assertEquals(
+                setOf("installSource", "installingPackage", "initiatingPackage", "originatingPackage", "firstInstallTime", "lastUpdateTime", "updatedSinceInstall"),
+                install.keys,
+            )
+            assertEquals("fdroid", install.getValue("installSource").jsonPrimitive.content)
+            assertEquals("org.fdroid.fdroid", install.getValue("installingPackage").jsonPrimitive.content)
+            assertEquals("org.fdroid.fdroid", install.getValue("initiatingPackage").jsonPrimitive.content)
+            assertEquals(JsonNull, install.getValue("originatingPackage"))
+            assertEquals("2026-10-01T10:00:00Z", install.getValue("firstInstallTime").jsonPrimitive.content)
+            assertEquals("2026-10-29T08:30:00Z", install.getValue("lastUpdateTime").jsonPrimitive.content)
+            assertEquals(true, install.getValue("updatedSinceInstall").jsonPrimitive.boolean)
+        }
+    }
+
+    @Test
+    fun eachKindIsExportedInLowerCase() {
+        for (kind in InstallKind.entries) {
+            assertEquals(kind.name.lowercase(), installSection(ExportMode.RULES_ONLY, InstallRecord(kind)).getValue("installSource").jsonPrimitive.content)
+        }
+    }
+
+    @Test
+    fun aFailedLookupExportsUnknownAndNulls() {
+        val install = installSection(ExportMode.PRIVACY_SAFE, InstallRecord.UNKNOWN)
+        assertEquals("unknown", install.getValue("installSource").jsonPrimitive.content)
+        for (field in listOf("installingPackage", "initiatingPackage", "originatingPackage", "firstInstallTime", "lastUpdateTime", "updatedSinceInstall")) {
+            assertEquals(field, JsonNull, install.getValue(field))
+        }
+    }
+
     @Test
     fun metadataRecordsMode() {
         assertTrue(build(ExportMode.FULL).contains("\"mode\": \"FULL\""))
@@ -143,7 +197,7 @@ class ExportBuilderTest {
                 builder.build(mode, emptyList(), listOf(recorded), appVersion = "0.0.60", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z", appVersionCode = 60),
             ).jsonObject
             val metadata = root.getValue("metadata").jsonObject
-            assertEquals(4L, metadata.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals(5L, metadata.getValue("schemaVersion").jsonPrimitive.long)
             assertEquals(60L, metadata.getValue("appVersionCode").jsonPrimitive.long)
             // Version strings are not personal data: privacy-safe keeps them unredacted.
             val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject

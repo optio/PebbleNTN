@@ -44,6 +44,7 @@ class EffectiveCatalogTest {
 
     private val google = "com.google.android.apps.maps"
     private val microg = "app.morphe.android.apps.maps"
+    private val ungoogled = "org.ungoogled.android.apps.maps.microg"
     private val custom = "app.revanced.android.apps.maps"
 
     private class FakeStore(initial: Map<String, List<String>> = emptyMap()) : UserPackageStore {
@@ -175,13 +176,13 @@ class EffectiveCatalogTest {
         val row = repo.observeEnablement().first().single()
         assertEquals("microg-maps", row.appId)
         assertTrue(row.installed)
-        assertEquals(listOf(microg, custom), row.packageNames)
+        assertEquals(listOf(microg, ungoogled, custom), row.packageNames)
     }
 
     @Test
     fun onPlayAPackageAddedToGoogleMapsWorksAndMicrogsPackageIsGoogleMaps() = runTest {
         val catalog = effective(googlePlay = true)
-        assertEquals(listOf(google, microg), catalog.builtInPackagesOf("google-maps"))
+        assertEquals(listOf(google, microg, ungoogled), catalog.builtInPackagesOf("google-maps"))
         assertTrue(catalog.builtInPackagesOf("microg-maps").isEmpty())
         // The joined MicroG package is a Google Maps built-in here: no app named MicroG Maps.
         assertEquals(PackageCheck.Invalid(PackageCheck.Reason.BUILT_IN_HERE), catalog.add("google-maps", microg))
@@ -189,11 +190,26 @@ class EffectiveCatalogTest {
 
         assertEquals(PackageCheck.Valid(custom), catalog.add("google-maps", custom))
         // User-added packages join before the Play view, so the joined MicroG package comes after them.
-        assertEquals(listOf(google, custom, microg), catalog.current.entryForPackage(custom)!!.packageNames)
+        assertEquals(listOf(google, custom, microg, ungoogled), catalog.current.entryForPackage(custom)!!.packageNames)
         assertEquals(google, catalog.families.resourceFallbackFor(custom))
         val repo = enablement(catalog)
         repo.syncInstalledApps(emptySet())
         assertEquals("google-maps-turn-right-fr", dispatch(repo, catalog.families, custom).single().matchedRuleId)
+    }
+
+    @Test
+    fun theSecondMicrogPackageIsBuiltInAndCannotBeAddedAgain() {
+        // #113: org.ungoogled.android.apps.maps.microg is a locked built-in package of MicroG Maps.
+        val catalog = effective()
+        assertEquals(listOf(microg, ungoogled), catalog.builtInPackagesOf("microg-maps"))
+        assertEquals(PackageCheck.Invalid(PackageCheck.Reason.BUILT_IN_HERE), catalog.add("microg-maps", ungoogled))
+        assertEquals(PackageCheck.Invalid(PackageCheck.Reason.BUILT_IN_ELSEWHERE, "microg-maps"), catalog.add("google-maps", ungoogled))
+        assertTrue(catalog.userAddedPackagesOf("microg-maps").isEmpty())
+        assertEquals(google, catalog.families.resourceFallbackFor(ungoogled))
+        // Hidden on Google Play: it is a Google Maps package there, never a MicroG Maps entry.
+        val play = effective(googlePlay = true)
+        assertEquals("google-maps", play.current.entryForPackage(ungoogled)!!.appId)
+        assertTrue(play.current.apps.none { it.appId == "microg-maps" })
     }
 
     @Test

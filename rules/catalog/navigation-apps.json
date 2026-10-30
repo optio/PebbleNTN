@@ -15,7 +15,8 @@
       "appId": "microg-maps",
       "displayName": "MicroG Maps",
       "packageNames": [
-        "app.morphe.android.apps.maps"
+        "app.morphe.android.apps.maps",
+        "org.ungoogled.android.apps.maps.microg"
       ],
       "rulesFrom": "google-maps",
       "website": "https://github.com/fangkampanat/gmaps-patches",

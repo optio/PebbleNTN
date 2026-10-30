@@ -4,10 +4,10 @@
 
 | Path | Contents |
 |---|---|
-| `android/app/src/main/java/com/pebblentn/app/` | Companion source (114 Kotlin files at c50710e, 116 at 4779760, 123 at 6dec020), organised by feature package |
-| `android/app/src/test/`, `src/androidTest/` | 69 JVM/Robolectric test sources (71 at 4779760, 79 at 6dec020; Robolectric pinned to `sdk=34` in `src/test/resources/robolectric.properties`); 1 instrumented test |
+| `android/app/src/main/java/com/pebblentn/app/` | Companion source (114 Kotlin files at c50710e, 116 at 4779760, 123 at 6dec020, 129 at 494a6dd), organised by feature package |
+| `android/app/src/test/`, `src/androidTest/` | 69 JVM/Robolectric test sources (71 at 4779760, 79 at 6dec020, 92 at 494a6dd; Robolectric pinned to `sdk=34` in `src/test/resources/robolectric.properties`); 1 instrumented test |
 | `android/app/schemas/room/` | Exported Room schemas v1-v8 (migration tests) |
-| `android/app/src/main/res/` | Resources; `values/strings.xml` (431 lines at 4779760, English only, content descriptions named `cd_*`); `drawable-nodpi/` holds the 13 `ic_maneuver_*.png` icons, mapped from the `Maneuver` enum by `ui/format/DisplayLabels.maneuverIcon`, and since #102 the 87 `watch_preview_*` PNGs (100 files at 6dec020); `values/strings.xml` is 588 lines at 6dec020; `values/themes.xml` is one `android:Theme.Material.NoActionBar` style (Compose draws the rest) |
+| `android/app/src/main/res/` | Resources; `values/strings.xml` (431 lines at 4779760, English only, content descriptions named `cd_*`); `drawable-nodpi/` holds the 13 `ic_maneuver_*.png` icons, mapped from the `Maneuver` enum by `ui/format/DisplayLabels.maneuverIcon`, and since #102 the 87 `watch_preview_*` PNGs (100 files at 6dec020); `values/strings.xml` is 588 lines at 6dec020 and 624 at 494a6dd; `values/themes.xml` is one `android:Theme.Material.NoActionBar` style (Compose draws the rest) |
 | `android/pebblekit/` | Vendored PebbleKit Android 2 1.2.0 (26 Kotlin files + AIDL) |
 | `android/fixture-publisher/` | Debug app with synthetic notifications |
 | `watchapp/src/c/` | Watchapp C (17 `.c` at 4779760, headers, `generated/protocol.h`) |
@@ -30,12 +30,12 @@
 | `notification/`, `notification/icon/` | Controller/Handler + Service | listener, dispatcher (privacy gate), queue, snapshot factory, capture processor, maneuver heuristic, large-icon matcher (`IconCandidates`, `AppIconReferences`, `IconMatcher`, `LargeIconRecognizer`) |
 | `rules/` | Service (pure) | engine, conditions, extractors, parsers, `SafeRegex`, codec, validator, preview, asset repository |
 | `data/`, `data/db/` | Repository/DAO + Migration | Room entities and DAOs (v8 with 7 migrations), SharedPreferences repositories; `EnabledAppRepository` is the per-app enablement and the allowlist |
-| `update/` | Service + Adapter | `UpdateCheckRepository` (also the stored watchapp version), `AppVersions` (tolerant and strict compare), `InstallSource`/`InstallSources` (v0.0.73), `ReleaseFetcher`/`GitHubReleaseFetcher`, `RuleUpdateRepository`, signature verifier |
-| `export/` | Service | export builder, redactor, exporter, share manager |
+| `update/` | Service + Adapter | `UpdateCheckRepository` (also the stored watchapp version), `AppVersions` (tolerant and strict compare), `InstallSource`/`InstallSources` (v0.0.73; `PLAY` since #114), the pure per-source `UpdatePolicy` and the manual-check `UpdateCheckMessage` (#114), `ReleaseFetcher`/`GitHubReleaseFetcher`, `RuleUpdateRepository`, signature verifier (9 files at 494a6dd) |
+| `export/` | Service | `ExportBuilder` (pure: `ExportMetadata`, `ExportedEvent`, `ExportBundle`, `ExportMode`; schema 4 at 494a6dd), `Redactor`, `DiagnosticExporter` (gathers rules, events and export-time inputs; 10 MB cap), `DiagnosticShareManager` (FileProvider, share sheet or email) |
 | `system/` | Adapter | notification access, listener refresher, install receiver |
 | `catalog/` | Model | navigation-app catalog: `NavigationAppEntry` (`rulesFrom`, `website`, `playListed` since #113), `NavigationAppCatalog` (strict parse, one app per package, `entryForPackage`, `allPackageNames`, `ruleFamilies()`, `forGooglePlay()`), `RuleFamilies` and `supportedNotInstalled` (one 171-line file at 2fa2aa5) |
 | `di/` | Configuration | `AppContainer`, asset catalog source, installed apps provider |
-| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `watchsettings/` (#102), `components/`, `format/`, `theme/` |
+| `ui/` | Controller + View (Compose) | `MainActivity` (NavHost, state collection), `dashboard/` (`DashboardScreen`, pure helpers `UpdateCard.kt` `updateCardModel`, `UpdatePrompt.kt` `updatePrompt`, `WatchAppVersionRow.kt` `watchAppVersionText` (v0.0.74), `SetupChecklist.kt` `SetupProgress`; the Updates section's Play-only "Phone app version" row has no helper at 494a6dd), `rules/`, `debug/`, `share/`, `apps/`, `onboarding/`, `watchsettings/` (#102), `components/`, `format/`, `theme/` |
 
 ## Watchapp Module Organisation
 

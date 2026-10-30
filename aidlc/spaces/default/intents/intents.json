@@ -78,5 +78,13 @@
     "scope": "express",
     "status": "complete",
     "request": "cff642eb"
+  },
+  {
+    "uuid": "01a18a09-d050-722c-896f-19fd6705b048",
+    "slug": "install-source",
+    "dirName": "261029-install-source",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "ef2a5b8b"
   }
 ]

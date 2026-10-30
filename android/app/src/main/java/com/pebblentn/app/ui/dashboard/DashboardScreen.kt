@@ -63,6 +63,7 @@ import com.pebblentn.app.protocol.WatchLink
 import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.format.DisplayLabels
 import com.pebblentn.app.ui.theme.PebbleNtnTheme
+import com.pebblentn.app.update.InstallRecord
 import com.pebblentn.app.update.InstallSource
 import com.pebblentn.app.update.UpdatePolicy
 import kotlinx.coroutines.launch
@@ -90,6 +91,8 @@ fun DashboardScreen(
     latestVersion: String? = null,
     /** Where this app was installed from: the card's main "Update from …" button (REQ-ANDROID-020). */
     installSource: InstallSource = InstallSource.GITHUB,
+    /** What installed or last updated this version: the "Phone app version" row (REQ-ANDROID-020, #119). */
+    installRecord: InstallRecord = InstallRecord.UNKNOWN,
     /** Open a source's update destination: the detected one, or one picked once under "Other sources". */
     onOpenUpdateSource: (InstallSource) -> Unit = {},
     onCheckForUpdate: () -> Unit = {},
@@ -360,19 +363,21 @@ fun DashboardScreen(
             }
 
             Section(stringResource(R.string.dashboard_section_updates)) {
-                if (!githubCheckAllowed) {
-                    // Google Play updates the app; only the version is shown (REQ-ANDROID-022).
-                    InfoRow(
-                        title = stringResource(R.string.dashboard_app_version),
-                        value = stringResource(R.string.dashboard_app_version_play, appVersion),
-                    )
-                } else {
+                // The version and what installed or last updated it, for every source, even while the
+                // stale check is the top card (REQ-ANDROID-020, #119).
+                InfoRow(
+                    title = stringResource(R.string.dashboard_app_version),
+                    value = resolve(phoneAppVersionText(appVersion, installRecord)),
+                )
+                // Google Play updates the app; there is no GitHub check (REQ-ANDROID-022).
+                if (githubCheckAllowed) {
+                    HorizontalDivider()
                     // While the check is stale, "Check for updates" is the top card instead (#94).
                     if (prompt != UpdatePrompt.STALE_CHECK) {
                         NavRow(
                             icon = Icons.Filled.Refresh,
                             title = stringResource(R.string.dashboard_check_update),
-                            summary = stringResource(R.string.dashboard_version, appVersion),
+                            summary = stringResource(R.string.dashboard_check_update_hint),
                             onClick = onCheckForUpdate,
                             showChevron = false,
                         )
@@ -390,6 +395,14 @@ fun DashboardScreen(
 
         }
     }
+}
+
+/** The row text: the format with the version and the source's name or package, or the bare version. */
+@Composable
+private fun resolve(text: PhoneAppVersionText): String {
+    val format = text.format ?: return text.version
+    val source = text.sourceName?.let { stringResource(it) } ?: text.sourcePackage
+    return if (source == null) stringResource(format, text.version) else stringResource(format, text.version, source)
 }
 
 /** "Slight left · 70 m · Rue de la Loi · ETA 17:47", with readable maneuver names. */

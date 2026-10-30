@@ -30,7 +30,7 @@ It preserves structural tokens, units, punctuation and anonymized placeholders s
 
 ## Versions (schema 2+)
 
-`metadata` carries `schemaVersion` (2), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
+`metadata` carries `schemaVersion` (the format's version, 2 or later; 5 now), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
 
 ```json
 "versions": {
@@ -58,3 +58,29 @@ Consecutive repeats of the same card are one event (REQ-DEBUG-013). Each event c
 ```
 
 The flag reflects the packages at export time, not when the event was recorded: a package removed since then is not flagged.
+
+## Install (schema 5)
+
+`metadata.install` says what installed or last updated the running version, and when (REQ-DEBUG-015, classified as in REQ-ANDROID-020). It is present in every mode, rules-only included, and comes only from the device's package manager, read once at app start:
+
+```json
+"metadata": {
+  "schemaVersion": 5,
+  "install": {
+    "installSource": "fdroid",
+    "installingPackage": "org.fdroid.fdroid",
+    "initiatingPackage": "org.fdroid.fdroid",
+    "originatingPackage": null,
+    "firstInstallTime": "2026-10-01T10:00:00Z",
+    "lastUpdateTime": "2026-10-29T08:30:00Z",
+    "updatedSinceInstall": true
+  }
+}
+```
+
+- `installSource`: `play`, `fdroid`, `obtainium`, `manual` (no installer, the system package installer, or adb), `other` (another installer, named by `installingPackage`) or `unknown` (the lookup failed).
+- `installingPackage`, `initiatingPackage`, `originatingPackage`: the raw package names, or `null` where Android gives none (`originatingPackage` is usually `null`).
+- `firstInstallTime`, `lastUpdateTime`: ISO 8601 UTC; `updatedSinceInstall`: whether they differ.
+- After a failed lookup `installSource` is `unknown` and every other field is `null`.
+
+Android keeps only the installer of the current version, so an earlier source is lost after an update from another source; `firstInstallTime` still shows the first install.

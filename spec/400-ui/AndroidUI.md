@@ -28,6 +28,7 @@ Material 3 with subtle Pebble styling:
 - shortcuts to debug history and rules;
 - a "Refresh app" recovery action that reconnects the notification listener (REQ-ANDROID-012), with an explanation of when to use it (navigation running on the phone but not reaching the watch) and a confirmation that it ran;
 - when captures exist that no rule matched, a prompt to contribute those diagnostics (REQ-DEBUG-011), leading to the share-to-help screen;
+- in the Updates section, first, a "Phone app version" row for every install source: the version and what installed or last updated it ("0.0.80, updated by F-Droid", "installed manually", another installer's package name, or only the version when that is unknown; REQ-ANDROID-020);
 - a "Check for updates" control (always available), an opt-in "check weekly" toggle that is off by default, and, when a newer release exists, an update prompt with the available/installed versions, a download-latest action, and uninstall/reinstall guidance (REQ-ANDROID-013);
 - the dashboard scrolls, so its cards and controls remain reachable as they accumulate.
 

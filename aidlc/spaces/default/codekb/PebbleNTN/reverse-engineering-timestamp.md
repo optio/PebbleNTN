@@ -2,31 +2,43 @@
 
 ## Run Record
 
-- Date: 2026-10-28
-- Commit: 2fa2aa53a3f4f1c167407a84967c91add183de2c
-- Breadth requested: focused scan (snapshot paths: `android/app/src/main/java/com/pebblentn/app/notification/icon/`, `android/app/src/main/java/com/pebblentn/app/catalog/`, `android/app/src/test/java/com/pebblentn/app/notification/`); depth Minimal; lead-only (developer link wrote the nine artifacts)
-- Intent: `261028-microg-icon-fallback` (follow-up to #113: MicroG Maps large-icon lookup falls back to the root app's package name when the posting package's resource lookup fails)
-- Coverage: the large-icon recognizer, candidates, references and matcher; the catalog model with `rulesFrom`, `forGooglePlay` and `RuleFamilies`; `IconCandidatesTest`, `IconMatcherTest` and `NotificationSnapshotFactoryTest`. Skimmed: the other notification tests (names and grep), `AppContainer` wiring (lines 55-70, 130-140), `NotificationSnapshotFactory.recognizeIcon`, `NavigationAppCatalogTest` (family and Play tests) and `RuleFamiliesMatchingTest` by grep, the catalog entry order, the Google Maps rule package lists, the manifest `<queries>` and the Robolectric version.
-- Merge: focused merge into a STALE store (prior focused scan at 1c7f4c1 for `261026-microg-maps`, which shipped in v0.0.78 with `rulesFrom` families rather than its recorded data-only plan). Prior prose is kept; superseded statements ("no alias layer", "no package alias") are marked as superseded rather than deleted. Added or updated: the active-intent business context and the rule family and root package glossary entries, the rule-families design decision, the improvement opportunity and a large-icon fallback interaction diagram, the catalog row in code structure, the large-icon and rule-family API section, the Navigation App Catalog, Notification Pipeline and Rule Engine entries, a rule-families dependency note, and the "MicroG icon fallback findings". The prior analyzed paths are demoted to shallow, except those this run re-analyzed (the icon files and `catalog/`). Build outputs, `.gradle/` and the AI-DLC install were left out.
+- Date: 2026-10-30
+- Commit: 494a6dd1e677b02187ba4c6255e90fc2d4ad13fc
+- Breadth requested: focused scan (snapshot paths: `android/app/src/main/java/com/pebblentn/app/update/`, `android/app/src/main/java/com/pebblentn/app/export/`, `android/app/src/main/java/com/pebblentn/app/ui/dashboard/`, `android/app/src/test/java/com/pebblentn/app/update/`, `android/app/src/test/java/com/pebblentn/app/export/`, `android/app/src/test/java/com/pebblentn/app/ui/dashboard/`, `requirements/REQ-ANDROID.md`, `requirements/REQ-DEBUG.md`, `spec/300-data/ExportFormat.md`, `android/app/src/main/res/values/strings.xml`); depth Minimal; lead-only (the developer link scanned and wrote the nine artifacts)
+- Intent: `261029-install-source` (GitHub issue #119: show where the phone app was installed or last updated from, on the dashboard "Phone app version" row for every source and as an install section in every debug export)
+- Coverage: the `update/`, `export/` and `ui/dashboard/` packages and their tests, `REQ-ANDROID.md`, `REQ-DEBUG.md`, `ExportFormat.md` and the update, dashboard and export string groups of `strings.xml`. Skimmed: `AppContainer` wiring (lines 55-135, 165-180), the `MainActivity` dashboard call and `openUpdateSource`, `EventVersions.kt` (`getPackageInfo` pattern), the manifest `<queries>`, `android/app/build.gradle.kts` (SDK levels), `MANIFEST.sha256.json`, `scripts/validate-spec-assets.sh`, `.githooks/pre-commit`, `spec/400-ui/AndroidUI.md` and `docs/IMPLEMENTATION_STATUS.md` by grep.
+- Merge: focused merge into a STALE store (prior focused scan at 2fa2aa5 for `261028-microg-icon-fallback`, shipped in v0.0.79). Prior prose is kept; statements this run found outdated (Play mapped to GitHub, targetSdk 35) are marked as superseded or dated rather than deleted. Added or updated: the active-intent business context and the install-source glossary entries, two design decisions, an improvement opportunity and an install-source interaction diagram, the `update/` and `export/` rows and file counts in code structure, the "Install Source and Export Metadata APIs" section, the App Update Check, Dashboard Update UI, Diagnostics Export and Specification and Requirements entries, an install-source fan-out dependency note, the targetSdk line, and the "Install source findings". The prior analyzed paths are demoted to shallow, and earlier shallow entries now inside this run's analyzed paths are dropped from the shallow list (22 entries). Build outputs, `.gradle/` and the AI-DLC install were left out.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: microg-icon-fallback
-fingerprint: d61501eead19ad081b6494d23aef0be9c01d5b6e
+intent: install-source
+fingerprint: a45810338a904c500edaff2f885ea847642a155c
 analyzed:
+  paths:
+    - android/app/src/main/java/com/pebblentn/app/update/
+    - android/app/src/main/java/com/pebblentn/app/export/
+    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/
+    - android/app/src/test/java/com/pebblentn/app/update/
+    - android/app/src/test/java/com/pebblentn/app/export/
+    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/
+    - requirements/REQ-ANDROID.md
+    - requirements/REQ-DEBUG.md
+    - spec/300-data/ExportFormat.md
+    - android/app/src/main/res/values/strings.xml
+  components:
+    - App Update Check
+    - Dashboard Update UI
+    - Diagnostics Export
+    - Specification and Requirements
+shallow:
   paths:
     - android/app/src/main/java/com/pebblentn/app/notification/icon/
     - android/app/src/main/java/com/pebblentn/app/catalog/
     - android/app/src/test/java/com/pebblentn/app/notification/icon/
     - android/app/src/test/java/com/pebblentn/app/notification/NotificationSnapshotFactoryTest.kt
-  components:
-    - Navigation App Catalog
-    - Notification Pipeline
-shallow:
-  paths:
     - rules/catalog/navigation-apps.json
     - rules/bundled/google-maps/
     - rules/fixtures/google-maps.json
@@ -69,18 +81,9 @@ shallow:
     - android/app/src/main/res/values/themes.xml
     - android/app/src/main/java/com/pebblentn/app/PebbleNtnApplication.kt
     - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
-    - android/app/src/main/java/com/pebblentn/app/update/InstallSource.kt
-    - android/app/src/main/java/com/pebblentn/app/update/ReleaseFetcher.kt
-    - android/app/src/main/java/com/pebblentn/app/update/UpdateCheckRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/update/UpdateCheckMessage.kt
-    - android/app/src/main/java/com/pebblentn/app/update/RuleUpdateRepository.kt
     - android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdateCard.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/UpdatePrompt.kt
     - android/app/src/main/java/com/pebblentn/app/ui/onboarding/OnboardingScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/export/DiagnosticShareManager.kt
     - android/app/src/test/resources/robolectric.properties
-    - android/app/src/test/java/com/pebblentn/app/update/InstallSourceTest.kt
     - .github/workflows/play-release.yml
     - docs/PRIVACY_POLICY.md
     - docs/PLAY_DATA_SAFETY.md
@@ -91,15 +94,9 @@ shallow:
     - spec/600-security-release/BuildRelease.md
     - spec/600-security-release/SecurityPrivacy.md
     - requirements/REQ-SECURITY.md
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/FeedbackCard.kt
     - android/app/src/main/java/com/pebblentn/app/data/FeedbackCampaign.kt
-    - android/app/src/main/java/com/pebblentn/app/update/AppVersions.kt
-    - android/app/src/main/java/com/pebblentn/app/update/SignedRuleset.kt
-    - android/app/src/main/java/com/pebblentn/app/update/RulesetSignatureVerifier.kt
     - android/app/src/main/java/com/pebblentn/app/pebble/PebbleWatchTransport.kt
     - android/app/src/main/java/
-    - android/app/src/main/res/values/strings.xml
     - android/app/src/main/res/
     - android/app/src/test/
     - .github/workflows/release.yml
@@ -108,7 +105,6 @@ shallow:
     - docs/FOR-HUMAN.md
     - fdroid/README.md
     - fdroid/REPRODUCIBLE_BUILDS.md
-    - requirements/REQ-ANDROID.md
     - scripts/
     - MANIFEST.sha256.json
     - android/fixture-publisher/build.gradle.kts
@@ -174,7 +170,6 @@ shallow:
     - android/app/src/main/java/com/pebblentn/app/core/NavigationSessionReducer.kt
     - android/app/src/main/java/com/pebblentn/app/ui/format/DisplayLabels.kt
     - android/app/src/main/java/com/pebblentn/app/ui/apps/NavigationAppsScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRow.kt
     - android/app/src/main/java/com/pebblentn/app/ui/
     - android/app/src/main/java/com/pebblentn/app/system/
     - android/app/src/main/java/com/pebblentn/app/core/
@@ -184,13 +179,8 @@ shallow:
     - android/app/src/test/java/com/pebblentn/app/protocol/FakeWatchTransport.kt
     - android/app/src/test/java/com/pebblentn/app/data/WatchSettingsRepositoryTest.kt
     - android/app/src/test/java/com/pebblentn/app/core/DistanceQuantizerTest.kt
-    - android/app/src/test/java/com/pebblentn/app/update/UpdateCheckRepositoryTest.kt
-    - android/app/src/test/java/com/pebblentn/app/update/AppVersionsTest.kt
     - android/app/src/test/java/com/pebblentn/app/pebble/NavigationControllerTest.kt
     - android/app/src/test/java/com/pebblentn/app/protocol/ProtocolCodecTest.kt
-    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/UpdateCardTest.kt
-    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/UpdatePromptTest.kt
-    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/WatchAppVersionRowTest.kt
     - android/app/src/test/java/com/pebblentn/app/ui/apps/NavigationAppsScreenTest.kt
     - README.md
     - fdroid/
@@ -199,4 +189,7 @@ shallow:
     - android/app/src/test/java/com/pebblentn/app/catalog/NavigationAppCatalogTest.kt
     - android/app/src/test/java/com/pebblentn/app/rules/RuleFamiliesMatchingTest.kt
     - rules/bundled/google-maps/any.json
+    - android/app/src/main/java/com/pebblentn/app/data/EventVersions.kt
+    - .githooks/pre-commit
+    - spec/400-ui/AndroidUI.md
 ```

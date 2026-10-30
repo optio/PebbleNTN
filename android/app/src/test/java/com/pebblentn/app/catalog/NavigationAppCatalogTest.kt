@@ -44,6 +44,7 @@ class NavigationAppCatalogTest {
         // captureOnlyMatchesTheBundledRules.
         val expected = mapOf(
             "app.morphe.android.apps.maps" to "microg-maps", // Google Maps patched for microG (#113)
+            "org.ungoogled.android.apps.maps.microg" to "microg-maps", // a second MicroG Maps build (#113)
             "com.waze" to "waze",
             "net.osmand" to "osmand",
             "net.osmand.plus" to "osmand",
@@ -245,7 +246,7 @@ class NavigationAppCatalogTest {
     @Test
     fun ruleFamiliesJoinGoogleMapsAndMicrogMapsAndLeaveOthersAlone() {
         val families = NavigationAppCatalog.parse(bundledCatalogJson()).ruleFamilies()
-        val maps = setOf("com.google.android.apps.maps", "app.morphe.android.apps.maps")
+        val maps = setOf("com.google.android.apps.maps", "app.morphe.android.apps.maps", "org.ungoogled.android.apps.maps.microg")
         assertEquals(maps, families.familyOf("com.google.android.apps.maps"))
         assertEquals(maps, families.familyOf("app.morphe.android.apps.maps"))
         assertEquals(setOf("app.comaps.google", "app.comaps.fdroid", "app.comaps", "app.comaps.huawei"), families.familyOf("app.comaps"))
@@ -275,8 +276,11 @@ class NavigationAppCatalogTest {
         val maps = play.entryForPackage("app.morphe.android.apps.maps")!!
         assertEquals("google-maps", maps.appId)
         assertEquals("Google Maps", maps.displayName)
-        assertEquals(listOf("com.google.android.apps.maps", "app.morphe.android.apps.maps"), maps.packageNames)
-        assertEquals(26, play.allPackageNames.size - 1) // the fixture publisher aside, nothing is lost
+        assertEquals(
+            listOf("com.google.android.apps.maps", "app.morphe.android.apps.maps", "org.ungoogled.android.apps.maps.microg"),
+            maps.packageNames,
+        )
+        assertEquals(27, play.allPackageNames.size - 1) // the fixture publisher aside, nothing is lost
         assertEquals(
             NavigationAppCatalog.parse(bundledCatalogJson()).ruleFamilies().familyOf("com.google.android.apps.maps"),
             play.ruleFamilies().familyOf("com.google.android.apps.maps"),
@@ -288,6 +292,22 @@ class NavigationAppCatalogTest {
         val catalog = NavigationAppCatalog.parse(catalogJson(app("a", "p.a"), app("b", "p.b", extra = ""","playListed":false""")))
         assertEquals(listOf("a"), catalog.forGooglePlay().apps.map { it.appId })
         assertEquals(listOf("a", "b"), catalog.apps.map { it.appId })
+    }
+
+    @Test
+    fun theUngoogledMicrogBuildIsASecondBuiltInMicrogMapsPackage() {
+        val ungoogled = "org.ungoogled.android.apps.maps.microg"
+        val bundled = NavigationAppCatalog.parse(bundledCatalogJson())
+        val microg = bundled.entryForPackage(ungoogled)!!
+        assertEquals("microg-maps", microg.appId)
+        assertEquals(listOf("app.morphe.android.apps.maps", ungoogled), microg.packageNames)
+        // The Google Maps family, and the Google Maps package as its root, outside and on Play.
+        for (families in listOf(bundled.ruleFamilies(), bundled.forGooglePlay().ruleFamilies())) {
+            assertTrue(families.applies(ungoogled, listOf("com.google.android.apps.maps")))
+            assertEquals("com.google.android.apps.maps", families.resourceFallbackFor(ungoogled))
+        }
+        // Hidden on Google Play: no MicroG Maps entry, the package joins Google Maps.
+        assertEquals("google-maps", bundled.forGooglePlay().entryForPackage(ungoogled)!!.appId)
     }
 
     @Test

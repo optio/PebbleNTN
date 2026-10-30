@@ -4,6 +4,7 @@ import android.os.Build
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.data.UserRuleRepository
+import com.pebblentn.app.update.InstallRecord
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 
@@ -36,6 +37,8 @@ class DiagnosticExporter(
     private val locale: () -> String = { java.util.Locale.getDefault().toLanguageTag() },
     /** The user-added package names per app id at export time (FR7). */
     private val userAddedPackages: () -> Map<String, List<String>> = { emptyMap() },
+    /** What installed or last updated this version, as detected at app start (REQ-DEBUG-015). */
+    private val installRecord: () -> InstallRecord = { InstallRecord.UNKNOWN },
 ) {
     suspend fun build(mode: ExportMode): String {
         val rules = userRules.observeUserRules().first().mapNotNull { it.rule }
@@ -50,6 +53,7 @@ class DiagnosticExporter(
             locale = locale(),
             appVersionCode = appVersionCode,
             userAddedPackages = userAddedPackages(),
+            installRecord = installRecord(),
         )
     }
 
@@ -70,6 +74,7 @@ class DiagnosticExporter(
 
         val localeTag = locale()
         val added = userAddedPackages()
+        val install = installRecord()
         fun render(events: List<DebugEvent>): String = builder.build(
             mode = mode,
             userRules = rules,
@@ -80,6 +85,7 @@ class DiagnosticExporter(
             locale = localeTag,
             appVersionCode = appVersionCode,
             userAddedPackages = added,
+            installRecord = install,
         )
 
         fun fits(json: String): Boolean = json.toByteArray(Charsets.UTF_8).size <= maxBytes

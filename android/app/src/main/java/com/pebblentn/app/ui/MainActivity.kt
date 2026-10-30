@@ -169,6 +169,8 @@ class MainActivity : ComponentActivity() {
                     // Follows the stored version live, so a new WATCH_READY shows at once (REQ-ANDROID-019).
                     watchAppVersion = updateState.watchAppVersion,
                     installSource = container.installSource,
+                    // The "Phone app version" row: what installed or last updated this version (#119).
+                    installRecord = container.installRecord,
                     onOpenUpdateSource = ::openUpdateSource,
                     onCheckForUpdate = ::checkForUpdate,
                     autoCheckUpdates = autoCheckUpdates,
