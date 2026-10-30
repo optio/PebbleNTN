@@ -56,6 +56,7 @@ class NavigationAppCatalogTest {
             "app.comaps.fdroid" to "comaps",
             "app.comaps" to "comaps", // Codeberg/GitHub release and IzzyOnDroid build (#54)
             "app.comaps.huawei" to "comaps",
+            "app.vela" to "vela-maps", // Vela Maps (#120)
             "com.mapswithme.maps.pro" to "maps-me",
             "cz.seznam.mapy" to "mapy-com",
             "com.autonavi.minimap" to "amap",
@@ -193,7 +194,11 @@ class NavigationAppCatalogTest {
         assertNull(maps.rulesFrom)
         assertNull(maps.website)
         assertTrue(maps.playListed)
-        assertTrue("only MicroG Maps has a website", catalog.apps.filter { it.website != null }.map { it.appId } == listOf("microg-maps"))
+        assertEquals(
+            "only MicroG Maps and Vela Maps have a website",
+            listOf("microg-maps", "vela-maps"),
+            catalog.apps.filter { it.website != null }.map { it.appId },
+        )
     }
 
     @Test
@@ -280,7 +285,8 @@ class NavigationAppCatalogTest {
             listOf("com.google.android.apps.maps", "app.morphe.android.apps.maps", "org.ungoogled.android.apps.maps.microg"),
             maps.packageNames,
         )
-        assertEquals(27, play.allPackageNames.size - 1) // the fixture publisher aside, nothing is lost
+        // The fixture publisher aside, nothing is lost: Vela Maps stays, hidden (#120).
+        assertEquals(28, play.allPackageNames.size - 1)
         assertEquals(
             NavigationAppCatalog.parse(bundledCatalogJson()).ruleFamilies().familyOf("com.google.android.apps.maps"),
             play.ruleFamilies().familyOf("com.google.android.apps.maps"),
@@ -288,10 +294,57 @@ class NavigationAppCatalogTest {
     }
 
     @Test
-    fun anUnlistedAppWithoutRulesFromIsLeftOutOnPlay() {
-        val catalog = NavigationAppCatalog.parse(catalogJson(app("a", "p.a"), app("b", "p.b", extra = ""","playListed":false""")))
-        assertEquals(listOf("a"), catalog.forGooglePlay().apps.map { it.appId })
-        assertEquals(listOf("a", "b"), catalog.apps.map { it.appId })
+    fun anUnlistedAppWithoutRulesFromIsKeptButHiddenOnPlay() {
+        val catalog = NavigationAppCatalog.parse(
+            catalogJson(app("a", "p.a"), app("b", "p.b", extra = ""","playListed":false,"website":"https://example.org/b"""")),
+        )
+        val play = catalog.forGooglePlay()
+        assertEquals("kept for matching and enablement", listOf("a", "b"), play.apps.map { it.appId })
+        assertEquals("but never shown", listOf("a"), play.visibleApps.map { it.appId })
+        assertFalse(play.isVisible("b"))
+        assertNull("and its website is never linked", play.apps.single { it.appId == "b" }.website)
+        assertEquals("b", play.entryForPackage("p.b")!!.appId)
+        assertEquals(setOf("p.b"), play.ruleFamilies().familyOf("p.b"))
+        // Outside Play nothing is hidden.
+        assertEquals(listOf("a", "b"), catalog.visibleApps.map { it.appId })
+        assertTrue(catalog.isVisible("b"))
+    }
+
+    // --- Vela Maps (#120) ------------------------------------------------------------------------
+
+    @Test
+    fun velaMapsIsAnAppWithItsOwnRulesAndWebsiteOutsidePlay() {
+        val catalog = NavigationAppCatalog.parse(bundledCatalogJson())
+        val vela = catalog.entryForPackage("app.vela")!!
+        assertEquals("vela-maps", vela.appId)
+        assertEquals("Vela Maps", vela.displayName)
+        assertEquals(listOf("app.vela"), vela.packageNames)
+        assertNull("its own rules", vela.rulesFrom)
+        assertEquals("https://github.com/PimpinPumpkin/Vela", vela.website)
+        assertFalse(vela.playListed)
+        assertTrue(vela.hasOfficialRules)
+        assertTrue(vela.captureAvailable)
+        assertTrue(vela.defaultEnabled)
+        assertTrue("visible outside Play", catalog.isVisible("vela-maps"))
+        assertTrue(supportedNotInstalled(catalog, emptySet()).any { it.appId == "vela-maps" && it.website == vela.website })
+    }
+
+    @Test
+    fun onGooglePlayVelaMapsIsHiddenButStillMatchedWithItsOwnRules() {
+        val play = NavigationAppCatalog.parse(bundledCatalogJson()).forGooglePlay()
+        assertTrue(play.visibleApps.none { it.appId == "vela-maps" })
+        assertTrue("never offered", supportedNotInstalled(play, emptySet()).none { it.appId == "vela-maps" })
+        val vela = play.entryForPackage("app.vela")!!
+        assertEquals("vela-maps", vela.appId)
+        assertNull("no website on Play", vela.website)
+        assertTrue("default-enabled on discovery", vela.defaultEnabled)
+        assertTrue("in the allowlisted packages", "app.vela" in play.allPackageNames)
+        assertTrue(play.ruleFamilies().applies("app.vela", listOf("app.vela")))
+        assertFalse(play.ruleFamilies().applies("app.vela", listOf("com.google.android.apps.maps")))
+        assertNull(play.ruleFamilies().resourceFallbackFor("app.vela"))
+        // MicroG Maps still joins Google Maps and is still no entry of its own.
+        assertTrue(play.apps.none { it.appId == "microg-maps" })
+        assertEquals(setOf("vela-maps"), play.hiddenAppIds)
     }
 
     @Test

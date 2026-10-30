@@ -20,7 +20,8 @@ import kotlinx.serialization.json.Json
  *   own rules (or none).
  * @property website an https page where the app is obtained, linked instead of Google Play.
  * @property playListed false hides the app on Google Play installs (see
- *   [NavigationAppCatalog.forGooglePlay]).
+ *   [NavigationAppCatalog.forGooglePlay]): with [rulesFrom] it joins that app, without it stays
+ *   working but hidden (#120).
  */
 @kotlinx.serialization.Serializable
 data class NavigationAppEntry(
@@ -50,6 +51,9 @@ data class NavigationAppEntry(
  *   first package, so the rule families keep its root package ([RuleFamilies.resourceFallbackFor]).
  * @property userAddedPackages set by [withUserAddedPackages] only, never read from JSON: each
  *   user-added package mapped to the [NavigationAppEntry.appId] the user added it to.
+ * @property hiddenAppIds set by [forGooglePlay] only, never read from JSON: the entries kept for
+ *   matching, enablement and the listener allowlist but never shown (#120: an unlisted app without
+ *   [NavigationAppEntry.rulesFrom], such as Vela Maps). Everything the user sees reads [visibleApps].
  */
 @kotlinx.serialization.Serializable
 data class NavigationAppCatalog(
@@ -57,7 +61,17 @@ data class NavigationAppCatalog(
     val apps: List<NavigationAppEntry>,
     @kotlinx.serialization.Transient val joinedRoots: Map<String, String> = emptyMap(),
     @kotlinx.serialization.Transient val userAddedPackages: Map<String, String> = emptyMap(),
+    @kotlinx.serialization.Transient val hiddenAppIds: Set<String> = emptySet(),
 ) {
+    /**
+     * The entries the user sees (#120): [apps] without the [hiddenAppIds]. Every list, link and count
+     * in the UI reads this; matching, enablement and the allowlist read [apps].
+     */
+    val visibleApps: List<NavigationAppEntry> get() = apps.filterNot { it.appId in hiddenAppIds }
+
+    /** False for an entry kept on Google Play only so its notifications keep working (#120). */
+    fun isVisible(appId: String): Boolean = appId !in hiddenAppIds
+
     /** The catalog entry that publishes [packageName], or null if the package is not in the catalog. */
     fun entryForPackage(packageName: String): NavigationAppEntry? =
         apps.firstOrNull { packageName in it.packageNames }
@@ -122,18 +136,21 @@ data class NavigationAppCatalog(
      * `playListed: false` is not an entry of its own, so it is never listed and its [website] is never
      * linked. Its packages join the entry whose rules it uses, after that entry's own (the first
      * package keeps its meaning), so they follow that app's switch and keep its rules. An unlisted
-     * app without [NavigationAppEntry.rulesFrom] is left out entirely. Every remaining link goes to
-     * Google Play. A joined package keeps its family root, the entry's first package ([joinedRoots]).
+     * app without [NavigationAppEntry.rulesFrom] (Vela Maps, #120) stays an entry of its own, with
+     * its own rules, switch (on by default) and allowlist place, but in [hiddenAppIds], so it is
+     * never shown. No website is linked on Play. A joined package keeps its family root, the entry's
+     * first package ([joinedRoots]).
      */
     fun forGooglePlay(): NavigationAppCatalog {
         val unlisted = apps.filterNot { it.playListed }
         val joining = unlisted.filter { it.rulesFrom != null }.groupBy { it.rulesFrom!! }
+        val hidden = unlisted.filter { it.rulesFrom == null }.mapTo(linkedSetOf()) { it.appId }
         val listedById = apps.filter { it.playListed }.associateBy { it.appId }
         val roots = joining.flatMap { (targetId, joined) ->
             val root = listedById[targetId]?.packageNames?.firstOrNull() ?: return@flatMap emptyList()
             joined.flatMap { it.packageNames }.map { it to root }
         }.toMap()
-        val playApps = apps.filter { it.playListed }.map { entry ->
+        val playApps = apps.filter { it.playListed || it.appId in hidden }.map { entry ->
             entry.copy(
                 packageNames = entry.packageNames + joining[entry.appId].orEmpty().flatMap { it.packageNames },
                 website = null,
@@ -145,6 +162,7 @@ data class NavigationAppCatalog(
             apps = playApps,
             // A user-added package of an app left out entirely is left out with it.
             userAddedPackages = userAddedPackages.filterKeys { it in kept },
+            hiddenAppIds = hiddenAppIds + hidden,
         )
     }
 
@@ -267,10 +285,10 @@ interface RuleFamilies {
 /**
  * Supported apps that aren't installed, for the navigation-apps screen (#28): apps with directions
  * first, then by name. An uninstalled app is listed like any other (#88). PebbleNTN's own debug
- * fixture app is never offered.
+ * fixture app is never offered, nor an app hidden on Google Play (#120).
  */
 fun supportedNotInstalled(catalog: NavigationAppCatalog, installedAppIds: Set<String>): List<NavigationAppEntry> =
-    catalog.apps
+    catalog.visibleApps
         .filter { it.appId !in installedAppIds }
         .filterNot { entry -> entry.packageNames.all { it.startsWith("com.pebblentn.") } }
         .sortedWith(compareByDescending<NavigationAppEntry> { it.hasOfficialRules }.thenBy { it.displayName.lowercase() })

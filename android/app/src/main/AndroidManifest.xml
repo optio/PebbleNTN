@@ -30,6 +30,7 @@
         <package android:name="app.comaps.fdroid" />
         <package android:name="app.comaps" />
         <package android:name="app.comaps.huawei" />
+        <package android:name="app.vela" />
         <package android:name="com.mapswithme.maps.pro" />
         <package android:name="cz.seznam.mapy" />
         <package android:name="com.autonavi.minimap" />

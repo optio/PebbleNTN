@@ -42,5 +42,6 @@
 - No stack change is implied by #102: Compose `Image` with `ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })` is in Compose UI already, and the capture tool needs only pebble-tool and the standard library.
 - No stack change is implied by #113: adding a package variant is JSON data, one manifest line and tests, with no new library or platform call.
 - No stack change is implied by #119: `InstallSourceInfo` (API 30) and `PackageInfo.firstInstallTime` / `lastUpdateTime` are platform APIs below minSdk 31, and ISO 8601 times come from `java.time.Instant` (already used for `exportedAt`). `getUpdateOwnerPackageName` (API 34) and `getPackageSource` (API 33) would need a version check.
+- No stack change is implied by #120 (Vela Maps): a ruleset, fixtures, a catalog entry and a manifest line are JSON and XML data, the regression test is JUnit 4, and the route-capture driver is standard-library Python (`urllib`, `re`, adb through `host`). The rules use only existing operators and extractors (Java regex on the phone, Python `re` in the workbench and route-capture).
 
 Library versions and transitive relationships are in [dependencies.md](dependencies.md).

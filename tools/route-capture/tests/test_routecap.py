@@ -1,4 +1,5 @@
 """Unit tests for the route-capture harness's pure parts (#55). Run: python3 -m unittest discover tools/route-capture/tests"""
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -231,6 +232,120 @@ class ReportTest(unittest.TestCase):
         md = report.markdown("Google Maps", state)
         self.assertIn("| `s1` | en-US | car | r | 26.14 | 2026-10-04 12:00 UTC (Android 17) | 1 | 0 |", md)
         self.assertIn("1×", md)
+
+
+HARNESS = Path(__file__).resolve().parents[1]
+
+
+class FakeHost:
+    """Records shell commands; answers `am start` with an error for links in `refused`."""
+
+    def __init__(self, refused=()):
+        self.commands, self.refused = [], refused
+
+    def shell(self, cmd, check=True, timeout=None):
+        self.commands.append(cmd)
+        return "Error: Activity not started" if any(r in cmd for r in self.refused) else "Starting: Intent"
+
+
+class VelaMapsTest(unittest.TestCase):
+    """The Vela Maps driver (#120) and the Austin route, without a device."""
+
+    # Release names as the GitHub API lists them (2026-10-30): a rolling canary, nightlies with
+    # per-ABI APKs, and the stable release with a single APK.
+    RELEASES = [
+        {"tag_name": "canary", "prerelease": True, "assets": [
+            {"name": "vela-maps-canary-x86_64.apk", "browser_download_url": "https://example.org/canary-x86_64"}]},
+        {"tag_name": "v0.5.2677", "prerelease": True, "assets": [
+            {"name": "vela-maps-all.apk", "browser_download_url": "https://example.org/2677-all"},
+            {"name": "vela-maps-x86_64.apk", "browser_download_url": "https://example.org/2677-x86_64"}]},
+        {"tag_name": "v0.5.2621", "prerelease": False, "assets": [
+            {"name": "vela-maps-v0.5.2621.apk", "browser_download_url": "https://example.org/2621"}]},
+    ]
+
+    def setUp(self):
+        from routecap import apps
+        self.apps = apps
+        self.vela = apps.APPS["vela-maps"]
+        self._get_json = apps._get_json
+
+    def tearDown(self):
+        self.apps._get_json = self._get_json
+
+    def test_the_driver_is_registered_under_its_catalog_app(self):
+        self.assertEqual("app.vela", self.vela.package)
+        entry = report.app_for_package("app.vela")
+        self.assertEqual("vela-maps", entry["appId"])
+        self.assertTrue(report.bundled_rules("vela-maps"), "its bundled rules are what the report checks")
+
+    def test_the_newest_stable_release_is_installed_never_a_canary_or_nightly(self):
+        self.apps._get_json = lambda url: self.RELEASES
+        self.assertEqual(("v0.5.2621", "https://example.org/2621"), self.vela.source.latest())
+
+    def test_a_stable_release_with_per_abi_apks_gives_the_x86_64_one(self):
+        stable = [dict(self.RELEASES[1], prerelease=False, tag_name="v0.6.0")] + self.RELEASES
+        self.apps._get_json = lambda url: stable
+        self.assertEqual(("v0.6.0", "https://example.org/2677-x86_64"), self.vela.source.latest())
+
+    def test_no_stable_apk_is_an_error_not_a_canary(self):
+        self.apps._get_json = lambda url: self.RELEASES[:2]
+        with self.assertRaises(LookupError):
+            self.vela.source.latest()
+
+    def test_release_asset_without_stable_only_still_takes_the_newest_match(self):
+        self.apps._get_json = lambda url: self.RELEASES
+        any_release = self.apps.ReleaseAsset("https://example.org/api", r"x86_64\.apk$")
+        self.assertEqual(("canary", "https://example.org/canary-x86_64"), any_release.latest())
+
+    def test_navigation_starts_with_the_google_navigation_link_then_falls_back_to_geo(self):
+        route = json.loads((HARNESS / "routes" / "austin-downtown.json").read_text())
+        self.assertEqual(["google.navigation:q=30.2486,-97.7495&mode=d", "geo:30.2486,-97.7495?q=30.2486,-97.7495"],
+                         self.vela.navigation_uris(route, "car"))
+        ok = FakeHost()
+        self.assertTrue(self.vela.start_navigation(ok, route, "car"))
+        self.assertEqual(1, len(ok.commands))
+        self.assertIn('-d "google.navigation:q=30.2486,-97.7495&mode=d" app.vela', ok.commands[0])
+        fallback = FakeHost(refused=("google.navigation",))
+        self.assertTrue(self.vela.start_navigation(fallback, route, "car"))
+        self.assertIn('-d "geo:30.2486,-97.7495?q=30.2486,-97.7495" app.vela', fallback.commands[1])
+        self.assertFalse(self.vela.start_navigation(FakeHost(refused=("google.navigation", "geo:")), route, "car"))
+
+    def test_the_welcome_and_preview_buttons_are_first_run_labels(self):
+        self.assertIn("Get started", self.apps.FIRST_RUN_LABELS)
+        self.assertIn("Use system voice", self.apps.FIRST_RUN_LABELS)
+        self.assertIn("Start", self.apps.FIRST_RUN_LABELS)
+
+    def test_the_austin_route_has_a_cached_track_for_every_mode(self):
+        route = json.loads((HARNESS / "routes" / "austin-downtown.json").read_text())
+        self.assertEqual(["car", "bike", "foot"], route["modes"])
+        for mode in route["modes"]:
+            track = geo.load_track(HARNESS / "routes", "austin-downtown", mode)
+            self.assertGreater(len(track), 10)
+            self.assertLess(geo.distance_m(track[0], (route["origin"]["lon"], route["origin"]["lat"])), 300)
+
+    def test_vela_plan_runs_the_european_routes_in_english_and_austin_in_en_us(self):
+        plan = json.loads((HARNESS / "scenarios" / "vela-maps-m1.json").read_text())
+        scenarios = plan["scenarios"]
+        self.assertTrue(all(s["app"] == "vela-maps" for s in scenarios))
+        self.assertEqual({"en-GB", "en-US"}, {s["locale"] for s in scenarios})
+        european = {p.stem for p in (HARNESS / "routes").glob("*.json")} - {"austin-downtown"}
+        self.assertEqual(european, {s["route"] for s in scenarios if s["locale"] == "en-GB"})
+        self.assertEqual(["austin-downtown"], [s["route"] for s in scenarios if s["locale"] == "en-US"])
+        for s in scenarios:
+            self.assertEqual(f"{s['app']}.{s['locale']}.{s['mode']}.{s['route']}", s["id"])
+            self.assertTrue((HARNESS / "routes" / "cache" / f"{s['route']}.{s['mode']}.json").exists())
+
+    def test_vela_cards_are_recognised_and_navigating_is_known(self):
+        run = {"startedAt": "t", "scenarios": [{"id": "v", "app": "vela-maps", "locale": "en-US", "mode": "car",
+               "route": "austin-downtown", "captures": [
+                   {"packageName": "app.vela", "title": "In 500 ft · Turn right onto Congress Ave", "text": "9 min · 2.1 mi · Arrive 3:12 PM"},
+                   {"packageName": "app.vela", "title": "Navigating", "text": "9 min · 2.1 mi · Arrive 3:12 PM"},
+                   {"packageName": "app.vela", "title": "Navigating", "text": "12 min · 3.4 km · Arrive 15:12"}]}]}
+        self.assertTrue(report.is_instruction(run["scenarios"][0]["captures"][0]))
+        state = report.evaluate(run)
+        self.assertEqual(1, state["scenarios"]["v"]["matched"])
+        self.assertEqual([], report.unrecognised(state))
+        self.assertEqual(2, sum(e["count"] for e in state["known"]["v"]))
 
 
 class IssuesTest(unittest.TestCase):

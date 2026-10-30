@@ -1,0 +1,21 @@
+{
+  "id": "austin-downtown",
+  "city": "Austin",
+  "description": "Texas State Capitol to South Congress across Lady Bird Lake: the first US route, for en-US scenarios with imperial units (feet and miles), about 3.5 km by car.",
+  "origin": {
+    "lat": 30.2747,
+    "lon": -97.7404
+  },
+  "destination": {
+    "lat": 30.2486,
+    "lon": -97.7495
+  },
+  "modes": [
+    "car",
+    "bike",
+    "foot"
+  ],
+  "maps": {
+    "osmand": "Us_texas_austin_northamerica_2"
+  }
+}

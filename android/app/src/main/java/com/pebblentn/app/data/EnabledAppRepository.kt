@@ -22,7 +22,8 @@ import kotlinx.coroutines.flow.combine
  *
  * Enablement follows the catalog it is given: on a Google Play install that is
  * [NavigationAppCatalog.forGooglePlay], where MicroG Maps' package belongs to the Google Maps entry,
- * so the Google Maps switch gates it (#113). The catalog may change at runtime (user-added packages,
+ * so the Google Maps switch gates it (#113), and where Vela Maps keeps its own row, on by default,
+ * that the settings UI never shows (#120). The catalog may change at runtime (user-added packages,
  * [com.pebblentn.app.catalog.EffectiveCatalog]): every call reads its current value, and the owner
  * re-runs [syncInstalledApps] when it changes. An app with a user-added package counts as installed:
  * Android may not let PebbleNTN see that package, and the user said it is there.
@@ -101,12 +102,13 @@ class EnabledAppRepository(
 
     /**
      * Stored enablement of the discovered catalog apps, each marked installed or not, for the
-     * settings UI. Before the first sync every app counts as installed, as nothing is known yet.
+     * settings UI. Before the first sync every app counts as installed, as nothing is known yet. An
+     * app hidden on Google Play (#120) is left out: it stays enabled and allowlisted, but unseen.
      */
     fun observeEnablement(): Flow<List<AppEnablement>> =
         combine(dao.observeAll(), installedPackages, catalogs) { rows, installed, catalog ->
             val byAppId = rows.associateBy { it.appId }
-            catalog.apps.mapNotNull { entry ->
+            catalog.visibleApps.mapNotNull { entry ->
                 val row = byAppId[entry.appId] ?: return@mapNotNull null
                 AppEnablement(
                     appId = entry.appId,

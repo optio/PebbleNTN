@@ -331,7 +331,8 @@ class MainActivity : ComponentActivity() {
                 val effective = container.effectiveCatalog
                 // Recompose with every added or removed package.
                 val catalog by effective.catalog.collectAsState()
-                val app = effective.builtIn.apps.firstOrNull { it.appId == appId && it.hasOfficialRules }
+                // Never an app hidden on Google Play (#120).
+                val app = effective.builtIn.visibleApps.firstOrNull { it.appId == appId && it.hasOfficialRules }
                 if (app == null) {
                     LaunchedEffect(Unit) { navController.popBackStack() }
                 } else {

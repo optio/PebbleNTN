@@ -199,13 +199,18 @@ class RulesViewModel(
 /**
  * Group official rules first by their navigation app (resolved through the catalog by package name),
  * then by language. A rule with no `locales` applies to every language and lands under "All
- * languages"; apps and languages are sorted for a stable, readable order.
+ * languages"; apps and languages are sorted for a stable, readable order. The rules of an app hidden
+ * on Google Play (#120) still run but are not listed.
  */
-private fun groupOfficialRules(
+internal fun groupOfficialRules(
     rules: List<Rule>,
     catalog: NavigationAppCatalog,
 ): List<OfficialAppGroup> {
     return rules
+        .filterNot { rule ->
+            val entry = catalog.entryForPackage(rule.packageNames.firstOrNull().orEmpty())
+            entry != null && !catalog.isVisible(entry.appId)
+        }
         .groupBy { rule ->
             val pkg = rule.packageNames.firstOrNull().orEmpty()
             val entry = catalog.entryForPackage(pkg)

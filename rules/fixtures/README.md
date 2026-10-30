@@ -121,3 +121,20 @@ whose icon didn't match, and keeps the rule's default (UNKNOWN).
   English ETA pattern takes both.
 - Still open: a ProgressStyle card whose title is only the destination name, without a distance,
   is left unmatched, because a bare title can be anything.
+
+## Vela Maps: synthetic until a capture (#120, 2026-10)
+
+- **Every `vela-maps.json` fixture is synthetic.** The card's shape comes from Vela's public
+  source: title `In <distance> · <instruction>`, the bare instruction at distance 0, `Arrived`,
+  and `Navigating` before the first instruction; text `<duration> · <distance> · Arrive <time>`.
+  The instruction wording is Vela's router's (Valhalla, OSRM or GraphHopper), so the fixtures use
+  wording typical for each.
+- **The rules start from the ones proposed by the #120 reporter**, with these gaps fixed: bare
+  titles kept their arrow only through a fallback (now `vela-bare-*`); `Take the I 35 South exit`
+  read as a roundabout and every exit as a right one; every U-turn was a left one; roundabouts
+  phrased as a turn (`At the roundabout, turn right`) read as a turn; an approaching destination
+  had no arrival flag. The maneuver is read at the start of the instruction, so a road such as
+  `Bear Creek Rd` never decides the arrow, and every rule has its own priority.
+- **`Navigating` stays unmatched on purpose** (`navigating-no-instruction`); route capture counts
+  it as known.
+- Check them against real captures: a route-capture run (`vela-maps-m1`) or a diagnostics export.

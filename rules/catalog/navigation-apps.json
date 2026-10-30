@@ -73,6 +73,18 @@
       "defaultEnabled": true
     },
     {
+      "appId": "vela-maps",
+      "displayName": "Vela Maps",
+      "packageNames": [
+        "app.vela"
+      ],
+      "website": "https://github.com/PimpinPumpkin/Vela",
+      "playListed": false,
+      "hasOfficialRules": true,
+      "captureAvailable": true,
+      "defaultEnabled": true
+    },
+    {
       "appId": "maps-me",
       "displayName": "Maps.me",
       "packageNames": [

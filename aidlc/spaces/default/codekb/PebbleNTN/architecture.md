@@ -89,6 +89,10 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - **Rule families instead of copied package lists (#113, checked at 2fa2aa5)**: #113 did not follow the data-only plan recorded in the next bullet. A catalog entry may name another entry in `rulesFrom` (`microg-maps` -> `google-maps`); `NavigationAppCatalog.ruleFamilies()` groups packages by `rulesAppId`, and `RuleEngine`, `AssetRuleRepository`, `RulesViewModel`'s override engine and `IconCandidates` apply a rule to every package of its family (`RuleFamilies.applies`). On Google Play, `forGooglePlay()` merges an unlisted `rulesFrom` app's packages into its target entry instead, so the same family results. Resource lookups for the large icon still use the posting package only (`AppIconReferences`), which is what this intent changes. `RuleFamilies` records membership only, not which package is the root. Detail: [code-quality-assessment.md](code-quality-assessment.md), "MicroG icon fallback findings".
 - **Package names are data, matched exactly, with no alias layer (checked at 1c7f4c1; superseded by the rule families above)**: a catalog entry lists every package an app publishes under, and every rule lists its own `packageNames`; the engine, the large-icon recognizer and the ruleset-version record each test `snapshot.packageName in rule.packageNames` (REQ-RULE-003, REQ-RULE-015). Nothing maps one package onto another app's rules. Enablement, the allowlist and the Navigation apps row work per catalog entry, so all packages of an app share one switch. A package variant (#54's alternative builds, #113's MicroG Maps) is therefore added to the catalog entry, to every rule of that app, to the manifest `<queries>` and to the fixtures, and a JVM test plus a Python check keep those in step. See [code-quality-assessment.md](code-quality-assessment.md), "MicroG Maps findings".
 
+- **A navigation app is data plus tests (checked at c7b6ba0)**: no main-source Kotlin names a navigation app. The catalog drives discovery, enablement, the Navigation apps rows (display name, `website` link, languages from the ruleset) and the allowlist; `AssetRuleRepository` loads every `rules/bundled/**/*.json`; rules are selected by `packageNames` (family) and `locales`. A new app with its own rules is a catalog entry, a `<queries>` line, `rules/bundled/<appId>/`, `rules/fixtures/<appId>.json` and a per-app regression test, held together by `NavigationAppCatalogTest` and `validate_catalog.py`. The developer tools keep hand-written app lists (`workbench.py` regression tuple, route-capture `APPS`).
+- **Unlisted apps on Google Play (checked at c7b6ba0)**: `forGooglePlay()` keeps only `playListed` entries; an unlisted entry with `rulesFrom` joins its target, one without `rulesFrom` is dropped with its packages, so its notifications are never allowlisted on a Play install. No such entry exists before #120.
+- **Route capture shares the rule engine subset (checked at c7b6ba0)**: `tools/route-capture` evaluates captures with `tools/rule-workbench/workbench.py` (Python re-implementation of the Kotlin engine) against `rules/bundled/<appId>/`, reads the maneuver words from `ManeuverHeuristic.kt` and the "left unshown" cards from `rules/fixtures/<appId>.json`, so a rule or fixture change re-classifies stored issue results without a rerun.
+
 ### Improvement Opportunities
 
 - Split `watchapp/src/c/main.c` (1,261 lines) into decoding, rendering and lifecycle units, and validate tuple types.
@@ -99,11 +103,38 @@ Text fallback: listener -> dispatcher (allowlist gate) -> serial queue -> captur
 - Done in v0.0.76: navigation-screen Shortcuts (#12) as the pure `shortcuts.c` unit, `shortcut_apply.c`, the banner in `main.c` and the Shortcuts door in `settings_window.c`.
 - Play release (#114, intent `261025-play-release`, merged at 1c7f4c1): a `PLAY` install source with a pure "which update UI does this source show" model (in the style of `updateCardModel`) consumed by the dashboard, `MainActivity` and the start-up check; targetSdk 36 and a failing gate; privacy and Data safety docs that match the real network use. Detail in [code-quality-assessment.md](code-quality-assessment.md), "Play release findings".
 - Settings sync (#102, intent `261025-settings-sync`, shipped in v0.0.77): a table-driven encode/decode of the 23 synced settings (one place mapping key, count and setter), a pure wrap-around revision unit on each side, a hook in the `theme.c` setters for watch-side edits, outbox retry on the watch, and a phone mirror repository plus a Compose screen. Detail and risks are in [code-quality-assessment.md](code-quality-assessment.md), "Settings sync findings".
-- Install source (#119, active intent `261029-install-source`): detect once per start a plain install record (mapped source, installing, initiating and originating packages, first install and last update times) beside the enum, with a pure mapper and a pure row-text helper (the `watchAppVersionText` pattern), so the dashboard row and export schema 5 read one value; keep `InstallSource` and `UpdatePolicy` as they are for the card.
+- Vela Maps (#120, active intent `261030-vela-maps`): register `app.vela` as `vela-maps` with its own English ruleset and synthetic fixtures; decide whether `playListed: false` (hidden and not allowlisted on Play) is wanted; turn the hand-kept tool lists (workbench regression tuple, route-capture `APPS`) and the pinned counts in tests into catalog-derived values; add a `VelaMaps` route-capture driver using the `google.navigation:`/`geo:` intents Vela declares. Detail: [code-quality-assessment.md](code-quality-assessment.md), "Vela Maps findings".
+- Install source (#119, intent `261029-install-source`, shipped in v0.0.80): detect once per start a plain install record (mapped source, installing, initiating and originating packages, first install and last update times) beside the enum, with a pure mapper and a pure row-text helper (the `watchAppVersionText` pattern), so the dashboard row and export schema 5 read one value; keep `InstallSource` and `UpdatePolicy` as they are for the card.
 - MicroG icon fallback (intent `261028-microg-icon-fallback`, shipped in v0.0.79, not rescanned): record each family's root package explicitly (not by set order) and let `AppIconReferences` retry a missing drawable with it in the posting package's context; add a test seam for the identifier lookup.
 - MicroG Maps (#113, intent `261026-microg-maps`, shipped in v0.0.78 with `rulesFrom` families rather than the data-only copies below): append `app.morphe.android.apps.maps` to the `google-maps` catalog entry, to the 150 Google Maps rules, to `<queries>` and to the fixtures, keeping `com.google.android.apps.maps` first. A catalog-driven alias (rules expanded from the catalog at load time) would remove the copies but changes the engine and the test that pins the package sets; the #54 data-only pattern needs no Kotlin production change.
 
 ## Interaction Diagrams
+
+### A Vela Maps notification and its route-capture check (#120 target, c7b6ba0)
+
+```mermaid
+sequenceDiagram
+  participant V as Vela Maps (app.vela)
+  participant L as Listener + NotificationDispatcher
+  participant E as RuleEngine
+  participant R as rules/bundled/vela-maps/en.json
+  participant C as NavigationController
+  participant RC as route-capture (emulator)
+  participant WB as workbench.evaluate
+  V->>L: title "In 500 ft · Turn right onto Main St", text "12 min · 3.4 mi · Arrive 12:45"
+  L->>L: allowlist: vela-maps entry enabled (not on a Play install)
+  L->>E: evaluate(snapshot, locale en)
+  E->>R: rules for app.vela, priority desc then id
+  R-->>E: vela-in-distance-turn-right-en
+  E-->>C: RIGHT, 152 m, "Turn right onto Main St", secondaryText "12:45"
+  RC->>V: am start google.navigation:q=lat,lon (proposed driver)
+  RC->>RC: GPS fix per second, dumpsys notification per second
+  RC->>WB: each distinct card with the same rules
+  WB-->>RC: matched, fallback (UNKNOWN) or unrecognised
+  RC->>RC: report.md, one route-capture issue for vela-maps
+```
+
+Text fallback: Vela posts the distance and instruction in the title and the duration, remaining distance and arrival time in the text. Once `app.vela` is in the catalog (and the install is not from Google Play, where an unlisted app without `rulesFrom` is dropped), the dispatcher admits it and the engine evaluates the Vela rules in priority order; the turn-right rule gives RIGHT, 152 m (500 ft), the instruction as the road line and the clock as the secondary text. A proposed route-capture driver starts Vela with the `google.navigation:` intent its manifest accepts, replays the GPS track, and checks every captured card with the workbench copy of the engine, so unmatched direction-like cards and UNKNOWN fallbacks end up in the per-app issue.
 
 ### Install source to the dashboard row and the export (current 494a6dd, with the #119 touchpoints)
 
