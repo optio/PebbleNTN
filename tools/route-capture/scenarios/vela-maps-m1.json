@@ -1,0 +1,70 @@
+{
+  "id": "vela-maps-m1",
+  "description": "Vela Maps (#120) by car, in English only (its rules are English): the seven European routes in en-GB (metric), then the Austin route in en-US (imperial: feet and miles, 12-hour clock). Each scenario is capped at 7 minutes, so the plan takes about an hour; run it in parts with --only. Vela may need online routing in the emulator.",
+  "scenarios": [
+    {
+      "id": "vela-maps.en-GB.car.london-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "london-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-GB.car.brussels-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "brussels-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-GB.car.paris-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "paris-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-GB.car.amsterdam-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "amsterdam-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-GB.car.berlin-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "berlin-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-GB.car.milan-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "milan-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-GB.car.madrid-centre",
+      "app": "vela-maps",
+      "locale": "en-GB",
+      "mode": "car",
+      "route": "madrid-centre",
+      "maxSeconds": 420
+    },
+    {
+      "id": "vela-maps.en-US.car.austin-downtown",
+      "app": "vela-maps",
+      "locale": "en-US",
+      "mode": "car",
+      "route": "austin-downtown",
+      "maxSeconds": 420
+    }
+  ]
+}

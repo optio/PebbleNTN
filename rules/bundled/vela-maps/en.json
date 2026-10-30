@@ -1,0 +1,499 @@
+{
+  "schemaVersion": 1,
+  "rulesetVersion": "vela-maps-en-2026.10.30",
+  "minimumAppVersionCode": 1,
+  "createdAt": "2026-10-30T00:00:00Z",
+  "publisher": "PebbleNTN maintainers, from the rules proposed by the #120 reporter",
+  "rules": [
+    {
+      "id": "vela-arrived-en",
+      "comment": "Vela Maps (#120): title 'Arrived' (values/strings.xml in Vela's source), empty text. Based on the rules proposed by the #120 reporter; synthetic fixtures, to be checked against real captures.",
+      "enabled": true,
+      "priority": 200,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "equalsIgnoreCase", "value": "Arrived" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "ARRIVE" },
+        "primaryText": { "type": "literal", "value": "Arrived" }
+      }
+    },
+    {
+      "id": "vela-in-distance-arrive-en",
+      "comment": "Approaching the destination: 'In 500 ft · Your destination is on the right', 'In 100 m · Arrive at destination', 'You have arrived …'. ARRIVE with the distance, as for Google Maps and OsmAnd; above every maneuver rule.",
+      "enabled": true,
+      "priority": 195,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:your\\s+(?:\\w+\\s+)?destination\\b|you\\s+(?:have|will)\\s+arrive|arrive(?:d)?\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "ARRIVE" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-exit-left-en",
+      "comment": "A motorway exit or ramp on the left: 'Take exit 12 on the left', 'Take the ramp on the left', 'Exit left'. SLIGHT_LEFT. Never a roundabout exit ('roundabout' or 'take the 2nd exit'), which the roundabout rule takes.",
+      "enabled": true,
+      "priority": 190,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?![^·]*\\b(?:roundabout|rotary|traffic\\s+circle)\\b)(?!take\\s+the\\s+(?:\\d+(?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)\\s+exit\\b)(?:take\\b[^·]*?\\b(?:exit|ramp)\\b|(?:exit|ramp)\\b)(?=[^·]*\\b(?:on\\s+the\\s+left|(?:exit|ramp)\\s+left|left\\s+(?:exit|ramp))\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-exit-en",
+      "comment": "A motorway exit or ramp: 'Take the I 35 South exit toward Dallas' (Valhalla), 'Take the ramp on the right', 'Take the exit'. SLIGHT_RIGHT unless the left rule above took it. Above the roundabout rule, but never a roundabout exit.",
+      "enabled": true,
+      "priority": 185,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?![^·]*\\b(?:roundabout|rotary|traffic\\s+circle)\\b)(?!take\\s+the\\s+(?:\\d+(?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)\\s+exit\\b)(?:take\\b[^·]*?\\b(?:exit|ramp)\\b|(?:exit|ramp)\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-roundabout-en",
+      "comment": "Roundabouts in every router's wording: 'At the roundabout, take the 2nd exit' (OSRM), 'Enter the roundabout and take the 3rd exit' (Valhalla), 'At roundabout, take exit 2' (GraphHopper), 'Exit the roundabout', 'At the roundabout, turn right'. Above the turn rules.",
+      "enabled": true,
+      "priority": 180,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:[^·]*\\b(?:roundabout|rotary|traffic\\s+circle)\\b|take\\s+the\\s+(?:\\d+(?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)\\s+exit\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "ROUNDABOUT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-uturn-right-en",
+      "comment": "'Make a right U-turn' (Valhalla in left-hand traffic). UTURN_RIGHT; above the default U-turn rule.",
+      "enabled": true,
+      "priority": 175,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·[^·]*\\b(?:right\\s+u-?turn|u-?turn\\s+(?:to\\s+the\\s+)?right)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "UTURN_RIGHT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-uturn-en",
+      "comment": "'Make a U-turn', 'Make a left U-turn'. UTURN_LEFT, also when the wording names no side.",
+      "enabled": true,
+      "priority": 170,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·[^·]*\\bu-?turn\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "UTURN_LEFT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-sharp-right-en",
+      "comment": "'Turn sharp right', 'Make a sharp right'. SHARP_RIGHT. The maneuver words are read at the start of the instruction, so a road name never decides the arrow.",
+      "enabled": true,
+      "priority": 165,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:(?:turn|make\\s+a|bear|keep)\\s+)?sharp(?:ly)?\\s+right\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SHARP_RIGHT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-sharp-left-en",
+      "comment": "'Turn sharp left', 'Make a sharp left'. SHARP_LEFT.",
+      "enabled": true,
+      "priority": 164,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:(?:turn|make\\s+a|bear|keep)\\s+)?sharp(?:ly)?\\s+left\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SHARP_LEFT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-slight-right-en",
+      "comment": "'Turn slight right' (OSRM, GraphHopper), 'Bear right' (Valhalla), 'Keep right', 'Fork right', 'Stay right'. SLIGHT_RIGHT.",
+      "enabled": true,
+      "priority": 160,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:(?:turn|go|keep)\\s+slight(?:ly)?\\s+right|slight(?:ly)?\\s+right|bear\\s+right|keep\\s+right|fork\\s+right|stay\\s+right|veer\\s+right)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-slight-left-en",
+      "comment": "'Turn slight left', 'Bear left', 'Keep left', 'Fork left', 'Stay left'. SLIGHT_LEFT.",
+      "enabled": true,
+      "priority": 159,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:(?:turn|go|keep)\\s+slight(?:ly)?\\s+left|slight(?:ly)?\\s+left|bear\\s+left|keep\\s+left|fork\\s+left|stay\\s+left|veer\\s+left)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-turn-right-en",
+      "comment": "Vela's ongoing card: title 'In <distance> · <instruction>', text '<duration> · <distance> · Arrive <time>' (Vela's NavigationService). 'Turn right', 'Make a right'. RIGHT; the ETA clock goes to secondaryText.",
+      "enabled": true,
+      "priority": 150,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:turn|make\\s+a|go)\\s+right\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "RIGHT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-turn-left-en",
+      "comment": "'Turn left', 'Make a left'. LEFT.",
+      "enabled": true,
+      "priority": 149,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:turn|make\\s+a|go)\\s+left\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "LEFT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-head-or-continue-en",
+      "comment": "'Head north on …', 'Drive north on …' (Valhalla), 'Continue on …', 'Go straight', 'Keep straight', 'Merge onto …'. STRAIGHT, as Google Maps' merge rules. Only at the start of the instruction, so 'Continue Ave' as a road name changes nothing.",
+      "enabled": true,
+      "priority": 140,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|km|m|yd)\\s*·" },
+        { "field": "title", "operator": "regex", "value": "(?i)·\\s*(?:head|start\\s+your\\s+route|continue|go\\s+straight|keep\\s+straight|stay\\s+straight|straight|merge|drive|proceed)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "STRAIGHT" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-in-distance-generic-en",
+      "comment": "Any other 'In <distance> · …' card (e.g. a ferry): the distance, the instruction and the ETA with the fallback arrow, so the watch still counts down.",
+      "enabled": true,
+      "priority": 120,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^In\\s+\\d+(?:[.,]\\d+)?\\s*(?:ft|mi|m|km|yd)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "UNKNOWN" },
+        "distanceMeters": { "type": "distance", "field": "title" },
+        "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+.+?\\s·\\s*(.+)$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-arrive-en",
+      "comment": "At distance 0 Vela's title is the bare instruction, with no 'In <distance> ·' (Vela's NavigationService). The bare-* rules give the same arrows without a distance. 'Your destination is on the left', 'Arrive at …'. ARRIVE.",
+      "enabled": true,
+      "priority": 135,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:your\\s+(?:\\w+\\s+)?destination\\b|you\\s+(?:have|will)\\s+arrive|arrive(?:d)?\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "ARRIVE" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-exit-left-en",
+      "comment": "Bare-instruction title: a motorway exit or ramp on the left. SLIGHT_LEFT.",
+      "enabled": true,
+      "priority": 134,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?![^·]*\\b(?:roundabout|rotary|traffic\\s+circle)\\b)(?!take\\s+the\\s+(?:\\d+(?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)\\s+exit\\b)(?:take\\b[^·]*?\\b(?:exit|ramp)\\b|(?:exit|ramp)\\b)(?=[^·]*\\b(?:on\\s+the\\s+left|(?:exit|ramp)\\s+left|left\\s+(?:exit|ramp))\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-exit-en",
+      "comment": "Bare-instruction title: a motorway exit or ramp. SLIGHT_RIGHT; never a roundabout exit.",
+      "enabled": true,
+      "priority": 133,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?![^·]*\\b(?:roundabout|rotary|traffic\\s+circle)\\b)(?!take\\s+the\\s+(?:\\d+(?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)\\s+exit\\b)(?:take\\b[^·]*?\\b(?:exit|ramp)\\b|(?:exit|ramp)\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-roundabout-en",
+      "comment": "Bare-instruction title: a roundabout, or 'Take the 2nd exit'. ROUNDABOUT.",
+      "enabled": true,
+      "priority": 132,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:[^·]*\\b(?:roundabout|rotary|traffic\\s+circle)\\b|take\\s+the\\s+(?:\\d+(?:st|nd|rd|th)|first|second|third|fourth|fifth|sixth|seventh|eighth)\\s+exit\\b)" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "ROUNDABOUT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-uturn-right-en",
+      "comment": "Bare-instruction title: 'Make a right U-turn'. UTURN_RIGHT.",
+      "enabled": true,
+      "priority": 131,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^[^·]*\\b(?:right\\s+u-?turn|u-?turn\\s+(?:to\\s+the\\s+)?right)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "UTURN_RIGHT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-uturn-en",
+      "comment": "Bare-instruction title: 'Make a U-turn', 'Make a left U-turn'. UTURN_LEFT.",
+      "enabled": true,
+      "priority": 130,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^[^·]*\\bu-?turn\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "UTURN_LEFT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-sharp-right-en",
+      "comment": "Bare-instruction title: 'Turn sharp right'. SHARP_RIGHT.",
+      "enabled": true,
+      "priority": 129,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:(?:turn|make\\s+a|bear|keep)\\s+)?sharp(?:ly)?\\s+right\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SHARP_RIGHT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-sharp-left-en",
+      "comment": "Bare-instruction title: 'Make a sharp left'. SHARP_LEFT.",
+      "enabled": true,
+      "priority": 128,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:(?:turn|make\\s+a|bear|keep)\\s+)?sharp(?:ly)?\\s+left\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SHARP_LEFT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-slight-right-en",
+      "comment": "Bare-instruction title: 'Turn slight right', 'Bear right', 'Keep right to take …'. SLIGHT_RIGHT.",
+      "enabled": true,
+      "priority": 127,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:(?:turn|go|keep)\\s+slight(?:ly)?\\s+right|slight(?:ly)?\\s+right|bear\\s+right|keep\\s+right|fork\\s+right|stay\\s+right|veer\\s+right)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-slight-left-en",
+      "comment": "Bare-instruction title: 'Turn slight left', 'Bear left', 'Keep left'. SLIGHT_LEFT.",
+      "enabled": true,
+      "priority": 126,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:(?:turn|go|keep)\\s+slight(?:ly)?\\s+left|slight(?:ly)?\\s+left|bear\\s+left|keep\\s+left|fork\\s+left|stay\\s+left|veer\\s+left)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-turn-right-en",
+      "comment": "Bare-instruction title: 'Turn right onto …'. RIGHT.",
+      "enabled": true,
+      "priority": 125,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:turn|make\\s+a|go)\\s+right\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "RIGHT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-turn-left-en",
+      "comment": "Bare-instruction title: 'Turn left onto …'. LEFT.",
+      "enabled": true,
+      "priority": 124,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:turn|make\\s+a|go)\\s+left\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "LEFT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-head-or-continue-en",
+      "comment": "Bare-instruction title: 'Head north on …', 'Continue on …', 'Merge onto …'. STRAIGHT.",
+      "enabled": true,
+      "priority": 123,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:head|start\\s+your\\s+route|continue|go\\s+straight|keep\\s+straight|stay\\s+straight|straight|merge|drive|proceed)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "STRAIGHT" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    },
+    {
+      "id": "vela-bare-maneuver-en",
+      "comment": "Any other bare instruction starting with a maneuver verb: the fallback arrow, the instruction and the ETA. 'Navigating' (no instruction yet) matches nothing on purpose.",
+      "enabled": true,
+      "priority": 100,
+      "packageNames": ["app.vela"],
+      "locales": ["en"],
+      "conditions": [
+        { "field": "title", "operator": "regex", "value": "(?i)^(?:Turn|Head|Continue|Take|Arrive|Merge|Keep|Go|Bear|Make|Enter|Exit|Drive|Stay|Ramp|Fork|Slight|Sharp)\\b" }
+      ],
+      "output": {
+        "maneuver": { "type": "literal", "value": "UNKNOWN" },
+        "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+"Work on GitHub issue #120: add Vela Maps (app.vela) support with the catalog entry and English rules from the issue, plus synthetic fixtures; also add Vela Maps to the route-capture test suite that runs routes in different navigation apps to find unrecognised notifications, if possible"

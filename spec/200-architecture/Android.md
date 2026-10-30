@@ -32,7 +32,8 @@ Bundled declarative catalog entries define:
 
 On a Google Play install the app uses the catalog's Google Play view: an entry that is not listed
 there is dropped, and its packages join the entry whose rules it uses, so they follow that entry's
-switch.
+switch. An entry that is not listed there and uses no other app's rules (Vela Maps, #120) is kept
+for matching, enablement and the listener allowlist but hidden from every screen.
 
 Installed entries are shown first. All installed catalog apps default to enabled on first run. Users can disable them independently.
 

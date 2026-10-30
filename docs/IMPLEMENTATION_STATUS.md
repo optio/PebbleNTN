@@ -2,6 +2,70 @@
 
 _Last updated: 2026-10-30_
 
+## Vela Maps support (2026-10-30, #120)
+
+**Milestone:** post-M12 enhancement. To be released as v0.0.81 by the release workflow on merge;
+versionCode/versionName are not changed here.
+
+**Requirements being implemented.**
+- FR1: a `vela-maps` catalog entry (`app.vela`, website, `playListed: false`, official rules,
+  capture available, on by default) and `app.vela` in the manifest `<queries>`; 28 packages.
+- FR2: on a Google Play install Vela Maps is hidden everywhere in the UI but still matched,
+  enabled and allowlisted; MicroG Maps' Play behaviour is unchanged.
+- FR3: English rules `rules/bundled/vela-maps/en.json` from the rules proposed by the #120
+  reporter, with the gaps fixed (bare-instruction titles, exits, roundabouts, U-turn direction,
+  "bear", arrival, distinct priorities), synthetic fixtures and `VelaMapsRulesRegressionTest`.
+- FR4: a Vela Maps driver and plan in `tools/route-capture`, plus a new US imperial route with an
+  en-US scenario.
+- FR5: README, counts, `MANIFEST.sha256.json`.
+
+**What changed.**
+- `vela-maps` in `rules/catalog/navigation-apps.json`, `app.vela` in the manifest `<queries>`.
+- `NavigationAppCatalog.forGooglePlay()` keeps an unlisted entry without `rulesFrom` as an entry of
+  its own (no website) and records it in the transient `hiddenAppIds`; `visibleApps` /
+  `isVisible` give what the user sees. The UI reads them: `supportedNotInstalled`,
+  `EnabledAppRepository.observeEnablement` (Navigation apps rows and dashboard counts), the
+  Packages screen, and the Rules screen's official groups (`groupOfficialRules`). Matching,
+  enablement, discovery and the allowlist keep using every entry. MicroG Maps still joins Google
+  Maps. REQ-ANDROID-023, `spec/200-architecture/Android.md` and the catalog schema describe it.
+- `rules/bundled/vela-maps/en.json` (29 rules, `vela-maps-en-2026.10.30`): the issue's rules with
+  bare-instruction titles (`vela-bare-*`), approaching arrival, exits left/right above the
+  roundabout rule, roundabouts in OSRM/Valhalla/GraphHopper wording above the turns, right and
+  left U-turns, "bear", maneuver words read at the start of the instruction, and one priority per
+  rule. `rules/fixtures/vela-maps.json` (50 synthetic fixtures); `vela-maps` in the workbench
+  regression; a Vela section in `rules/fixtures/README.md`.
+- Route capture: a `VelaMaps` driver (newest stable GitHub release through a new
+  `ReleaseAsset(stable_only=True)`, `google.navigation:` then `geo:`), "Get started" as a
+  first-run label, the `austin-downtown` route (car, bike and foot tracks fetched with
+  `fetch-routes`), the `vela-maps-m1` plan (seven European routes in en-GB, Austin in en-US), and
+  the README rows.
+- README lists Vela Maps. The fastlane full description does not: it is the shared Google Play
+  listing, which must not name an app hidden on Play (REQ-ANDROID-023).
+- Tests: `VelaMapsRulesRegressionTest` (8), `VelaMapsEnablementTest` (4),
+  `VelaMapsNavigationAppsTest` (2), `OfficialRuleGroupsTest` (3), `NavigationAppCatalogTest` (+2,
+  three updated), `SetupProgressTest` and `test_validate_catalog.py` updated (28 packages), and 10
+  new route-capture harness tests.
+
+**Library versions.** No new library.
+
+**Commands executed.** Baseline: `android/gradlew -p android :app:testDebugUnitTest --tests
+'com.pebblentn.app.catalog.*' --tests 'com.pebblentn.app.rules.*' --tests 'com.pebblentn.app.ui.*'`
+(252 tests, 0 failures, 4 skipped), `scripts/validate-rules.sh` (OK), route-capture tests (27 OK),
+`test_validate_catalog.py` (10 OK). After: the same packages plus `com.pebblentn.app.data.*` (355
+tests, 0 failures, 4 skipped); `scripts/validate-rules.sh` (OK; 28 catalog packages; vela-maps 29
+rules); `python3 tools/rule-workbench/workbench.py regression` (vela-maps 50/50, the others
+unchanged); `python3 -m unittest discover -s tools/route-capture/tests` (37 OK);
+`./routecap.py fetch-routes` (austin-downtown car 3403 m, bike 3157 m, foot 3093 m);
+`scripts/validate-spec-assets.sh` (OK, 34 files); `scripts/test-all.sh` (exit 0; debug and release
+unit tests 630 each, 0 failures, 4 skipped; lint 0 errors, no new warnings);
+`android/gradlew -p android :app:assembleDebug`.
+
+**Known blockers.** No Android emulator in WSL: the route-capture run for Vela happens on the
+Windows emulator at Build and Test. All Vela fixtures are synthetic.
+
+**Next atomic task.** Build and Test: `./routecap.py install vela-maps`, then
+`./routecap.py run scenarios/vela-maps-m1.json --only 'london|austin'` on the Windows emulator.
+
 ## Install/update source and a second MicroG Maps package (2026-10-30, #119, #113)
 
 **Milestone:** post-M12 enhancement. Released as v0.0.80 by the release workflow on merge;

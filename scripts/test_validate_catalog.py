@@ -67,9 +67,10 @@ class ManifestQueriesTest(unittest.TestCase):
         self.apps = json.loads(validate_catalog.CATALOG_PATH.read_text(encoding="utf-8"))["apps"]
         self.manifest = validate_catalog.MANIFEST_PATH.read_text(encoding="utf-8")
 
-    def test_bundled_manifest_covers_all_27_navigation_packages(self):
-        # 27 since org.ungoogled.android.apps.maps.microg joined MicroG Maps (#113).
-        self.assertEqual(27, len(validate_catalog.queried_catalog_packages(self.apps)))
+    def test_bundled_manifest_covers_all_28_navigation_packages(self):
+        # 28 since app.vela (Vela Maps, #120) joined; 27 since org.ungoogled.android.apps.maps.microg
+        # joined MicroG Maps (#113).
+        self.assertEqual(28, len(validate_catalog.queried_catalog_packages(self.apps)))
         self.assertEqual([], validate_catalog.missing_manifest_packages(self.apps, self.manifest))
 
     def test_missing_microg_package_is_reported(self):

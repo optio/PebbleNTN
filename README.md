@@ -19,6 +19,7 @@ PebbleNTN reads your navigation app's notifications and shows the next turn, dis
 
 - Google Maps supported now, more coming soon
 - MicroG Maps ([Google Maps patched for microG](https://github.com/fangkampanat/gmaps-patches)), with the Google Maps rules
+- [Vela Maps](https://github.com/PimpinPumpkin/Vela) in English: turn arrow, distance, instruction and ETA (rules proposed by the #120 reporter)
 - Walking and public-transit directions (Google Maps, English)
 - Automatic watchapp launch when navigation starts (configurable in companion app settings)
 - Accent colours, light/dark, and three arrow styles

@@ -66,7 +66,7 @@
           "maxLength": 200
         },
         "playListed": {
-          "description": "False hides the app on Google Play installs: it is not listed and never linked. Its packages then follow the switch of the rulesFrom app.",
+          "description": "False hides the app on Google Play installs: it is not listed and never linked. With rulesFrom, its packages then follow the switch of the rulesFrom app; without it, the app keeps its own rules and a switch that is never shown.",
           "type": "boolean",
           "default": true
         },

@@ -1,0 +1,15 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4", "FR5", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "rules/catalog/navigation-apps.json" },
+    { "id": "FR2", "status": "OK", "target": "android/app/src/main/java/com/pebblentn/app/catalog/NavigationAppCatalog.kt" },
+    { "id": "FR3", "status": "OK", "target": "rules/bundled/vela-maps/en.json" },
+    { "id": "FR4", "status": "OK", "target": "tools/route-capture/routecap/apps.py" },
+    { "id": "FR5", "status": "OK", "target": "README.md" },
+    { "id": "NFR1", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/data/MicrogMapsEnablementTest.kt" },
+    { "id": "NFR2", "status": "OK", "target": "android/app/src/test/java/com/pebblentn/app/ui/apps/VelaMapsNavigationAppsTest.kt" },
+    { "id": "NFR3", "status": "OK", "target": "rules/fixtures/vela-maps.json" }
+  ],
+  "notes": "FR5: at the Code Generation gate the person approved keeping Vela Maps out of the fastlane full description, which is also the Google Play listing (Vela is hidden on Play, as MicroG Maps); the README lists it."
+}

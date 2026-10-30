@@ -3,20 +3,37 @@
 ## Run Record
 
 - Date: 2026-10-30
-- Commit: 494a6dd1e677b02187ba4c6255e90fc2d4ad13fc
-- Breadth requested: focused scan (snapshot paths: `android/app/src/main/java/com/pebblentn/app/update/`, `android/app/src/main/java/com/pebblentn/app/export/`, `android/app/src/main/java/com/pebblentn/app/ui/dashboard/`, `android/app/src/test/java/com/pebblentn/app/update/`, `android/app/src/test/java/com/pebblentn/app/export/`, `android/app/src/test/java/com/pebblentn/app/ui/dashboard/`, `requirements/REQ-ANDROID.md`, `requirements/REQ-DEBUG.md`, `spec/300-data/ExportFormat.md`, `android/app/src/main/res/values/strings.xml`); depth Minimal; lead-only (the developer link scanned and wrote the nine artifacts)
-- Intent: `261029-install-source` (GitHub issue #119: show where the phone app was installed or last updated from, on the dashboard "Phone app version" row for every source and as an install section in every debug export)
-- Coverage: the `update/`, `export/` and `ui/dashboard/` packages and their tests, `REQ-ANDROID.md`, `REQ-DEBUG.md`, `ExportFormat.md` and the update, dashboard and export string groups of `strings.xml`. Skimmed: `AppContainer` wiring (lines 55-135, 165-180), the `MainActivity` dashboard call and `openUpdateSource`, `EventVersions.kt` (`getPackageInfo` pattern), the manifest `<queries>`, `android/app/build.gradle.kts` (SDK levels), `MANIFEST.sha256.json`, `scripts/validate-spec-assets.sh`, `.githooks/pre-commit`, `spec/400-ui/AndroidUI.md` and `docs/IMPLEMENTATION_STATUS.md` by grep.
-- Merge: focused merge into a STALE store (prior focused scan at 2fa2aa5 for `261028-microg-icon-fallback`, shipped in v0.0.79). Prior prose is kept; statements this run found outdated (Play mapped to GitHub, targetSdk 35) are marked as superseded or dated rather than deleted. Added or updated: the active-intent business context and the install-source glossary entries, two design decisions, an improvement opportunity and an install-source interaction diagram, the `update/` and `export/` rows and file counts in code structure, the "Install Source and Export Metadata APIs" section, the App Update Check, Dashboard Update UI, Diagnostics Export and Specification and Requirements entries, an install-source fan-out dependency note, the targetSdk line, and the "Install source findings". The prior analyzed paths are demoted to shallow, and earlier shallow entries now inside this run's analyzed paths are dropped from the shallow list (22 entries). Build outputs, `.gradle/` and the AI-DLC install were left out.
+- Commit: c7b6ba0d525d1b54abdaaabec02cdda76e52dfb3
+- Breadth requested: focused scan (snapshot paths: `rules/catalog/`, `rules/bundled/`, `rules/fixtures/`, `rules/README.md`, `tools/route-capture/`, `android/app/src/test/java/com/pebblentn/app/rules/`, `android/app/src/test/java/com/pebblentn/app/catalog/`, `scripts/validate_catalog.py`, `scripts/validate_rules.py`, `scripts/test_validate_catalog.py`, `android/app/src/main/AndroidManifest.xml`, `requirements/REQ-RULES.md`); depth Minimal; lead-only (the developer link scanned and wrote the nine artifacts)
+- Intent: `261030-vela-maps` (GitHub issue #120: add Vela Maps, `app.vela`, as a navigation app with English rules and synthetic fixtures, and add it to the route-capture suite)
+- Coverage: the catalog, every bundled ruleset and fixture file, the rules README, the route-capture harness (runner, `routecap/` modules, routes, scenarios, device helpers, tests), the rule and catalog JVM tests, the three catalog/rule validator scripts, the manifest and REQ-RULES. Skimmed: the rule engine sources, `NavigationAppCatalog.forGooglePlay`, `NavigationAppsScreen` (website link), `ManeuverHeuristic.kt`, `Maneuver.kt`, `build.gradle.kts` rule-data staging, `SetupProgressTest.kt`, both schemas, `workbench.py`, `README.md`, the fastlane full description, `MANIFEST.sha256.json`, `AGENTS.md`; outside the repository, issue #120 and the public Vela repository (manifest, notification builder, strings, distance format, releases).
+- Merge: focused merge into a STALE store (prior focused scan at 494a6dd for `261029-install-source`, shipped in v0.0.80). Prior prose is kept; the install-source context is relabelled as an earlier intent. Added or updated: the active-intent business context and three glossary entries, three design decisions, an improvement opportunity and a Vela interaction diagram, the rules and route-capture rows and the regression-test pattern in code structure, the "Rule, Fixture and Route-Capture Contracts" section, the Rule Data and Schemas, Rule Workbench and Route Capture Harness entries, a stack note, two dependency notes, two tech-debt items and the "Vela Maps findings". The prior analyzed paths are demoted to shallow, and 21 earlier shallow entries now inside this run's analyzed paths are dropped from the shallow list. Build outputs, `tools/route-capture/out/`, `__pycache__/`, the prebuilt device binaries and the AI-DLC install were left out.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: install-source
-fingerprint: a45810338a904c500edaff2f885ea847642a155c
+intent: vela-maps
+fingerprint: 10644b12fc1828fc978218e633ce4d83dea50b49
 analyzed:
+  paths:
+    - rules/catalog/
+    - rules/bundled/
+    - rules/fixtures/
+    - rules/README.md
+    - tools/route-capture/
+    - android/app/src/test/java/com/pebblentn/app/rules/
+    - android/app/src/test/java/com/pebblentn/app/catalog/
+    - scripts/validate_catalog.py
+    - scripts/validate_rules.py
+    - scripts/test_validate_catalog.py
+    - android/app/src/main/AndroidManifest.xml
+    - requirements/REQ-RULES.md
+  components:
+    - Rule Data and Schemas
+    - Route Capture Harness
+shallow:
   paths:
     - android/app/src/main/java/com/pebblentn/app/update/
     - android/app/src/main/java/com/pebblentn/app/export/
@@ -28,49 +45,24 @@ analyzed:
     - requirements/REQ-DEBUG.md
     - spec/300-data/ExportFormat.md
     - android/app/src/main/res/values/strings.xml
-  components:
-    - App Update Check
-    - Dashboard Update UI
-    - Diagnostics Export
-    - Specification and Requirements
-shallow:
-  paths:
     - android/app/src/main/java/com/pebblentn/app/notification/icon/
     - android/app/src/main/java/com/pebblentn/app/catalog/
     - android/app/src/test/java/com/pebblentn/app/notification/icon/
     - android/app/src/test/java/com/pebblentn/app/notification/NotificationSnapshotFactoryTest.kt
-    - rules/catalog/navigation-apps.json
-    - rules/bundled/google-maps/
-    - rules/fixtures/google-maps.json
-    - rules/fixtures/README.md
-    - rules/README.md
     - schemas/app-catalog.schema.json
-    - android/app/src/main/AndroidManifest.xml
     - android/app/src/main/java/com/pebblentn/app/rules/RuleEngine.kt
     - android/app/src/main/java/com/pebblentn/app/rules/RuleRepository.kt
     - android/app/src/main/java/com/pebblentn/app/notification/NotificationDispatcher.kt
     - android/app/src/main/java/com/pebblentn/app/notification/NavigationNotificationListenerService.kt
     - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshotFactory.kt
-    - android/app/src/test/java/com/pebblentn/app/catalog/
-    - android/app/src/test/java/com/pebblentn/app/rules/GoogleMapsRulesRegressionTest.kt
-    - android/app/src/test/java/com/pebblentn/app/rules/RulesetVersionsTest.kt
-    - scripts/validate_catalog.py
-    - scripts/validate_rules.py
     - scripts/validate-rules.sh
     - scripts/validate-spec-assets.sh
     - tools/rule-workbench/gen_localized_google_maps.py
     - schemas/ruleset.schema.json
     - android/app/src/main/java/com/pebblentn/app/rules/
     - android/app/src/main/java/com/pebblentn/app/notification/
-    - android/app/src/test/java/com/pebblentn/app/rules/
     - android/app/src/test/java/com/pebblentn/app/notification/
-    - rules/bundled/osmand/
-    - rules/bundled/comaps/
-    - rules/bundled/organic-maps/
-    - rules/fixtures/
-    - requirements/REQ-RULES.md
     - tools/rule-workbench/workbench.py
-    - tools/route-capture/
     - android/app/src/main/java/com/pebblentn/app/data/EnabledAppRepository.kt
     - android/app/src/main/java/com/pebblentn/app/ui/rules/RulesViewModel.kt
     - fastlane/metadata/android/en-US/full_description.txt
@@ -186,10 +178,10 @@ shallow:
     - fdroid/
     - scripts/version.sh
     - android/pebblekit/
-    - android/app/src/test/java/com/pebblentn/app/catalog/NavigationAppCatalogTest.kt
-    - android/app/src/test/java/com/pebblentn/app/rules/RuleFamiliesMatchingTest.kt
-    - rules/bundled/google-maps/any.json
     - android/app/src/main/java/com/pebblentn/app/data/EventVersions.kt
     - .githooks/pre-commit
     - spec/400-ui/AndroidUI.md
+    - android/app/src/main/java/com/pebblentn/app/notification/ManeuverHeuristic.kt
+    - android/app/src/main/java/com/pebblentn/app/core/Maneuver.kt
+    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/SetupProgressTest.kt
 ```

@@ -86,5 +86,13 @@
     "scope": "express",
     "status": "complete",
     "request": "ef2a5b8b"
+  },
+  {
+    "uuid": "01a18ba6-95d8-7668-9ed3-ea65b0fa3977",
+    "slug": "vela-maps",
+    "dirName": "261030-vela-maps",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "e78cbc1e"
   }
 ]

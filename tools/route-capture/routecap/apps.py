@@ -16,6 +16,8 @@ from . import ui
 FIRST_RUN_LABELS = ["Skip", "SKIP", "SKIP DOWNLOAD", "Got it", "OK", "Dismiss", "Accept", "Continue", "Allow",
                     "While using the app", "Only this time", "No thanks",
                     "Keep active",  # OsmAnd's one-time speed-camera choice
+                    "Get started",  # Vela Maps' welcome screen
+                    "Use system voice",  # Vela Maps' one-time voice choice, shown before its first route
                     "Start", "START"]
 # Buttons found by resource id, which doesn't change with the language (a route preview's "Start" is
 # "Démarrer" in French).
@@ -55,13 +57,16 @@ class FDroid(Source):
 
 
 class ReleaseAsset(Source):
-    """The newest release asset matching `pattern` on GitHub or Codeberg."""
+    """The newest release asset matching `pattern` on GitHub or Codeberg. With `stable_only`,
+    pre-releases (nightlies, a rolling canary) are skipped."""
 
-    def __init__(self, api: str, pattern: str):
-        self.api, self.pattern = api, re.compile(pattern)
+    def __init__(self, api: str, pattern: str, stable_only: bool = False):
+        self.api, self.pattern, self.stable_only = api, re.compile(pattern), stable_only
 
     def latest(self):
         for rel in _get_json(self.api):
+            if self.stable_only and rel.get("prerelease"):
+                continue
             for asset in rel.get("assets", []):
                 if self.pattern.search(asset["name"]):
                     return (rel["tag_name"], asset["browser_download_url"])
@@ -253,7 +258,34 @@ class CoMaps(OrganicMaps):
     source = ReleaseAsset("https://codeberg.org/api/v1/repos/comaps/comaps/releases?limit=8", r"-main-release\.apk$")
 
 
-APPS = {a.app_id: a for a in (GoogleMaps(), OsmAnd(), OrganicMaps(), CoMaps())}
+class VelaMaps(App):
+    """Vela Maps (#120), from its GitHub releases: the newest stable one (Vela also publishes
+    nightlies and a rolling `canary` pre-release), as its x86_64 APK or, when a release has a single
+    APK, that one (`vela-maps-v<version>.apk`). Its manifest takes VIEW `google.navigation:` and
+    `geo:` links. What it does with one is a setting (open directions, or start navigation), so a
+    route preview's "Start" is tapped with the first-run labels, like its "Get started" welcome."""
+
+    app_id, package = "vela-maps", "app.vela"
+    source = ReleaseAsset("https://api.github.com/repos/PimpinPumpkin/Vela/releases?per_page=20",
+                          r"^vela-maps-(?:x86_64|v\d+(?:\.\d+)*)\.apk$", stable_only=True)
+
+    @staticmethod
+    def navigation_uris(route: dict, mode: str) -> list[str]:
+        """The links to try, in order: Google Maps' navigation link, then a plain `geo:` point."""
+        d = route["destination"]
+        point = f"{d['lat']},{d['lon']}"
+        return [f"google.navigation:q={point}&mode={GoogleMaps.MODES[mode]}", f"geo:{point}?q={point}"]
+
+    def start_navigation(self, host, route: dict, mode: str) -> bool:
+        for uri in self.navigation_uris(route, mode):
+            # Inside the double quotes the device shell takes "&" and "?" literally.
+            out = host.shell(f'am start -a android.intent.action.VIEW -d "{uri}" {self.package}', check=False)
+            if "Error" not in out:
+                return True
+        return False
+
+
+APPS = {a.app_id: a for a in (GoogleMaps(), OsmAnd(), OrganicMaps(), CoMaps(), VelaMaps())}
 
 
 def screen(host) -> str:

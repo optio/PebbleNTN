@@ -1,0 +1,265 @@
+{
+  "note": "Vela Maps (app.vela, #120). The 'capture' fixtures come from the route-capture harness (Vela 0.5.2621 on the Android 17 emulator, 2026-10-30: London en-GB and Austin en-US, car; every one of the 102 captured cards matched); the others are synthetic. The FIELD STRUCTURE comes from Vela's public source (NavigationService.buildNotification, values/strings.xml, ui/Format.kt): the title is 'In <distance> · <instruction>' while the next maneuver is ahead, the bare instruction at distance 0, 'Arrived' at the destination and 'Navigating' before the first instruction; the text is '<duration> · <distance> · Arrive <time>', optionally followed by ' · To <stop>' and ' · <n> min faster available'. Distances are '<n> ft' or '%.1f mi' (imperial) and '<n> m' or '%.1f km' (metric); the clock is 12- or 24-hour. The instruction wording is Vela's router's (Valhalla, OSRM or GraphHopper), so these fixtures use wording typical for those engines. The ruleset starts from the rules proposed by the #120 reporter; check it against real captures (route capture, or a diagnostics export).",
+  "fixtures": [
+    {"name": "arrived", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Arrived", "text": ""},
+      "comment": "Vela's arrival card: title 'Arrived', empty text.",
+      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-arrived-en", "primaryText": "Arrived", "noDistance": true}},
+
+    {"name": "navigating-no-instruction", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Navigating", "text": "12 min · 3.4 mi · Arrive 12:45 PM"},
+      "comment": "Shown while Vela has no maneuver text yet. Nothing to put on the watch, so it stays unmatched; route capture counts it as known (its text carries a clock, which would otherwise read as an unrecognised direction).",
+      "expected": {"matched": false}},
+
+    {"name": "navigating-any-text", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Navigating"},
+      "comment": "The same card with only its title set, so route capture counts every 'Navigating' card as left unshown on purpose, whatever its units and clock (it compares each field a fixture sets, numbers aside).",
+      "expected": {"matched": false}},
+
+    {"name": "non-navigation-card", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Downloading map data", "text": "Texas"},
+      "expected": {"matched": false}},
+
+    {"name": "in-ft-turn-right-12h", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 500 ft · Turn right onto Main St", "text": "12 min · 3.4 mi · Arrive 12:45 PM"},
+      "comment": "The example from #120, with a 12-hour clock.",
+      "expected": {"maneuver": "RIGHT", "distanceMeters": 152, "ruleId": "vela-in-distance-turn-right-en", "primaryText": "Turn right onto Main St", "secondaryText": "12:45 PM"}},
+
+    {"name": "in-m-turn-left-24h", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 200 m · Turn left onto Kingsway", "text": "8 min · 2.1 km · Arrive 14:05"},
+      "expected": {"maneuver": "LEFT", "distanceMeters": 200, "ruleId": "vela-in-distance-turn-left-en", "primaryText": "Turn left onto Kingsway", "secondaryText": "14:05"}},
+
+    {"name": "in-mi-slight-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 0.3 mi · Turn slight right onto Oak Ave", "text": "20 min · 9.8 mi · Arrive 1:10 PM"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 483, "ruleId": "vela-in-distance-slight-right-en", "primaryText": "Turn slight right onto Oak Ave", "secondaryText": "1:10 PM"}},
+
+    {"name": "in-m-keep-left", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 150 m · Keep left at the fork", "text": "31 min · 28.4 km · Arrive 09:52"},
+      "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 150, "ruleId": "vela-in-distance-slight-left-en", "primaryText": "Keep left at the fork", "secondaryText": "09:52"}},
+
+    {"name": "in-ft-bear-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 400 ft · Bear right onto Elm St", "text": "6 min · 1.9 mi · Arrive 8:03 AM"},
+      "comment": "Valhalla's word for a slight turn.",
+      "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 122, "ruleId": "vela-in-distance-slight-right-en", "primaryText": "Bear right onto Elm St", "secondaryText": "8:03 AM"}},
+
+    {"name": "in-km-bear-left", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 1.2 km · Bear left onto A40", "text": "15 min · 14.0 km · Arrive 17:30"},
+      "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 1200, "ruleId": "vela-in-distance-slight-left-en", "primaryText": "Bear left onto A40", "secondaryText": "17:30"}},
+
+    {"name": "in-ft-sharp-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 100 ft · Make a sharp right onto 3rd St", "text": "3 min · 0.8 mi · Arrive 6:15 PM"},
+      "expected": {"maneuver": "SHARP_RIGHT", "distanceMeters": 30, "ruleId": "vela-in-distance-sharp-right-en", "primaryText": "Make a sharp right onto 3rd St", "secondaryText": "6:15 PM"}},
+
+    {"name": "in-m-sharp-left", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 80 m · Turn sharp left onto Rue de Rivoli", "text": "4 min · 1.1 km · Arrive 11:20"},
+      "expected": {"maneuver": "SHARP_LEFT", "distanceMeters": 80, "ruleId": "vela-in-distance-sharp-left-en", "primaryText": "Turn sharp left onto Rue de Rivoli", "secondaryText": "11:20"}},
+
+    {"name": "in-m-uturn-no-side", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 300 m · Make a U-turn", "text": "10 min · 5.0 km · Arrive 12:00"},
+      "comment": "No side named: left, as in right-hand traffic.",
+      "expected": {"maneuver": "UTURN_LEFT", "distanceMeters": 300, "ruleId": "vela-in-distance-uturn-en", "primaryText": "Make a U-turn", "secondaryText": "12:00"}},
+
+    {"name": "in-ft-uturn-left", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 250 ft · Make a left U-turn at Pine St", "text": "7 min · 2.2 mi · Arrive 4:48 PM"},
+      "expected": {"maneuver": "UTURN_LEFT", "distanceMeters": 76, "ruleId": "vela-in-distance-uturn-en", "primaryText": "Make a left U-turn at Pine St", "secondaryText": "4:48 PM"}},
+
+    {"name": "in-mi-uturn-right", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 0.1 mi · Make a right U-turn onto Main St", "text": "5 min · 1.6 mi · Arrive 10:41"},
+      "comment": "The issue's rules gave UTURN_LEFT for every U-turn.",
+      "expected": {"maneuver": "UTURN_RIGHT", "distanceMeters": 161, "ruleId": "vela-in-distance-uturn-right-en", "primaryText": "Make a right U-turn onto Main St", "secondaryText": "10:41"}},
+
+    {"name": "in-m-roundabout-osrm", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 200 m · At the roundabout, take the 2nd exit onto High St", "text": "9 min · 4.3 km · Arrive 13:27"},
+      "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 200, "ruleId": "vela-in-distance-roundabout-en", "primaryText": "At the roundabout, take the 2nd exit onto High St", "secondaryText": "13:27"}},
+
+    {"name": "in-ft-roundabout-turn-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 150 ft · At the roundabout, turn right onto Bridge Rd", "text": "11 min · 4.0 mi · Arrive 2:02 PM"},
+      "comment": "OSRM phrases some roundabouts as a turn; the issue's rules gave RIGHT.",
+      "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 46, "ruleId": "vela-in-distance-roundabout-en", "primaryText": "At the roundabout, turn right onto Bridge Rd", "secondaryText": "2:02 PM"}},
+
+    {"name": "in-m-enter-roundabout-valhalla", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 500 m · Enter the roundabout and take the 3rd exit onto B1", "text": "22 min · 18.6 km · Arrive 19:44"},
+      "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 500, "ruleId": "vela-in-distance-roundabout-en", "secondaryText": "19:44"}},
+
+    {"name": "in-m-exit-roundabout", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 50 m · Exit the roundabout onto Station Rd", "text": "2 min · 0.6 km · Arrive 07:58"},
+      "comment": "Starts with 'Exit', but it is a roundabout, never a motorway exit.",
+      "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 50, "ruleId": "vela-in-distance-roundabout-en", "secondaryText": "07:58"}},
+
+    {"name": "in-m-roundabout-graphhopper", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 300 m · At roundabout, take exit 2 onto Mill Lane", "text": "6 min · 3.1 km · Arrive 16:09"},
+      "expected": {"maneuver": "ROUNDABOUT", "distanceMeters": 300, "ruleId": "vela-in-distance-roundabout-en", "secondaryText": "16:09"}},
+
+    {"name": "in-mi-motorway-exit-valhalla", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 0.5 mi · Take the I 35 South exit toward Dallas", "text": "1 hr 12 min · 74.0 mi · Arrive 3:40 PM"},
+      "comment": "The issue's rules read this as ROUNDABOUT ('take the .+ exit').",
+      "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 805, "ruleId": "vela-in-distance-exit-en", "primaryText": "Take the I 35 South exit toward Dallas", "secondaryText": "3:40 PM"}},
+
+    {"name": "in-mi-exit-on-the-left", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 1.0 mi · Take exit 12 on the left toward Downtown", "text": "18 min · 15.2 mi · Arrive 9:31 AM"},
+      "comment": "The issue's rules gave SLIGHT_RIGHT for every exit.",
+      "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 1609, "ruleId": "vela-in-distance-exit-left-en", "secondaryText": "9:31 AM"}},
+
+    {"name": "in-m-ramp-on-the-left-osrm", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 400 m · Take the ramp on the left towards M25", "text": "40 min · 51.0 km · Arrive 21:15"},
+      "expected": {"maneuver": "SLIGHT_LEFT", "distanceMeters": 400, "ruleId": "vela-in-distance-exit-left-en", "secondaryText": "21:15"}},
+
+    {"name": "in-ft-ramp-on-the-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 600 ft · Take the ramp on the right", "text": "25 min · 19.7 mi · Arrive 5:55 PM"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 183, "ruleId": "vela-in-distance-exit-en", "secondaryText": "5:55 PM"}},
+
+    {"name": "in-km-take-the-exit", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 2.0 km · Take the exit", "text": "33 min · 40.2 km · Arrive 15:03"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "distanceMeters": 2000, "ruleId": "vela-in-distance-exit-en", "secondaryText": "15:03"}},
+
+    {"name": "in-m-head-north", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 50 m · Head north on Baker St", "text": "14 min · 6.2 km · Arrive 08:40"},
+      "expected": {"maneuver": "STRAIGHT", "distanceMeters": 50, "ruleId": "vela-in-distance-head-or-continue-en", "primaryText": "Head north on Baker St", "secondaryText": "08:40"}},
+
+    {"name": "in-mi-continue-with-stop-and-faster-route", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 1.5 mi · Continue on I 35 South for 12 miles", "text": "25 min · 10.2 mi · Arrive 3:40 PM · To Grocery Store · 2 min faster available"},
+      "comment": "The turn distance is the first one in the title, not the 12 miles of the instruction. With a stop ahead, the clock is the stop's ETA.",
+      "expected": {"maneuver": "STRAIGHT", "distanceMeters": 2414, "ruleId": "vela-in-distance-head-or-continue-en", "primaryText": "Continue on I 35 South for 12 miles", "secondaryText": "3:40 PM"}},
+
+    {"name": "in-mi-merge", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 0.2 mi · Merge onto US 101 North", "text": "9 min · 6.4 mi · Arrive 7:12 AM"},
+      "expected": {"maneuver": "STRAIGHT", "distanceMeters": 322, "ruleId": "vela-in-distance-head-or-continue-en", "secondaryText": "7:12 AM"}},
+
+    {"name": "in-m-continue-onto-bear-creek-rd", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 500 m · Continue onto Bear Creek Rd", "text": "12 min · 9.0 km · Arrive 10:10"},
+      "comment": "A road name with a maneuver word ('Bear') does not decide the arrow: the maneuver is read at the start of the instruction.",
+      "expected": {"maneuver": "STRAIGHT", "distanceMeters": 500, "ruleId": "vela-in-distance-head-or-continue-en", "primaryText": "Continue onto Bear Creek Rd"}},
+
+    {"name": "in-ft-destination-on-the-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 500 ft · Your destination is on the right", "text": "1 min · 0.1 mi · Arrive 12:58 PM"},
+      "comment": "The issue's rules left this to the generic rule (UNKNOWN).",
+      "expected": {"maneuver": "ARRIVE", "distanceMeters": 152, "ruleId": "vela-in-distance-arrive-en", "primaryText": "Your destination is on the right", "secondaryText": "12:58 PM"}},
+
+    {"name": "in-m-arrive-at-graphhopper", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 100 m · Arrive at destination", "text": "1 min · 0.1 km · Arrive 18:22"},
+      "expected": {"maneuver": "ARRIVE", "distanceMeters": 100, "ruleId": "vela-in-distance-arrive-en", "secondaryText": "18:22"}},
+
+    {"name": "in-m-you-have-arrived-osrm", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 30 m · You have arrived at your destination", "text": "1 min · 30 m · Arrive 18:23"},
+      "expected": {"maneuver": "ARRIVE", "distanceMeters": 30, "ruleId": "vela-in-distance-arrive-en", "secondaryText": "18:23"}},
+
+    {"name": "in-km-generic-ferry", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 2.0 km · Take the ferry to Dover", "text": "1 hr 40 min · 96.0 km · Arrive 20:50"},
+      "comment": "No arrow for a ferry: the fallback, with the distance and the ETA. 'Take' alone is not an exit.",
+      "expected": {"maneuver": "UNKNOWN", "distanceMeters": 2000, "ruleId": "vela-in-distance-generic-en", "primaryText": "Take the ferry to Dover", "secondaryText": "20:50"}},
+
+    {"name": "bare-turn-right-12h", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Turn right onto Main St", "text": "11 min · 3.3 mi · Arrive 12:45 PM"},
+      "comment": "At distance 0 Vela's title is the bare instruction. The issue's rules gave UNKNOWN for every one.",
+      "expected": {"maneuver": "RIGHT", "ruleId": "vela-bare-turn-right-en", "primaryText": "Turn right onto Main St", "secondaryText": "12:45 PM", "noDistance": true}},
+
+    {"name": "bare-turn-left-24h", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Turn left onto Kingsway", "text": "7 min · 2.0 km · Arrive 14:05"},
+      "expected": {"maneuver": "LEFT", "ruleId": "vela-bare-turn-left-en", "primaryText": "Turn left onto Kingsway", "secondaryText": "14:05", "noDistance": true}},
+
+    {"name": "bare-bear-left", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Bear left onto A40", "text": "15 min · 13.8 km · Arrive 17:30"},
+      "expected": {"maneuver": "SLIGHT_LEFT", "ruleId": "vela-bare-slight-left-en", "noDistance": true}},
+
+    {"name": "bare-keep-right-to-take", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Keep right to take I 35 South", "text": "1 hr 10 min · 73.5 mi · Arrive 3:40 PM"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "ruleId": "vela-bare-slight-right-en", "secondaryText": "3:40 PM", "noDistance": true}},
+
+    {"name": "bare-sharp-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Turn sharp right onto 3rd St", "text": "3 min · 0.8 mi · Arrive 6:15 PM"},
+      "expected": {"maneuver": "SHARP_RIGHT", "ruleId": "vela-bare-sharp-right-en", "noDistance": true}},
+
+    {"name": "bare-sharp-left", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Make a sharp left", "text": "4 min · 1.1 km · Arrive 11:20"},
+      "expected": {"maneuver": "SHARP_LEFT", "ruleId": "vela-bare-sharp-left-en", "noDistance": true}},
+
+    {"name": "bare-uturn", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Make a U-turn", "text": "10 min · 5.0 km · Arrive 12:00"},
+      "expected": {"maneuver": "UTURN_LEFT", "ruleId": "vela-bare-uturn-en", "noDistance": true}},
+
+    {"name": "bare-uturn-right", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Make a right U-turn", "text": "5 min · 1.6 km · Arrive 10:41"},
+      "expected": {"maneuver": "UTURN_RIGHT", "ruleId": "vela-bare-uturn-right-en", "noDistance": true}},
+
+    {"name": "bare-roundabout-turn-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "At the roundabout, turn right onto Bridge Rd", "text": "11 min · 4.0 mi · Arrive 2:02 PM"},
+      "expected": {"maneuver": "ROUNDABOUT", "ruleId": "vela-bare-roundabout-en", "secondaryText": "2:02 PM", "noDistance": true}},
+
+    {"name": "bare-take-the-2nd-exit", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Take the 2nd exit onto High St", "text": "9 min · 4.2 km · Arrive 13:27"},
+      "comment": "An ordinal exit is a roundabout exit, not a motorway exit.",
+      "expected": {"maneuver": "ROUNDABOUT", "ruleId": "vela-bare-roundabout-en", "noDistance": true}},
+
+    {"name": "bare-motorway-exit", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Take the I 35 South exit toward Dallas", "text": "1 hr 11 min · 73.6 mi · Arrive 3:40 PM"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "ruleId": "vela-bare-exit-en", "primaryText": "Take the I 35 South exit toward Dallas", "noDistance": true}},
+
+    {"name": "bare-exit-on-the-left", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Take the exit on the left", "text": "17 min · 14.9 mi · Arrive 9:31 AM"},
+      "expected": {"maneuver": "SLIGHT_LEFT", "ruleId": "vela-bare-exit-left-en", "noDistance": true}},
+
+    {"name": "bare-head", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Head north on Baker St", "text": "14 min · 6.2 km · Arrive 08:40"},
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "vela-bare-head-or-continue-en", "noDistance": true}},
+
+    {"name": "bare-continue-for-miles", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Continue on I 35 South for 12 miles", "text": "24 min · 10.0 mi · Arrive 3:40 PM"},
+      "comment": "The 12 miles of the instruction are not the turn distance: a bare title carries none.",
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "vela-bare-head-or-continue-en", "noDistance": true}},
+
+    {"name": "bare-destination-on-the-left", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Your destination is on the left", "text": "1 min · 0.1 mi · Arrive 12:59 PM"},
+      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-bare-arrive-en", "primaryText": "Your destination is on the left", "secondaryText": "12:59 PM", "noDistance": true}},
+
+    {"name": "bare-arrive-at", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Arrive at Union Station", "text": "1 min · 0.1 km · Arrive 18:22"},
+      "comment": "The issue's rules gave UNKNOWN for 'Arrive'.",
+      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-bare-arrive-en", "noDistance": true}},
+
+    {"name": "bare-generic-ferry", "source": "synthetic", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Take the ferry to Dover", "text": "1 hr 38 min · 94.0 km · Arrive 20:50"},
+      "expected": {"maneuver": "UNKNOWN", "ruleId": "vela-bare-maneuver-en", "primaryText": "Take the ferry to Dover", "secondaryText": "20:50", "noDistance": true}},
+
+    {"name": "capture-london-roundabout", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 40 ft · At the roundabout, go straight through onto Trafalgar Square, the 1st exit", "text": "15 min · 1.1 mi · Arrive 15:26"},
+      "expected": {"maneuver": "ROUNDABOUT", "ruleId": "vela-in-distance-roundabout-en", "distanceMeters": 12, "secondaryText": "15:26"}},
+
+    {"name": "capture-london-turn-right", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 0.4 mi · Turn right onto Shaftesbury Avenue", "text": "14 min · 1.0 mi · Arrive 15:25"},
+      "expected": {"maneuver": "RIGHT", "ruleId": "vela-in-distance-turn-right-en", "distanceMeters": 644, "primaryText": "Turn right onto Shaftesbury Avenue", "secondaryText": "15:25"}},
+
+    {"name": "capture-london-head-out", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 350 ft · Head out on Charing Cross Road", "text": "7 min · 0.6 mi · Arrive 15:19"},
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "vela-in-distance-head-or-continue-en", "distanceMeters": 107, "secondaryText": "15:19"}},
+
+    {"name": "capture-london-destination-ahead", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 450 ft · Your destination is on the left", "text": "1 min · 450 ft · Arrive 15:15"},
+      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-in-distance-arrive-en", "distanceMeters": 137, "secondaryText": "15:15"}},
+
+    {"name": "capture-austin-slight-right", "source": "capture", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 100 ft · Turn slight right", "text": "10 min · 2.1 mi · Arrive 3:24 PM"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "ruleId": "vela-in-distance-slight-right-en", "distanceMeters": 30, "secondaryText": "3:24 PM"}},
+
+    {"name": "capture-austin-turn-left", "source": "capture", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 200 ft · Turn left onto Colorado Street", "text": "10 min · 2.1 mi · Arrive 3:25 PM"},
+      "expected": {"maneuver": "LEFT", "ruleId": "vela-in-distance-turn-left-en", "distanceMeters": 61, "primaryText": "Turn left onto Colorado Street", "secondaryText": "3:25 PM"}},
+
+    {"name": "capture-amsterdam-keep-slight-left", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 350 ft · Keep slight left onto Overtoom", "text": "7 min · 0.7 mi · Arrive 15:45"},
+      "comment": "Missed by the first ruleset (generic fallback): 'Keep slight' wording.",
+      "expected": {"maneuver": "SLIGHT_LEFT", "ruleId": "vela-in-distance-slight-left-en", "distanceMeters": 107, "secondaryText": "15:45"}},
+
+    {"name": "capture-start-your-route", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "In 80 ft · Start your route", "text": "18 min · 2.2 mi · Arrive 15:56"},
+      "comment": "Missed by the first ruleset (generic fallback).",
+      "expected": {"maneuver": "STRAIGHT", "ruleId": "vela-in-distance-head-or-continue-en", "secondaryText": "15:56"}},
+
+    {"name": "synthetic-keep-slight-right", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Keep slight right onto Lamar Boulevard", "text": "5 min · 1.2 mi · Arrive 4:10 PM"},
+      "expected": {"maneuver": "SLIGHT_RIGHT", "ruleId": "vela-bare-slight-right-en", "noDistance": true}},
+
+    {"name": "capture-arrived", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
+      "snapshot": {"title": "Arrived"},
+      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-arrived-en", "noDistance": true}}
+  ]
+}

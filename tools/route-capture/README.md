@@ -30,6 +30,7 @@ cd tools/route-capture
 ./routecap.py setup                      # SDK tools, emulator, Android 17 Play image, AVD PebbleNTN_Capture_API_37 (idempotent)
 ./routecap.py fetch-routes               # cache each route's track per mode under routes/cache/ (committed)
 ./routecap.py install osmand comaps      # optional: latest builds of the open-source apps (phase 3 drives them)
+./routecap.py install vela-maps          # Vela Maps' latest stable GitHub release (#120); needed before its plan runs
 ./routecap.py run scenarios/phase1.json  # boot, drive every scenario, write out/<timestamp>/{run.json,report.md}; run.json is saved after every scenario
 ./routecap.py run scenarios/phase1.json --publish     # ... and create/update the GitHub issue
 ./routecap.py report out/<timestamp>/run.json --publish  # re-evaluate a saved run with today's rules
@@ -79,6 +80,12 @@ for l in en-GB fr-FR nl-NL de-DE it-IT es-ES; do ./routecap.py run scenarios/org
 | `scenarios/google-maps-new-languages.json` | Google Maps, pt-BR and pl-PL, car, Brussels (discovery) |
 | `scenarios/osmand-m3.json` | OsmAnd × car / bike / foot × the same six languages and cities (milestone 3); about 1.4 GB of region maps on the first run |
 | `scenarios/google-maps-m2.json` | Google Maps × car / bike / foot × en-GB (London), fr-FR (Paris), nl-NL (Amsterdam), de-DE (Berlin), it-IT (Milan), es-ES (Madrid); 18 scenarios. Each has a `maxSeconds` cap (car and bike 7 min, foot 5 min), and the whole plan takes about 2 h, so run it in parts with `--only` |
+| `scenarios/vela-maps-m1.json` | Vela Maps, car, English only (#120): the seven European routes in en-GB (metric), then Austin in en-US (imperial); 8 scenarios of up to 7 min. Start with `--only 'london\|austin'` |
+
+**Routes:** London, Brussels, Paris, Amsterdam, Berlin, Milan and Madrid, plus **Austin**
+(`austin-downtown`, Texas State Capitol to South Congress), the first US route, for en-US scenarios
+with feet and miles. Every route has car, bike and foot tracks, so any app's plan can use it; so far
+only the Vela Maps plan does.
 
 ## Apps
 
@@ -88,6 +95,7 @@ for l in en-GB fr-FR nl-NL de-DE it-IT es-ES; do ./routecap.py run scenarios/org
 | OsmAnd | F-Droid (`net.osmand.plus`) | The route's region map (`routes/<id>.json` → `maps.osmand`, e.g. `Germany_berlin_europe_2`) is downloaded from download.osmand.net once (cached in the host's temp folder) and pushed into `/sdcard/Android/data/net.osmand.plus/files/`. Navigation: end any previous route (`osmand.api://stop_navigation`; OsmAnd resumes the last route on start), then `google.navigation:q=…&mode=d\|b\|w` and the route preview's **Start**. OsmAnd's own `osmand.api://navigate` didn't start anything. OsmAnd follows the Android system language. **Open point:** OsmAnd seems to ignore the intent's `mode`, so its bike and foot scenarios may run with the car profile (the instruction strings are the same across profiles) |
 | Organic Maps | GitHub release (`app.organicmaps.web`) | Maps come through the app, with the GPS at the route's origin: the first-run world overview map (its "Download <region>?" box ticked), then the region map a route request offers. Navigation: `om://route?sll=…&saddr=Start&dll=…&daddr=Destination&type=vehicle\|bicycle\|pedestrian`, sent to a stopped app (a running one ignores it), then the preview's **Start**, "plan from your current location?" → OK, and the one-time route disclaimer → Accept (positive buttons found by id, so any language works). The app follows the Android system language |
 | CoMaps | Codeberg release (`app.comaps`) | A fork of Organic Maps: the same driver with the `cm://` scheme |
+| Vela Maps | GitHub release (`app.vela`): the newest **stable** one, skipping the nightlies and the rolling `canary` pre-release; its `vela-maps-x86_64.apk`, or the single `vela-maps-v<version>.apk` when a release has only one | `google.navigation:q=<lat>,<lon>&mode=d\|b\|w`, else `geo:<lat>,<lon>?q=<lat>,<lon>`; then the preview's **Start** and the welcome screen's **Get started** by text. **Open points** until the first run (#120): whether the link starts guidance or opens a preview (Vela makes it a setting), whether `mode` is honoured, which router writes the instructions, whether routing works online in the emulator or needs a downloaded region, and whether it runs on the Android 17 image. Its English rules match an English system language only |
 
 ## Known limits
 
