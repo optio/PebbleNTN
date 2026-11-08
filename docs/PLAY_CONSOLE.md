@@ -93,6 +93,8 @@ Choose **All or some functionality is restricted**, and add these instructions (
 **Demo video script** (1–2 minutes, phone screen recording plus a camera shot of the watch;
 upload it unlisted on YouTube and paste the link above):
 
+https://youtube.com/shorts/d4VUySLqb88
+
 1. Open PebbleNTN for the first time: the onboarding screen with the disclosure.
 2. Tap **Grant notification access**, enable PebbleNTN in Android settings, go back: the dashboard.
 3. Open **Navigation apps**: the supported apps, one toggle each.
