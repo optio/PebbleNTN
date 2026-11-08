@@ -2,6 +2,8 @@ package com.pebblentn.app.export
 
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.data.DebugEventType
+import com.pebblentn.app.data.DrivingDecision
+import com.pebblentn.app.data.DrivingLogEntry
 import com.pebblentn.app.data.EventVersions
 import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.rules.Condition
@@ -197,7 +199,7 @@ class ExportBuilderTest {
                 builder.build(mode, emptyList(), listOf(recorded), appVersion = "0.0.60", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z", appVersionCode = 60),
             ).jsonObject
             val metadata = root.getValue("metadata").jsonObject
-            assertEquals(5L, metadata.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals("6 since the driving log (#132)", 6L, metadata.getValue("schemaVersion").jsonPrimitive.long)
             assertEquals(60L, metadata.getValue("appVersionCode").jsonPrimitive.long)
             // Version strings are not personal data: privacy-safe keeps them unredacted.
             val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject
@@ -251,5 +253,57 @@ class ExportBuilderTest {
         assertEquals(1L, single.getValue("occurrences").jsonPrimitive.long)
         assertEquals(single.getValue("firstSeenMillis"), single.getValue("lastSeenMillis"))
         assertEquals("null", single.getValue("lastSnapshot").toString())
+    }
+
+    // --- The driving log (#132 FR14, REQ-DEBUG-016) -------------------------------------------------
+
+    private val drivingLog = listOf(
+        DrivingLogEntry(1_000, measuredKmh = 48.27, plannedKmh = 52.0, thresholdKmh = 25.0, decision = DrivingDecision.SAMPLE),
+        DrivingLogEntry(2_000, measuredKmh = 49.0, plannedKmh = null, thresholdKmh = 24.140_16, decision = DrivingDecision.HIDE),
+        DrivingLogEntry(3_000, measuredKmh = null, plannedKmh = null, thresholdKmh = 25.0, decision = DrivingDecision.RESET),
+    )
+
+    private fun buildWithDriving(mode: ExportMode) = Json.parseToJsonElement(
+        builder.build(
+            mode, listOf(userRule), listOf(event), appVersion = "0.0.82", androidRelease = "16",
+            exportedAt = "2026-11-08T00:00:00Z", drivingLog = drivingLog,
+        ),
+    ).jsonObject
+
+    @Test
+    fun theDrivingLogIsInThePrivacySafeAndTheFullExport() {
+        for (mode in listOf(ExportMode.PRIVACY_SAFE, ExportMode.FULL)) {
+            val root = buildWithDriving(mode)
+            assertEquals(6L, root.getValue("metadata").jsonObject.getValue("schemaVersion").jsonPrimitive.long)
+            val log = root.getValue("drivingLog").jsonArray.map { it.jsonObject }
+            assertEquals(3, log.size)
+            assertEquals(listOf("SAMPLE", "HIDE", "RESET"), log.map { it.getValue("decision").jsonPrimitive.content })
+            assertEquals("one decimal", "48.3", log[0].getValue("measuredKmh").jsonPrimitive.content)
+            assertEquals("15 mph", "24.1", log[1].getValue("thresholdKmh").jsonPrimitive.content)
+            assertEquals(JsonNull, log[2].getValue("measuredKmh"))
+            assertEquals(1_000L, log[0].getValue("timeMillis").jsonPrimitive.long)
+        }
+    }
+
+    @Test
+    fun theDrivingLogHoldsOnlyNumbersTimesAndDecisionNames() {
+        val log = buildWithDriving(ExportMode.FULL).getValue("drivingLog").jsonArray.map { it.jsonObject }
+        val decisions = DrivingDecision.entries.map { it.name }.toSet()
+        for (entry in log) {
+            assertEquals(setOf("timeMillis", "measuredKmh", "plannedKmh", "thresholdKmh", "decision"), entry.keys)
+            for ((key, value) in entry) {
+                if (key == "decision") {
+                    assertTrue(value.jsonPrimitive.content in decisions)
+                } else {
+                    assertTrue("$key is a number or null", value == JsonNull || !value.jsonPrimitive.isString)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun aRulesOnlyExportHasNoDrivingLog() {
+        val log = buildWithDriving(ExportMode.RULES_ONLY).getValue("drivingLog").jsonArray
+        assertTrue(log.isEmpty())
     }
 }

@@ -3,6 +3,7 @@ package com.pebblentn.app.export
 import android.os.Build
 import com.pebblentn.app.data.DebugEvent
 import com.pebblentn.app.data.DebugHistoryRepository
+import com.pebblentn.app.data.DrivingLogEntry
 import com.pebblentn.app.data.UserRuleRepository
 import com.pebblentn.app.update.InstallRecord
 import kotlinx.coroutines.flow.first
@@ -39,11 +40,14 @@ class DiagnosticExporter(
     private val userAddedPackages: () -> Map<String, List<String>> = { emptyMap() },
     /** What installed or last updated this version, as detected at app start (REQ-DEBUG-015). */
     private val installRecord: () -> InstallRecord = { InstallRecord.UNKNOWN },
+    /** The When driving log at export time, oldest first (#132 FR14). */
+    private val drivingLog: () -> List<DrivingLogEntry> = { emptyList() },
 ) {
     suspend fun build(mode: ExportMode): String {
         val rules = userRules.observeUserRules().first().mapNotNull { it.rule }
         val events = if (mode == ExportMode.RULES_ONLY) emptyList() else debugHistory.observeRecent(debugHistory.exportLimit).first()
         return builder.build(
+            drivingLog = drivingLog(),
             mode = mode,
             userRules = rules,
             events = events,
@@ -75,7 +79,9 @@ class DiagnosticExporter(
         val localeTag = locale()
         val added = userAddedPackages()
         val install = installRecord()
+        val driving = drivingLog()
         fun render(events: List<DebugEvent>): String = builder.build(
+            drivingLog = driving,
             mode = mode,
             userRules = rules,
             events = events,

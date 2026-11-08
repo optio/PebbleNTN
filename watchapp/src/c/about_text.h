@@ -8,6 +8,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// The About page's intro, ending on the When driving note (REQ-WATCH-026, #132 FR2.4): navigation
+// apps do not say how the user travels, so the phone guesses driving from the speed.
+#define ABOUT_INTRO_TEXT                                                                           \
+  "Change every setting here on the watch or in the PebbleNTN phone app.\n"                        \
+  "When driving: guessed from your speed."
+
 // Size of the details buffer. The worst case is about 105 bytes: a 16-byte watchapp version, a
 // 16-byte phone version (PHONE_VERSION_MAX) with " (last seen)", "Protocol 99.99" and the longest
 // status line, "Pebble app not connected", plus the newlines and the NUL (#103, FR2.4).

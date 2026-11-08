@@ -65,6 +65,14 @@ class PebbleWatchTransport(
             .onFailure { Timber.e(it, "PebbleKit: launchApp failed (no companion app bound?)") }
     }
 
+    // Hidden while driving (#132): PebbleKit's stop call works with every watchapp version, so a
+    // watchapp from before 1.4 is closed the same way (it never gets here: it has no Hide setting).
+    override suspend fun closeApp() {
+        runCatching { sender.stopAppOnTheWatch(appUuid) }
+            .onSuccess { results -> Timber.i("PebbleKit: closeApp -> %s", results) }
+            .onFailure { Timber.e(it, "PebbleKit: closeApp failed (no companion app bound?)") }
+    }
+
     override suspend fun send(message: AppMessage): SendResult {
         val dict = PebbleAppMessageMapper.toDictionary(message)
         var results = trySend(dict)

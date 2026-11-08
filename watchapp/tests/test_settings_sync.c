@@ -111,7 +111,7 @@ int main(void) {
   expect_bool("every default is valid on a watch with everything", defaults_valid, true);
 
   printf("table\n");
-  expect_int("23 settings", SET_COUNT, 23);
+  expect_int("26 settings", SET_COUNT, 26);
   expect_int("accent count", sync_value_count(SET_ACCENT), 16);
   expect_int("shortcut count", sync_value_count(SET_SHORTCUT_FIRST + SLOT_TAP), ACTION_COUNT);
   expect_int("persist key of the accent", (int)sync_persist_key(SET_ACCENT), 1);
@@ -119,6 +119,22 @@ int main(void) {
              (int)sync_persist_key(SET_WARN_INTENSITY), 15);
   expect_int("persist key of Touch", (int)sync_persist_key(SET_TOUCH), 19);
   expect_int("persist key of Tap", (int)sync_persist_key(SET_SHORTCUT_FIRST + SLOT_TAP), 26);
+  // #132: 27 (last vibration pattern) and 28 (settings revision) are taken, so When driving is 29-31.
+  expect_int("persist key of When driving", (int)sync_persist_key(SET_DRIVING_MODE), 29);
+  expect_int("persist key of the metric speed", (int)sync_persist_key(SET_DRIVING_SPEED_METRIC), 30);
+  expect_int("persist key of the imperial speed", (int)sync_persist_key(SET_DRIVING_SPEED_IMPERIAL), 31);
+  expect_int("When driving: Show", sync_default(SET_DRIVING_MODE, EMERY), 0);
+  expect_int("metric speed: 25 km/h", sync_default(SET_DRIVING_SPEED_METRIC, EMERY), 3);
+  expect_int("imperial speed: 15 mph", sync_default(SET_DRIVING_SPEED_IMPERIAL, 0), 2);
+  expect_int("metric speeds", sync_value_count(SET_DRIVING_SPEED_METRIC), 11);
+  expect_int("imperial speeds", sync_value_count(SET_DRIVING_SPEED_IMPERIAL), 8);
+  expect_bool("60 km/h is valid", sync_valid(SET_DRIVING_SPEED_METRIC, 10, 0), true);
+  expect_bool("index 11 is not", sync_valid(SET_DRIVING_SPEED_METRIC, 11, 0), false);
+  expect_bool("40 mph is valid", sync_valid(SET_DRIVING_SPEED_IMPERIAL, 7, 0), true);
+  expect_bool("index 8 is not", sync_valid(SET_DRIVING_SPEED_IMPERIAL, 8, 0), false);
+  expect_bool("When driving is an int", sync_is_bool(SET_DRIVING_MODE), false);
+  expect_int("protocol key of the imperial speed", PBNTN_KEY_SETTING_ACCENT + SET_DRIVING_SPEED_IMPERIAL,
+             PBNTN_KEY_SETTING_DRIVING_SPEED_IMPERIAL);
   expect_bool("Invert is a bool", sync_is_bool(SET_INVERT), true);
   expect_bool("Units is an int", sync_is_bool(SET_UNITS), false);
   expect_int("protocol key of Tap", PBNTN_KEY_SETTING_ACCENT + SET_SHORTCUT_FIRST + SLOT_TAP,

@@ -49,6 +49,8 @@ fun WatchSettingsScreen(
     onOpenSetting: (WatchSetting) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Change a setting edited in place, as the When driving section does (#132). */
+    onChangeSetting: (WatchSetting, Int) -> Unit = { _, _ -> },
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -92,6 +94,10 @@ fun WatchSettingsScreen(
                                 SettingRow(setting, mirror, onClick = { onOpenSetting(setting) })
                             }
                         }
+                    }
+                    // Edited in place, with no option list or preview (#132 FR3, FR4).
+                    if (WatchSettingsUi.showsDrivingSection(state)) {
+                        DrivingSection(mirror, onChangeSetting)
                     }
                 }
             }

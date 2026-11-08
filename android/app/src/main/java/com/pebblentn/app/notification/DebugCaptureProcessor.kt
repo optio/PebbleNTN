@@ -2,6 +2,7 @@ package com.pebblentn.app.notification
 
 import com.pebblentn.app.core.EpochClock
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.core.SpeedSample
 import com.pebblentn.app.data.DebugHistoryRepository
 import com.pebblentn.app.rules.RuleEngine
 import com.pebblentn.app.rules.RuleRepository
@@ -23,6 +24,11 @@ class DebugCaptureProcessor(
     private val onMatchedInstruction: suspend (NavigationInstruction) -> Unit = {},
     /** Invoked when a source app's notification is removed (candidate session end). */
     private val onSessionEnded: suspend () -> Unit = {},
+    /**
+     * Invoked, after the instruction, with the raw speed fields of a notification that carries
+     * progress values (#132 FR5): the reducer quantizes distances, so speed needs these.
+     */
+    private val onSpeedSample: suspend (SpeedSample) -> Unit = {},
 ) : NotificationProcessor {
 
     override suspend fun onPosted(event: PostedNotification) {
@@ -35,6 +41,19 @@ class DebugCaptureProcessor(
         debugHistory.recordPosted(event, evaluation)
         lastEligibleStore.record(event.snapshot.postTimeMillis)
         evaluation.instruction?.let { onMatchedInstruction(it) }
+        speedSampleOf(event.snapshot, hasInstruction = evaluation.instruction != null)?.let { onSpeedSample(it) }
+    }
+
+    private fun speedSampleOf(snapshot: NotificationSnapshot, hasInstruction: Boolean): SpeedSample? {
+        if (snapshot.progress == null || snapshot.progressMax == null) return null
+        return SpeedSample(
+            postTimeMillis = snapshot.postTimeMillis,
+            progress = snapshot.progress,
+            progressMax = snapshot.progressMax,
+            subText = snapshot.subText,
+            packageName = snapshot.packageName,
+            hasInstruction = hasInstruction,
+        )
     }
 
     override suspend fun onRemoved(packageName: String) {

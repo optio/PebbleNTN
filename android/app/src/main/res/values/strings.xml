@@ -626,4 +626,43 @@
         <item>Units</item>
         <item>Open settings</item>
     </string-array>
+    <!-- When driving (REQ-ANDROID-024, #132) -->
+    <string name="watch_settings_section_driving">When driving</string>
+    <string name="watch_setting_driving_mode">Hide directions when driving</string>
+    <string name="watch_setting_driving_speed">Driving speed</string>
+    <string name="watch_driving_speed_value">Above %1$s</string>
+    <string name="watch_driving_reset">Reset to default (%1$s)</string>
+    <string name="watch_driving_explanation">Navigation apps don\'t tell PebbleNTN whether you\'re driving, walking or cycling, so PebbleNTN guesses from your speed. Above the driving speed the watchapp closes; when you slow down for a while, it comes back. Fast cycling can count as driving, and slow traffic as walking. Adjust the speed if it guesses wrong.</string>
+    <string name="cd_watch_driving_speed_slider">Driving speed, %1$s</string>
+    <string name="dashboard_watch_hidden_driving">Watch: hidden while driving (about %1$s)</string>
+    <string name="dashboard_watch_hidden_driving_no_speed">Watch: hidden while driving</string>
+    <string name="speed_kmh">%1$d km/h</string>
+    <string name="speed_mph">%1$d mph</string>
+    <string-array name="watch_values_driving_mode">
+        <item>Show directions</item>
+        <item>Hide directions</item>
+    </string-array>
+    <string-array name="watch_values_driving_speed_metric">
+        <item>10 km/h</item>
+        <item>15 km/h</item>
+        <item>20 km/h</item>
+        <item>25 km/h</item>
+        <item>30 km/h</item>
+        <item>35 km/h</item>
+        <item>40 km/h</item>
+        <item>45 km/h</item>
+        <item>50 km/h</item>
+        <item>55 km/h</item>
+        <item>60 km/h</item>
+    </string-array>
+    <string-array name="watch_values_driving_speed_imperial">
+        <item>5 mph</item>
+        <item>10 mph</item>
+        <item>15 mph</item>
+        <item>20 mph</item>
+        <item>25 mph</item>
+        <item>30 mph</item>
+        <item>35 mph</item>
+        <item>40 mph</item>
+    </string-array>
 </resources>

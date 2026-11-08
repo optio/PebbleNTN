@@ -55,6 +55,11 @@ int main(void) {
   about_details(tiny, sizeof(tiny), "0.0.68", "0.0.67", 1, 1, "Phone app connected");
   check("one-byte buffer is just the terminator", tiny, "");
 
+  // #132 FR2.4: About says that When driving is guessed from the speed.
+  printf("about intro\n");
+  const char *note = strstr(ABOUT_INTRO_TEXT, "\n");
+  check("the When driving line", note ? note + 1 : "", "When driving: guessed from your speed.");
+
   if (failures) {
     printf("%d failure(s)\n", failures);
     return 1;

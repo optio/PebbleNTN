@@ -1,6 +1,52 @@
 # Implementation Status
 
-_Last updated: 2026-10-30_
+_Last updated: 2026-11-08_
+
+## When driving: hide the watchapp while driving (2026-11-08, #132)
+
+**Milestone:** post-M12 enhancement, protocol 1.4. To be released by the release workflow on merge;
+versionCode/versionName are not changed here.
+
+**Requirements being implemented.** #132 FR1–FR14, NFR1–NFR6 (record
+`aidlc/spaces/default/intents/261108-hide-when-driving/`), as REQ-WATCH-026, REQ-ANDROID-024 and
+REQ-DEBUG-016, with REQ-WATCH-005/006/007/025, REQ-ANDROID-021, `spec/200-architecture/Pebble.md`
+(launch policy) and `spec/300-data/ExportFormat.md` (schema 6) amended.
+- Three synced watch settings (keys 41–43, protocol 1.3 → 1.4): When driving (Show / Hide), the
+  metric driving speed (10–60 km/h, default 25) and the imperial one (5–40 mph, default 15), stored as
+  list indices at persist keys 29–31 (27 and 28 were taken); `WatchSetting.isShortcut` limited to the
+  seven slots.
+- Phone: `DrivingSpeedEstimator` (measured speed from Google Maps' `progressMax − progress` over the
+  last 60 s, planned speed from the arrival clock), `DrivingPolicy` (hide after 30 s above, 10 s with a
+  planned speed above 40 km/h; show after 2 minutes below the speed minus 5 km/h / 3 mph; at most one
+  hide and one show per 2 minutes; auto-launch off never reopens; a manual open keeps it for the
+  session), `NavigationController` acting on it (`WatchTransport.closeApp` = PebbleKit stop, no state
+  sends while hidden, a 10 s timer while hidden, the launch path to show), `DrivingLogRepository` and
+  the export's `drivingLog` (schema 6), the When driving section of Watch settings (only for a 1.4
+  watchapp), and the dashboard's "Watch: hidden while driving (about 48 km/h)".
+- Watch: the When driving row and door with the speed list (`driving_label.c`, host-tested), the About
+  line. On aplite the door is not compiled (heap): the row switches Show / Hide in place.
+
+**Library versions.** No new library.
+
+**Commands executed.** `scripts/generate-protocol.sh` (and `--check`), `protocol/check_consistency.py`;
+runner check `./gradlew :app:testDebugUnitTest --tests 'com.pebblentn.app.core.DistanceQuantizerTest'`
+and `scripts/test-watchapp-unit.sh` (12 host tests, then 13 with `test_driving_label`); scoped Gradle
+runs per layer; `./android/gradlew -p android test lint assembleDebug` (debug and release unit tests
+699 each, 0 failures, 4 skipped; lint 0 errors, no new warnings; debug APK built);
+`scripts/build-watchapp.sh` (all five platforms; aplite free heap at load 3482 B, was 3615 B at HEAD
+measured in a temporary worktree, removed afterwards; basalt 42430 B, was 43689 B);
+`scripts/validate-spec-assets.sh` (OK, 34 files), `scripts/version.sh --check`,
+`scripts/validate-rules.sh`; `scripts/test-all.sh`.
+
+**Known blockers.** No Android emulator in WSL: the end-to-end check of hiding (a real or Windows
+emulator drive with Google Maps) and the emulator checks of the watch menu (basalt) and the aplite
+row happen at Build and Test. `progressMax − progress` as the remaining route distance in metres is
+an assumption from the emulator runs; the timing constants are starting values to tune with the
+driving log.
+
+**Next atomic task.** Build and Test: install the watchapp on the basalt and aplite emulators and check
+the When driving row, door and list; then a real drive (or route-capture replay) with When driving at
+Hide, checking the close, the reopen and the exported `drivingLog`.
 
 ## Vela Maps support (2026-10-30, #120)
 

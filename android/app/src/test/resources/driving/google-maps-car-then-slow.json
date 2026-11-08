@@ -1,0 +1,1185 @@
+{
+ "source": "Google Maps 26.14 on the Android emulator, Brussels route, route-capture geo fixes once per second (issue #132 Build and Test); titles left out",
+ "zone": "Europe/Brussels",
+ "mode": "car",
+ "legs": [
+  {
+   "kmh": 45.0,
+   "seconds": 150
+  },
+  {
+   "kmh": 2.9,
+   "seconds": 200
+  }
+ ],
+ "posts": [
+  {
+   "when": 1794159238504,
+   "progress": 0,
+   "progressMax": 3936,
+   "subText": "Arrive 6:50 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159243596,
+   "progress": 7,
+   "progressMax": 3936,
+   "subText": "Arrive 6:50 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159245586,
+   "progress": 23,
+   "progressMax": 3936,
+   "subText": "Arrive 6:50 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159246634,
+   "progress": 35,
+   "progressMax": 3936,
+   "subText": "Arrive 6:50 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159247580,
+   "progress": 58,
+   "progressMax": 3936,
+   "subText": "Arrive 6:50 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159248594,
+   "progress": 69,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159249576,
+   "progress": 82,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159250570,
+   "progress": 95,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159251575,
+   "progress": 108,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159252582,
+   "progress": 121,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159253574,
+   "progress": 134,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159254575,
+   "progress": 147,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159255592,
+   "progress": 160,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159256574,
+   "progress": 172,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159257577,
+   "progress": 185,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159258590,
+   "progress": 196,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159260576,
+   "progress": 222,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159261591,
+   "progress": 231,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159262589,
+   "progress": 242,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159263588,
+   "progress": 252,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159264612,
+   "progress": 263,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159265598,
+   "progress": 272,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159266596,
+   "progress": 288,
+   "progressMax": 3936,
+   "subText": "Arrive 6:49 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159267632,
+   "progress": 297,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159268588,
+   "progress": 309,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159269591,
+   "progress": 322,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159270580,
+   "progress": 334,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159271587,
+   "progress": 347,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159272580,
+   "progress": 359,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159273589,
+   "progress": 372,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159274581,
+   "progress": 384,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159275588,
+   "progress": 397,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159276586,
+   "progress": 409,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159277619,
+   "progress": 422,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159278595,
+   "progress": 436,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159279591,
+   "progress": 448,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159280589,
+   "progress": 459,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159281591,
+   "progress": 467,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159282635,
+   "progress": 488,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159283592,
+   "progress": 500,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159284599,
+   "progress": 512,
+   "progressMax": 3936,
+   "subText": "Arrive 6:48 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159285589,
+   "progress": 524,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159286607,
+   "progress": 537,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159287593,
+   "progress": 549,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159288592,
+   "progress": 561,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159289606,
+   "progress": 574,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159290605,
+   "progress": 588,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159291611,
+   "progress": 603,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159292611,
+   "progress": 613,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159293596,
+   "progress": 625,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159294607,
+   "progress": 636,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159295607,
+   "progress": 649,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159296608,
+   "progress": 661,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159297620,
+   "progress": 674,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159298613,
+   "progress": 686,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159299615,
+   "progress": 704,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159300593,
+   "progress": 719,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159301574,
+   "progress": 735,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159302575,
+   "progress": 749,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159303561,
+   "progress": 764,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159304538,
+   "progress": 782,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159305527,
+   "progress": 789,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159306504,
+   "progress": 799,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159307477,
+   "progress": 811,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159308468,
+   "progress": 823,
+   "progressMax": 3936,
+   "subText": "Arrive 6:47 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159309737,
+   "progress": 835,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159310445,
+   "progress": 844,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159311422,
+   "progress": 859,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159312395,
+   "progress": 872,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159313375,
+   "progress": 883,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159314358,
+   "progress": 896,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159315336,
+   "progress": 908,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159316373,
+   "progress": 921,
+   "progressMax": 3936,
+   "subText": "Arrive 6:46 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159317304,
+   "progress": 932,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159318295,
+   "progress": 942,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159319280,
+   "progress": 952,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159320259,
+   "progress": 962,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159321240,
+   "progress": 972,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159322238,
+   "progress": 980,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159323206,
+   "progress": 994,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159324183,
+   "progress": 1005,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159325171,
+   "progress": 1017,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159326171,
+   "progress": 1031,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159327158,
+   "progress": 1047,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159328152,
+   "progress": 1057,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159330106,
+   "progress": 1097,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159331090,
+   "progress": 1110,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159332073,
+   "progress": 1123,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159333045,
+   "progress": 1135,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159334027,
+   "progress": 1148,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159335015,
+   "progress": 1160,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159335990,
+   "progress": 1173,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159336987,
+   "progress": 1187,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159337954,
+   "progress": 1199,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159338940,
+   "progress": 1211,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159339922,
+   "progress": 1224,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159340897,
+   "progress": 1236,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159341876,
+   "progress": 1248,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159342861,
+   "progress": 1261,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159343847,
+   "progress": 1273,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159344823,
+   "progress": 1285,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159345798,
+   "progress": 1298,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159346789,
+   "progress": 1310,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159347764,
+   "progress": 1323,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159348759,
+   "progress": 1335,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159349747,
+   "progress": 1347,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159350724,
+   "progress": 1359,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159351641,
+   "progress": 1366,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159352643,
+   "progress": 1377,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159353640,
+   "progress": 1387,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159355637,
+   "progress": 1408,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159356636,
+   "progress": 1420,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159357635,
+   "progress": 1432,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159358637,
+   "progress": 1445,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159359637,
+   "progress": 1458,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159360638,
+   "progress": 1470,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159361641,
+   "progress": 1487,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159362646,
+   "progress": 1501,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159363641,
+   "progress": 1512,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159364638,
+   "progress": 1524,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159365643,
+   "progress": 1536,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159366640,
+   "progress": 1548,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159367650,
+   "progress": 1560,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159368641,
+   "progress": 1572,
+   "progressMax": 3936,
+   "subText": "Arrive 6:43 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159369644,
+   "progress": 1585,
+   "progressMax": 3936,
+   "subText": "Arrive 6:43 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159370644,
+   "progress": 1597,
+   "progressMax": 3936,
+   "subText": "Arrive 6:43 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159371662,
+   "progress": 1610,
+   "progressMax": 3936,
+   "subText": "Arrive 6:43 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159372653,
+   "progress": 1622,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159373644,
+   "progress": 1635,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159377645,
+   "progress": 1685,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159378648,
+   "progress": 1697,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159380647,
+   "progress": 1722,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159381651,
+   "progress": 1735,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159385653,
+   "progress": 1784,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159386655,
+   "progress": 1797,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159389671,
+   "progress": 1834,
+   "progressMax": 3936,
+   "subText": "Arrive 6:42 PM",
+   "rerouting": false,
+   "simulatedKmh": 45.0
+  },
+  {
+   "when": 1794159417200,
+   "progress": 1883,
+   "progressMax": 3936,
+   "subText": "Arrive 6:43 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159422146,
+   "progress": 1887,
+   "progressMax": 3936,
+   "subText": "Arrive 6:43 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159479702,
+   "progress": 1934,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159515094,
+   "progress": 1963,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159526933,
+   "progress": 1973,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159540705,
+   "progress": 1983,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159544632,
+   "progress": 1987,
+   "progressMax": 3936,
+   "subText": "Arrive 6:44 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159553751,
+   "progress": 1993,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159564771,
+   "progress": 2003,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  },
+  {
+   "when": 1794159575723,
+   "progress": 2013,
+   "progressMax": 3936,
+   "subText": "Arrive 6:45 PM",
+   "rerouting": false,
+   "simulatedKmh": 2.9
+  }
+ ]
+}

@@ -194,4 +194,30 @@ class DiagnosticExporterTest {
         val missing = exporter.buildCapped(ExportMode.FULL, DiagnosticExporter.EMAIL_MAX_BYTES, onlyEventId = id + 999)
         assertEquals("an unknown event exports nothing", 0, missing.includedEvents)
     }
+
+    @Test
+    fun theDrivingLogReachesThePrivacySafeAndTheFullExport() = runTest {
+        // #132 FR14.2: the exporter reads the log at export time, in both modes that carry events.
+        val log = com.pebblentn.app.data.DrivingLogRepository()
+        log.add(com.pebblentn.app.data.DrivingLogEntry(5_000, 51.0, 49.5, 25.0, com.pebblentn.app.data.DrivingDecision.HIDE))
+        val withLog = DiagnosticExporter(
+            debugHistory,
+            UserRuleRepository(db.userRuleDao()),
+            appVersion = "0.0.82",
+            androidRelease = "16",
+            now = { "2026-11-08T00:00:00Z" },
+            drivingLog = log::snapshot,
+        )
+        val outputs = listOf(
+            withLog.build(ExportMode.PRIVACY_SAFE),
+            withLog.build(ExportMode.FULL),
+            withLog.buildCapped(ExportMode.PRIVACY_SAFE, DiagnosticExporter.EMAIL_MAX_BYTES).json,
+        )
+        for (out in outputs) {
+            val driving = (kotlinx.serialization.json.Json.parseToJsonElement(out) as kotlinx.serialization.json.JsonObject)
+                .getValue("drivingLog") as kotlinx.serialization.json.JsonArray
+            assertEquals(1, driving.size)
+            assertEquals("\"HIDE\"", (driving.single() as kotlinx.serialization.json.JsonObject).getValue("decision").toString())
+        }
+    }
 }

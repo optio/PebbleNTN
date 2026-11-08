@@ -83,6 +83,7 @@ class WatchSettingsMirrorRepository(context: Context) : WatchSettingsStore {
             pending = if (mirror == null) emptySet() else pending,
             receivedFromWatch = prefs.getBoolean(KEY_RECEIVED, false),
             watchappOutdated = prefs.getBoolean(KEY_OUTDATED, false),
+            watchProtocolMinor = if (prefs.contains(KEY_MINOR)) prefs.getInt(KEY_MINOR, 0) else null,
         )
     }
 
@@ -97,7 +98,8 @@ class WatchSettingsMirrorRepository(context: Context) : WatchSettingsStore {
         editor.putStringSet(KEY_PENDING, state.pending.map { it.name }.toSet())
             .putBoolean(KEY_RECEIVED, state.receivedFromWatch)
             .putBoolean(KEY_OUTDATED, state.watchappOutdated)
-            .apply()
+        state.watchProtocolMinor?.let { editor.putInt(KEY_MINOR, it) }
+        editor.apply()
     }
 
     private fun valueKey(setting: WatchSetting) = "value_${setting.name.lowercase()}"
@@ -110,5 +112,6 @@ class WatchSettingsMirrorRepository(context: Context) : WatchSettingsStore {
         const val KEY_PENDING = "pending"
         const val KEY_RECEIVED = "received_from_watch"
         const val KEY_OUTDATED = "watchapp_outdated"
+        const val KEY_MINOR = "watch_protocol_minor"
     }
 }

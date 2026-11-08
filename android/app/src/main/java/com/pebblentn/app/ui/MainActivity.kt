@@ -140,6 +140,8 @@ class MainActivity : ComponentActivity() {
         var staleCheckFinished by rememberSaveable { mutableStateOf(false) }
         val autoLaunch by container.watchSettingsRepository.autoLaunchEnabled.collectAsState()
         val watchStatus by container.navigationController.status.collectAsState()
+        val drivingStatus by container.navigationController.drivingStatus.collectAsState()
+        val watchSettingsState by container.watchSettingsMirror.state.collectAsState()
         val watchappInstalled by container.watchappPresence.detected.collectAsState()
         val watchLink by container.watchLink.collectAsState()
         val monochrome by container.appearance.monochrome.collectAsState()
@@ -216,6 +218,11 @@ class MainActivity : ComponentActivity() {
                         container.updateCheckRepository.setAutoCheckEnabled(true)
                     },
                     onDismissWeeklyQuestion = { staleCheckFinished = false },
+                    // #132 FR13: hidden while driving, the speed in the watch's own units.
+                    drivingStatus = drivingStatus,
+                    imperialUnits = watchSettingsState.mirror?.let {
+                        com.pebblentn.app.core.DrivingSpeeds.isImperial(it.units)
+                    } ?: false,
                 )
             }
             composable(
@@ -277,6 +284,7 @@ class MainActivity : ComponentActivity() {
                     watchappOpen = watchappOpen,
                     onOpenSetting = { setting -> navController.navigate("watch-settings/${setting.name}") },
                     onBack = { navController.popBackStack() },
+                    onChangeSetting = container::setWatchSetting,
                 )
             }
             composable(

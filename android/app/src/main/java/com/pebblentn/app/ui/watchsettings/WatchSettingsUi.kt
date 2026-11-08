@@ -4,6 +4,7 @@ import androidx.annotation.ArrayRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.pebblentn.app.R
+import com.pebblentn.app.core.DrivingSpeeds
 import com.pebblentn.app.core.PreviewCatalog
 import com.pebblentn.app.core.WatchPlatform
 import com.pebblentn.app.core.WatchSetting
@@ -98,6 +99,34 @@ object WatchSettingsUi {
         )
     }
 
+    /**
+     * Whether the screen shows the When driving section (#132 FR4): only for a watchapp that reported
+     * protocol 1.4, so an older one is never offered a setting it would ignore.
+     */
+    fun showsDrivingSection(state: WatchSettingsSyncState): Boolean = state.hasDrivingSettings
+
+    /** The driving speed of the unit in use as a number, km/h or mph (FR3.2). */
+    fun drivingSpeedValue(model: WatchSettingsModel): Int =
+        if (DrivingSpeeds.isImperial(model.units)) {
+            DrivingSpeeds.imperialMph(model.drivingSpeedImperial)
+        } else {
+            DrivingSpeeds.metricKmh(model.drivingSpeedMetric)
+        }
+
+    /** The default driving speed of the unit in use: 25 km/h or 15 mph (FR3.3). */
+    fun drivingDefaultValue(model: WatchSettingsModel): Int =
+        if (DrivingSpeeds.isImperial(model.units)) {
+            DrivingSpeeds.imperialMph(DrivingSpeeds.IMPERIAL_DEFAULT)
+        } else {
+            DrivingSpeeds.metricKmh(DrivingSpeeds.METRIC_DEFAULT)
+        }
+
+    /** Whether to offer "Reset to default": the unit in use has a speed other than its default (FR3.3). */
+    fun showsDrivingReset(model: WatchSettingsModel): Boolean {
+        val setting = model.drivingSpeedSetting
+        return model[setting] != setting.defaultValue
+    }
+
     /** The values the option list offers, in the watch menu's order. */
     fun options(setting: WatchSetting, model: WatchSettingsModel): List<Int> =
         WatchSettingsRules.options(setting, model.capabilities)
@@ -131,6 +160,8 @@ object WatchSettingsUi {
         WatchSetting.SHORTCUT_SWIPE_UP -> R.string.watch_setting_shortcut_swipe_up
         WatchSetting.SHORTCUT_SWIPE_DOWN -> R.string.watch_setting_shortcut_swipe_down
         WatchSetting.SHORTCUT_TAP -> R.string.watch_setting_shortcut_tap
+        WatchSetting.DRIVING_MODE -> R.string.watch_setting_driving_mode
+        WatchSetting.DRIVING_SPEED_METRIC, WatchSetting.DRIVING_SPEED_IMPERIAL -> R.string.watch_setting_driving_speed
     }
 
     /** The labels of [setting]'s values, indexed by value; distances follow the watch's units. */
@@ -154,6 +185,10 @@ object WatchSettingsUi {
         WatchSetting.SHORTCUT_UP, WatchSetting.SHORTCUT_DOWN, WatchSetting.SHORTCUT_SWIPE_LEFT,
         WatchSetting.SHORTCUT_SWIPE_RIGHT, WatchSetting.SHORTCUT_SWIPE_UP, WatchSetting.SHORTCUT_SWIPE_DOWN,
         WatchSetting.SHORTCUT_TAP -> R.array.watch_values_shortcut
+        WatchSetting.DRIVING_MODE -> R.array.watch_values_driving_mode
+        // Each unit has its own list (FR1.4): the metric one is always in km/h, the imperial in mph.
+        WatchSetting.DRIVING_SPEED_METRIC -> R.array.watch_values_driving_speed_metric
+        WatchSetting.DRIVING_SPEED_IMPERIAL -> R.array.watch_values_driving_speed_imperial
     }
 
     /**

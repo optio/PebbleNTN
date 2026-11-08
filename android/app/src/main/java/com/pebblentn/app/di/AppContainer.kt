@@ -174,6 +174,9 @@ class AppContainer(context: Context) {
 
     val rulePreviewService = RulePreviewService(engine = ruleEngine, localeProvider = { Locale.getDefault().toLanguageTag() })
 
+    /** Speed estimates and hide/show decisions of When driving, for the diagnostics export (#132 FR14). */
+    val drivingLog = com.pebblentn.app.data.DrivingLogRepository()
+
     val diagnosticExporter = DiagnosticExporter(
         debugHistory = debugHistoryRepository,
         userRules = userRuleRepository,
@@ -183,6 +186,8 @@ class AppContainer(context: Context) {
         userAddedPackages = { effectiveCatalog.current.userAddedByApp() },
         // #119: what installed or last updated this version, in every export mode.
         installRecord = { installRecord },
+        // #132: the When driving log, numbers only, in the privacy-safe and full exports.
+        drivingLog = { drivingLog.snapshot() },
     )
 
     val diagnosticShareManager = DiagnosticShareManager(appContext)
@@ -212,6 +217,16 @@ class AppContainer(context: Context) {
     /** The phone's mirror of the watchapp's own settings and the edits waiting for it (#102). */
     val watchSettingsMirror = com.pebblentn.app.data.WatchSettingsMirrorRepository(appContext)
 
+    /**
+     * Speed from Google Maps' notifications (#132 FR5): Google Maps and every package that uses its
+     * rules (MicroG Maps, packages the user added to Google Maps), through the rule families.
+     */
+    private val speedEstimator = com.pebblentn.app.core.DrivingSpeedEstimator(
+        isSpeedPackage = { pkg ->
+            ruleFamilies.applies(pkg, setOf(com.pebblentn.app.core.DrivingSpeedEstimator.GOOGLE_MAPS_PACKAGE))
+        },
+    )
+
     val navigationController = NavigationController(
         transport = watchTransport,
         scope = applicationScope,
@@ -225,6 +240,8 @@ class AppContainer(context: Context) {
         // A genuine WATCH_READY carries the watchapp version; a newer one means a phone app update.
         onWatchAppVersion = { updateCheckRepository.recordWatchAppVersion(it) },
         watchSettings = watchSettingsMirror,
+        drivingLog = drivingLog,
+        speedEstimator = speedEstimator,
     )
 
     init {
@@ -243,6 +260,7 @@ class AppContainer(context: Context) {
         localeProvider = { Locale.getDefault().toLanguageTag() },
         onMatchedInstruction = { navigationController.onInstruction(it) },
         onSessionEnded = { navigationController.onNavigationStopped() },
+        onSpeedSample = { navigationController.onSpeedSample(it) },
     )
 
     val notificationDispatcher = NotificationDispatcher(

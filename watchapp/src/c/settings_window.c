@@ -9,12 +9,15 @@
 // packs can be previewed on the watch before choosing one; the vibration door holds the
 // new-instruction buzz and the early warning, and changing a pattern, strength or warning distance
 // plays the newly selected buzz so it can be felt before leaving the menu. The shortcuts door lists
-// UP, DOWN and, on a touch watch, Touch and the gestures; each opens one shared action list.
+// UP, DOWN and, on a touch watch, Touch and the gestures; each opens one shared action list. The
+// When driving door (REQ-WATCH-026) says whether the phone hides the watchapp while driving, and
+// above which speed.
 
 #include "settings_window.h"
 
 #include <pebble.h>
 
+#include "driving_label.h"
 #include "shortcut_apply.h"
 #include "theme.h"
 
@@ -790,6 +793,131 @@ static void push_shortcuts_window(void) {
   window_stack_push(s_shortcuts_window, true);
 }
 
+// ===== When driving sub-window (REQ-WATCH-026, #132) ============================================
+//
+// The door lists Directions (Select switches Show / Hide) and, only when Hide, Driving speed, which
+// opens the speed list of the unit in use: "Default (25 km/h)" first, then every speed, the chosen
+// one marked "Selected". Both levels share one callback table; the list's menu has a non-NULL
+// callback context.
+//
+// Not on aplite: the door costs about 900 bytes of code, which is heap there, and aplite has about
+// 200 bytes left within the REQ-WATCH-025 budget. On aplite the When driving row switches Show /
+// Hide in place and the speed is chosen in the phone app; it is synced all the same (#132 NFR4).
+#ifndef PBL_PLATFORM_APLITE
+
+static Window *s_drive_window;
+static MenuLayer *s_drive_menu;
+static Window *s_speed_window;
+static MenuLayer *s_speed_menu;
+
+static uint16_t drive_num_rows(struct MenuLayer *m, uint16_t section, void *ctx) {
+  if (ctx != NULL) {
+    return 1 + sync_value_count(settings_driving_speed_id());
+  }
+  return settings_driving_hide() ? 2 : 1;
+}
+
+static void drive_header(GContext *gc, const Layer *cell, uint16_t section, void *ctx) {
+  draw_menu_header(gc, cell, (ctx != NULL) ? "Driving speed" : "When driving");
+}
+
+static void drive_row(GContext *gc, const Layer *cell, MenuIndex *index, void *ctx) {
+  const bool imperial = settings_units() == UNITS_IMPERIAL;
+  char label[DRIVING_LABEL_LEN];
+  const char *title = label;
+  const char *value = NULL;
+  if (ctx != NULL) {
+    if (index->row == 0) {
+      driving_label("Default (", ")", driving_default_index(imperial), imperial, label, sizeof(label));
+    } else {
+      driving_label("", "", index->row - 1, imperial, label, sizeof(label));
+      value = (index->row - 1 == settings_driving_speed()) ? "Selected" : NULL;
+    }
+  } else if (index->row == 0) {
+    title = "Directions";
+    value = settings_driving_hide() ? "Hide" : "Show";
+  } else {
+    title = "Driving speed";
+    driving_label("Above ", "", settings_driving_speed(), imperial, label, sizeof(label));
+    value = label;
+  }
+  menu_cell_basic_draw(gc, cell, title, value, NULL);
+}
+
+static void drive_load(Window *window);
+static void drive_unload(Window *window);
+
+static void drive_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
+  if (ctx != NULL) {
+    // "Default" resets this unit's speed (FR2.3); the other unit's speed is left as it is.
+    const int speed = (index->row == 0) ? driving_default_index(settings_units() == UNITS_IMPERIAL)
+                                        : index->row - 1;
+    settings_set_driving_speed(speed);
+  } else if (index->row == 0) {
+    cycle_setting(SET_DRIVING_MODE);
+  } else {
+    s_speed_window = window_create();
+    window_set_window_handlers(s_speed_window, (WindowHandlers){
+      .load = drive_load,
+      .unload = drive_unload,
+    });
+    window_stack_push(s_speed_window, true);
+    return;
+  }
+  menu_layer_reload_data(m);
+}
+
+static const MenuLayerCallbacks kDriveCallbacks = {
+  .get_num_sections = one_section,
+  .get_num_rows = drive_num_rows,
+  .get_header_height = header_height,
+  .draw_header = drive_header,
+  .draw_row = drive_row,
+  .select_click = drive_select,
+};
+
+static void drive_load(Window *window) {
+  MenuLayer *menu = menu_create(window, &kDriveCallbacks);
+  if (window == s_speed_window) {
+    menu_layer_set_callbacks(menu, window, kDriveCallbacks);  // the list: a non-NULL context
+    s_speed_menu = menu;
+  } else {
+    s_drive_menu = menu;
+  }
+}
+
+static void drive_unload(Window *window) {
+  if (window == s_speed_window) {
+    menu_layer_destroy(s_speed_menu);
+    s_speed_menu = NULL;
+    s_speed_window = NULL;
+  } else {
+    menu_layer_destroy(s_drive_menu);
+    s_drive_menu = NULL;
+    s_drive_window = NULL;
+  }
+  window_destroy(window);
+}
+
+// Back from the speed list: refresh the Driving speed row.
+static void drive_appear(Window *window) {
+  if (s_drive_menu != NULL) {
+    menu_layer_reload_data(s_drive_menu);
+  }
+}
+
+static void push_drive_window(void) {
+  s_drive_window = window_create();
+  window_set_window_handlers(s_drive_window, (WindowHandlers){
+    .load = drive_load,
+    .appear = drive_appear,
+    .unload = drive_unload,
+  });
+  window_stack_push(s_drive_window, true);
+}
+
+#endif  // !PBL_PLATFORM_APLITE
+
 // ===== Top-level settings menu ==================================================================
 
 #define ROW_ABOUT 0  // About comes first (REQ-WATCH-020)
@@ -802,8 +930,9 @@ static void push_shortcuts_window(void) {
 #define ROW_ARROW 7
 #define ROW_GLYPH 8
 #define ROW_UNITS 9
-#define ROW_SHORTCUTS 10
-#define MAIN_ROW_COUNT 11
+#define ROW_DRIVING 10  // When driving (REQ-WATCH-026), after the units its speed follows
+#define ROW_SHORTCUTS 11
+#define MAIN_ROW_COUNT 12
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -830,6 +959,7 @@ static const char *const kMainTitles[MAIN_ROW_COUNT] = {
   [ROW_ARROW] = "Arrow side",
   [ROW_GLYPH] = "Glyph pack",
   [ROW_UNITS] = "Distance units",
+  [ROW_DRIVING] = "When driving",
   [ROW_SHORTCUTS] = "Shortcuts",
 };
 
@@ -844,6 +974,9 @@ static const uint8_t kMainCycles[MAIN_ROW_COUNT] = {
   [ROW_ETA_LABEL] = SET_ETA_LABEL + 1,
   [ROW_ARROW] = SET_ARROW_LEFT + 1,
   [ROW_UNITS] = SET_UNITS + 1,
+#ifdef PBL_PLATFORM_APLITE
+  [ROW_DRIVING] = SET_DRIVING_MODE + 1,  // no When driving door on aplite (heap)
+#endif
 };
 
 static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *data) {
@@ -861,6 +994,15 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_ETA_LABEL: value = eta_label_style_name(settings_eta_label_style()); break;
     case ROW_ABOUT: value = s_about.app_version; break;
     case ROW_BACKLIGHT: value = backlight_mode_name(settings_backlight()); break;
+    case ROW_DRIVING:
+#ifdef PBL_PLATFORM_APLITE
+      // No room for the speed label on aplite (#132 NFR4): the phone app shows and sets the speed.
+      value = settings_driving_hide() ? "Hide when driving" : "Show directions";
+#else
+      driving_summary(settings_driving_hide(), settings_driving_speed(),
+                      settings_units() == UNITS_IMPERIAL, summary, sizeof(summary));
+#endif
+      break;
     case ROW_SHORTCUTS:
       // The button shortcuts, which every watch has: "Up: None / Down: Invert colours".
       snprintf(summary, sizeof(summary), "Up: %s / Down: %s",
@@ -900,6 +1042,11 @@ static void main_select(struct MenuLayer *m, MenuIndex *index, void *ctx) {
     case ROW_SHORTCUTS:
       push_shortcuts_window();
       break;
+#ifndef PBL_PLATFORM_APLITE
+    case ROW_DRIVING:
+      push_drive_window();
+      break;
+#endif
 #ifdef PBL_RGB_BACKLIGHT
     case ROW_BACKLIGHT:
       push_backlight_window();

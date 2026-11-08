@@ -1,6 +1,6 @@
 {
   "protocolMajor": 1,
-  "protocolMinor": 3,
+  "protocolMinor": 4,
   "keys": {
     "EVENT": 0,
     "PROTOCOL_MAJOR": 1,
@@ -42,7 +42,10 @@
     "SETTING_SHORTCUT_SWIPE_RIGHT": 37,
     "SETTING_SHORTCUT_SWIPE_UP": 38,
     "SETTING_SHORTCUT_SWIPE_DOWN": 39,
-    "SETTING_SHORTCUT_TAP": 40
+    "SETTING_SHORTCUT_TAP": 40,
+    "SETTING_DRIVING_MODE": 41,
+    "SETTING_DRIVING_SPEED_METRIC": 42,
+    "SETTING_DRIVING_SPEED_IMPERIAL": 43
   },
   "events": {
     "NAVIGATION_UPDATE": 1,
