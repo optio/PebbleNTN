@@ -1,0 +1,1 @@
+• hide the watchapp while driving (#132)
