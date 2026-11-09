@@ -51,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -59,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import com.pebblentn.app.BuildConfig
 import com.pebblentn.app.R
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.pebble.DrivingStatus
 import com.pebblentn.app.protocol.WatchLink
 import com.pebblentn.app.ui.components.AccessStatusChip
 import com.pebblentn.app.ui.format.DisplayLabels
@@ -127,6 +129,10 @@ fun DashboardScreen(
     onDismissWeeklyQuestion: () -> Unit = {},
     /** The last watchapp version a WATCH_READY carried, or null when none arrived (REQ-ANDROID-019). */
     watchAppVersion: String? = null,
+    /** Whether the watchapp is hidden while driving, and the speed (#132 FR13). */
+    drivingStatus: DrivingStatus = DrivingStatus(),
+    /** The watch's Distance units are miles: the driving speed is shown in mph. */
+    imperialUnits: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -254,6 +260,27 @@ fun DashboardScreen(
                         is WatchLink.Connected -> stringResource(R.string.dashboard_watch_connected, watchLink.watchNames.joinToString())
                     },
                 )
+                // Hidden while driving: say so, with the speed that made it so (#132 FR13).
+                val kmhFormat = stringResource(R.string.speed_kmh)
+                val mphFormat = stringResource(R.string.speed_mph)
+                val hiddenFormat = stringResource(R.string.dashboard_watch_hidden_driving)
+                drivingStatusText(
+                    status = drivingStatus,
+                    imperial = imperialUnits,
+                    withSpeed = { speed, imperial -> hiddenFormat.format((if (imperial) mphFormat else kmhFormat).format(speed)) },
+                    noSpeed = stringResource(R.string.dashboard_watch_hidden_driving_no_speed),
+                )?.let { line ->
+                    Text(
+                        text = line,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .testTag(DRIVING_STATUS_TAG),
+                    )
+                }
                 // Shows whether the companion app delivers watch-to-phone messages (REQ-ANDROID-019).
                 val seenFormat = stringResource(R.string.dashboard_watchapp_version_seen)
                 InfoRow(

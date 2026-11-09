@@ -6,7 +6,7 @@ package com.pebblentn.app.protocol
 /** AppMessage protocol constants shared with the Pebble watchapp. */
 object Protocol {
     const val MAJOR = 1
-    const val MINOR = 3
+    const val MINOR = 4
 
     /** AppMessage dictionary keys. */
     object Keys {
@@ -51,6 +51,9 @@ object Protocol {
         const val SETTING_SHORTCUT_SWIPE_UP = 38
         const val SETTING_SHORTCUT_SWIPE_DOWN = 39
         const val SETTING_SHORTCUT_TAP = 40
+        const val SETTING_DRIVING_MODE = 41
+        const val SETTING_DRIVING_SPEED_METRIC = 42
+        const val SETTING_DRIVING_SPEED_IMPERIAL = 43
     }
 
     /** Values for the [Keys.EVENT] field. */

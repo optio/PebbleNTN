@@ -72,8 +72,9 @@ class ProtocolCodecTest {
         assertEquals(Protocol.ManeuverCodes.TRANSIT, msg.intOrNull(Protocol.Keys.MANEUVER))
         assertEquals(5, msg.intOrNull(Protocol.Keys.STOPS_REMAINING))
         assertNull("a ride has no turn distance", msg.intOrNull(Protocol.Keys.DISTANCE_METERS))
-        // #94 (FR1.1): protocol 1.2 adds the update flag and LATEST_PHONE_VERSION; #102 makes it 1.3.
-        assertEquals(3, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
+        // #94 (FR1.1): protocol 1.2 adds the update flag and LATEST_PHONE_VERSION; #102 makes it 1.3,
+        // #132 (When driving) 1.4.
+        assertEquals(4, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
     }
 
     @Test
@@ -274,7 +275,7 @@ class ProtocolCodecTest {
         assertEquals(42, decoded.revision)
         assertEquals(WatchPlatform.EMERY, decoded.platform)
         assertEquals(WatchMessages.EMERY_CAPS, decoded.capabilities)
-        assertEquals(23, decoded.values.size)
+        assertEquals("the When driving three read as their defaults", 26, decoded.values.size)
         assertEquals(sent.values, decoded.values)
         assertEquals(9, decoded.accent)
         assertTrue(decoded.touchEnabled)
@@ -301,5 +302,34 @@ class ProtocolCodecTest {
         assertEquals(1, decoded.units)
         assertEquals(3, decoded.accent)
         assertEquals(WatchPlatform.UNKNOWN, decoded.platform)
+    }
+
+    // --- Protocol 1.4: When driving (#132 FR1, NFR5) ---------------------------------------------
+
+    @Test
+    fun aProtocol14ReadyCarriesTheDrivingSettingsAndItsMinor() {
+        val sent = WatchMessages.settings(
+            revision = 8,
+            overrides = mapOf(
+                WatchSetting.DRIVING_MODE to 1,
+                WatchSetting.DRIVING_SPEED_METRIC to 8,
+                WatchSetting.DRIVING_SPEED_IMPERIAL to 7,
+            ),
+        )
+        val ready = WatchMessages.ready14(sent)
+        assertEquals(4, ProtocolCodec.realWatchReadyMinor(ready))
+        assertEquals(1, ready.intOrNull(Protocol.Keys.SETTING_DRIVING_MODE))
+        val decoded = ProtocolCodec.decodeWatchSettings(ready)!!
+        assertTrue(decoded.drivingHide)
+        assertEquals(8, decoded.drivingSpeedMetric)
+        assertEquals(7, decoded.drivingSpeedImperial)
+    }
+
+    @Test
+    fun aDrivingEditIsSentOnItsOwnKey() {
+        val message = ProtocolCodec.encodeSettings(revision = 2, values = mapOf(WatchSetting.DRIVING_SPEED_IMPERIAL to 4))
+        assertEquals(4, message.intOrNull(Protocol.Keys.SETTING_DRIVING_SPEED_IMPERIAL))
+        assertEquals(43, Protocol.Keys.SETTING_DRIVING_SPEED_IMPERIAL)
+        assertNull(message.intOrNull(Protocol.Keys.SETTING_DRIVING_MODE))
     }
 }

@@ -89,4 +89,35 @@ class WatchSettingsUiTest {
         }
         assertEquals(16, WatchSettingsUi.ACCENT_COLOURS.size)
     }
+
+    // --- When driving (#132 FR3, FR4) ------------------------------------------------------------
+
+    @Test
+    fun theDrivingSectionNeedsAProtocol14Watchapp() {
+        val mirror = WatchMessages.settings(1)
+        assertFalse(WatchSettingsUi.showsDrivingSection(WatchSettingsSyncState(mirror, receivedFromWatch = true, watchProtocolMinor = 3)))
+        assertFalse("never reported", WatchSettingsUi.showsDrivingSection(WatchSettingsSyncState(mirror, receivedFromWatch = true)))
+        assertTrue(WatchSettingsUi.showsDrivingSection(WatchSettingsSyncState(mirror, receivedFromWatch = true, watchProtocolMinor = 4)))
+    }
+
+    @Test
+    fun theDrivingSettingsAreNotListedAsOptionRows() {
+        assertTrue(rows(WatchMessages.settings(1)).none { it.isDriving })
+    }
+
+    @Test
+    fun theDrivingSpeedFollowsTheUnitsAndTheResetShowsOnlyWhenChanged() {
+        val metric = WatchMessages.settings(1)
+        assertEquals(25, WatchSettingsUi.drivingSpeedValue(metric))
+        assertEquals(25, WatchSettingsUi.drivingDefaultValue(metric))
+        assertFalse(WatchSettingsUi.showsDrivingReset(metric))
+        val faster = metric.with(WatchSetting.DRIVING_SPEED_METRIC, 5)
+        assertEquals(35, WatchSettingsUi.drivingSpeedValue(faster))
+        assertTrue(WatchSettingsUi.showsDrivingReset(faster))
+
+        val imperial = faster.with(WatchSetting.UNITS, 1)
+        assertEquals("15 mph: the metric change does not count", 15, WatchSettingsUi.drivingSpeedValue(imperial))
+        assertEquals(15, WatchSettingsUi.drivingDefaultValue(imperial))
+        assertFalse(WatchSettingsUi.showsDrivingReset(imperial))
+    }
 }

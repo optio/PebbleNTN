@@ -1,5 +1,6 @@
 #include "settings_sync.h"
 
+#include "driving_label.h"
 #include "generated/protocol.h"
 #include "revision.h"
 #include "shortcuts.h"
@@ -35,6 +36,9 @@ static const uint8_t kRules[SET_COUNT] = {
   [SET_SHORTCUT_FIRST + SLOT_SWIPE_UP] = ACTION_COUNT | NEEDS_TOUCH,
   [SET_SHORTCUT_FIRST + SLOT_SWIPE_DOWN] = ACTION_COUNT | NEEDS_TOUCH,
   [SET_SHORTCUT_FIRST + SLOT_TAP] = ACTION_COUNT | NEEDS_TOUCH,
+  [SET_DRIVING_MODE] = 2,
+  [SET_DRIVING_SPEED_METRIC] = DRIVING_METRIC_COUNT,      // 10-60 km/h
+  [SET_DRIVING_SPEED_IMPERIAL] = DRIVING_IMPERIAL_COUNT,  // 5-40 mph
 };
 
 // Defaults of a fresh install (#102 testing): New instruction vibration Off, Medium strengths, an early
@@ -53,15 +57,20 @@ static const uint8_t kDefaults[SET_COUNT] = {
   [SET_SHORTCUT_FIRST + SLOT_SWIPE_LEFT] = ACTION_ETA_MODE,
   [SET_SHORTCUT_FIRST + SLOT_SWIPE_RIGHT] = ACTION_ETA_MODE,
   [SET_SHORTCUT_FIRST + SLOT_TAP] = ACTION_BACKLIGHT_NOW,
+  // When driving: Show directions; 25 km/h and 15 mph (#132 FR1.5).
+  [SET_DRIVING_SPEED_METRIC] = DRIVING_METRIC_DEFAULT,
+  [SET_DRIVING_SPEED_IMPERIAL] = DRIVING_IMPERIAL_DEFAULT,
 };
 
 // The accents a black-and-white watch shows: Black and White, the last two (theme.h).
 #define ACCENT_BLACK_ID 14
 #define ACCENT_WHITE_ID 15
 
-_Static_assert(SET_COUNT == 23, "the protocol carries 23 settings");
+_Static_assert(SET_COUNT == 26, "the protocol carries 26 settings");
 _Static_assert(SLOT_COUNT == 7, "one setting per shortcut slot");
-_Static_assert(PBNTN_KEY_SETTING_SHORTCUT_TAP - PBNTN_KEY_SETTING_ACCENT == SET_COUNT - 1,
+_Static_assert(PBNTN_KEY_SETTING_SHORTCUT_TAP - PBNTN_KEY_SETTING_ACCENT == SET_DRIVING_MODE - 1,
+               "the shortcut keys follow the SettingId order");
+_Static_assert(PBNTN_KEY_SETTING_DRIVING_SPEED_IMPERIAL - PBNTN_KEY_SETTING_ACCENT == SET_COUNT - 1,
                "the SETTING_* keys follow the SettingId order");
 
 uint8_t sync_build_caps(void) {
@@ -113,7 +122,7 @@ bool sync_valid(SettingId id, int32_t value, uint32_t caps) {
   if (id == SET_ACCENT && !(caps & PBNTN_CAP_COLOR_MASK)) {
     return value == ACCENT_BLACK_ID || value == ACCENT_WHITE_ID;
   }
-  if (id >= SET_SHORTCUT_FIRST && value == ACTION_NEXT_BACKLIGHT_COLOUR) {
+  if (id >= SET_SHORTCUT_FIRST && id < SET_DRIVING_MODE && value == ACTION_NEXT_BACKLIGHT_COLOUR) {
     return (caps & PBNTN_CAP_RGB_BACKLIGHT_MASK) != 0;
   }
   return true;
@@ -137,8 +146,12 @@ bool sync_is_bool(SettingId id) {
   return id == SET_INVERT || id == SET_ARROW_LEFT || id == SET_TOUCH;
 }
 
+// Keys 27 and 28 were taken before the When driving settings came (theme.c), so those skip to 29.
 uint32_t sync_persist_key(SettingId id) {
-  return (id < SET_TOUCH) ? (uint32_t)id + 1 : (uint32_t)id + 4;
+  if (id < SET_TOUCH) {
+    return (uint32_t)id + 1;
+  }
+  return (id < SET_DRIVING_MODE) ? (uint32_t)id + 4 : (uint32_t)id + 6;
 }
 
 SyncDecision sync_decide(int watch_rev, int phone_rev, bool differs) {

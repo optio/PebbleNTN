@@ -1,6 +1,7 @@
 package com.pebblentn.app.export
 
 import com.pebblentn.app.data.DebugEvent
+import com.pebblentn.app.data.DrivingLogEntry
 import com.pebblentn.app.notification.NotificationSnapshot
 import com.pebblentn.app.rules.Rule
 import com.pebblentn.app.update.InstallKind
@@ -28,7 +29,8 @@ enum class ExportMode {
 data class ExportMetadata(
     /**
      * 2 adds [appVersionCode] and the per-event versions (#84); 3 the grouped occurrences (#86); 4
-     * [userAddedPackages] and the per-event [ExportedEvent.customPackage]; 5 [install] (#119).
+     * [userAddedPackages] and the per-event [ExportedEvent.customPackage]; 5 [install] (#119); 6 the
+     * [ExportBundle.drivingLog] (#132).
      */
     val schemaVersion: Int = SCHEMA_VERSION,
     val mode: String,
@@ -51,7 +53,7 @@ data class ExportMetadata(
     val install: ExportInstall = ExportInstall.from(InstallRecord.UNKNOWN),
 ) {
     companion object {
-        const val SCHEMA_VERSION = 5
+        const val SCHEMA_VERSION = 6
     }
 }
 
@@ -139,11 +141,39 @@ data class ExportedEvent(
     val lastSnapshot: NotificationSnapshot? = null,
 )
 
+/**
+ * One driving log entry (#132 FR14, REQ-DEBUG-016): when, the measured and planned speed in km/h
+ * (one decimal, null when unknown), the driving speed in use and the decision (SAMPLE, HIDE, SHOW,
+ * KEPT_OPEN, RESET). Numbers and a decision name only, so the same in every mode that has events.
+ */
+@Serializable
+data class ExportedDrivingEntry(
+    val timeMillis: Long,
+    val measuredKmh: Double?,
+    val plannedKmh: Double?,
+    val thresholdKmh: Double,
+    val decision: String,
+) {
+    companion object {
+        fun from(entry: DrivingLogEntry): ExportedDrivingEntry = ExportedDrivingEntry(
+            timeMillis = entry.timeMillis,
+            measuredKmh = entry.measuredKmh?.let(::oneDecimal),
+            plannedKmh = entry.plannedKmh?.let(::oneDecimal),
+            thresholdKmh = oneDecimal(entry.thresholdKmh),
+            decision = entry.decision.name,
+        )
+
+        private fun oneDecimal(value: Double): Double = Math.round(value * 10) / 10.0
+    }
+}
+
 @Serializable
 data class ExportBundle(
     val metadata: ExportMetadata,
     val userRules: List<Rule> = emptyList(),
     val events: List<ExportedEvent> = emptyList(),
+    /** The When driving log, oldest first (#132 FR14.2): in the privacy-safe and full exports. */
+    val drivingLog: List<ExportedDrivingEntry> = emptyList(),
 )
 
 /**
@@ -168,6 +198,8 @@ class ExportBuilder(
         userAddedPackages: Map<String, List<String>> = emptyMap(),
         /** What installed or last updated this version (REQ-DEBUG-015). */
         installRecord: InstallRecord = InstallRecord.UNKNOWN,
+        /** The When driving log (#132 FR14); left out of a rules-only export. */
+        drivingLog: List<DrivingLogEntry> = emptyList(),
     ): String {
         val metadata = ExportMetadata(
             mode = mode.name,
@@ -180,10 +212,14 @@ class ExportBuilder(
             install = ExportInstall.from(installRecord),
         )
         val custom = userAddedPackages.values.flatten().toSet()
+        // The log holds no text (FR14.1), so it needs no redaction and is the same in both modes.
+        val driving = drivingLog.map(ExportedDrivingEntry::from)
         val bundle = when (mode) {
             ExportMode.RULES_ONLY -> ExportBundle(metadata, userRules = userRules)
-            ExportMode.PRIVACY_SAFE -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = true, custom) })
-            ExportMode.FULL -> ExportBundle(metadata, userRules, events.map { toExported(it, redact = false, custom) })
+            ExportMode.PRIVACY_SAFE ->
+                ExportBundle(metadata, userRules, events.map { toExported(it, redact = true, custom) }, driving)
+            ExportMode.FULL ->
+                ExportBundle(metadata, userRules, events.map { toExported(it, redact = false, custom) }, driving)
         }
         return json.encodeToString(ExportBundle.serializer(), bundle)
     }

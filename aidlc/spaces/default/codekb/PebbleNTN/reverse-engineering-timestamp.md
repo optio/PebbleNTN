@@ -2,21 +2,80 @@
 
 ## Run Record
 
-- Date: 2026-10-30
-- Commit: c7b6ba0d525d1b54abdaaabec02cdda76e52dfb3
-- Breadth requested: focused scan (snapshot paths: `rules/catalog/`, `rules/bundled/`, `rules/fixtures/`, `rules/README.md`, `tools/route-capture/`, `android/app/src/test/java/com/pebblentn/app/rules/`, `android/app/src/test/java/com/pebblentn/app/catalog/`, `scripts/validate_catalog.py`, `scripts/validate_rules.py`, `scripts/test_validate_catalog.py`, `android/app/src/main/AndroidManifest.xml`, `requirements/REQ-RULES.md`); depth Minimal; lead-only (the developer link scanned and wrote the nine artifacts)
-- Intent: `261030-vela-maps` (GitHub issue #120: add Vela Maps, `app.vela`, as a navigation app with English rules and synthetic fixtures, and add it to the route-capture suite)
-- Coverage: the catalog, every bundled ruleset and fixture file, the rules README, the route-capture harness (runner, `routecap/` modules, routes, scenarios, device helpers, tests), the rule and catalog JVM tests, the three catalog/rule validator scripts, the manifest and REQ-RULES. Skimmed: the rule engine sources, `NavigationAppCatalog.forGooglePlay`, `NavigationAppsScreen` (website link), `ManeuverHeuristic.kt`, `Maneuver.kt`, `build.gradle.kts` rule-data staging, `SetupProgressTest.kt`, both schemas, `workbench.py`, `README.md`, the fastlane full description, `MANIFEST.sha256.json`, `AGENTS.md`; outside the repository, issue #120 and the public Vela repository (manifest, notification builder, strings, distance format, releases).
-- Merge: focused merge into a STALE store (prior focused scan at 494a6dd for `261029-install-source`, shipped in v0.0.80). Prior prose is kept; the install-source context is relabelled as an earlier intent. Added or updated: the active-intent business context and three glossary entries, three design decisions, an improvement opportunity and a Vela interaction diagram, the rules and route-capture rows and the regression-test pattern in code structure, the "Rule, Fixture and Route-Capture Contracts" section, the Rule Data and Schemas, Rule Workbench and Route Capture Harness entries, a stack note, two dependency notes, two tech-debt items and the "Vela Maps findings". The prior analyzed paths are demoted to shallow, and 21 earlier shallow entries now inside this run's analyzed paths are dropped from the shallow list. Build outputs, `tools/route-capture/out/`, `__pycache__/`, the prebuilt device binaries and the AI-DLC install were left out.
+- Date: 2026-11-08
+- Commit: 61787f5d064451ceb3578bd18b17e259ddd0934c
+- Breadth requested: focused scan (snapshot paths: `android/app/src/main/java/com/pebblentn/app/`, `android/app/src/main/res/values/`, `android/app/src/test/java/com/pebblentn/app/`, `watchapp/src/c/`, `watchapp/tests/`, `protocol/`, `requirements/REQ-ANDROID.md`, `requirements/REQ-WATCH.md`, `requirements/REQ-DEBUG.md`); depth Minimal; lead-only (the developer link scanned and wrote the nine artifacts)
+- Intent: `261108-hide-when-driving` (GitHub issue #132 "When driving": a synced watch setting to hide directions above a driving speed, with the phone estimating speed from Google Maps' notification and closing and relaunching the watchapp)
+- Coverage: the protocol definition and generator; the session reducer, instruction, state, quantizer and both settings models and the sync rules; the controller, transport, mapper and listener service; the codec and transport interface; the snapshot, its factory, the capture processor, dispatcher and listener; the settings mirror and phone settings repositories; debug event, history and grouping; the container; the export builder, exporter and redactor; the Watch settings UI; the fake transport; on the watch `main.c`, the settings store and theme, the settings sync, glue and revision units, the settings menu, and the early-warning and shortcuts headers. Skimmed: the rest of the companion source and tests by listing and grep, `PreviewCatalog.kt`, `MainActivity.kt` and `DashboardScreen.kt` wiring, `strings.xml` watch settings strings, the other watch units and tests, the three requirement files (headings and the intent-relevant requirements), and PebbleKit's `PebbleSender` API by grep.
+- Merge: focused merge into a STALE store (prior focused scan at c7b6ba0 for `261030-vela-maps`, shipped in v0.0.81). Prior prose is kept or condensed; the Vela Maps context is relabelled as an earlier intent. Added or updated for the analyzed area: the active-intent business context and glossary entries; the system overview, component diagram, data flow, launch-policy, send-path and settings-table decisions, a #132 improvement opportunity, a #132 interaction diagram and a current settings-sync diagram (replacing the pre-#102 one), and current watch input and handshake diagrams; the package and watch module tables and settings patterns in code structure; protocol 1.3 keys, events, watch handling, outbox, persist keys with current defaults, the settings menu (About first), phone-side settings, the Watch settings screen, speed-relevant snapshot fields and the export surface in API documentation; new components Watchapp Settings Sync, Watch Settings Sync and Mirror and Watch Settings Screen, and updated controller, transport, codec, reducer, menu, store, export and container entries; stack notes; settings-table coupling and controller fan-out in dependencies; test coverage, technical debt and the "Hide when driving findings". The pre-#102 settings findings and touch-gesture findings are condensed to their shipped status, and three dashboard update diagrams superseded by later code (as at 6dec020 and 8f08e02) are dropped. The prior analyzed paths are demoted to shallow, and 19 earlier shallow entries now inside this run's analyzed paths are dropped from the shallow list. Build outputs and caches and the AI-DLC install were left out.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: vela-maps
-fingerprint: 10644b12fc1828fc978218e633ce4d83dea50b49
+intent: hide-when-driving
+fingerprint: d47a788a413838e269d97fade01b2322465c0f30
 analyzed:
+  paths:
+    - protocol/
+    - android/app/src/main/java/com/pebblentn/app/core/NavigationSessionReducer.kt
+    - android/app/src/main/java/com/pebblentn/app/core/NavigationInstruction.kt
+    - android/app/src/main/java/com/pebblentn/app/core/NavigationState.kt
+    - android/app/src/main/java/com/pebblentn/app/core/DistanceQuantizer.kt
+    - android/app/src/main/java/com/pebblentn/app/core/WatchSettings.kt
+    - android/app/src/main/java/com/pebblentn/app/core/WatchSettingsModel.kt
+    - android/app/src/main/java/com/pebblentn/app/core/WatchSettingsSync.kt
+    - android/app/src/main/java/com/pebblentn/app/pebble/NavigationController.kt
+    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleWatchTransport.kt
+    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleAppMessageMapper.kt
+    - android/app/src/main/java/com/pebblentn/app/pebble/WatchListenerService.kt
+    - android/app/src/main/java/com/pebblentn/app/protocol/ProtocolCodec.kt
+    - android/app/src/main/java/com/pebblentn/app/protocol/WatchTransport.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshot.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshotFactory.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/DebugCaptureProcessor.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NotificationDispatcher.kt
+    - android/app/src/main/java/com/pebblentn/app/notification/NavigationNotificationListenerService.kt
+    - android/app/src/main/java/com/pebblentn/app/data/WatchSettingsMirrorRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/data/WatchSettingsRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/data/DebugEvent.kt
+    - android/app/src/main/java/com/pebblentn/app/data/DebugHistoryRepository.kt
+    - android/app/src/main/java/com/pebblentn/app/data/DebugEventGrouping.kt
+    - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
+    - android/app/src/main/java/com/pebblentn/app/export/ExportBuilder.kt
+    - android/app/src/main/java/com/pebblentn/app/export/DiagnosticExporter.kt
+    - android/app/src/main/java/com/pebblentn/app/export/Redactor.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/watchsettings/
+    - android/app/src/test/java/com/pebblentn/app/protocol/FakeWatchTransport.kt
+    - watchapp/src/c/main.c
+    - watchapp/src/c/theme.c
+    - watchapp/src/c/theme.h
+    - watchapp/src/c/settings_sync.c
+    - watchapp/src/c/settings_sync.h
+    - watchapp/src/c/settings_sync_glue.c
+    - watchapp/src/c/settings_sync_glue.h
+    - watchapp/src/c/revision.c
+    - watchapp/src/c/revision.h
+    - watchapp/src/c/settings_window.c
+    - watchapp/src/c/settings_window.h
+    - watchapp/src/c/early_warning.h
+    - watchapp/src/c/shortcuts.h
+  components:
+    - Navigation Controller
+    - Navigation Session Reducer
+    - Phone Protocol Codec
+    - Phone Watch Transport
+    - Watch Settings Sync and Mirror
+    - Watch Settings Screen
+    - Diagnostics Export
+    - Dependency Container
+    - Protocol Definition and Generator
+    - Watchapp Main Renderer
+    - Watchapp Settings Menu
+    - Watchapp Settings Store and Theme
+    - Watchapp Settings Sync
+shallow:
   paths:
     - rules/catalog/
     - rules/bundled/
@@ -30,11 +89,10 @@ analyzed:
     - scripts/test_validate_catalog.py
     - android/app/src/main/AndroidManifest.xml
     - requirements/REQ-RULES.md
-  components:
-    - Rule Data and Schemas
-    - Route Capture Harness
-shallow:
-  paths:
+    - android/app/src/main/java/com/pebblentn/app/core/PreviewCatalog.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt
+    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt
+    - android/app/src/main/java/com/pebblentn/app/
     - android/app/src/main/java/com/pebblentn/app/update/
     - android/app/src/main/java/com/pebblentn/app/export/
     - android/app/src/main/java/com/pebblentn/app/ui/dashboard/
@@ -52,9 +110,6 @@ shallow:
     - schemas/app-catalog.schema.json
     - android/app/src/main/java/com/pebblentn/app/rules/RuleEngine.kt
     - android/app/src/main/java/com/pebblentn/app/rules/RuleRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NotificationDispatcher.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NavigationNotificationListenerService.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshotFactory.kt
     - scripts/validate-rules.sh
     - scripts/validate-spec-assets.sh
     - tools/rule-workbench/gen_localized_google_maps.py
@@ -72,8 +127,6 @@ shallow:
     - android/gradle/wrapper/gradle-wrapper.properties
     - android/app/src/main/res/values/themes.xml
     - android/app/src/main/java/com/pebblentn/app/PebbleNtnApplication.kt
-    - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt
     - android/app/src/main/java/com/pebblentn/app/ui/onboarding/OnboardingScreen.kt
     - android/app/src/test/resources/robolectric.properties
     - .github/workflows/play-release.yml
@@ -87,7 +140,6 @@ shallow:
     - spec/600-security-release/SecurityPrivacy.md
     - requirements/REQ-SECURITY.md
     - android/app/src/main/java/com/pebblentn/app/data/FeedbackCampaign.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleWatchTransport.kt
     - android/app/src/main/java/
     - android/app/src/main/res/
     - android/app/src/test/
@@ -103,28 +155,16 @@ shallow:
     - android/pebblekit/build.gradle.kts
     - screenshots/
     - watchapp/tools/gen_connect_qr.py
-    - protocol/
     - scripts/generate-protocol.sh
     - scripts/test-all.sh
     - watchapp/package.json
-    - watchapp/src/c/main.c
-    - watchapp/src/c/theme.c
-    - watchapp/src/c/theme.h
     - watchapp/src/c/shortcuts.c
-    - watchapp/src/c/shortcuts.h
     - watchapp/src/c/shortcut_apply.c
     - watchapp/src/c/shortcut_apply.h
-    - watchapp/src/c/settings_window.c
-    - watchapp/src/c/settings_window.h
-    - watchapp/src/c/early_warning.h
     - watchapp/src/c/generated/protocol.h
     - watchapp/tools/capture_screenshots.py
     - android/app/src/main/java/com/pebblentn/app/pebble/
-    - android/app/src/main/java/com/pebblentn/app/protocol/ProtocolCodec.kt
     - android/app/src/main/java/com/pebblentn/app/protocol/AppMessage.kt
-    - android/app/src/main/java/com/pebblentn/app/protocol/WatchTransport.kt
-    - android/app/src/main/java/com/pebblentn/app/core/WatchSettings.kt
-    - android/app/src/main/java/com/pebblentn/app/data/WatchSettingsRepository.kt
     - spec/200-architecture/Protocol.md
     - spec/200-architecture/Pebble.md
     - watchapp/src/c/
@@ -159,7 +199,6 @@ shallow:
     - spec/200-architecture/Android.md
     - AGENTS.md
     - android/app/src/main/java/com/pebblentn/app/protocol/Protocol.kt
-    - android/app/src/main/java/com/pebblentn/app/core/NavigationSessionReducer.kt
     - android/app/src/main/java/com/pebblentn/app/ui/format/DisplayLabels.kt
     - android/app/src/main/java/com/pebblentn/app/ui/apps/NavigationAppsScreen.kt
     - android/app/src/main/java/com/pebblentn/app/ui/
@@ -168,7 +207,6 @@ shallow:
     - android/app/src/main/java/com/pebblentn/app/di/
     - android/app/src/main/res/drawable-nodpi/
     - android/app/src/test/java/com/pebblentn/app/
-    - android/app/src/test/java/com/pebblentn/app/protocol/FakeWatchTransport.kt
     - android/app/src/test/java/com/pebblentn/app/data/WatchSettingsRepositoryTest.kt
     - android/app/src/test/java/com/pebblentn/app/core/DistanceQuantizerTest.kt
     - android/app/src/test/java/com/pebblentn/app/pebble/NavigationControllerTest.kt

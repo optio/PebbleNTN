@@ -15,6 +15,9 @@ object WatchSettingsSync {
 
     const val REVISION_MODULO = 100
 
+    /** The protocol minor from which a watchapp has the When driving settings (#132). */
+    const val DRIVING_PROTOCOL_MINOR = 4
+
     fun isValidRevision(revision: Int): Boolean = revision in 0 until REVISION_MODULO
 
     /** Whether revision [a] is newer than [b]; false when either is out of range. */
@@ -52,7 +55,7 @@ object WatchSettingsSync {
     }
 
     /**
-     * Merge settings the watch sent ([incoming], all 23 of them from a 1.3 watchapp) into [state].
+     * Merge settings the watch sent ([incoming], all 26 of them from a 1.4 watchapp, 23 from 1.3) into [state].
      * The platform and capabilities always come from the watch.
      */
     fun onWatchSettings(state: WatchSettingsSyncState, incoming: WatchSettingsModel): MergeResult {
@@ -106,13 +109,20 @@ object WatchSettingsSync {
  * @property pending settings edited on the phone that the watch has not confirmed yet.
  * @property receivedFromWatch a watchapp has sent its settings at least once (the screen can show them).
  * @property watchappOutdated the watchapp last heard from is too old to send its settings (protocol < 1.3).
+ * @property watchProtocolMinor the protocol minor the watchapp last reported in a WATCH_READY it sent
+ *   itself; null until one arrived. From 4 on it has the When driving settings (#132 FR4).
  */
 data class WatchSettingsSyncState(
     val mirror: WatchSettingsModel? = null,
     val pending: Set<WatchSetting> = emptySet(),
     val receivedFromWatch: Boolean = false,
     val watchappOutdated: Boolean = false,
-)
+    val watchProtocolMinor: Int? = null,
+) {
+    /** Whether the watchapp has the When driving settings (protocol 1.4, #132 FR4, NFR5). */
+    val hasDrivingSettings: Boolean
+        get() = (watchProtocolMinor ?: 0) >= WatchSettingsSync.DRIVING_PROTOCOL_MINOR
+}
 
 /** The state after watch settings arrived, and what the comparison decided. */
 data class MergeResult(val state: WatchSettingsSyncState, val decision: WatchSettingsSync.Decision)

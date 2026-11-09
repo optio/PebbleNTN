@@ -59,4 +59,18 @@ class WatchSettingsMirrorRepositoryTest {
         WatchSettingsMirrorRepository(context).update { WatchSettingsSyncState(watchappOutdated = true) }
         assertTrue(WatchSettingsMirrorRepository(context).state.value.watchappOutdated)
     }
+
+    @Test
+    fun theWatchProtocolMinorAndTheDrivingSettingsSurviveANewInstance() {
+        val fromWatch = WatchMessages.settings(revision = 4, overrides = mapOf(WatchSetting.DRIVING_MODE to 1))
+        WatchSettingsMirrorRepository(context).update {
+            WatchSettingsSync.onWatchSettings(it, fromWatch).state.copy(watchProtocolMinor = 4)
+        }
+        val restarted = WatchSettingsMirrorRepository(context).state.value
+        assertEquals(4, restarted.watchProtocolMinor)
+        assertTrue("#132 FR4", restarted.hasDrivingSettings)
+        assertTrue(restarted.mirror!!.drivingHide)
+        assertNull("never reported", WatchSettingsSyncState().watchProtocolMinor)
+        assertFalse(WatchSettingsSyncState(watchProtocolMinor = 3).hasDrivingSettings)
+    }
 }

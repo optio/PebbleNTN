@@ -28,6 +28,12 @@ interface WatchTransport {
      */
     suspend fun sendToOpenApp(message: AppMessage): SendResult = send(message)
 
+    /**
+     * Close the watchapp, back to the watch face (#132 FR7: hidden while driving). Best-effort: a
+     * failure is logged by the implementation, never thrown. Fakes that have no watch keep the no-op.
+     */
+    suspend fun closeApp() {}
+
     /** Emits when the watchapp is closed on the watch, as the companion reports it. */
     val watchappClosed: Flow<Unit> get() = emptyFlow()
 

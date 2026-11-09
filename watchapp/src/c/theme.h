@@ -194,6 +194,12 @@ void settings_load(void);
 // and the action of each button and gesture slot.
 #define settings_touch_enabled() ((bool)settings_get(SET_TOUCH))
 #define settings_shortcut(slot) ((ShortcutAction)settings_get((SettingId)(SET_SHORTCUT_FIRST + (slot))))
+// When driving (REQ-WATCH-026, #132): whether the phone hides the watchapp while driving, and the
+// speed list index of the unit in use (driving_label.h turns it into a speed).
+#define settings_driving_hide() ((bool)settings_get(SET_DRIVING_MODE))
+#define settings_driving_speed_id()                                                    \
+  ((settings_units() == UNITS_IMPERIAL) ? SET_DRIVING_SPEED_IMPERIAL : SET_DRIVING_SPEED_METRIC)
+#define settings_driving_speed() settings_get(settings_driving_speed_id())
 
 #define settings_set_accent(v) settings_set(SET_ACCENT, (v))
 #define settings_set_inverted(v) settings_set(SET_INVERT, (v))
@@ -212,6 +218,8 @@ void settings_load(void);
 #define settings_set_early_warn_intensity(v) settings_set(SET_WARN_INTENSITY, (v))
 #define settings_set_touch_enabled(v) settings_set(SET_TOUCH, (v))
 #define settings_set_shortcut(slot, v) settings_set((SettingId)(SET_SHORTCUT_FIRST + (slot)), (v))
+#define settings_set_driving_hide(v) settings_set(SET_DRIVING_MODE, (v))
+#define settings_set_driving_speed(v) settings_set(settings_driving_speed_id(), (v))
 
 // The last New instruction pattern that wasn't Off, which the Vibration shortcut turns back on
 // (REQ-WATCH-024): Short pulse until another one is chosen. Not synced (persist key 27).

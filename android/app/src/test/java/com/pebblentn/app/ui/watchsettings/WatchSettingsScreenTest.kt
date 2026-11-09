@@ -2,9 +2,17 @@ package com.pebblentn.app.ui.watchsettings
 
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -120,5 +128,90 @@ class WatchSettingsScreenTest {
         }
         compose.onNodeWithText("Off").assertIsSelected()
         compose.onNodeWithContentDescription("Preview: Off").assertDoesNotExist()
+    }
+
+    // --- When driving (#132 FR3, FR4) ------------------------------------------------------------
+
+    private fun drivingState(minor: Int?, overrides: Map<WatchSetting, Int> = emptyMap()) = WatchSettingsSyncState(
+        mirror = WatchMessages.settings(1, overrides),
+        receivedFromWatch = true,
+        watchProtocolMinor = minor,
+    )
+
+    @Test
+    fun theDrivingSectionIsHiddenForAProtocol13Watchapp() {
+        compose.setContent { WatchSettingsScreen(drivingState(minor = 3), watchappOpen = true, onOpenSetting = {}, onBack = {}) }
+        compose.onNodeWithTag(DrivingSectionTags.SECTION).assertDoesNotExist()
+        compose.onNodeWithText("Hide directions when driving").assertDoesNotExist()
+    }
+
+    @Test
+    fun theDrivingSectionShowsForAProtocol14WatchappAndTheSwitchHidesDirections() {
+        val changes = mutableListOf<Pair<WatchSetting, Int>>()
+        compose.setContent {
+            WatchSettingsScreen(
+                drivingState(minor = 4),
+                watchappOpen = true,
+                onOpenSetting = {},
+                onBack = {},
+                onChangeSetting = { setting, value -> changes += setting to value },
+            )
+        }
+        compose.onNodeWithTag(DrivingSectionTags.SWITCH).performScrollTo().assertIsOff().performClick()
+        assertEquals(listOf(WatchSetting.DRIVING_MODE to 1), changes)
+        compose.onNodeWithText("Above 25 km/h").performScrollTo().assertExists()
+        compose.onNodeWithText(
+            "Navigation apps don't tell PebbleNTN whether you're driving, walking or cycling",
+            substring = true,
+        ).performScrollTo().assertExists()
+    }
+
+    @Test
+    fun theSpeedSliderIsGreyedOutWhileTheSwitchIsOff() {
+        compose.setContent { WatchSettingsScreen(drivingState(minor = 4), watchappOpen = true, onOpenSetting = {}, onBack = {}) }
+        compose.onNodeWithTag(DrivingSectionTags.SLIDER).performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun theSpeedSliderIsEnabledWhileHiding() {
+        compose.setContent {
+            WatchSettingsScreen(
+                drivingState(minor = 4, mapOf(WatchSetting.DRIVING_MODE to 1)),
+                watchappOpen = true,
+                onOpenSetting = {},
+                onBack = {},
+            )
+        }
+        compose.onNodeWithTag(DrivingSectionTags.SWITCH).performScrollTo().assertIsOn()
+        compose.onNodeWithTag(DrivingSectionTags.SLIDER).performScrollTo().assertIsEnabled()
+    }
+
+    @Test
+    fun theResetButtonShowsOnlyWhenTheSpeedIsNotTheDefault() {
+        var state by mutableStateOf(drivingState(minor = 4, mapOf(WatchSetting.DRIVING_MODE to 1)))
+        val changes = mutableListOf<Pair<WatchSetting, Int>>()
+        compose.setContent {
+            WatchSettingsScreen(state, watchappOpen = true, onOpenSetting = {}, onBack = {}, onChangeSetting = { s, v -> changes += s to v })
+        }
+        compose.onNodeWithTag(DrivingSectionTags.RESET).assertDoesNotExist()
+
+        state = drivingState(minor = 4, mapOf(WatchSetting.DRIVING_MODE to 1, WatchSetting.DRIVING_SPEED_METRIC to 7))
+        compose.onNodeWithText("Above 45 km/h").performScrollTo().assertExists()
+        compose.onNodeWithText("Reset to default (25 km/h)").performScrollTo().performClick()
+        assertEquals(listOf(WatchSetting.DRIVING_SPEED_METRIC to 3), changes)
+    }
+
+    @Test
+    fun withImperialUnitsTheSpeedIsInMph() {
+        compose.setContent {
+            WatchSettingsScreen(
+                drivingState(minor = 4, mapOf(WatchSetting.DRIVING_MODE to 1, WatchSetting.UNITS to 1, WatchSetting.DRIVING_SPEED_IMPERIAL to 4)),
+                watchappOpen = true,
+                onOpenSetting = {},
+                onBack = {},
+            )
+        }
+        compose.onNodeWithText("Above 25 mph").performScrollTo().assertExists()
+        compose.onNodeWithText("Reset to default (15 mph)").performScrollTo().assertExists()
     }
 }

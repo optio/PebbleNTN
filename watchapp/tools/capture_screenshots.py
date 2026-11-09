@@ -69,7 +69,8 @@ ROW_ETA_LABEL = 6
 ROW_ARROW = 7
 ROW_GLYPH = 8
 ROW_UNITS = 9
-ROW_SHORTCUTS = 10
+ROW_DRIVING = 10
+ROW_SHORTCUTS = 11
 LAST_MAIN_ROW = ROW_SHORTCUTS
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.

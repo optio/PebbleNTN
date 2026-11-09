@@ -30,7 +30,7 @@ It preserves structural tokens, units, punctuation and anonymized placeholders s
 
 ## Versions (schema 2+)
 
-`metadata` carries `schemaVersion` (the format's version, 2 or later; 5 now), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
+`metadata` carries `schemaVersion` (the format's version, 2 or later; 6 now), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
 
 ```json
 "versions": {
@@ -84,3 +84,21 @@ The flag reflects the packages at export time, not when the event was recorded: 
 - After a failed lookup `installSource` is `unknown` and every other field is `null`.
 
 Android keeps only the installer of the current version, so an earlier source is lost after an update from another source; `firstInstallTime` still shows the first install.
+
+## Driving log (schema 6)
+
+`drivingLog` is a top-level array beside `events`: the When driving log (REQ-DEBUG-016, #132), the last 500 speed estimates and hide/show decisions, oldest first, kept in memory only. It is in the privacy-safe and the full export and absent (`[]`) in rules-only. Each entry holds numbers, a time and a decision name only, so the two modes are identical:
+
+```json
+"drivingLog": [
+  { "timeMillis": 1793440800000, "measuredKmh": 48.3, "plannedKmh": 52.0, "thresholdKmh": 25.0, "decision": "SAMPLE" },
+  { "timeMillis": 1793440830000, "measuredKmh": 49.1, "plannedKmh": null, "thresholdKmh": 25.0, "decision": "HIDE" }
+]
+```
+
+- `timeMillis`: epoch milliseconds of the estimate or decision.
+- `measuredKmh`: the speed from the remaining route distance over the last 30–60 s; `plannedKmh`: from the remaining distance and the arrival time; both rounded to one decimal, `null` when unknown.
+- `thresholdKmh`: the driving speed in use, in km/h (15 mph is 24.1).
+- `decision`: `SAMPLE` (an estimate), `HIDE` (the watchapp was closed), `SHOW` (the hidden state ended: reopened, or with automatic launch off only left), `KEPT_OPEN` (the user opened the watchapp while hidden) or `RESET` (navigation stopped while hidden or kept open).
+
+No notification text, street or place name is ever part of an entry.

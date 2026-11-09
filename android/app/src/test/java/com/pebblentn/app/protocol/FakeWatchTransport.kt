@@ -21,6 +21,10 @@ open class FakeWatchTransport(
     var launchCount: Int = 0
         private set
 
+    /** How often the watchapp was closed from the phone (hidden while driving, #132). */
+    var closeCount: Int = 0
+        private set
+
     val sent: MutableList<AppMessage> = mutableListOf()
 
     /** The messages sent with [sendToOpenApp], which never relaunches the watchapp; also in [sent]. */
@@ -30,6 +34,10 @@ open class FakeWatchTransport(
 
     override suspend fun launchApp() {
         launchCount++
+    }
+
+    override suspend fun closeApp() {
+        closeCount++
     }
 
     override suspend fun send(message: AppMessage): SendResult {

@@ -25,11 +25,19 @@ object WatchMessages {
         return defaults.copy(values = defaults.values + overrides)
     }
 
-    /** A genuine WATCH_READY from a 1.3 watchapp, carrying [model]. */
+    /** A genuine WATCH_READY from a 1.3 watchapp, carrying [model] without the When driving keys. */
     fun ready13(model: WatchSettingsModel, appVersion: String = "0.0.77"): AppMessage =
-        withSettings(Protocol.Events.WATCH_READY, model)
+        withSettings(Protocol.Events.WATCH_READY, model, WatchSetting.entries.filterNot { it.isDriving })
             .putInt(Protocol.Keys.PROTOCOL_MAJOR, 1)
             .putInt(Protocol.Keys.PROTOCOL_MINOR, 3)
+            .putString(Protocol.Keys.APP_VERSION, appVersion)
+            .build()
+
+    /** A genuine WATCH_READY from a 1.4 watchapp, carrying all 26 settings of [model] (#132). */
+    fun ready14(model: WatchSettingsModel, appVersion: String = "0.0.82"): AppMessage =
+        withSettings(Protocol.Events.WATCH_READY, model)
+            .putInt(Protocol.Keys.PROTOCOL_MAJOR, 1)
+            .putInt(Protocol.Keys.PROTOCOL_MINOR, 4)
             .putString(Protocol.Keys.APP_VERSION, appVersion)
             .build()
 
@@ -45,13 +53,17 @@ object WatchMessages {
         .putString(Protocol.Keys.APP_VERSION, appVersion)
         .build()
 
-    private fun withSettings(event: Int, model: WatchSettingsModel): AppMessage.Builder {
+    private fun withSettings(
+        event: Int,
+        model: WatchSettingsModel,
+        carried: List<WatchSetting> = WatchSetting.entries,
+    ): AppMessage.Builder {
         val builder = AppMessage.builder()
             .putInt(Protocol.Keys.EVENT, event)
             .putInt(Protocol.Keys.SETTINGS_REVISION, model.revision)
             .putInt(Protocol.Keys.WATCH_PLATFORM, model.platform.code)
             .putInt(Protocol.Keys.WATCH_CAPABILITIES, model.capabilities.mask)
-        for (setting in WatchSetting.entries) builder.putInt(setting.key, model[setting])
+        for (setting in carried) builder.putInt(setting.key, model[setting])
         return builder
     }
 }

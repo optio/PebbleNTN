@@ -1,8 +1,9 @@
 // Settings sync with the phone app (REQ-WATCH-025, #102): the pure part.
 //
-// The 23 watch settings the phone app can show and change are one table, indexed by SettingId:
+// The 26 watch settings the phone app can show and change are one table, indexed by SettingId:
 // each has a value range, a default, the capability it needs and the persist key it is stored
-// under. The same order is the order of the SETTING_* protocol keys (protocol 1.3), so the protocol
+// under. The same order is the order of the SETTING_* protocol keys (protocol 1.3, the When driving
+// three since 1.4), so the protocol
 // key of a setting is PBNTN_KEY_SETTING_ACCENT + its id. theme.c stores the values in this order and
 // settings_sync_glue.c writes and reads the messages; this unit decides what a message may change.
 //
@@ -34,7 +35,12 @@ typedef enum {
   SET_WARN_INTENSITY,
   SET_TOUCH,
   SET_SHORTCUT_FIRST,  // one per ShortcutSlot, in slot order
-  SET_COUNT = SET_SHORTCUT_FIRST + 7,
+  // When driving (REQ-WATCH-026, #132, protocol 1.4): Show (0) or Hide (1) directions, and the
+  // driving speed per unit as a list index: 10 + 5 * i km/h (0-10), 5 + 5 * i mph (0-7).
+  SET_DRIVING_MODE = SET_SHORTCUT_FIRST + 7,
+  SET_DRIVING_SPEED_METRIC,
+  SET_DRIVING_SPEED_IMPERIAL,
+  SET_COUNT,
 } SettingId;
 
 // Every capability at once: a value is then checked against its range only, as for a value read
@@ -68,8 +74,8 @@ int sync_default(SettingId id, uint32_t caps);
 // Whether `id` is stored as a bool (persist_write_bool) rather than an int.
 bool sync_is_bool(SettingId id);
 
-// The persist key `id` is stored under: 1-15 for the first fifteen, then 19 (Touch) and 20-26 (the
-// shortcut slots). Keys 16-18 and 27 are not settings the phone sees.
+// The persist key `id` is stored under: 1-15 for the first fifteen, then 19 (Touch), 20-26 (the
+// shortcut slots) and 29-31 (When driving). Keys 16-18, 27 and 28 are not settings the phone sees.
 uint32_t sync_persist_key(SettingId id);
 
 // Compare the watch's revision with the one a phone SETTINGS message carries. `differs` is whether

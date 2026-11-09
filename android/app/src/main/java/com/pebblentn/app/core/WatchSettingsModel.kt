@@ -45,12 +45,25 @@ enum class WatchSetting(
     SHORTCUT_SWIPE_UP(ShortcutActions.COUNT, needs = Protocol.CapabilityMasks.TOUCH_MASK),
     SHORTCUT_SWIPE_DOWN(ShortcutActions.COUNT, needs = Protocol.CapabilityMasks.TOUCH_MASK),
     SHORTCUT_TAP(ShortcutActions.COUNT, needs = Protocol.CapabilityMasks.TOUCH_MASK, defaultValue = ShortcutActions.BACKLIGHT_NOW),
+
+    /** When driving (#132, protocol 1.4): 0 Show directions, 1 Hide directions. */
+    DRIVING_MODE(2, defaultValue = DrivingSpeeds.MODE_SHOW),
+
+    /** The metric driving speed as an index into [DrivingSpeeds.metricKmh]: 3 is 25 km/h. */
+    DRIVING_SPEED_METRIC(DrivingSpeeds.METRIC_COUNT, defaultValue = DrivingSpeeds.METRIC_DEFAULT),
+
+    /** The imperial driving speed as an index into [DrivingSpeeds.imperialMph]: 2 is 15 mph. */
+    DRIVING_SPEED_IMPERIAL(DrivingSpeeds.IMPERIAL_COUNT, defaultValue = DrivingSpeeds.IMPERIAL_DEFAULT),
     ;
 
-    /** The AppMessage key that carries this setting (protocol 1.3). */
+    /** The AppMessage key that carries this setting (protocol 1.3; the When driving three 1.4). */
     val key: Int get() = Protocol.Keys.SETTING_ACCENT + ordinal
 
-    val isShortcut: Boolean get() = ordinal >= SHORTCUT_UP.ordinal
+    /** One of the seven shortcut slots (not the When driving settings that follow them). */
+    val isShortcut: Boolean get() = ordinal in SHORTCUT_UP.ordinal..SHORTCUT_TAP.ordinal
+
+    /** One of the When driving settings, which a watchapp before protocol 1.4 does not have. */
+    val isDriving: Boolean get() = ordinal >= DRIVING_MODE.ordinal
 
     companion object {
         /** The setting a protocol key carries, or null for any other key. */
@@ -74,6 +87,31 @@ object ShortcutActions {
     const val BACKLIGHT_NOW = 11
     const val NEXT_BACKLIGHT_COLOUR = 12
     const val COUNT = 15
+}
+
+/**
+ * The When driving speed lists (#132 FR1.2–FR1.4): 10, 15, … 60 km/h and 5, 10, … 40 mph, stored on
+ * the watch as list indices, one per unit. The unit in use is the watch's Distance units setting;
+ * a units change switches lists and converts neither value.
+ */
+object DrivingSpeeds {
+    const val MODE_SHOW = 0
+    const val MODE_HIDE = 1
+    const val METRIC_COUNT = 11
+    const val IMPERIAL_COUNT = 8
+    const val METRIC_DEFAULT = 3 // 25 km/h
+    const val IMPERIAL_DEFAULT = 2 // 15 mph
+    const val STEP = 5
+    const val KMH_PER_MPH = 1.609344
+
+    fun metricKmh(index: Int): Int = 10 + STEP * index
+
+    fun imperialMph(index: Int): Int = 5 + STEP * index
+
+    /** Whether [units] (the watch's UNITS value) is imperial: miles and feet. */
+    fun isImperial(units: Int): Boolean = units == UNITS_IMPERIAL
+
+    const val UNITS_IMPERIAL = 1
 }
 
 /** Which watch model reported the settings (protocol 1.3 WATCH_PLATFORM). */
@@ -180,6 +218,24 @@ data class WatchSettingsModel(
     val shortcutSwipeUp: Int get() = this[WatchSetting.SHORTCUT_SWIPE_UP]
     val shortcutSwipeDown: Int get() = this[WatchSetting.SHORTCUT_SWIPE_DOWN]
     val shortcutTap: Int get() = this[WatchSetting.SHORTCUT_TAP]
+    val drivingHide: Boolean get() = this[WatchSetting.DRIVING_MODE] == DrivingSpeeds.MODE_HIDE
+    val drivingSpeedMetric: Int get() = this[WatchSetting.DRIVING_SPEED_METRIC]
+    val drivingSpeedImperial: Int get() = this[WatchSetting.DRIVING_SPEED_IMPERIAL]
+
+    /** The driving speed setting of the unit in use (FR1.4). */
+    val drivingSpeedSetting: WatchSetting
+        get() = if (DrivingSpeeds.isImperial(units)) WatchSetting.DRIVING_SPEED_IMPERIAL else WatchSetting.DRIVING_SPEED_METRIC
+
+    /**
+     * The driving speed in km/h for [units] (the watch's UNITS value, this set's own by default):
+     * the metric list's speed, or the imperial list's converted from mph (15 mph ≈ 24.1 km/h).
+     */
+    fun drivingThresholdKmh(units: Int = this.units): Double =
+        if (DrivingSpeeds.isImperial(units)) {
+            DrivingSpeeds.imperialMph(drivingSpeedImperial) * DrivingSpeeds.KMH_PER_MPH
+        } else {
+            DrivingSpeeds.metricKmh(drivingSpeedMetric).toDouble()
+        }
 
     companion object {
         /** The settings a new watch has. */

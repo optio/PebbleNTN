@@ -82,9 +82,24 @@ Watch settings edited on the phone (REQ-ANDROID-021) never use that path: they g
 watchapp is open (it sent its settings in this session and has not closed since). Otherwise they wait
 for the next time it opens.
 
-## Settings sync (protocol 1.3)
+**When driving (#132, REQ-WATCH-026, REQ-ANDROID-024).** With the watch's When driving setting at
+Hide directions, the launch at session start is unchanged. When the estimated speed stays above the
+driving speed, `NavigationController` closes the watchapp (`WatchTransport.closeApp`, PebbleKit's
+stop) and enters the hidden state, in which no state is sent at all, so the re-launch above can never
+bring it back; the reducer keeps the state. When the speed stays low for about 2 minutes, the
+controller reopens it through the normal launch path (launch and synthesized readiness, which sends
+the current state): the one relaunch that is not driven by a state update, allowed because the phone
+itself closed the watchapp. It happens at most once in any 2 minutes and only with automatic launch
+on; with it off the hidden state just ends and updates resume when the user opens the watchapp. A
+watchapp opened while hidden, not within 5 s of the controller's own launch, is the user's and stays
+open for the rest of the session; a navigation stop while hidden sends nothing and ends the hidden
+state. Any later "keep the watchapp in front" behaviour (#127) must check
+`NavigationController.drivingStatus` and never reopen a hidden watchapp.
 
-The watch's 23 settings are one table (`settings_sync.c`): range, default, capability and persist
+## Settings sync (protocol 1.3, 1.4)
+
+The watch's 26 settings (23 since 1.3, the When driving three since 1.4, persist keys 29–31 because
+27 and 28 were taken) are one table (`settings_sync.c`): range, default, capability and persist
 key per setting, in protocol key order. `theme.c` stores the values in that order and saves only a
 changed value; every edit made on the watch moves the settings revision (persist key 28) on and
 queues a `SETTINGS` message. The outbox sends one message at a time; a failed one is retried once

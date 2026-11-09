@@ -1,7 +1,18 @@
 package com.pebblentn.app.pebble
 
+import com.pebblentn.app.core.DrivingAction
+import com.pebblentn.app.core.DrivingConfig
+import com.pebblentn.app.core.DrivingPolicy
+import com.pebblentn.app.core.DrivingSpeedEstimator
+import com.pebblentn.app.core.DrivingState
 import com.pebblentn.app.core.EpochClock
 import com.pebblentn.app.core.NavigationInstruction
+import com.pebblentn.app.core.SpeedEstimate
+import com.pebblentn.app.core.SpeedSample
+import com.pebblentn.app.data.DrivingDecision
+import com.pebblentn.app.data.DrivingLogEntry
+import com.pebblentn.app.data.DrivingLogRepository
+import kotlinx.coroutines.Job
 import com.pebblentn.app.core.NavigationSessionReducer
 import com.pebblentn.app.core.ReducerEffect
 import com.pebblentn.app.core.ReducerEvent
@@ -72,9 +83,42 @@ class NavigationController(
     private val onWatchAppVersion: (String) -> Unit = {},
     /** The mirror of the watchapp's own settings and the phone edits waiting for it (#102). */
     private val watchSettings: WatchSettingsStore = InMemoryWatchSettingsStore(),
+    /** Where speed estimates and hide/show decisions are logged for the diagnostics export (#132 FR14). */
+    private val drivingLog: DrivingLogRepository? = null,
+    /** Reads the travel speed from navigation notifications (#132 FR5). */
+    private val speedEstimator: DrivingSpeedEstimator = DrivingSpeedEstimator(),
+    /** How often the hidden state looks at the speed when no notification arrives (#132 FR9). */
+    private val drivingTickMillis: Long = DRIVING_TICK_MILLIS,
 ) {
     private val mutex = Mutex()
     private var state = ReducerState(settings = initialSettings)
+
+    /** The reducer's auto-launch flag, readable outside [mutex] (#132 FR9.1). */
+    @Volatile
+    private var autoLaunch: Boolean = initialSettings.autoLaunchOnSessionStart
+
+    /** Serializes the When driving logic (#132); never held while waiting for [mutex] or [settingsMutex]. */
+    private val drivingMutex = Mutex()
+    private var driving = DrivingState()
+    private var drivingTicker: Job? = null
+    private var lastMeasuredKmh: Double? = null
+
+    /** Hidden while driving: no state goes to the watch, so nothing relaunches it (#132 FR8.1). */
+    @Volatile
+    private var hiddenForDriving = false
+
+    /** When this controller last launched the watchapp itself, to tell a manual open apart (FR10). */
+    @Volatile
+    private var lastOwnLaunchMillis: Long? = null
+
+    private val _drivingStatus = MutableStateFlow(DrivingStatus())
+
+    /**
+     * Whether the watchapp is hidden while driving, with the last measured speed, for the
+     * dashboard (#132 FR13). While [DrivingStatus.hidden] is true nothing may bring the watchapp to
+     * the front; a future "keep the watchapp in front" behaviour (#127) must check it (FR8.4).
+     */
+    val drivingStatus: StateFlow<DrivingStatus> = _drivingStatus.asStateFlow()
 
     private val _status = MutableStateFlow(WatchLinkStatus())
 
@@ -123,11 +167,33 @@ class NavigationController(
     suspend fun onInstruction(instruction: NavigationInstruction) =
         dispatch(ReducerEvent.InstructionReceived(instruction, nowSeconds()))
 
-    suspend fun onNavigationStopped() = dispatch(ReducerEvent.NavigationStopped(nowSeconds()))
+    /**
+     * Navigation stopped. While hidden for driving the Stopped state is not sent (it would relaunch
+     * the watchapp only to close it again), and the hidden and kept-open states end (#132 FR11).
+     */
+    suspend fun onNavigationStopped() {
+        dispatch(ReducerEvent.NavigationStopped(nowSeconds()))
+        resetDriving()
+    }
 
-    suspend fun onSettingsChanged(settings: WatchSettings) = dispatch(ReducerEvent.SettingsChanged(settings))
+    suspend fun onSettingsChanged(settings: WatchSettings) {
+        dispatch(ReducerEvent.SettingsChanged(settings))
+        reevaluateWhileHidden()
+    }
 
     suspend fun onConnectionLost() = dispatch(ReducerEvent.ConnectionLost)
+
+    /**
+     * The speed fields of a navigation notification (#132 FR5): estimate the speed, log it, and
+     * decide whether to hide or show the watchapp. Notifications of apps without speed are ignored.
+     */
+    suspend fun onSpeedSample(sample: SpeedSample) = drivingMutex.withLock {
+        val now = clock.nowMillis()
+        val estimate = speedEstimator.add(sample, now) ?: return@withLock
+        val config = drivingConfig()
+        if (!estimate.isEmpty) logDriving(now, estimate, config, DrivingDecision.SAMPLE)
+        if (_status.value.navigating) decideDriving(now, estimate, config)
+    }
 
     private suspend fun handleInbound(message: AppMessage) {
         val event = ProtocolCodec.decodeInbound(message, nowSeconds())
@@ -136,12 +202,20 @@ class NavigationController(
             runCatching { onWatchAppVersion(version) }
                 .onFailure { Timber.w(it, "Watchapp version %s not recorded", version) }
         }
+        // An open while hidden for driving is the user's: it keeps the watchapp open (FR10), so the
+        // READY that follows sends the current state again.
+        if (event is ReducerEvent.WatchReady || event is ReducerEvent.WatchRequestedState) onWatchappOpenSignal()
         event?.let { dispatch(it) }
+        val readyMinor = ProtocolCodec.realWatchReadyMinor(message)
+        // The Watch settings screen offers When driving only to a 1.4 watchapp (#132 FR4).
+        readyMinor?.let { minor ->
+            watchSettings.update { if (it.watchProtocolMinor == minor) it else it.copy(watchProtocolMinor = minor) }
+        }
         val watchSettingsSent = ProtocolCodec.decodeWatchSettings(message)
         if (watchSettingsSent != null) {
             onWatchSettings(watchSettingsSent)
         } else {
-            ProtocolCodec.realWatchReadyMinor(message)
+            readyMinor
                 ?.takeIf { it < SETTINGS_PROTOCOL_MINOR }
                 ?.let { onOutdatedWatchapp(it) }
         }
@@ -151,9 +225,13 @@ class NavigationController(
      * A setting edited on the phone's Watch settings screen (REQ-ANDROID-021): it goes into the
      * mirror and to the watchapp if it is open, else it waits for the next time it opens.
      */
-    suspend fun onPhoneSettingEdit(setting: WatchSetting, value: Int) = settingsMutex.withLock {
-        watchSettings.update { WatchSettingsSync.onPhoneEdit(it, setting, value) }
-        sendPendingSettings()
+    suspend fun onPhoneSettingEdit(setting: WatchSetting, value: Int) {
+        settingsMutex.withLock {
+            watchSettings.update { WatchSettingsSync.onPhoneEdit(it, setting, value) }
+            sendPendingSettings()
+        }
+        // "Show directions" picked while hidden shows the watchapp at once (#132 FR12).
+        reevaluateWhileHidden()
     }
 
     /** The watchapp closed on the watch: edits wait for it to open again. */
@@ -190,6 +268,7 @@ class NavigationController(
     private suspend fun dispatch(event: ReducerEvent) = mutex.withLock {
         val result = NavigationSessionReducer.reduce(state, event)
         state = result.state
+        autoLaunch = state.settings.autoLaunchOnSessionStart
         _status.value = WatchLinkStatus(
             navigating = state.current is NavigationState.Navigating,
             lastSent = state.lastSentInstruction,
@@ -208,14 +287,21 @@ class NavigationController(
         when (effect) {
             ReducerEffect.LaunchWatchApp -> {
                 Timber.i("Effect: launch watchapp")
+                lastOwnLaunchMillis = clock.nowMillis()
                 transport.launchApp()
                 scheduleAutonomousReady()
             }
-            is ReducerEffect.SendState -> {
+            // While hidden for driving, a send would relaunch the watchapp (send() does on
+            // FailedDifferentAppOpen). The reducer keeps the state; the show sends it (#132 FR8.1).
+            is ReducerEffect.SendState -> if (hiddenForDriving) {
+                Timber.i("Hidden while driving: state %s not sent", effect.state)
+            } else {
                 Timber.i("Effect: send state %s to watch", effect.state)
                 sendWithRetry(ProtocolCodec.encodeState(effect.state, effect.flags, appVersion, latestPhoneUpdate()))
             }
-            is ReducerEffect.SendCompatibilityError -> {
+            is ReducerEffect.SendCompatibilityError -> if (hiddenForDriving) {
+                Timber.i("Hidden while driving: compatibility error %d not sent", effect.errorCode)
+            } else {
                 Timber.i("Effect: send compatibility error %d", effect.errorCode)
                 transport.send(ProtocolCodec.encodeCompatibilityError(effect.errorCode))
             }
@@ -253,11 +339,148 @@ class NavigationController(
 
     private fun nowSeconds(): Long = clock.nowMillis() / 1000
 
+    // --- When driving (#132) ---------------------------------------------------------------------
+
+    /** The When driving settings as they are now; off for a watchapp without them (FR4, NFR5). */
+    private fun drivingConfig(): DrivingConfig {
+        val sync = watchSettings.state.value
+        return DrivingConfig.from(sync.mirror, sync.hasDrivingSettings, autoLaunch)
+    }
+
+    /** Run the policy and act on its decision. Called with [drivingMutex] held. */
+    private suspend fun decideDriving(now: Long, estimate: SpeedEstimate, config: DrivingConfig) {
+        estimate.measuredKmh?.let { lastMeasuredKmh = it }
+        val result = DrivingPolicy.evaluate(driving, now, estimate, config)
+        driving = result.state
+        when (result.action) {
+            DrivingAction.NONE -> Unit
+            DrivingAction.HIDE -> {
+                // The flag first, so no state send can slip through and relaunch it (FR8.1).
+                hiddenForDriving = true
+                logDriving(now, estimate, config, DrivingDecision.HIDE)
+                Timber.i("Driving at about %.0f km/h: closing the watchapp", estimate.measuredKmh ?: 0.0)
+                startDrivingTicker()
+                transport.closeApp()
+                _watchappOpen.value = false
+            }
+            DrivingAction.SHOW -> {
+                hiddenForDriving = false
+                logDriving(now, estimate, config, DrivingDecision.SHOW)
+                Timber.i("No longer driving: reopening the watchapp")
+                // The one relaunch REQ-WATCH-006 allows: the launch path sends the current state (FR9).
+                lastOwnLaunchMillis = now
+                transport.launchApp()
+                scheduleAutonomousReady()
+            }
+            DrivingAction.LEAVE_HIDDEN -> {
+                // Auto-launch is off: never reopen it; updates resume when the user opens it (FR9.1).
+                hiddenForDriving = false
+                logDriving(now, estimate, config, DrivingDecision.SHOW)
+                Timber.i("No longer driving: the watchapp stays closed until it is opened (auto-launch off)")
+            }
+        }
+        // Last, after every suspension: the ticker may be the coroutine running this.
+        if (!driving.hidden) stopDrivingTicker()
+        publishDrivingStatus()
+    }
+
+    /**
+     * While hidden, look at the speed every [drivingTickMillis] even without new notifications, so
+     * slowing down shows the watchapp again when Google Maps posts less often (FR9). No timer runs
+     * while visible.
+     */
+    private fun startDrivingTicker() {
+        drivingTicker?.cancel()
+        drivingTicker = scope.launch {
+            while (true) {
+                delay(drivingTickMillis)
+                reevaluateWhileHidden()
+            }
+        }
+    }
+
+    private fun stopDrivingTicker() {
+        drivingTicker?.cancel()
+        drivingTicker = null
+    }
+
+    /** Decide again while hidden: on a tick, or after a settings change (FR9, FR12). */
+    private suspend fun reevaluateWhileHidden() = drivingMutex.withLock {
+        if (!driving.hidden) return@withLock
+        val now = clock.nowMillis()
+        decideDriving(now, speedEstimator.estimate(now), drivingConfig())
+    }
+
+    /**
+     * The watchapp opened (a READY or a state request). While hidden, and not within
+     * [MANUAL_OPEN_GRACE_MILLIS] of this controller's own launch, that is the user (FR10).
+     */
+    private suspend fun onWatchappOpenSignal() = drivingMutex.withLock {
+        if (!driving.hidden) return@withLock
+        val now = clock.nowMillis()
+        val launched = lastOwnLaunchMillis
+        if (launched != null && now - launched < MANUAL_OPEN_GRACE_MILLIS) return@withLock
+        driving = DrivingPolicy.onUserOpened(driving)
+        hiddenForDriving = false
+        logDriving(now, speedEstimator.estimate(now), drivingConfig(), DrivingDecision.KEPT_OPEN)
+        Timber.i("Watchapp opened while hidden for driving: it stays open for this navigation")
+        stopDrivingTicker()
+        publishDrivingStatus()
+    }
+
+    /** Navigation stopped: the hidden and kept-open states end and the next session starts fresh (FR11). */
+    private suspend fun resetDriving() = drivingMutex.withLock {
+        if (driving.hidden || driving.keptOpen) {
+            val now = clock.nowMillis()
+            logDriving(now, null, drivingConfig(), DrivingDecision.RESET)
+        }
+        driving = DrivingPolicy.onSessionStopped()
+        hiddenForDriving = false
+        lastMeasuredKmh = null
+        speedEstimator.reset()
+        stopDrivingTicker()
+        publishDrivingStatus()
+    }
+
+    private fun logDriving(now: Long, estimate: SpeedEstimate?, config: DrivingConfig, decision: DrivingDecision) {
+        drivingLog?.add(
+            DrivingLogEntry(
+                timeMillis = now,
+                measuredKmh = estimate?.measuredKmh,
+                plannedKmh = estimate?.plannedKmh,
+                thresholdKmh = config.thresholdKmh,
+                decision = decision,
+            ),
+        )
+    }
+
+    private fun publishDrivingStatus() {
+        _drivingStatus.value = DrivingStatus(hidden = driving.hidden, measuredKmh = lastMeasuredKmh)
+    }
+
     private companion object {
         /** The protocol minor from which a watchapp sends its settings (protocol 1.3). */
         const val SETTINGS_PROTOCOL_MINOR = 3
+
+        /** While hidden, the speed is looked at this often without new notifications (#132). */
+        const val DRIVING_TICK_MILLIS = 10_000L
+
+        /**
+         * An open this soon after the controller's own launch is that launch (its autonomous READY
+         * comes 1.5 s later), not the user (#132 FR10).
+         */
+        const val MANUAL_OPEN_GRACE_MILLIS = 5_000L
     }
 }
+
+/**
+ * The dashboard's view of When driving (#132 FR13): whether the watchapp is hidden while driving,
+ * and the last measured speed in km/h (null before one was known).
+ */
+data class DrivingStatus(
+    val hidden: Boolean = false,
+    val measuredKmh: Double? = null,
+)
 
 /**
  * The dashboard's view of the watch link (#28): whether navigation is active and the last

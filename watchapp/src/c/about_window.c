@@ -62,8 +62,7 @@ static void about_load(Window *window) {
                                    s_info.heard_from_phone));
   // Large fonts so the page reads easily on the wrist.
   add_text(0, "PebbleNTN", FONT_KEY_GOTHIC_28_BOLD, inset, w, &y);
-  add_text(1, "Change every setting here on the watch or in the PebbleNTN phone app.",
-           FONT_KEY_GOTHIC_24, inset, w, &y);
+  add_text(1, ABOUT_INTRO_TEXT, FONT_KEY_GOTHIC_24, inset, w, &y);
   y += 4;
   add_text(2, s_details, FONT_KEY_GOTHIC_24, inset, w, &y);
   y += 4;
