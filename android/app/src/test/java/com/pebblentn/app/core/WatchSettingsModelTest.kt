@@ -15,14 +15,17 @@ class WatchSettingsModelTest {
     private val emery = WatchMessages.EMERY_CAPS
 
     @Test
-    fun twentySixSettingsInProtocolKeyOrder() {
-        assertEquals(26, WatchSetting.entries.size)
+    fun twentySevenSettingsInProtocolKeyOrder() {
+        assertEquals(27, WatchSetting.entries.size)
         assertEquals(Protocol.Keys.SETTING_ACCENT, WatchSetting.ACCENT.key)
         assertEquals(Protocol.Keys.SETTING_SHORTCUT_TAP, WatchSetting.SHORTCUT_TAP.key)
         assertEquals(Protocol.Keys.SETTING_DRIVING_MODE, WatchSetting.DRIVING_MODE.key)
         assertEquals(Protocol.Keys.SETTING_DRIVING_SPEED_METRIC, WatchSetting.DRIVING_SPEED_METRIC.key)
         assertEquals(Protocol.Keys.SETTING_DRIVING_SPEED_IMPERIAL, WatchSetting.DRIVING_SPEED_IMPERIAL.key)
-        assertEquals(4, Protocol.MINOR)
+        assertEquals(44, Protocol.Keys.SETTING_DIRECTIONS_TEXT)
+        assertEquals(Protocol.Keys.SETTING_DIRECTIONS_TEXT, WatchSetting.DIRECTIONS_TEXT.key)
+        assertEquals(WatchSetting.DIRECTIONS_TEXT, WatchSetting.forKey(44))
+        assertEquals(5, Protocol.MINOR)
         assertEquals(WatchSetting.EARLY_WARN_DISTANCE, WatchSetting.forKey(Protocol.Keys.SETTING_EARLY_WARN_DISTANCE))
         assertEquals(null, WatchSetting.forKey(Protocol.Keys.FLAGS))
     }
@@ -94,7 +97,7 @@ class WatchSettingsModelTest {
         )
         assertEquals(1, model.units)
         assertEquals("out of range reads as the default", 0, model.glyphPack)
-        assertEquals(26, model.values.size)
+        assertEquals(27, model.values.size)
         assertEquals(WatchPlatform.BASALT, model.platform)
     }
 
@@ -167,5 +170,26 @@ class WatchSettingsModelTest {
         assertEquals(3, WatchSetting.entries.count { it.isDriving })
         // Value 12 is the shortcut "Next backlight colour"; a driving speed index 12 is out of range anyway.
         assertTrue(WatchSettingsRules.isValid(WatchSetting.DRIVING_SPEED_METRIC, 10, basalt))
+        assertFalse("Directions text is not a driving setting (#134)", WatchSetting.DIRECTIONS_TEXT.isDriving)
+    }
+
+    // --- Directions text (#134 FR7) --------------------------------------------------------------
+
+    @Test
+    fun directionsTextDefaultsToFullOnEveryWatch() {
+        assertFalse(WatchSettingsModel.defaults(WatchPlatform.APLITE, bw).compactDirections)
+        assertFalse(WatchSettingsModel.defaults(WatchPlatform.EMERY, emery).compactDirections)
+        assertEquals(listOf(DirectionsText.FULL, DirectionsText.COMPACT), WatchSettingsRules.options(WatchSetting.DIRECTIONS_TEXT, bw))
+        assertTrue(WatchSetting.DIRECTIONS_TEXT.isDirectionsText)
+        assertEquals(1, WatchSetting.entries.count { it.isDirectionsText })
+    }
+
+    @Test
+    fun directionsTextFromTheWatchIsKeptAndOutOfRangeReadsAsFull() {
+        val compact = WatchSettingsModel.fromWatch(mapOf(WatchSetting.DIRECTIONS_TEXT to 1), 2, WatchPlatform.BASALT, basalt)
+        assertTrue(compact.compactDirections)
+        val bad = WatchSettingsModel.fromWatch(mapOf(WatchSetting.DIRECTIONS_TEXT to 2), 2, WatchPlatform.BASALT, basalt)
+        assertFalse(bad.compactDirections)
+        assertFalse(WatchSettingsRules.isValid(WatchSetting.DIRECTIONS_TEXT, 2, basalt))
     }
 }

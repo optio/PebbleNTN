@@ -4,6 +4,12 @@ import com.pebblentn.app.notification.NotificationSnapshot
 
 /** Resolves a rule `field` name to a value from a [NotificationSnapshot]. Unknown fields → null. */
 object SnapshotFields {
+    /** Every field name [resolve] knows; the rule validator rejects others where it checks fields. */
+    val NAMES: Set<String> = setOf(
+        "packageName", "title", "text", "subText", "bigText", "summaryText", "infoText",
+        "category", "channelId", "template", "combinedText", "iconDrawable",
+    )
+
     fun resolve(snapshot: NotificationSnapshot, field: String): String? = when (field) {
         "packageName" -> snapshot.packageName
         "title" -> snapshot.title

@@ -479,6 +479,13 @@
     <string name="watch_settings_outdated">Update the watchapp to change these here</string>
     <string name="watch_settings_queued">Will apply when the watchapp next opens</string>
     <string name="watch_settings_section_appearance">Appearance</string>
+    <string name="watch_settings_section_directions">Directions</string>
+    <string name="watch_setting_directions_text">Directions text</string>
+    <string name="watch_directions_text_explanation">Compact shows only the street name when the app gives one.</string>
+    <string-array name="watch_values_directions_text">
+        <item>Full</item>
+        <item>Compact</item>
+    </string-array>
     <string name="watch_settings_section_eta">Arrival time</string>
     <string name="watch_settings_section_units">Distance</string>
     <string name="watch_settings_section_backlight">Backlight</string>

@@ -96,7 +96,8 @@
             "duration",
             "maneuverMap",
             "normalizeString",
-            "boundedJoin"
+            "boundedJoin",
+            "arrivalClock"
           ]
         }
       }
@@ -175,6 +176,10 @@
             "stopsRemaining": {
               "$ref": "#/$defs/extractor",
               "description": "Public-transit stops left on the current ride (REQ-RULE-016). A number, or text whose first integer is the count."
+            },
+            "compactText": {
+              "$ref": "#/$defs/extractor",
+              "description": "The compact road line: only the street (REQ-RULE-018). Sent instead of primaryText when the Directions text setting is Compact; absent means primaryText."
             }
           }
         }

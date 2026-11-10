@@ -3,6 +3,31 @@
 Sanitized notification fixtures with expected extraction results, used by the rule regression
 tests (`GoogleMapsRulesRegressionTest`).
 
+## Fields checked (both engines)
+
+A fixture's `expected` may state `maneuver`, `distanceMeters`, `ruleId`, `primaryText`,
+`secondaryText`, `stopsRemaining`, and since #134 `compactText` (the Compact road line, the street
+alone) and `etaEpochSeconds` (the arrival epoch an `arrivalClock` extractor gives). `noDistance`,
+`noPrimaryText`, `noCompactText`, `noSecondaryText` and `noEta` assert that the value is absent; a
+field left out is not checked. `matched: false` asserts that no rule matches.
+
+An ETA read from an arrival clock depends on when the notification came and on the phone's zone, so
+a fixture can state `nowEpochSeconds` (default 0) and `timeZone` (an IANA name, default `UTC`) next
+to `snapshot`. The Kotlin regression tests and `workbench.py regression` both use them.
+
+## OsmAnd's expanded text (#134, 2026-11)
+
+OsmAnd's notification title is `<distance> • <short instruction>`, and its `bigText` has the step's
+description on line 1 (`<same instruction> <street> <next step's distance>`) and a summary line
+`<remaining> • <time left> • <arrival clock>[ • <speed>]` (OsmAnd's `NavigationNotification`; see
+the intent record's `osmand-strings.md`). Every OsmAnd language now has `-street` rules one step
+above each maneuver rule: when line 1 names a street, the road line is line 1 without the distance
+and the compact form is the street. Near the destination `bigText` is only the summary line, and a
+line 1 with only a distance names no street: the base rule keeps the title and gives no compact
+form. Every OsmAnd rule takes the second line and the ETA from the summary's arrival clock; German
+used to send the remaining distance there. All new OsmAnd fixtures are synthetic, with made-up
+streets and times, following the layout of a real Dutch capture.
+
 ## Provenance
 
 Each fixture carries a `source` field:

@@ -200,6 +200,9 @@ void settings_load(void);
 #define settings_driving_speed_id()                                                    \
   ((settings_units() == UNITS_IMPERIAL) ? SET_DRIVING_SPEED_IMPERIAL : SET_DRIVING_SPEED_METRIC)
 #define settings_driving_speed() settings_get(settings_driving_speed_id())
+// Directions text (REQ-WATCH-027, #134): the road line form the phone sends; the watch only shows
+// it (directions_text.h names the values).
+#define settings_directions_text() settings_get(SET_DIRECTIONS_TEXT)
 
 #define settings_set_accent(v) settings_set(SET_ACCENT, (v))
 #define settings_set_inverted(v) settings_set(SET_INVERT, (v))

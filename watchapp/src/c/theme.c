@@ -1,11 +1,11 @@
 #include "theme.h"
 
-// Persist keys 1–15, 19–26 and 29–31 hold the synced settings, one per SettingId
+// Persist keys 1–15, 19–26 and 29–32 hold the synced settings, one per SettingId
 // (sync_persist_key). Keys 16–18 are taken by main.c: 16 the last connected phone app version
 // (#103), 17 the latest phone app version on offer and 18 the version the update notice was shown
 // for (#94). 27 is the last New instruction pattern that wasn't Off (REQ-WATCH-024) and 28 the
 // settings revision (settings_sync_glue.c, REQ-WATCH-025). 29–31 are the When driving settings
-// (REQ-WATCH-026, #132). The next key is 32.
+// (REQ-WATCH-026, #132) and 32 Directions text (REQ-WATCH-027, #134). The next key is 33.
 #define PERSIST_KEY_VIBE_LAST 27
 
 // settings_sync.c keeps a value range per setting; these are the enums it stands for.

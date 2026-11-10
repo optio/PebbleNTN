@@ -108,4 +108,34 @@ class RulesetCodecTest {
         """.trimIndent()
         assertThrows(IllegalArgumentException::class.java) { RulesetCodec.parse(json) }
     }
+
+    /** #134: the compact road line and the arrival-clock extractor are part of the rule format. */
+    @Test
+    fun compactTextAndArrivalClockRoundTrip() {
+        val json = """
+            {"schemaVersion":1,"rulesetVersion":"v","minimumAppVersionCode":83,"createdAt":"2026-11-10T00:00:00Z","publisher":"p","rules":[
+              {"id":"street","enabled":true,"priority":1,"packageNames":["net.osmand"],"conditions":[],"output":{
+                "compactText":{"type":"regexCapture","field":"bigText","pattern":"volg (\\S+)"},
+                "etaEpochSeconds":{"type":"arrivalClock","field":"bigText","pattern":"• (\\d+:\\d+)","group":1},
+                "secondaryText":{"type":"arrivalClock","field":"subText"}}}
+            ]}
+        """.trimIndent()
+        val output = RulesetCodec.parse(json).rules.single().output
+        assertEquals(RegexCaptureExtractor("bigText", "volg (\\S+)"), output.compactText)
+        assertEquals(ArrivalClockExtractor("bigText", "• (\\d+:\\d+)", 1), output.etaEpochSeconds)
+        assertEquals(ArrivalClockExtractor("subText"), output.secondaryText)
+
+        val ruleset = RulesetCodec.parse(json)
+        assertEquals(ruleset, RulesetCodec.parse(RulesetCodec.canonicalize(ruleset)))
+    }
+
+    @Test
+    fun arrivalClockWithoutFieldIsRejected() {
+        val json = """
+            {"schemaVersion":1,"rulesetVersion":"v","minimumAppVersionCode":1,"createdAt":"2026-01-01T00:00:00Z","publisher":"p","rules":[
+              {"id":"r","enabled":true,"priority":1,"packageNames":["com.a"],"conditions":[],"output":{"etaEpochSeconds":{"type":"arrivalClock"}}}
+            ]}
+        """.trimIndent()
+        assertThrows(SerializationException::class.java) { RulesetCodec.parse(json) }
+    }
 }

@@ -5,6 +5,7 @@ import com.pebblentn.app.core.Maneuver
 import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.notification.NotificationSnapshot
 import kotlinx.serialization.Serializable
+import java.time.ZoneId
 
 /** Rule precedence layers (spec/200-architecture/RuleEngine.md). User overrides win. */
 @Serializable
@@ -64,10 +65,15 @@ data class RuleEvaluation(
  * A rule is selected when the snapshot's package is in the same [RuleFamilies] family as any package
  * the rule lists (REQ-RULE-015, #113): a Google Maps rule applies to MicroG Maps and the other way
  * round. With [RuleFamilies.NONE] only the listed packages match.
+ *
+ * @param zone the time zone an arrival clock is read in (#134): the phone's own, asked for on each
+ *   evaluation so a trip across time zones follows the phone. Tests pass a fixed one so that
+ *   `etaEpochSeconds` is deterministic.
  */
 class RuleEngine(
     regexBudgetMillis: Long = SafeRegex.DEFAULT_BUDGET_MILLIS,
     private val families: RuleFamilies = RuleFamilies.NONE,
+    private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) {
     private val conditions = ConditionEvaluator(regexBudgetMillis)
     private val extractors = ExtractorRunner(regexBudgetMillis)
@@ -133,14 +139,25 @@ class RuleEngine(
         val distance = output.distanceMeters?.let { asNum(extractors.run(it, snapshot)) }?.toInt()?.coerceAtLeast(0)
         val primary = output.primaryText?.let { asText(extractors.run(it, snapshot)) }
         val secondary = output.secondaryText?.let { asText(extractors.run(it, snapshot)) }
-        val eta = output.etaEpochSeconds?.let { extractor ->
-            asNum(extractors.run(extractor, snapshot))?.let { value ->
-                // A duration yields seconds-from-now; anything else is treated as an absolute epoch.
-                if (extractor is DurationExtractor) nowEpochSeconds + value else value
-            }
-        }
+        val eta = output.etaEpochSeconds?.let { eta(it, snapshot, nowEpochSeconds) }
         val stops = output.stopsRemaining?.let { asCount(extractors.run(it, snapshot)) }
-        return NavigationInstruction(maneuver, distance, primary, secondary, eta, stops)
+        val compact = output.compactText?.let { asText(extractors.run(it, snapshot)) }
+        return NavigationInstruction(maneuver, distance, primary, secondary, eta, stops, compact)
+    }
+
+    /**
+     * A duration yields seconds from now; an arrival clock the next time it shows in the zone (#134,
+     * whole minutes, so an unchanged clock gives the same instruction); any other number is taken as
+     * an absolute epoch. An unreadable value gives no ETA.
+     */
+    private fun eta(extractor: Extractor, snapshot: NotificationSnapshot, nowEpochSeconds: Long): Long? {
+        val result = extractors.run(extractor, snapshot)
+        return when (extractor) {
+            is ArrivalClockExtractor -> asText(result)?.let(ArrivalClock::parse)
+                ?.let { ArrivalClock.nextEpochSeconds(it, nowEpochSeconds, zone()) }
+            is DurationExtractor -> asNum(result)?.let { nowEpochSeconds + it }
+            else -> asNum(result)
+        }
     }
 
     private fun asText(result: ExtractionResult): String? = (result as? ExtractionResult.Text)?.value

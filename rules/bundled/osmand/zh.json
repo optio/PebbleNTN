@@ -1,10 +1,68 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "osmand-zh-2026.10.4",
-  "minimumAppVersionCode": 1,
+  "rulesetVersion": "osmand-zh-2026.11.10",
+  "minimumAppVersionCode": 83,
   "createdAt": "2026-10-04T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
+    {
+      "id": "osmand-roundabout-street-zh",
+      "enabled": true,
+      "priority": 191,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-roundabout-zh one step above it (#134): bigText's first line is OsmAnd's instruction (route_roundabout_short '从第 %d 出口驶离' / '在第 %d 個出口往'), the street and the next step's distance. Road line: that line without the distance; compact: from '第' on. Second line and ETA: the summary line's arrival clock.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "圓環|环岛|\\d+\\s*個?\\s*出口"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:从|在|自)(第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?[^\\S\\n]+[^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
     {
       "id": "osmand-roundabout-zh",
       "enabled": true,
@@ -39,6 +97,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-uturn-street-zh",
+      "enabled": true,
+      "priority": 181,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-uturn-zh one step above it (#134): bigText's first line is OsmAnd's instruction (route_tu, zh-rCN and zh-rTW), the street and the next step's distance. Road line: that line without the distance; compact: the street. Second line and ETA: the summary line's arrival clock.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "迴轉|掉頭|掉头|调头"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -76,6 +204,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-street-zh",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-sharp-right-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_tshr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "向右急[轉转]"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -113,6 +311,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-left-street-zh",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-sharp-left-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_tshl, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "向左急[轉转]"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -150,6 +418,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-street-zh",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-slight-right-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_tslr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "稍向右[轉转]|稍微右[轉转]|向右前方"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -187,6 +525,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-street-zh",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-slight-left-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_tsll, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "稍向左[轉转]|稍微左[轉转]|向左前方"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -224,6 +632,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-street-zh",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-keep-right-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_kr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "靠右"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -261,6 +739,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-street-zh",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-keep-left-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_kl, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "靠左"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -298,6 +846,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-street-zh",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-turn-right-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_tr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "右[轉转]"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -335,6 +953,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-street-zh",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-turn-left-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line (route_tl, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "左[轉转]"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -372,6 +1060,76 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-continue-street-zh",
+      "enabled": true,
+      "priority": 51,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "comment": "Variant of osmand-continue-zh one step above it (#134), as osmand-uturn-street-zh: road line from bigText's first line ('直行 <road>', route_head) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "直行"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "^(?:(?:向[右左]急[转轉]|稍向[右左][转轉]|[右左][转轉]|掉头|迴轉)(?:然后|后|後)直行|直行|靠[左右]行[驶走]|(?:从|在|自)第\\s*\\d+\\s*個?\\s*出口(?:驶离|驶出到|過去|往|離開)?)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:公里|公尺|米|英里|英尺|码|碼|海里))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -409,6 +1167,18 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -442,6 +1212,18 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     }

@@ -39,6 +39,13 @@ class VelaMapsRulesRegressionTest {
         val secondaryText: String? = null,
         /** The distance must be absent: a bare-instruction title carries none. */
         val noDistance: Boolean = false,
+        /** The compact road line, the street after onto / on / toward (#134). */
+        val compactText: String? = null,
+        val noCompactText: Boolean = false,
+        val noSecondaryText: Boolean = false,
+        /** The arrival epoch from "Arrive <clock>", at the fixture's post time and zone (#134). */
+        val etaEpochSeconds: Long? = null,
+        val noEta: Boolean = false,
     )
 
     @Serializable
@@ -47,6 +54,8 @@ class VelaMapsRulesRegressionTest {
         val locale: String,
         val packageName: String,
         val source: String = "synthetic",
+        val nowEpochSeconds: Long = 0,
+        val timeZone: String = "UTC",
         val snapshot: FixtureSnapshot,
         val expected: Expected,
     )
@@ -56,6 +65,7 @@ class VelaMapsRulesRegressionTest {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val engine = RuleEngine()
+    private val checks = FixtureOutputChecks()
 
     private fun resource(path: String): String =
         javaClass.getResourceAsStream(path)?.bufferedReader()?.use { it.readText() }
@@ -80,7 +90,7 @@ class VelaMapsRulesRegressionTest {
     fun bundledRulesetIsValidAndListsOnlyVela() {
         assertTrue(ruleset.rules.isNotEmpty())
         assertTrue(ruleset.rules.all { it.packageNames == listOf("app.vela") && it.locales == listOf("en") })
-        assertEquals("vela-maps-en-2026.10.30", ruleset.rulesetVersion)
+        assertEquals("vela-maps-en-2026.11.10", ruleset.rulesetVersion)
         assertTrue("credits the proposal", "#120" in ruleset.publisher)
     }
 
@@ -96,7 +106,8 @@ class VelaMapsRulesRegressionTest {
                 subText = fixture.snapshot.subText,
                 bigText = fixture.snapshot.bigText,
             )
-            val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
+            val result = checks.engine(fixture.timeZone)
+                .evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = fixture.nowEpochSeconds)
             val name = fixture.name
 
             if (!fixture.expected.matched) {
@@ -112,6 +123,9 @@ class VelaMapsRulesRegressionTest {
             fixture.expected.secondaryText?.let { assertEquals("fixture '$name' ETA", it, instruction.secondaryText) }
             if (fixture.expected.noDistance) {
                 assertNull("fixture '$name' must carry no distance", instruction.distanceMeters)
+            }
+            with(fixture.expected) {
+                checks.check(name, instruction, compactText, noCompactText, secondaryText, noSecondaryText, etaEpochSeconds, noEta)
             }
         }
     }

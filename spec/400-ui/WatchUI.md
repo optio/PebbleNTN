@@ -88,6 +88,15 @@ On watches with a colour backlight LED (`PBL_RGB_BACKLIGHT`; Pebble Time 2) the 
 accent colour and glyph pack use. On every other watch the tint cannot be changed, so no colour row
 is shown and Backlight keeps cycling the duration in place.
 
+## Directions text
+
+The last row of Settings, **Directions text** (REQ-WATCH-027, #134), reads "Full" or "Compact" and
+switches in place on every watch, aplite included. Full, the default, shows the navigation app's
+instruction with the street ("Sla rechtsaf en volg Voorbeeldstraat"); Compact only the street
+("Voorbeeldstraat") when the app gives one. The phone builds the road line accordingly, so the road
+area renders whatever it is sent and nothing else changes on the watch. The About page names the
+setting, except on aplite, where the heap has no room for the line.
+
 ## Connection hint
 
 On launch the watch shows "Connecting" with a countdown of the seconds left before it gives up

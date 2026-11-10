@@ -102,5 +102,13 @@
     "scope": "express",
     "status": "complete",
     "request": "750d2bb7"
+  },
+  {
+    "uuid": "01a1c4e5-116a-7f6f-8785-55d590ca09be",
+    "slug": "osmand-bigtext",
+    "dirName": "261110-osmand-bigtext",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "f19737a9"
   }
 ]

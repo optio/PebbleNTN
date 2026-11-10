@@ -720,4 +720,156 @@ class NavigationControllerTest {
         assertEquals(events(withoutSpeed), events(withSpeed))
         assertFalse(controller.drivingStatus.value.hidden)
     }
+
+    // --- Directions text (#134 FR7.1, FR7.3, NFR2, NFR7) ------------------------------------------
+
+    private val osmandTurn = NavigationInstruction(
+        Maneuver.RIGHT,
+        distanceMeters = 50,
+        primaryText = "Sla rechtsaf en volg Voorbeeldstraat",
+        compactText = "Voorbeeldstraat",
+        secondaryText = "11:00",
+        etaEpochSeconds = 1_794_304_800,
+    )
+
+    /** A watchapp at protocol [minor] whose Directions text is [value]. */
+    private fun directionsStore(value: Int = 0, minor: Int = 5) = InMemoryWatchSettingsStore(
+        WatchSettingsSyncState(
+            mirror = WatchMessages.settings(revision = 1, overrides = mapOf(WatchSetting.DIRECTIONS_TEXT to value)),
+            receivedFromWatch = true,
+            watchProtocolMinor = minor,
+        ),
+    )
+
+    private fun roadLines(transport: FakeWatchTransport): List<String?> =
+        transport.sent.filter { it.intOrNull(Protocol.Keys.EVENT) == Protocol.Events.NAVIGATION_UPDATE }
+            .map { it.stringOrNull(Protocol.Keys.PRIMARY_TEXT) }
+
+    /** Navigating, with the watch ready (the phone's own READY, which carries no settings). */
+    private fun TestScope.navigatingController(transport: FakeWatchTransport, store: InMemoryWatchSettingsStore): NavigationController {
+        val controller = NavigationController(transport, backgroundScope, appVersion = "0.0.83", clock = { 0 }, watchSettings = store)
+        controller.start()
+        runCurrent()
+        return controller
+    }
+
+    @Test
+    fun theDefaultSendsTheFullRoadLine() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, InMemoryWatchSettingsStore())
+        controller.onInstruction(osmandTurn)
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        assertEquals("NFR7: Full is the default", listOf("Sla rechtsaf en volg Voorbeeldstraat"), roadLines(transport))
+    }
+
+    @Test
+    fun compactSendsTheStreetAlone() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore(value = 1))
+        controller.onInstruction(osmandTurn)
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        assertEquals(listOf("Voorbeeldstraat"), roadLines(transport))
+    }
+
+    @Test
+    fun changingDirectionsTextOnThePhoneSendsTheCurrentInstructionOnceInTheNewForm() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore())
+        controller.onInstruction(osmandTurn)
+        transport.emitInbound(readyMessage())
+        runCurrent()
+
+        controller.onPhoneSettingEdit(WatchSetting.DIRECTIONS_TEXT, 1)
+        runCurrent()
+        assertEquals(listOf("Sla rechtsaf en volg Voorbeeldstraat", "Voorbeeldstraat"), roadLines(transport))
+
+        controller.onPhoneSettingEdit(WatchSetting.DIRECTIONS_TEXT, 1)
+        runCurrent()
+        assertEquals("the same value again sends nothing", 2, roadLines(transport).size)
+    }
+
+    @Test
+    fun aDirectionsTextChangeFromThe15WatchSendsTheNewForm() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore())
+        controller.onInstruction(osmandTurn)
+        transport.emitInbound(readyMessage())
+        runCurrent()
+
+        val compactOnWatch = WatchMessages.settings(revision = 2, overrides = mapOf(WatchSetting.DIRECTIONS_TEXT to 1))
+        transport.emitInbound(WatchMessages.settingsMessage(compactOnWatch))
+        runCurrent()
+        assertEquals("Voorbeeldstraat", roadLines(transport).last())
+        assertEquals(2, roadLines(transport).size)
+    }
+
+    @Test
+    fun anUnrelatedSettingChangeSendsNoInstruction() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore())
+        controller.onInstruction(osmandTurn)
+        transport.emitInbound(readyMessage())
+        runCurrent()
+
+        controller.onPhoneSettingEdit(WatchSetting.UNITS, 1)
+        runCurrent()
+        assertEquals(1, roadLines(transport).size)
+    }
+
+    @Test
+    fun noInstructionIsSentForAChangeWhileNotNavigating() = runTest {
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore())
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        controller.onPhoneSettingEdit(WatchSetting.DIRECTIONS_TEXT, 1)
+        runCurrent()
+        assertTrue(roadLines(transport).isEmpty())
+    }
+
+    @Test
+    fun aPre15WatchappGetsThePhonesCompactChoice() = runTest {
+        // FR7.4: a 1.4 watchapp has no row for it, but the phone applies the choice.
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore(minor = 4))
+        controller.onInstruction(osmandTurn)
+        transport.emitInbound(WatchMessages.ready14(WatchMessages.settings(revision = 1)))
+        runCurrent()
+        controller.onPhoneSettingEdit(WatchSetting.DIRECTIONS_TEXT, 1)
+        runCurrent()
+        assertEquals("Voorbeeldstraat", roadLines(transport).last())
+        assertEquals("nothing for the 1.4 watchapp to store", 0, transport.sent.count { it.intOrNull(Protocol.Keys.EVENT) == Protocol.Events.SETTINGS })
+        transport.emitInbound(WatchMessages.ready14(WatchMessages.settings(revision = 1)))
+        runCurrent()
+        assertEquals("its next READY does not reset the choice", "Voorbeeldstraat", roadLines(transport).last())
+    }
+
+    @Test
+    fun twoIdenticalOsmAndCardsSecondsApartAreSentOnce() = runTest {
+        // NFR2: the arrival clock gives the same whole-minute ETA, so the instruction is the same.
+        val rulesJson = javaClass.getResourceAsStream("/rules/bundled/osmand/nl.json")!!.bufferedReader().readText()
+        val rules = LayeredRules(bundled = RulesetCodec.parse(rulesJson).rules)
+        val engine = RuleEngine(zone = { java.time.ZoneId.of("Europe/Brussels") })
+        val snapshot = NotificationSnapshot(
+            packageName = "net.osmand.plus",
+            notificationId = 1,
+            title = "43 m • Sla rechtsaf en volg",
+            bigText = "Sla rechtsaf en volg Voorbeeldstraat 215 m\n2,79 km • 42 min • 11:00 • 4,0 km/u",
+        )
+        val first = engine.evaluate(snapshot, rules, locale = "nl", nowEpochSeconds = 1_794_302_400).instruction!!
+        val second = engine.evaluate(snapshot, rules, locale = "nl", nowEpochSeconds = 1_794_302_405).instruction!!
+        assertEquals(first, second)
+
+        val transport = FakeWatchTransport()
+        val controller = navigatingController(transport, directionsStore())
+        transport.emitInbound(readyMessage())
+        runCurrent()
+        controller.onInstruction(first)
+        runCurrent()
+        controller.onInstruction(second)
+        runCurrent()
+        assertEquals(1, roadLines(transport).size)
+    }
 }

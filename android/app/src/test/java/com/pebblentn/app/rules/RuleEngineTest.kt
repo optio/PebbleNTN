@@ -138,6 +138,60 @@ class RuleEngineTest {
         assertEquals(RuleEngine.MAX_RULES_PER_PACKAGE, result.trace.size)
     }
 
+    /** #134: the compact road line and the arrival-clock ETA, with a fixed now and zone. */
+    private val osmandStreetRule = rule(
+        id = "osmand-street",
+        pkg = "net.osmand",
+        conditions = listOf(Condition("bigText", ConditionOperator.REGEX, "(?i)^sla rechtsaf en volg \\S")),
+        output = RuleOutput(
+            maneuver = LiteralExtractor("RIGHT"),
+            primaryText = RegexCaptureExtractor("bigText", "(?i)^(sla rechtsaf en volg [^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"),
+            compactText = RegexCaptureExtractor("bigText", "(?i)^sla rechtsaf en volg ([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)"),
+            secondaryText = RegexCaptureExtractor("bigText", "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)"),
+            etaEpochSeconds = ArrivalClockExtractor("bigText", "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)"),
+        ),
+    )
+
+    private fun osmandSnapshot(bigText: String) =
+        NotificationSnapshot(packageName = "net.osmand", notificationId = 1, title = "43 m • Sla rechtsaf en volg", bigText = bigText)
+
+    @Test
+    fun compactTextAndArrivalClockEtaAreAssembled() {
+        val brussels = RuleEngine(zone = { java.time.ZoneId.of("Europe/Brussels") })
+        val now = java.time.LocalDateTime.parse("2026-11-10T10:20:15").atZone(java.time.ZoneId.of("Europe/Brussels")).toEpochSecond()
+        val result = brussels.evaluate(
+            osmandSnapshot("Sla rechtsaf en volg Voorbeeldstraat 215 m\n2,79 km • 42 min • 11:00 • 40 km/u"),
+            LayeredRules(bundled = listOf(osmandStreetRule)),
+            nowEpochSeconds = now,
+        )
+        val instruction = result.instruction!!
+        assertEquals("Sla rechtsaf en volg Voorbeeldstraat", instruction.primaryText)
+        assertEquals("Voorbeeldstraat", instruction.compactText)
+        assertEquals("11:00", instruction.secondaryText)
+        assertEquals(
+            java.time.LocalDateTime.parse("2026-11-10T11:00:00").atZone(java.time.ZoneId.of("Europe/Brussels")).toEpochSecond(),
+            instruction.etaEpochSeconds,
+        )
+    }
+
+    @Test
+    fun unreadableArrivalClockLeavesEtaNullButTheRuleStillMatches() {
+        val result = RuleEngine(zone = { java.time.ZoneOffset.UTC }).evaluate(
+            osmandSnapshot("Sla rechtsaf en volg Voorbeeldstraat 215 m\n2,79 km • 42 min • 25:00 • 40 km/u"),
+            LayeredRules(bundled = listOf(osmandStreetRule)),
+            nowEpochSeconds = 0,
+        )
+        assertEquals("osmand-street", result.matchedRuleId)
+        assertNull(result.instruction!!.etaEpochSeconds)
+        assertEquals("Voorbeeldstraat", result.instruction.compactText)
+    }
+
+    @Test
+    fun ruleWithoutCompactTextGivesNone() {
+        val result = engine.evaluate(snapshot(text = "In 500 m, turn right"), LayeredRules(bundled = listOf(turnRightRule)))
+        assertNull(result.instruction!!.compactText)
+    }
+
     @Test
     fun regexTimeoutDisablesRuleForRunAndRecordsError() {
         val slow = rule(

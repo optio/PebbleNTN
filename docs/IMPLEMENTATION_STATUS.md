@@ -1,6 +1,62 @@
 # Implementation Status
 
-_Last updated: 2026-11-08_
+_Last updated: 2026-11-10_
+
+## OsmAnd street and arrival time, Directions text, Play debug symbols (2026-11-10, #134, #136)
+
+**Milestone:** post-M12 enhancement, protocol 1.5. To be released by the release workflow on merge;
+versionCode/versionName are not changed here (rule packs that need it declare 83, the next code).
+
+**Requirements being implemented.** #134 FR1–FR4, FR6, FR7, NFR1–NFR7 (record
+`aidlc/spaces/default/intents/261110-osmand-bigtext/`), as REQ-RULE-018 (compact road line),
+REQ-RULE-019 (arrival clock), REQ-WATCH-027 and REQ-ANDROID-025 (Directions text), with
+REQ-RULE-017, REQ-WATCH-025, REQ-ANDROID-021, `RuleEngine.md`, `RulesJSON.md`, `Protocol.md` (1.5;
+1.4 was not recorded there), `Pebble.md`, `WatchUI.md`, `AndroidUI.md` and `ExportFormat.md`
+(schema 7) amended. FR5 (emulator runs) belongs to Build and Test.
+- Rule format: output `compactText`; extractor `arrivalClock` (`ArrivalClock.kt`: 24 h, 12 h, 上午/下午;
+  next occurrence in the phone's zone with a minute of grace, whole minutes); `RuleEngine` takes a
+  zone provider; `DrivingSpeedEstimator` reuses the parser; the validator checks the new extractor;
+  the leading-distance strip knows the Chinese units. Python workbench in lockstep (fixture
+  `nowEpochSeconds` / `timeZone`, `noCompactText` / `noSecondaryText` / `noEta`).
+- OsmAnd, 9 languages: `-street` rules one step above each maneuver rule read bigText's first line
+  (OsmAnd's own `route_*` strings, recorded in the intent's `osmand-strings.md`); full road line =
+  that line without the next step's distance, compact = the street (roundabout: from the exit number
+  on). Every rule takes the second line and the ETA from the summary line's arrival clock (German no
+  longer sends the remaining distance; its `-street` rules now give the full line, the street as
+  compact). Google Maps: generator emits `compactText` and the arrival-clock ETA; en/zh/any edited by
+  hand; Vela Maps likewise. Organic Maps and CoMaps unchanged.
+- Directions text (key 44, persist key 32, setting count 27): phone `WatchSetting.DIRECTIONS_TEXT`,
+  `ProtocolCodec.encodeState(compact)`, controller re-send on change, a pre-1.5 watchapp keeps the
+  phone's value, Watch settings "Directions" group, export `metadata.watchSettings` and
+  `watchOutput.compactText`; watch: table entry, in-place row "Directions text" on every platform,
+  About line (not on aplite).
+- #136: release `ndk { debugSymbolLevel = "SYMBOL_TABLE" }`.
+
+**Library versions.** No new library.
+
+**Commands executed.** Baseline `scripts/test-all.sh` on `2afb066` (green; 703 JVM tests per variant,
+4 skipped; workbench 189/21/12/195/60; 13 watch host tests). `scripts/generate-protocol.sh` (and
+`--check`); `python3 tools/rule-workbench/gen_localized_google_maps.py`; scoped Gradle runs per layer;
+`python3 tools/rule-workbench/workbench.py regression` (google-maps 206/206, comaps 21/21,
+organic-maps 12/12, osmand 243/243, vela-maps 63/63); `scripts/test-watchapp-unit.sh` (13 programs,
+OK); `scripts/build-watchapp.sh` (all five platforms; aplite free heap at load 3431 B: 3482 B before,
+REQ-WATCH-025 floor 3416 B); `./gradlew :app:assembleRelease :app:bundleRelease` before and after the
+#136 change (APK byte-identical, sha256 `ae1591a0…`); `scripts/validate-spec-assets.sh` (OK, 34
+files); `scripts/validate-rules.sh`; final `scripts/test-all.sh` (green; 753 JVM tests per variant, 0
+failures, 4 skipped; lint 0 errors).
+
+**Known blockers.**
+- #136 / FR6.1: the bundle gets no `BUNDLE-METADATA/com.android.tools.build.debugsymbols/`. The app's
+  only native libraries (`libandroidx.graphics.path.so`, `libdatastore_shared_counter.so`) come
+  stripped from their AARs, so AGP reports "Unable to extract native debug metadata … already been
+  stripped" (and no NDK is installed locally). The setting is kept and does no harm (FR6.2 met), but
+  Play's warning cannot be cleared from this repository.
+- OsmAnd layouts other than the Dutch and German captures are read from OsmAnd's source, not seen on
+  a device yet: FR5 (en, fr emulator runs) in Build and Test.
+
+**Next atomic task.** Build and Test: run OsmAnd on the Windows emulator in English and French with
+`tools/route-capture` (FR5), check the watch row on basalt and aplite, and measure the aplite heap
+with Settings open.
 
 ## When driving: hide the watchapp while driving (2026-11-08, #132)
 

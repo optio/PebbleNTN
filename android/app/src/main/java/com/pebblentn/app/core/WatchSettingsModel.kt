@@ -54,16 +54,26 @@ enum class WatchSetting(
 
     /** The imperial driving speed as an index into [DrivingSpeeds.imperialMph]: 2 is 15 mph. */
     DRIVING_SPEED_IMPERIAL(DrivingSpeeds.IMPERIAL_COUNT, defaultValue = DrivingSpeeds.IMPERIAL_DEFAULT),
+
+    /**
+     * Directions text (#134, protocol 1.5): 0 Full, the instruction with the street (`primaryText`);
+     * 1 Compact, the street alone (`compactText`) when the rule found one. The phone applies it when
+     * it builds the instruction; the watch only stores and shows it.
+     */
+    DIRECTIONS_TEXT(2, defaultValue = DirectionsText.FULL),
     ;
 
-    /** The AppMessage key that carries this setting (protocol 1.3; the When driving three 1.4). */
+    /** The AppMessage key that carries this setting (protocol 1.3; When driving 1.4; Directions text 1.5). */
     val key: Int get() = Protocol.Keys.SETTING_ACCENT + ordinal
 
     /** One of the seven shortcut slots (not the When driving settings that follow them). */
     val isShortcut: Boolean get() = ordinal in SHORTCUT_UP.ordinal..SHORTCUT_TAP.ordinal
 
     /** One of the When driving settings, which a watchapp before protocol 1.4 does not have. */
-    val isDriving: Boolean get() = ordinal >= DRIVING_MODE.ordinal
+    val isDriving: Boolean get() = ordinal in DRIVING_MODE.ordinal..DRIVING_SPEED_IMPERIAL.ordinal
+
+    /** The Directions text setting, which a watchapp before protocol 1.5 does not have (#134 FR7.4). */
+    val isDirectionsText: Boolean get() = this == DIRECTIONS_TEXT
 
     companion object {
         /** The setting a protocol key carries, or null for any other key. */
@@ -112,6 +122,12 @@ object DrivingSpeeds {
     fun isImperial(units: Int): Boolean = units == UNITS_IMPERIAL
 
     const val UNITS_IMPERIAL = 1
+}
+
+/** The Directions text values (#134 FR7.1); the watch's theme.h uses the same numbers. */
+object DirectionsText {
+    const val FULL = 0
+    const val COMPACT = 1
 }
 
 /** Which watch model reported the settings (protocol 1.3 WATCH_PLATFORM). */
@@ -221,6 +237,9 @@ data class WatchSettingsModel(
     val drivingHide: Boolean get() = this[WatchSetting.DRIVING_MODE] == DrivingSpeeds.MODE_HIDE
     val drivingSpeedMetric: Int get() = this[WatchSetting.DRIVING_SPEED_METRIC]
     val drivingSpeedImperial: Int get() = this[WatchSetting.DRIVING_SPEED_IMPERIAL]
+
+    /** Whether the phone sends the compact road line (#134 FR7.1). */
+    val compactDirections: Boolean get() = this[WatchSetting.DIRECTIONS_TEXT] == DirectionsText.COMPACT
 
     /** The driving speed setting of the unit in use (FR1.4). */
     val drivingSpeedSetting: WatchSetting

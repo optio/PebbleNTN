@@ -85,4 +85,37 @@ class RuleValidatorTest {
         val json = ruleJson(output = """{"primaryText":{"type":"regexCapture","field":"text","pattern":"([bad"}}""")
         assertTrue(invalidErrors(json).any { it.contains("regexCapture") })
     }
+
+    @Test
+    fun validArrivalClockAndCompactTextAreAccepted() {
+        val json = ruleJson(
+            output = """{"compactText":{"type":"regexCapture","field":"bigText","pattern":"volg (\\S+)"},
+                "etaEpochSeconds":{"type":"arrivalClock","field":"bigText","pattern":"•\\s*(\\d{1,2}:\\d{2})"}}""",
+        )
+        assertTrue(RuleValidator.validate(json) is RuleValidationResult.Valid)
+    }
+
+    @Test
+    fun arrivalClockWithBadRegexIsReported() {
+        val json = ruleJson(output = """{"etaEpochSeconds":{"type":"arrivalClock","field":"bigText","pattern":"([bad"}}""")
+        assertTrue(invalidErrors(json).any { it.contains("arrivalClock") && it.contains("invalid regex") })
+    }
+
+    @Test
+    fun arrivalClockWithUnknownFieldIsReported() {
+        val json = ruleJson(output = """{"etaEpochSeconds":{"type":"arrivalClock","field":"notAField"}}""")
+        assertTrue(invalidErrors(json).any { it.contains("unknown field 'notAField'") })
+    }
+
+    @Test
+    fun badRegexInCompactTextIsReported() {
+        val json = ruleJson(output = """{"compactText":{"type":"regexCapture","field":"bigText","pattern":"([bad"}}""")
+        assertTrue(invalidErrors(json).any { it.contains("regexCapture") })
+    }
+
+    @Test
+    fun arrivalClockWithNegativeGroupIsReported() {
+        val json = ruleJson(output = """{"etaEpochSeconds":{"type":"arrivalClock","field":"bigText","pattern":"(\\d+:\\d+)","group":-1}}""")
+        assertTrue(invalidErrors(json).any { it.contains("group must be 0 or more") })
+    }
 }

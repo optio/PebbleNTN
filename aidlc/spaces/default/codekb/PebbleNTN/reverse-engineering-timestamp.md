@@ -2,224 +2,62 @@
 
 ## Run Record
 
-- Date: 2026-11-08
-- Commit: 61787f5d064451ceb3578bd18b17e259ddd0934c
-- Breadth requested: focused scan (snapshot paths: `android/app/src/main/java/com/pebblentn/app/`, `android/app/src/main/res/values/`, `android/app/src/test/java/com/pebblentn/app/`, `watchapp/src/c/`, `watchapp/tests/`, `protocol/`, `requirements/REQ-ANDROID.md`, `requirements/REQ-WATCH.md`, `requirements/REQ-DEBUG.md`); depth Minimal; lead-only (the developer link scanned and wrote the nine artifacts)
-- Intent: `261108-hide-when-driving` (GitHub issue #132 "When driving": a synced watch setting to hide directions above a driving speed, with the phone estimating speed from Google Maps' notification and closing and relaunching the watchapp)
-- Coverage: the protocol definition and generator; the session reducer, instruction, state, quantizer and both settings models and the sync rules; the controller, transport, mapper and listener service; the codec and transport interface; the snapshot, its factory, the capture processor, dispatcher and listener; the settings mirror and phone settings repositories; debug event, history and grouping; the container; the export builder, exporter and redactor; the Watch settings UI; the fake transport; on the watch `main.c`, the settings store and theme, the settings sync, glue and revision units, the settings menu, and the early-warning and shortcuts headers. Skimmed: the rest of the companion source and tests by listing and grep, `PreviewCatalog.kt`, `MainActivity.kt` and `DashboardScreen.kt` wiring, `strings.xml` watch settings strings, the other watch units and tests, the three requirement files (headings and the intent-relevant requirements), and PebbleKit's `PebbleSender` API by grep.
-- Merge: focused merge into a STALE store (prior focused scan at c7b6ba0 for `261030-vela-maps`, shipped in v0.0.81). Prior prose is kept or condensed; the Vela Maps context is relabelled as an earlier intent. Added or updated for the analyzed area: the active-intent business context and glossary entries; the system overview, component diagram, data flow, launch-policy, send-path and settings-table decisions, a #132 improvement opportunity, a #132 interaction diagram and a current settings-sync diagram (replacing the pre-#102 one), and current watch input and handshake diagrams; the package and watch module tables and settings patterns in code structure; protocol 1.3 keys, events, watch handling, outbox, persist keys with current defaults, the settings menu (About first), phone-side settings, the Watch settings screen, speed-relevant snapshot fields and the export surface in API documentation; new components Watchapp Settings Sync, Watch Settings Sync and Mirror and Watch Settings Screen, and updated controller, transport, codec, reducer, menu, store, export and container entries; stack notes; settings-table coupling and controller fan-out in dependencies; test coverage, technical debt and the "Hide when driving findings". The pre-#102 settings findings and touch-gesture findings are condensed to their shipped status, and three dashboard update diagrams superseded by later code (as at 6dec020 and 8f08e02) are dropped. The prior analyzed paths are demoted to shallow, and 19 earlier shallow entries now inside this run's analyzed paths are dropped from the shallow list. Build outputs and caches and the AI-DLC install were left out.
+- Date: 2026-11-10
+- Commit: 2afb066a6453db76d188fd00b51f4fbdd9d2d930
+- Breadth requested: full rescan of the whole repository (snapshot path `./`); depth Minimal; developer link only (scan and synthesis by the developer agent)
+- Intent: `osmand-bigtext` (GitHub issue #134: OsmAnd street from `bigText` line 1 and arrival clock from `bigText` line 2 for en, fr, es, it, nl, pt, pl, zh, de; `etaEpochSeconds` for OsmAnd and Google Maps)
+- Replaces: the prior store from commit `61787f5` (focused scan for `hide-when-driving`), wholesale
+- Emphasis: the rule engine (`rules/` Kotlin package), bundled rule packs, fixtures, both regression engines, the ETA path from rule output to the watch strip
+- Not run: no builds, tests or programs (scan by reading only)
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
-kind: partial
-intent: hide-when-driving
-fingerprint: d47a788a413838e269d97fade01b2322465c0f30
+kind: full
+intent: osmand-bigtext
+fingerprint: 9cf02d7489a1b37fc0a0b9e5f8cf9a4c32f76680
 analyzed:
   paths:
-    - protocol/
-    - android/app/src/main/java/com/pebblentn/app/core/NavigationSessionReducer.kt
-    - android/app/src/main/java/com/pebblentn/app/core/NavigationInstruction.kt
-    - android/app/src/main/java/com/pebblentn/app/core/NavigationState.kt
-    - android/app/src/main/java/com/pebblentn/app/core/DistanceQuantizer.kt
-    - android/app/src/main/java/com/pebblentn/app/core/WatchSettings.kt
-    - android/app/src/main/java/com/pebblentn/app/core/WatchSettingsModel.kt
-    - android/app/src/main/java/com/pebblentn/app/core/WatchSettingsSync.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/NavigationController.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleWatchTransport.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/PebbleAppMessageMapper.kt
-    - android/app/src/main/java/com/pebblentn/app/pebble/WatchListenerService.kt
-    - android/app/src/main/java/com/pebblentn/app/protocol/ProtocolCodec.kt
-    - android/app/src/main/java/com/pebblentn/app/protocol/WatchTransport.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshot.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NotificationSnapshotFactory.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/DebugCaptureProcessor.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NotificationDispatcher.kt
-    - android/app/src/main/java/com/pebblentn/app/notification/NavigationNotificationListenerService.kt
-    - android/app/src/main/java/com/pebblentn/app/data/WatchSettingsMirrorRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/data/WatchSettingsRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/data/DebugEvent.kt
-    - android/app/src/main/java/com/pebblentn/app/data/DebugHistoryRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/data/DebugEventGrouping.kt
-    - android/app/src/main/java/com/pebblentn/app/di/AppContainer.kt
-    - android/app/src/main/java/com/pebblentn/app/export/ExportBuilder.kt
-    - android/app/src/main/java/com/pebblentn/app/export/DiagnosticExporter.kt
-    - android/app/src/main/java/com/pebblentn/app/export/Redactor.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/watchsettings/
-    - android/app/src/test/java/com/pebblentn/app/protocol/FakeWatchTransport.kt
-    - watchapp/src/c/main.c
-    - watchapp/src/c/theme.c
-    - watchapp/src/c/theme.h
-    - watchapp/src/c/settings_sync.c
-    - watchapp/src/c/settings_sync.h
-    - watchapp/src/c/settings_sync_glue.c
-    - watchapp/src/c/settings_sync_glue.h
-    - watchapp/src/c/revision.c
-    - watchapp/src/c/revision.h
-    - watchapp/src/c/settings_window.c
-    - watchapp/src/c/settings_window.h
-    - watchapp/src/c/early_warning.h
-    - watchapp/src/c/shortcuts.h
+    - ./
   components:
-    - Navigation Controller
-    - Navigation Session Reducer
-    - Phone Protocol Codec
-    - Phone Watch Transport
-    - Watch Settings Sync and Mirror
-    - Watch Settings Screen
+    - Notification Intake
+    - Large Icon Recognizer
+    - Rule Engine
+    - Bundled Rule Packs
+    - Rule Fixtures and Regression
+    - Navigation App Catalog
+    - Session Core
+    - Driving Detection
+    - Watch Settings Sync
+    - Watch Link
+    - Persistence
     - Diagnostics Export
-    - Dependency Container
-    - Protocol Definition and Generator
-    - Watchapp Main Renderer
-    - Watchapp Settings Menu
-    - Watchapp Settings Store and Theme
-    - Watchapp Settings Sync
+    - Updates
+    - Companion UI
+    - App Container
+    - PebbleKit 2 Vendored
+    - Fixture Publisher
+    - Watchapp
+    - Protocol Generator
+    - Rule Workbench
+    - Route Capture Harness
+    - Build and Release Scripts
+    - Specification and Contracts
+    - Store and Distribution Assets
 shallow:
   paths:
-    - rules/catalog/
-    - rules/bundled/
-    - rules/fixtures/
-    - rules/README.md
-    - tools/route-capture/
-    - android/app/src/test/java/com/pebblentn/app/rules/
-    - android/app/src/test/java/com/pebblentn/app/catalog/
-    - scripts/validate_catalog.py
-    - scripts/validate_rules.py
-    - scripts/test_validate_catalog.py
-    - android/app/src/main/AndroidManifest.xml
-    - requirements/REQ-RULES.md
-    - android/app/src/main/java/com/pebblentn/app/core/PreviewCatalog.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/MainActivity.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/DashboardScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/
+    - android/app/src/main/java/com/pebblentn/app/ui/
     - android/app/src/main/java/com/pebblentn/app/update/
     - android/app/src/main/java/com/pebblentn/app/export/
-    - android/app/src/main/java/com/pebblentn/app/ui/dashboard/
-    - android/app/src/test/java/com/pebblentn/app/update/
-    - android/app/src/test/java/com/pebblentn/app/export/
-    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/
-    - requirements/REQ-ANDROID.md
-    - requirements/REQ-DEBUG.md
-    - spec/300-data/ExportFormat.md
-    - android/app/src/main/res/values/strings.xml
-    - android/app/src/main/java/com/pebblentn/app/notification/icon/
-    - android/app/src/main/java/com/pebblentn/app/catalog/
-    - android/app/src/test/java/com/pebblentn/app/notification/icon/
-    - android/app/src/test/java/com/pebblentn/app/notification/NotificationSnapshotFactoryTest.kt
-    - schemas/app-catalog.schema.json
-    - android/app/src/main/java/com/pebblentn/app/rules/RuleEngine.kt
-    - android/app/src/main/java/com/pebblentn/app/rules/RuleRepository.kt
-    - scripts/validate-rules.sh
-    - scripts/validate-spec-assets.sh
-    - tools/rule-workbench/gen_localized_google_maps.py
-    - schemas/ruleset.schema.json
-    - android/app/src/main/java/com/pebblentn/app/rules/
-    - android/app/src/main/java/com/pebblentn/app/notification/
-    - android/app/src/test/java/com/pebblentn/app/notification/
-    - tools/rule-workbench/workbench.py
-    - android/app/src/main/java/com/pebblentn/app/data/EnabledAppRepository.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/rules/RulesViewModel.kt
-    - fastlane/metadata/android/en-US/full_description.txt
-    - android/app/build.gradle.kts
-    - android/build.gradle.kts
-    - android/gradle/libs.versions.toml
-    - android/gradle/wrapper/gradle-wrapper.properties
-    - android/app/src/main/res/values/themes.xml
-    - android/app/src/main/java/com/pebblentn/app/PebbleNtnApplication.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/onboarding/OnboardingScreen.kt
-    - android/app/src/test/resources/robolectric.properties
-    - .github/workflows/play-release.yml
-    - docs/PRIVACY_POLICY.md
-    - docs/PLAY_DATA_SAFETY.md
-    - docs/PRIVACY_REVIEW.md
-    - docs/RELEASE_CHECKLIST.md
-    - fastlane/
-    - fdroid/metadata/com.pebblentn.app.yml
-    - spec/600-security-release/BuildRelease.md
-    - spec/600-security-release/SecurityPrivacy.md
-    - requirements/REQ-SECURITY.md
-    - android/app/src/main/java/com/pebblentn/app/data/FeedbackCampaign.kt
-    - android/app/src/main/java/
-    - android/app/src/main/res/
-    - android/app/src/test/
-    - .github/workflows/release.yml
-    - .github/workflows/android.yml
-    - docs/IMPLEMENTATION_STATUS.md
-    - docs/FOR-HUMAN.md
-    - fdroid/README.md
-    - fdroid/REPRODUCIBLE_BUILDS.md
-    - scripts/
-    - MANIFEST.sha256.json
-    - android/fixture-publisher/build.gradle.kts
-    - android/pebblekit/build.gradle.kts
-    - screenshots/
-    - watchapp/tools/gen_connect_qr.py
-    - scripts/generate-protocol.sh
-    - scripts/test-all.sh
-    - watchapp/package.json
-    - watchapp/src/c/shortcuts.c
-    - watchapp/src/c/shortcut_apply.c
-    - watchapp/src/c/shortcut_apply.h
-    - watchapp/src/c/generated/protocol.h
-    - watchapp/tools/capture_screenshots.py
-    - android/app/src/main/java/com/pebblentn/app/pebble/
-    - android/app/src/main/java/com/pebblentn/app/protocol/AppMessage.kt
-    - spec/200-architecture/Protocol.md
-    - spec/200-architecture/Pebble.md
-    - watchapp/src/c/
-    - watchapp/tests/
-    - watchapp/tools/
-    - watchapp/tests/test_shortcuts.c
-    - watchapp/tools/touch_emulator.py
-    - watchapp/src/c/early_warning.c
-    - watchapp/src/c/update_notice_window.c
-    - watchapp/src/c/update_notice_window.h
-    - watchapp/src/c/about_window.c
-    - watchapp/src/c/about_window.h
-    - watchapp/src/c/stops_text.c
-    - watchapp/src/c/stops_text.h
-    - watchapp/src/c/about_text.h
-    - watchapp/src/c/eta_text.h
-    - watchapp/src/c/glance_text.h
-    - watchapp/src/c/panel_layout.h
-    - watchapp/src/c/phone_version.h
-    - watchapp/src/c/update_notice.h
-    - watchapp/src/c/version_compare.h
-    - watchapp/src/c/version_compare.c
-    - watchapp/src/c/update_notice.c
-    - watchapp/src/c/phone_version.c
-    - watchapp/tests/test_stops_text.c
-    - watchapp/tests/test_early_warning.c
-    - watchapp/tests/test_version_compare.c
-    - watchapp/tests/test_update_notice.c
-    - watchapp/wscript
-    - scripts/test-watchapp-unit.sh
-    - requirements/REQ-WATCH.md
-    - spec/200-architecture/Android.md
-    - AGENTS.md
-    - android/app/src/main/java/com/pebblentn/app/protocol/Protocol.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/format/DisplayLabels.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/apps/NavigationAppsScreen.kt
-    - android/app/src/main/java/com/pebblentn/app/ui/
-    - android/app/src/main/java/com/pebblentn/app/system/
-    - android/app/src/main/java/com/pebblentn/app/core/
-    - android/app/src/main/java/com/pebblentn/app/di/
-    - android/app/src/main/res/drawable-nodpi/
-    - android/app/src/test/java/com/pebblentn/app/
-    - android/app/src/test/java/com/pebblentn/app/data/WatchSettingsRepositoryTest.kt
-    - android/app/src/test/java/com/pebblentn/app/core/DistanceQuantizerTest.kt
-    - android/app/src/test/java/com/pebblentn/app/pebble/NavigationControllerTest.kt
-    - android/app/src/test/java/com/pebblentn/app/protocol/ProtocolCodecTest.kt
-    - android/app/src/test/java/com/pebblentn/app/ui/apps/NavigationAppsScreenTest.kt
-    - README.md
-    - fdroid/
-    - scripts/version.sh
+    - android/app/src/main/java/com/pebblentn/app/data/
     - android/pebblekit/
-    - android/app/src/main/java/com/pebblentn/app/data/EventVersions.kt
-    - .githooks/pre-commit
-    - spec/400-ui/AndroidUI.md
-    - android/app/src/main/java/com/pebblentn/app/notification/ManeuverHeuristic.kt
-    - android/app/src/main/java/com/pebblentn/app/core/Maneuver.kt
-    - android/app/src/test/java/com/pebblentn/app/ui/dashboard/SetupProgressTest.kt
+    - android/fixture-publisher/
+    - watchapp/resources/
+    - tools/route-capture/
+    - spec/
+    - docs/
+    - fastlane/
+    - fdroid/
+    - screenshots/
 ```

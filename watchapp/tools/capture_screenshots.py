@@ -71,7 +71,8 @@ ROW_GLYPH = 8
 ROW_UNITS = 9
 ROW_DRIVING = 10
 ROW_SHORTCUTS = 11
-LAST_MAIN_ROW = ROW_SHORTCUTS
+ROW_DIRECTIONS = 12
+LAST_MAIN_ROW = ROW_DIRECTIONS
 
 # Wall-clock shown in the status strip, pinned so screenshots are reproducible.
 CLOCK = "12:35:00"

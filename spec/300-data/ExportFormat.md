@@ -30,7 +30,7 @@ It preserves structural tokens, units, punctuation and anonymized placeholders s
 
 ## Versions (schema 2+)
 
-`metadata` carries `schemaVersion` (the format's version, 2 or later; 6 now), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
+`metadata` carries `schemaVersion` (the format's version, 2 or later; 7 now), PebbleNTN's `appVersion` and `appVersionCode` at export time, the Android release and the UI locale. Each event carries `versions`, as recorded when the event was captured (REQ-DEBUG-012):
 
 ```json
 "versions": {
@@ -102,3 +102,13 @@ Android keeps only the installer of the current version, so an earlier source is
 - `decision`: `SAMPLE` (an estimate), `HIDE` (the watchapp was closed), `SHOW` (the hidden state ended: reopened, or with automatic launch off only left), `KEPT_OPEN` (the user opened the watchapp while hidden) or `RESET` (navigation stopped while hidden or kept open).
 
 No notification text, street or place name is ever part of an entry.
+
+## Watch settings and the compact road line (schema 7)
+
+`metadata.watchSettings` holds the watchapp's settings as the phone mirrors them, by setting name, as the watch's enum indices (REQ-ANDROID-025, #134), or `null` before a watchapp ever sent its settings. `DIRECTIONS_TEXT` tells which road line the watch got: 0 Full, 1 Compact. Setting values are not personal data, so the map is in every mode, rules-only included:
+
+```json
+"watchSettings": { "ACCENT": 0, "UNITS": 0, "DRIVING_MODE": 0, "DIRECTIONS_TEXT": 1 }
+```
+
+Each event's `watchOutput` also carries `compactText`, the street alone when the rule found one (REQ-RULE-018), redacted like `primaryText` in the privacy-safe mode.

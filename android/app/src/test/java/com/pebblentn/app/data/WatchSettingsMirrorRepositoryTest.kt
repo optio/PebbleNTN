@@ -73,4 +73,16 @@ class WatchSettingsMirrorRepositoryTest {
         assertNull("never reported", WatchSettingsSyncState().watchProtocolMinor)
         assertFalse(WatchSettingsSyncState(watchProtocolMinor = 3).hasDrivingSettings)
     }
+
+    /** #134 FR7.4: Directions text chosen on the phone for a 1.4 watchapp is kept across a restart. */
+    @Test
+    fun aPhoneOnlyDirectionsTextSurvivesANewInstance() {
+        WatchSettingsMirrorRepository(context).update {
+            WatchSettingsSync.onWatchSettings(it, WatchMessages.settings(revision = 4)).state.copy(watchProtocolMinor = 4)
+        }
+        WatchSettingsMirrorRepository(context).update { WatchSettingsSync.onPhoneEdit(it, WatchSetting.DIRECTIONS_TEXT, 1) }
+        val restarted = WatchSettingsMirrorRepository(context).state.value
+        assertTrue(restarted.mirror!!.compactDirections)
+        assertTrue(restarted.pending.isEmpty())
+    }
 }

@@ -1,7 +1,7 @@
 {
   "_comment": "Authoritative AppMessage protocol definition. Single source of truth for generated Kotlin (phone) and C (watch) constants. Regenerate with scripts/generate-protocol.sh; never hand-edit the generated files (AGENTS.md rule 5). The keys/events/versions here MUST stay consistent with examples/protocol-definition.json (checked by scripts/check-protocol.py); this file additionally defines flag bits, maneuver codes, error codes, and the watch capability bits and platform values of the settings sync (1.3) that the watch and phone must agree on.",
   "protocolMajor": 1,
-  "protocolMinor": 4,
+  "protocolMinor": 5,
   "keys": {
     "EVENT": 0,
     "PROTOCOL_MAJOR": 1,
@@ -46,7 +46,8 @@
     "SETTING_SHORTCUT_TAP": 40,
     "SETTING_DRIVING_MODE": 41,
     "SETTING_DRIVING_SPEED_METRIC": 42,
-    "SETTING_DRIVING_SPEED_IMPERIAL": 43
+    "SETTING_DRIVING_SPEED_IMPERIAL": 43,
+    "SETTING_DIRECTIONS_TEXT": 44
   },
   "events": {
     "NAVIGATION_UPDATE": 1,

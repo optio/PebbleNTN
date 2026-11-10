@@ -96,10 +96,11 @@ open for the rest of the session; a navigation stop while hidden sends nothing a
 state. Any later "keep the watchapp in front" behaviour (#127) must check
 `NavigationController.drivingStatus` and never reopen a hidden watchapp.
 
-## Settings sync (protocol 1.3, 1.4)
+## Settings sync (protocol 1.3, 1.4, 1.5)
 
-The watch's 26 settings (23 since 1.3, the When driving three since 1.4, persist keys 29–31 because
-27 and 28 were taken) are one table (`settings_sync.c`): range, default, capability and persist
+The watch's 27 settings (23 since 1.3, the When driving three since 1.4, persist keys 29–31 because
+27 and 28 were taken, and Directions text since 1.5, persist key 32) are one table
+(`settings_sync.c`): range, default, capability and persist
 key per setting, in protocol key order. `theme.c` stores the values in that order and saves only a
 changed value; every edit made on the watch moves the settings revision (persist key 28) on and
 queues a `SETTINGS` message. The outbox sends one message at a time; a failed one is retried once
@@ -107,6 +108,12 @@ and then waits for the next connection. A newer phone `SETTINGS` is applied with
 watch edit, closes any open settings door back to the top menu, and is answered with one `SETTINGS`.
 On aplite the sync costs no heap overall: the table replaced the per-setting storage, getters,
 setters and load code, and the glyph-pack door now loads each preview glyph only while drawing it.
+
+Directions text (REQ-WATCH-027, #134) is stored and shown only: the phone decides the road line
+(REQ-ANDROID-025), so the watch has no code path for it beyond the table entry and one Settings row
+that switches Full / Compact in place. Its names are a header macro (`directions_text.h`), and on
+aplite the About page leaves its note out and the About details buffer is 112 bytes, which keeps the
+free heap at load at 3431 bytes, within REQ-WATCH-025's budget.
 
 ## Navigation end
 

@@ -28,8 +28,12 @@ enum class WatchSettingsStatus {
     READY,
 }
 
-/** One group of rows, as on the watch's own menu. */
-data class WatchSettingsSection(@param:StringRes val title: Int, val settings: List<WatchSetting>)
+/** One group of rows, as on the watch's own menu, with an optional one-line [note] under it. */
+data class WatchSettingsSection(
+    @param:StringRes val title: Int,
+    val settings: List<WatchSetting>,
+    @param:StringRes val note: Int? = null,
+)
 
 /** A preview image and whether it is shown in greyscale (black-and-white watches). */
 data class WatchPreview(@param:DrawableRes val drawable: Int, val greyscale: Boolean)
@@ -49,7 +53,9 @@ object WatchSettingsUi {
     /**
      * The groups and rows for [model]'s watch: only what its capabilities allow (Backlight colour on
      * an RGB backlight, the Touch rows on a touch watch, the gestures only while Touch is on) and,
-     * as on the watch, the early warning's other rows only once a distance is chosen.
+     * as on the watch, the early warning's other rows only once a distance is chosen. Directions text
+     * (#134) is there for every watchapp that sends its settings: the phone applies it, so a
+     * watchapp before 1.5, which has no such row, gets the chosen form too (FR7.4).
      */
     fun sections(model: WatchSettingsModel): List<WatchSettingsSection> {
         val caps = model.capabilities
@@ -79,6 +85,11 @@ object WatchSettingsUi {
             WatchSettingsSection(
                 R.string.watch_settings_section_appearance,
                 listOf(WatchSetting.ACCENT, WatchSetting.INVERT, WatchSetting.GLYPH_PACK, WatchSetting.ARROW_LEFT),
+            ),
+            WatchSettingsSection(
+                R.string.watch_settings_section_directions,
+                listOf(WatchSetting.DIRECTIONS_TEXT),
+                note = R.string.watch_directions_text_explanation,
             ),
             WatchSettingsSection(R.string.watch_settings_section_eta, listOf(WatchSetting.ETA_MODE, WatchSetting.ETA_LABEL)),
             WatchSettingsSection(R.string.watch_settings_section_units, listOf(WatchSetting.UNITS)),
@@ -162,6 +173,7 @@ object WatchSettingsUi {
         WatchSetting.SHORTCUT_TAP -> R.string.watch_setting_shortcut_tap
         WatchSetting.DRIVING_MODE -> R.string.watch_setting_driving_mode
         WatchSetting.DRIVING_SPEED_METRIC, WatchSetting.DRIVING_SPEED_IMPERIAL -> R.string.watch_setting_driving_speed
+        WatchSetting.DIRECTIONS_TEXT -> R.string.watch_setting_directions_text
     }
 
     /** The labels of [setting]'s values, indexed by value; distances follow the watch's units. */
@@ -189,6 +201,7 @@ object WatchSettingsUi {
         // Each unit has its own list (FR1.4): the metric one is always in km/h, the imperial in mph.
         WatchSetting.DRIVING_SPEED_METRIC -> R.array.watch_values_driving_speed_metric
         WatchSetting.DRIVING_SPEED_IMPERIAL -> R.array.watch_values_driving_speed_imperial
+        WatchSetting.DIRECTIONS_TEXT -> R.array.watch_values_directions_text
     }
 
     /**

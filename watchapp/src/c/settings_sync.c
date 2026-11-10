@@ -1,5 +1,6 @@
 #include "settings_sync.h"
 
+#include "directions_text.h"
 #include "driving_label.h"
 #include "generated/protocol.h"
 #include "revision.h"
@@ -39,6 +40,7 @@ static const uint8_t kRules[SET_COUNT] = {
   [SET_DRIVING_MODE] = 2,
   [SET_DRIVING_SPEED_METRIC] = DRIVING_METRIC_COUNT,      // 10-60 km/h
   [SET_DRIVING_SPEED_IMPERIAL] = DRIVING_IMPERIAL_COUNT,  // 5-40 mph
+  [SET_DIRECTIONS_TEXT] = DIRECTIONS_TEXT_COUNT,          // Full, Compact (#134)
 };
 
 // Defaults of a fresh install (#102 testing): New instruction vibration Off, Medium strengths, an early
@@ -60,17 +62,21 @@ static const uint8_t kDefaults[SET_COUNT] = {
   // When driving: Show directions; 25 km/h and 15 mph (#132 FR1.5).
   [SET_DRIVING_SPEED_METRIC] = DRIVING_METRIC_DEFAULT,
   [SET_DRIVING_SPEED_IMPERIAL] = DRIVING_IMPERIAL_DEFAULT,
+  // Directions text: Full (#134 FR7.1), so the road line is what it was before the setting.
+  [SET_DIRECTIONS_TEXT] = DIRECTIONS_TEXT_FULL,
 };
 
 // The accents a black-and-white watch shows: Black and White, the last two (theme.h).
 #define ACCENT_BLACK_ID 14
 #define ACCENT_WHITE_ID 15
 
-_Static_assert(SET_COUNT == 26, "the protocol carries 26 settings");
+_Static_assert(SET_COUNT == 27, "the protocol carries 27 settings");
 _Static_assert(SLOT_COUNT == 7, "one setting per shortcut slot");
 _Static_assert(PBNTN_KEY_SETTING_SHORTCUT_TAP - PBNTN_KEY_SETTING_ACCENT == SET_DRIVING_MODE - 1,
                "the shortcut keys follow the SettingId order");
-_Static_assert(PBNTN_KEY_SETTING_DRIVING_SPEED_IMPERIAL - PBNTN_KEY_SETTING_ACCENT == SET_COUNT - 1,
+_Static_assert(PBNTN_KEY_SETTING_DRIVING_SPEED_IMPERIAL - PBNTN_KEY_SETTING_ACCENT == SET_DIRECTIONS_TEXT - 1,
+               "the When driving keys follow the SettingId order");
+_Static_assert(PBNTN_KEY_SETTING_DIRECTIONS_TEXT - PBNTN_KEY_SETTING_ACCENT == SET_COUNT - 1,
                "the SETTING_* keys follow the SettingId order");
 
 uint8_t sync_build_caps(void) {
@@ -146,7 +152,8 @@ bool sync_is_bool(SettingId id) {
   return id == SET_INVERT || id == SET_ARROW_LEFT || id == SET_TOUCH;
 }
 
-// Keys 27 and 28 were taken before the When driving settings came (theme.c), so those skip to 29.
+// Keys 27 and 28 were taken before the When driving settings came (theme.c), so those skip to 29;
+// Directions text follows them at 32.
 uint32_t sync_persist_key(SettingId id) {
   if (id < SET_TOUCH) {
     return (uint32_t)id + 1;

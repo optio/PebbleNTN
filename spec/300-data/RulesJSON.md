@@ -13,6 +13,10 @@ A ruleset contains:
 - optional test vectors;
 - signature metadata for downloaded official rules.
 
+## Rule outputs
+
+A rule's `output` holds extractors for `maneuver`, `distanceMeters`, `primaryText`, `secondaryText`, `etaEpochSeconds`, `stopsRemaining` and `compactText` (#134, REQ-RULE-018), in that schema order. The extractor types are `literal`, `regexCapture`, `fieldCopy`, `firstNonEmpty`, `distance`, `duration`, `maneuverMap`, `normalizeString`, `boundedJoin` and `arrivalClock` (#134, REQ-RULE-019: `field`, optional `pattern`, `group`). A pack that uses `compactText` or `arrivalClock` declares the `minimumAppVersionCode` of the release that understands them.
+
 ## Rule identifiers
 
 IDs are lowercase ASCII kebab-case and globally stable. Updated behavior keeps the same ID when conceptually the same rule evolves. Breaking semantic replacements use a new ID and deprecate the old one.

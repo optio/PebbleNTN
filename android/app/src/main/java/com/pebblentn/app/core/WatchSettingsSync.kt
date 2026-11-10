@@ -18,6 +18,9 @@ object WatchSettingsSync {
     /** The protocol minor from which a watchapp has the When driving settings (#132). */
     const val DRIVING_PROTOCOL_MINOR = 4
 
+    /** The protocol minor from which a watchapp has the Directions text setting (#134). */
+    const val DIRECTIONS_TEXT_PROTOCOL_MINOR = 5
+
     fun isValidRevision(revision: Int): Boolean = revision in 0 until REVISION_MODULO
 
     /** Whether revision [a] is newer than [b]; false when either is out of range. */
@@ -55,11 +58,19 @@ object WatchSettingsSync {
     }
 
     /**
-     * Merge settings the watch sent ([incoming], all 26 of them from a 1.4 watchapp, 23 from 1.3) into [state].
-     * The platform and capabilities always come from the watch.
+     * Merge settings the watch sent ([received]: all 27 of them from a 1.5 watchapp, 26 from 1.4, 23
+     * from 1.3) into [state]. The platform and capabilities always come from the watch.
+     *
+     * A watchapp before 1.5 has no Directions text, so its message cannot speak for it: the phone
+     * keeps its own value instead of the default the missing key reads as (#134 FR7.4).
      */
-    fun onWatchSettings(state: WatchSettingsSyncState, incoming: WatchSettingsModel): MergeResult {
+    fun onWatchSettings(state: WatchSettingsSyncState, received: WatchSettingsModel): MergeResult {
         val mirror = state.mirror
+        val incoming = if (state.hasDirectionsTextSetting || mirror == null) {
+            received
+        } else {
+            received.with(WatchSetting.DIRECTIONS_TEXT, mirror[WatchSetting.DIRECTIONS_TEXT])
+        }
         val received = state.copy(receivedFromWatch = true, watchappOutdated = false)
         if (mirror == null) {
             return MergeResult(received.copy(mirror = incoming, pending = emptySet()), Decision.ADOPT_WATCH)
@@ -87,6 +98,10 @@ object WatchSettingsSync {
     fun onPhoneEdit(state: WatchSettingsSyncState, setting: WatchSetting, value: Int): WatchSettingsSyncState {
         val mirror = state.mirror ?: return state
         if (!WatchSettingsRules.isValid(setting, value, mirror.capabilities) || mirror[setting] == value) return state
+        if (setting.isDirectionsText && !state.hasDirectionsTextSetting) {
+            // A watchapp before 1.5 has no such setting: the phone keeps and applies it alone (FR7.4).
+            return state.copy(mirror = mirror.with(setting, value))
+        }
         return state.copy(
             mirror = mirror.with(setting, value).copy(revision = next(mirror.revision)),
             pending = state.pending + setting,
@@ -122,6 +137,10 @@ data class WatchSettingsSyncState(
     /** Whether the watchapp has the When driving settings (protocol 1.4, #132 FR4, NFR5). */
     val hasDrivingSettings: Boolean
         get() = (watchProtocolMinor ?: 0) >= WatchSettingsSync.DRIVING_PROTOCOL_MINOR
+
+    /** Whether the watchapp has the Directions text setting itself (protocol 1.5, #134 FR7.2). */
+    val hasDirectionsTextSetting: Boolean
+        get() = (watchProtocolMinor ?: 0) >= WatchSettingsSync.DIRECTIONS_TEXT_PROTOCOL_MINOR
 }
 
 /** The state after watch settings arrived, and what the comparison decided. */

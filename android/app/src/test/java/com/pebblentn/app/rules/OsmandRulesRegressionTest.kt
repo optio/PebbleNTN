@@ -32,9 +32,17 @@ class OsmandRulesRegressionTest {
         val maneuver: String? = null,
         val distanceMeters: Int? = null,
         val ruleId: String? = null,
+        /** The second line: the arrival clock from bigText's summary line (#134). */
         val secondaryText: String? = null,
         /** The road line on the watch (#26: no leading "200 m • "). */
         val primaryText: String? = null,
+        /** The compact road line, the street alone (#134). */
+        val compactText: String? = null,
+        val noCompactText: Boolean = false,
+        val noSecondaryText: Boolean = false,
+        /** The arrival epoch from the arrival clock, at the fixture's post time and zone (#134). */
+        val etaEpochSeconds: Long? = null,
+        val noEta: Boolean = false,
     )
 
     @Serializable
@@ -43,6 +51,8 @@ class OsmandRulesRegressionTest {
         val locale: String,
         val packageName: String,
         val source: String = "synthetic",
+        val nowEpochSeconds: Long = 0,
+        val timeZone: String = "UTC",
         val snapshot: FixtureSnapshot,
         val expected: Expected,
     )
@@ -51,7 +61,7 @@ class OsmandRulesRegressionTest {
     private data class FixtureFile(val note: String = "", val fixtures: List<Fixture>)
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val engine = RuleEngine()
+    private val checks = FixtureOutputChecks()
 
     private fun resource(path: String): String =
         javaClass.getResourceAsStream(path)?.bufferedReader()?.use { it.readText() }
@@ -83,7 +93,8 @@ class OsmandRulesRegressionTest {
                 subText = fixture.snapshot.subText,
                 bigText = fixture.snapshot.bigText,
             )
-            val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
+            val result = checks.engine(fixture.timeZone)
+                .evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = fixture.nowEpochSeconds)
 
             if (!fixture.expected.matched) {
                 assertEquals(
@@ -109,6 +120,27 @@ class OsmandRulesRegressionTest {
             fixture.expected.primaryText?.let { expected ->
                 assertEquals("fixture '${fixture.name}' road line", expected, result.instruction!!.primaryText)
             }
+            with(fixture.expected) {
+                checks.check(
+                    fixture.name, result.instruction!!, compactText, noCompactText,
+                    secondaryText, noSecondaryText, etaEpochSeconds, noEta,
+                )
+            }
+        }
+    }
+
+    /**
+     * #134: every OsmAnd rule, in every language, reads the second line and the ETA from bigText's
+     * summary line with an arrival clock, so no language falls back to sending the remaining
+     * distance (as German did) or nothing.
+     */
+    @Test
+    fun everyRuleReadsTheArrivalClock() {
+        for (rule in bundledRules.bundled) {
+            val eta = rule.output.etaEpochSeconds
+            assertTrue("${rule.id} must take its ETA from an arrival clock", eta is ArrivalClockExtractor)
+            assertTrue("${rule.id} second line must be the clock", rule.output.secondaryText is RegexCaptureExtractor)
+            assertEquals("${rule.id} reads the same capture", (eta as ArrivalClockExtractor).pattern, (rule.output.secondaryText as RegexCaptureExtractor).pattern)
         }
     }
 
@@ -121,6 +153,7 @@ class OsmandRulesRegressionTest {
         // Per language (the id's suffix; the Chinese rules have no locales): each language's arrive
         // rule against that language's maneuver rules.
         for ((language, rules) in bundledRules.bundled.groupBy { it.id.substringAfterLast('-') }) {
+            // The -street variants (#134) sit one step above their base rule, so they count as maneuvers.
             val arrive = rules.single { it.id == "osmand-arrive-$language" }
             val lowestManeuver = rules.filterNot { it.id == arrive.id }.minOf { it.priority }
             assertTrue(

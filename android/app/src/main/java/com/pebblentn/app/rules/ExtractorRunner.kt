@@ -40,6 +40,8 @@ class ExtractorRunner(
             }
         }
 
+        is ArrivalClockExtractor -> runArrivalClock(extractor, snapshot)
+
         is DistanceExtractor ->
             field(snapshot, extractor.field)?.let(DistanceParser::parseMeters)?.let { ExtractionResult.Num(it.toLong()) }
                 ?: ExtractionResult.None
@@ -61,6 +63,22 @@ class ExtractorRunner(
                 .joinToString(extractor.separator)
             if (joined.isEmpty()) ExtractionResult.None else ExtractionResult.Text(bound(joined, extractor.maxLength))
         }
+    }
+
+    /**
+     * The arrival clock as written (#134): the pattern's capture when there is a pattern, else the
+     * first clock in the field. Text without a readable clock gives nothing, so the rule still
+     * matches without an ETA (FR3.2). The engine turns the text into an epoch for `etaEpochSeconds`.
+     */
+    private fun runArrivalClock(extractor: ArrivalClockExtractor, snapshot: NotificationSnapshot): ExtractionResult {
+        val value = field(snapshot, extractor.field) ?: return ExtractionResult.None
+        val captured = if (extractor.pattern != null) {
+            SafeRegex.captureGroup(SafeRegex.compile(extractor.pattern), value, extractor.group, regexBudgetMillis)
+                ?.trim()?.takeIf { ArrivalClock.parse(it) != null }
+        } else {
+            ArrivalClock.findText(value)
+        }
+        return textOrNone(captured)
     }
 
     private fun runManeuverMap(extractor: ManeuverMapExtractor, snapshot: NotificationSnapshot): ExtractionResult {

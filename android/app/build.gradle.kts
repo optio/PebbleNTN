@@ -138,6 +138,13 @@ android {
             if (releaseKeystore != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // #136: the App Bundle carries the native libraries' symbol tables
+            // (BUNDLE-METADATA/com.android.tools.build.debugsymbols/), so Play Console can symbolicate
+            // native crashes and stops warning about missing debug symbols. Only the bundle changes:
+            // the release APK for GitHub and F-Droid stays byte-identical (reproducible build).
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
 

@@ -32,12 +32,14 @@
 | 16 | watchPlatform | integer (protocol 1.3; from the watch) |
 | 17 | watchCapabilities | integer bitmask (protocol 1.3; from the watch) |
 | 18–40 | settingAccent … settingShortcutTap | integer (protocol 1.3; one key per watch setting) |
+| 41–43 | settingDrivingMode, settingDrivingSpeedMetric, settingDrivingSpeedImperial | integer (protocol 1.4; When driving, REQ-WATCH-026) |
+| 44 | settingDirectionsText | integer 0 Full, 1 Compact (protocol 1.5; REQ-WATCH-027, REQ-ANDROID-025) |
 
-The current protocol version is 1.3. Minor versions only add optional keys, flag bits and events, which an older peer ignores: a 1.2 watchapp ignores the phone's `SETTINGS`, and a 1.2 phone app ignores the settings keys in `WATCH_READY` and the watch's `SETTINGS`.
+The current protocol version is 1.5 (1.4 added the When driving settings, #132; 1.5 Directions text, #134). Minor versions only add optional keys, flag bits and events, which an older peer ignores: a 1.2 watchapp ignores the phone's `SETTINGS`, and a 1.2 phone app ignores the settings keys in `WATCH_READY` and the watch's `SETTINGS`.
 
 ### Watch settings (protocol 1.3)
 
-Keys 18–40 carry the watchapp's 23 synced settings in the watch's persist order (REQ-WATCH-025, REQ-ANDROID-021): accent, units, invert, glyph pack, arrow left, ETA mode, backlight, vibration pattern, vibration intensity, backlight colour, ETA label, early-warning distance, repeat, pattern and intensity, Touch, then the shortcut slots Up, Down, Swipe left, Swipe right, Swipe up, Swipe down and Tap. Values are the watch's enum indices; bools are 0/1. The watch writes them as uint8 and the phone as int32; receivers accept the width each side sends.
+Keys 18–40 carry the watchapp's 23 synced settings in the watch's persist order (REQ-WATCH-025, REQ-ANDROID-021): accent, units, invert, glyph pack, arrow left, ETA mode, backlight, vibration pattern, vibration intensity, backlight colour, ETA label, early-warning distance, repeat, pattern and intensity, Touch, then the shortcut slots Up, Down, Swipe left, Swipe right, Swipe up, Swipe down and Tap. Values are the watch's enum indices; bools are 0/1. The watch writes them as uint8 and the phone as int32; receivers accept the width each side sends. Keys 41–43 (protocol 1.4) and 44 (protocol 1.5) follow in the same order; a watchapp sends only the keys of its own protocol minor. Directions text (key 44) is applied by the phone, which sends `compactText` instead of `primaryText` as the road line when it is Compact; for a watchapp before 1.5, which leaves the key out, the phone keeps and applies its own value and never sends the key.
 
 - `watchPlatform`: 0 unknown, 1 aplite, 2 basalt, 3 chalk, 4 diorite, 5 emery.
 - `watchCapabilities`: bit 0 colour, bit 1 round, bit 2 RGB backlight, bit 3 touch.

@@ -188,6 +188,12 @@ class AppContainer(context: Context) {
         installRecord = { installRecord },
         // #132: the When driving log, numbers only, in the privacy-safe and full exports.
         drivingLog = { drivingLog.snapshot() },
+        // #134 FR7.6: the mirrored watch settings, Directions text among them, in every mode.
+        watchSettings = {
+            watchSettingsMirror.state.value.mirror?.let { mirror ->
+                com.pebblentn.app.core.WatchSetting.entries.associate { it.name to mirror[it] }
+            }
+        },
     )
 
     val diagnosticShareManager = DiagnosticShareManager(appContext)

@@ -18,10 +18,13 @@ Kotlin RuleEngine (GoogleMapsRulesRegressionTest); keep the two in sync.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCHEMA = REPO_ROOT / "schemas" / "ruleset.schema.json"
@@ -155,7 +158,7 @@ def combined_text(snap: dict) -> str:
 
 LEADING_DISTANCE = re.compile(
     r"^\s*\d+(?:[.,]\d+)?\s*(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft|pi"
-    r"|yards|yard|yd|metres|meters|metre|meter|m)\s*[·•|]\s*",
+    r"|yards|yard|yd|metres|meters|metre|meter|m|公里|千米|公尺|米)\s*[·•|]\s*",
     re.IGNORECASE,
 )
 
@@ -165,10 +168,65 @@ def strip_leading_distance(text: str) -> str:
     return LEADING_DISTANCE.sub("", text, count=1)
 
 
+def normalize_spaces(value):
+    """Mirror SnapshotFields.normalizeSpaces: every Unicode space separator becomes an ASCII space."""
+    if not value:
+        return value
+    return "".join(" " if ch != " " and unicodedata.category(ch) == "Zs" else ch for ch in value)
+
+
 def field_value(snap: dict, name: str):
     if name == "combinedText":
-        return combined_text(snap)
-    return snap.get(name)
+        return normalize_spaces(combined_text(snap))
+    return normalize_spaces(snap.get(name))
+
+
+# --- arrival clock (mirrors ArrivalClock.kt, #134) ----------------------------------------------
+
+CLOCK = re.compile(r"(?:(上午|下午)\s*)?(?<!\d)(\d{1,2}):(\d{2})(?!\d)(?:\s*([AaPp])\.?\s*[Mm]\.?)?")
+CLOCK_GRACE_SECONDS = 60
+
+
+def clock_time(match):
+    """The (hour, minute) of a CLOCK match, or None when it is not a valid clock."""
+    prefix, hour, minute, meridiem = match.group(1), int(match.group(2)), int(match.group(3)), match.group(4)
+    if minute > 59:
+        return None
+    pm = meridiem.lower() == "p" if meridiem else (prefix == "下午" if prefix else None)
+    if pm is not None:
+        if not 1 <= hour <= 12:
+            return None
+        hour = hour % 12 + (12 if pm else 0)
+    elif hour > 23:
+        return None
+    return hour, minute
+
+
+def parse_clock(text):
+    m = CLOCK.search(text) if text else None
+    return clock_time(m) if m else None
+
+
+def find_clock_text(text):
+    m = CLOCK.search(text) if text else None
+    return m.group(0) if m and clock_time(m) else None
+
+
+def next_clock_epoch(hour_minute, now_epoch: int, zone: str) -> int:
+    """Mirror ArrivalClock.nextEpochSeconds: the next time the clock shows it, with a minute's grace."""
+    tz = ZoneInfo(zone)
+    now = datetime.datetime.fromtimestamp(now_epoch, tz)
+    hour, minute = hour_minute
+
+    def at(day):
+        # fold=0 / zoneinfo normalisation matches java.time for the times the tests use.
+        local = datetime.datetime(day.year, day.month, day.day, hour, minute, tzinfo=tz)
+        return int(local.timestamp())
+
+    today = at(now.date())
+    if today < now_epoch - CLOCK_GRACE_SECONDS:
+        return at(now.date() + datetime.timedelta(days=1))
+    return today
 
 
 def eval_condition(cond: dict, snap: dict) -> bool:
@@ -268,7 +326,32 @@ def run_extractor(ext: dict, snap: dict):
         v = field_value(snap, ext["field"])
         mapping = ext.get("mapping", {})
         return mapping.get(v, ext.get("default"))
+    if t == "arrivalClock":
+        # Mirror ExtractorRunner.runArrivalClock: the clock as written, or None when unreadable.
+        v = field_value(snap, ext["field"])
+        if not v:
+            return None
+        if ext.get("pattern") is None:
+            return find_clock_text(v)
+        m = re.search(ext["pattern"], v)
+        try:
+            captured = m.group(ext.get("group", 1)) if m else None
+        except (IndexError, re.error):
+            return None
+        captured = captured.strip() if captured else None
+        return captured if captured and parse_clock(captured) else None
     return None
+
+
+def run_eta(ext: dict, snap: dict, now_epoch: int, zone: str):
+    """Mirror RuleEngine.eta: an arrival clock becomes the next epoch it shows; else a number or None."""
+    if ext is None:
+        return None
+    value = run_extractor(ext, snap)
+    if ext["type"] == "arrivalClock":
+        hm = parse_clock(value)
+        return next_clock_epoch(hm, now_epoch, zone) if hm else None
+    return value if isinstance(value, int) else None
 
 
 CATALOG = REPO_ROOT / "rules" / "catalog" / "navigation-apps.json"
@@ -294,7 +377,14 @@ def rule_applies(package: str | None, rule: dict, families: dict[str, set[str]] 
     return any(p in listed for p in (families or {}).get(package, ()))
 
 
-def evaluate(snap: dict, rules: list, locale: str, families: dict[str, set[str]] | None = None):
+def evaluate(
+    snap: dict,
+    rules: list,
+    locale: str,
+    families: dict[str, set[str]] | None = None,
+    now_epoch: int = 0,
+    zone: str = "UTC",
+):
     ordered = sorted(rules, key=lambda r: (-r.get("priority", 0), r.get("id", "")))
     for rule in ordered:
         if not rule_applies(snap.get("packageName"), rule, families):
@@ -313,6 +403,8 @@ def evaluate(snap: dict, rules: list, locale: str, families: dict[str, set[str]]
                 "primaryText": run_extractor(out.get("primaryText"), snap),
                 "secondaryText": run_extractor(out.get("secondaryText"), snap),
                 "stopsRemaining": as_count(run_extractor(out.get("stopsRemaining"), snap)),
+                "compactText": run_extractor(out.get("compactText"), snap),
+                "etaEpochSeconds": run_eta(out.get("etaEpochSeconds"), snap, now_epoch, zone),
             }
     return None
 
@@ -339,9 +431,18 @@ def check_fixture(result: dict | None, expected: dict) -> str | None:
         return None if result is None else f"expected no match, got {result['ruleId']}"
     if result is None:
         return "expected a match, got none"
-    for field in ("maneuver", "distanceMeters", "primaryText", "secondaryText", "stopsRemaining", "ruleId"):
+    fields = (
+        "maneuver", "distanceMeters", "primaryText", "secondaryText", "stopsRemaining", "ruleId",
+        "compactText", "etaEpochSeconds",
+    )
+    for field in fields:
         if field in expected and result.get(field) != expected[field]:
             return f"{field}: expected {expected[field]!r}, got {result.get(field)!r}"
+    # `noCompactText` / `noSecondaryText` / `noEta` assert the value is absent (#134: no street means
+    # no compact form, and no arrival clock means no second line and no ETA).
+    for flag, field in (("noCompactText", "compactText"), ("noSecondaryText", "secondaryText"), ("noEta", "etaEpochSeconds")):
+        if expected.get(flag) and result.get(field) is not None:
+            return f"{field}: expected none, got {result[field]!r}"
     # `noDistance: true` asserts the distance is absent — an omitted `distanceMeters` only means
     # "not checked", and some cards carry metres that must not be shown as the turn distance.
     if expected.get("noDistance") and result.get("distanceMeters") is not None:
@@ -359,7 +460,11 @@ def run_fixtures(rules: list, fixtures: list, families: dict[str, set[str]] | No
     for fx in fixtures:
         snap = dict(fx["snapshot"])
         snap["packageName"] = fx["packageName"]
-        result = evaluate(snap, rules, fx.get("locale", "en"), families)
+        # A fixture's post time and the phone's time zone, for arrival-clock ETAs (#134).
+        result = evaluate(
+            snap, rules, fx.get("locale", "en"), families,
+            now_epoch=fx.get("nowEpochSeconds", 0), zone=fx.get("timeZone", "UTC"),
+        )
         reason = check_fixture(result, fx["expected"])
         if reason is None:
             print(f"  PASS  {fx['name']:32} -> {result}")

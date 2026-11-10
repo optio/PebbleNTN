@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "vela-maps-en-2026.10.30",
-  "minimumAppVersionCode": 1,
+  "rulesetVersion": "vela-maps-en-2026.11.10",
+  "minimumAppVersionCode": 83,
   "createdAt": "2026-10-30T00:00:00Z",
   "publisher": "PebbleNTN maintainers, from the rules proposed by the #120 reporter",
   "rules": [
@@ -35,7 +35,9 @@
         "maneuver": { "type": "literal", "value": "ARRIVE" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -53,7 +55,9 @@
         "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -71,7 +75,9 @@
         "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -89,7 +95,9 @@
         "maneuver": { "type": "literal", "value": "ROUNDABOUT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -107,7 +115,9 @@
         "maneuver": { "type": "literal", "value": "UTURN_RIGHT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -125,7 +135,9 @@
         "maneuver": { "type": "literal", "value": "UTURN_LEFT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -143,7 +155,9 @@
         "maneuver": { "type": "literal", "value": "SHARP_RIGHT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -161,7 +175,9 @@
         "maneuver": { "type": "literal", "value": "SHARP_LEFT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -179,7 +195,9 @@
         "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -197,7 +215,9 @@
         "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -215,7 +235,9 @@
         "maneuver": { "type": "literal", "value": "RIGHT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -233,7 +255,9 @@
         "maneuver": { "type": "literal", "value": "LEFT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -251,7 +275,9 @@
         "maneuver": { "type": "literal", "value": "STRAIGHT" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+[^·]+·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -268,7 +294,9 @@
         "maneuver": { "type": "literal", "value": "UNKNOWN" },
         "distanceMeters": { "type": "distance", "field": "title" },
         "primaryText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^In\\s+.+?\\s·\\s*(.+)$", "group": 1 },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -284,7 +312,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "ARRIVE" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -300,7 +330,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -316,7 +348,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -332,7 +366,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "ROUNDABOUT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -348,7 +384,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "UTURN_RIGHT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -364,7 +402,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "UTURN_LEFT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -380,7 +420,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "SHARP_RIGHT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -396,7 +438,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "SHARP_LEFT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -412,7 +456,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "SLIGHT_RIGHT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -428,7 +474,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "SLIGHT_LEFT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -444,7 +492,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "RIGHT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -460,7 +510,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "LEFT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -476,7 +528,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "STRAIGHT" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     },
     {
@@ -492,7 +546,9 @@
       "output": {
         "maneuver": { "type": "literal", "value": "UNKNOWN" },
         "primaryText": { "type": "firstNonEmpty", "fields": ["title"] },
-        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
+        "compactText": { "type": "regexCapture", "field": "title", "pattern": "(?i)^.*\\b(?:onto|toward|towards|on)\\s+(.+?)\\s*$", "group": 1 },
+        "secondaryText": { "type": "regexCapture", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 },
+        "etaEpochSeconds": { "type": "arrivalClock", "field": "text", "pattern": "(?i)\\bArrive\\s+(\\d{1,2}:\\d{2}(?:\\s*[AaPp]\\.?[Mm]\\.?)?)", "group": 1 }
       }
     }
   ]

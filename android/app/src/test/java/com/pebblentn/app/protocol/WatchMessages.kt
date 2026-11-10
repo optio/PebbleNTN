@@ -25,25 +25,39 @@ object WatchMessages {
         return defaults.copy(values = defaults.values + overrides)
     }
 
+    /** The 23 settings a 1.3 watchapp has: neither When driving (1.4) nor Directions text (1.5). */
+    val SETTINGS_13: List<WatchSetting> = WatchSetting.entries.filterNot { it.isDriving || it.isDirectionsText }
+
+    /** The 26 settings a 1.4 watchapp has: all but Directions text (#134). */
+    val SETTINGS_14: List<WatchSetting> = WatchSetting.entries.filterNot { it.isDirectionsText }
+
     /** A genuine WATCH_READY from a 1.3 watchapp, carrying [model] without the When driving keys. */
     fun ready13(model: WatchSettingsModel, appVersion: String = "0.0.77"): AppMessage =
-        withSettings(Protocol.Events.WATCH_READY, model, WatchSetting.entries.filterNot { it.isDriving })
+        withSettings(Protocol.Events.WATCH_READY, model, SETTINGS_13)
             .putInt(Protocol.Keys.PROTOCOL_MAJOR, 1)
             .putInt(Protocol.Keys.PROTOCOL_MINOR, 3)
             .putString(Protocol.Keys.APP_VERSION, appVersion)
             .build()
 
-    /** A genuine WATCH_READY from a 1.4 watchapp, carrying all 26 settings of [model] (#132). */
+    /** A genuine WATCH_READY from a 1.4 watchapp, carrying the 26 settings it has (#132). */
     fun ready14(model: WatchSettingsModel, appVersion: String = "0.0.82"): AppMessage =
-        withSettings(Protocol.Events.WATCH_READY, model)
+        withSettings(Protocol.Events.WATCH_READY, model, SETTINGS_14)
             .putInt(Protocol.Keys.PROTOCOL_MAJOR, 1)
             .putInt(Protocol.Keys.PROTOCOL_MINOR, 4)
             .putString(Protocol.Keys.APP_VERSION, appVersion)
             .build()
 
+    /** A genuine WATCH_READY from a 1.5 watchapp, carrying all 27 settings of [model] (#134). */
+    fun ready15(model: WatchSettingsModel, appVersion: String = "0.0.83"): AppMessage =
+        withSettings(Protocol.Events.WATCH_READY, model)
+            .putInt(Protocol.Keys.PROTOCOL_MAJOR, 1)
+            .putInt(Protocol.Keys.PROTOCOL_MINOR, 5)
+            .putString(Protocol.Keys.APP_VERSION, appVersion)
+            .build()
+
     /** A SETTINGS message from the watch (after an edit, or as the reply to the phone's). */
-    fun settingsMessage(model: WatchSettingsModel): AppMessage =
-        withSettings(Protocol.Events.SETTINGS, model).build()
+    fun settingsMessage(model: WatchSettingsModel, carried: List<WatchSetting> = WatchSetting.entries): AppMessage =
+        withSettings(Protocol.Events.SETTINGS, model, carried).build()
 
     /** A genuine WATCH_READY from a 1.2 watchapp: no settings at all. */
     fun ready12(appVersion: String = "0.0.76"): AppMessage = AppMessage.builder()

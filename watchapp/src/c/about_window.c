@@ -62,7 +62,11 @@ static void about_load(Window *window) {
                                    s_info.heard_from_phone));
   // Large fonts so the page reads easily on the wrist.
   add_text(0, "PebbleNTN", FONT_KEY_GOTHIC_28_BOLD, inset, w, &y);
+#ifdef PBL_PLATFORM_APLITE
+  add_text(1, ABOUT_INTRO_SHORT_TEXT, FONT_KEY_GOTHIC_24, inset, w, &y);  // heap (REQ-WATCH-025)
+#else
   add_text(1, ABOUT_INTRO_TEXT, FONT_KEY_GOTHIC_24, inset, w, &y);
+#endif
   y += 4;
   add_text(2, s_details, FONT_KEY_GOTHIC_24, inset, w, &y);
   y += 4;

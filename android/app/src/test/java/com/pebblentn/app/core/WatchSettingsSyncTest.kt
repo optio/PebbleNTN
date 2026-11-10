@@ -122,4 +122,53 @@ class WatchSettingsSyncTest {
         assertEquals(WatchPlatform.CHALK, mirror.platform)
         assertEquals(setOf(WatchSetting.UNITS), result.state.pending)
     }
+
+    // --- Directions text (#134 FR7.2, FR7.4) -----------------------------------------------------
+
+    private fun compactOn(minor: Int?, revision: Int = 4) = WatchSettingsSyncState(
+        mirror = WatchMessages.settings(revision = revision, overrides = mapOf(WatchSetting.DIRECTIONS_TEXT to DirectionsText.COMPACT)),
+        receivedFromWatch = true,
+        watchProtocolMinor = minor,
+    )
+
+    @Test
+    fun aPre15WatchappWithoutTheKeyKeepsThePhonesDirectionsText() {
+        // A 1.4 watchapp's message has no key 44, so it decodes as Full; that must not reset the phone.
+        val fromOldWatch = WatchMessages.settings(revision = 4)
+        val result = WatchSettingsSync.onWatchSettings(compactOn(minor = 4), fromOldWatch)
+        assertEquals(Decision.SAME, result.decision)
+        assertTrue(result.state.mirror!!.compactDirections)
+        val newer = WatchSettingsSync.onWatchSettings(compactOn(minor = 4), WatchMessages.settings(revision = 9, overrides = mapOf(WatchSetting.UNITS to 1)))
+        assertEquals(Decision.ADOPT_WATCH, newer.decision)
+        assertTrue("a newer old watch still cannot speak for it", newer.state.mirror!!.compactDirections)
+        assertEquals(1, newer.state.mirror!!.units)
+    }
+
+    @Test
+    fun a15WatchappDecidesDirectionsTextLikeAnyOtherSetting() {
+        val fromNewWatch = WatchMessages.settings(revision = 9)
+        val result = WatchSettingsSync.onWatchSettings(compactOn(minor = 5), fromNewWatch)
+        assertEquals(Decision.ADOPT_WATCH, result.decision)
+        assertFalse("the 1.5 watch's Full wins", result.state.mirror!!.compactDirections)
+    }
+
+    @Test
+    fun aPhoneEditOfDirectionsTextForAPre15WatchappStaysOnThePhone() {
+        val state = WatchSettingsSyncState(mirror = WatchMessages.settings(revision = 4), receivedFromWatch = true, watchProtocolMinor = 4)
+        val edited = WatchSettingsSync.onPhoneEdit(state, WatchSetting.DIRECTIONS_TEXT, DirectionsText.COMPACT)
+        assertTrue(edited.mirror!!.compactDirections)
+        assertEquals("no revision step: nothing for the watch", 4, edited.mirror!!.revision)
+        assertTrue(edited.pending.isEmpty())
+        assertNull(WatchSettingsSync.outgoing(edited))
+    }
+
+    @Test
+    fun aPhoneEditOfDirectionsTextGoesToA15Watchapp() {
+        val state = WatchSettingsSyncState(mirror = WatchMessages.settings(revision = 4), receivedFromWatch = true, watchProtocolMinor = 5)
+        val edited = WatchSettingsSync.onPhoneEdit(state, WatchSetting.DIRECTIONS_TEXT, DirectionsText.COMPACT)
+        assertEquals(setOf(WatchSetting.DIRECTIONS_TEXT), edited.pending)
+        assertEquals(5 to mapOf(WatchSetting.DIRECTIONS_TEXT to 1), WatchSettingsSync.outgoing(edited))
+        assertTrue(edited.hasDirectionsTextSetting)
+        assertFalse(state.copy(watchProtocolMinor = 4).hasDirectionsTextSetting)
+    }
 }

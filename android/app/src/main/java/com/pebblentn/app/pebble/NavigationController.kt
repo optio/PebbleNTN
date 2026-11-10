@@ -226,10 +226,12 @@ class NavigationController(
      * mirror and to the watchapp if it is open, else it waits for the next time it opens.
      */
     suspend fun onPhoneSettingEdit(setting: WatchSetting, value: Int) {
+        val compactBefore = compactDirections()
         settingsMutex.withLock {
             watchSettings.update { WatchSettingsSync.onPhoneEdit(it, setting, value) }
             sendPendingSettings()
         }
+        if (compactDirections() != compactBefore) resendForDirectionsText()
         // "Show directions" picked while hidden shows the watchapp at once (#132 FR12).
         reevaluateWhileHidden()
     }
@@ -239,15 +241,35 @@ class NavigationController(
         _watchappOpen.value = false
     }
 
-    private suspend fun onWatchSettings(incoming: WatchSettingsModel) = settingsMutex.withLock {
-        // It just sent this, so it is open; queued edits that are newer go now, without a relaunch.
-        _watchappOpen.value = true
-        var decision: WatchSettingsSync.Decision? = null
-        watchSettings.update { current ->
-            WatchSettingsSync.onWatchSettings(current, incoming).also { decision = it.decision }.state
+    private suspend fun onWatchSettings(incoming: WatchSettingsModel) {
+        val compactBefore = compactDirections()
+        settingsMutex.withLock {
+            // It just sent this, so it is open; queued edits that are newer go now, without a relaunch.
+            _watchappOpen.value = true
+            var decision: WatchSettingsSync.Decision? = null
+            watchSettings.update { current ->
+                WatchSettingsSync.onWatchSettings(current, incoming).also { decision = it.decision }.state
+            }
+            Timber.i("Watch settings revision %d: %s", incoming.revision, decision)
+            sendPendingSettings()
         }
-        Timber.i("Watch settings revision %d: %s", incoming.revision, decision)
-        sendPendingSettings()
+        // Directions text changed on the watch (#134 FR7.3).
+        if (compactDirections() != compactBefore) resendForDirectionsText()
+    }
+
+    /** The Directions text in effect: Compact sends the street alone when there is one (#134 FR7.1). */
+    private fun compactDirections(): Boolean = watchSettings.state.value.mirror?.compactDirections == true
+
+    /**
+     * Directions text changed (#134 FR7.3): send the current instruction again in the new form, once,
+     * without waiting for the next notification. Nothing goes out when no navigation is active, to a
+     * watch that is not ready, or while hidden for driving (the state send skips it, #132 FR8.1).
+     */
+    private suspend fun resendForDirectionsText() {
+        val navigating = mutex.withLock { state.current is NavigationState.Navigating }
+        if (!navigating || hiddenForDriving) return
+        Timber.i("Directions text changed: sending the current instruction again")
+        dispatch(ReducerEvent.WatchRequestedState(nowSeconds()))
     }
 
     private fun onOutdatedWatchapp(minor: Int) {
@@ -297,7 +319,11 @@ class NavigationController(
                 Timber.i("Hidden while driving: state %s not sent", effect.state)
             } else {
                 Timber.i("Effect: send state %s to watch", effect.state)
-                sendWithRetry(ProtocolCodec.encodeState(effect.state, effect.flags, appVersion, latestPhoneUpdate()))
+                sendWithRetry(
+                    ProtocolCodec.encodeState(
+                        effect.state, effect.flags, appVersion, latestPhoneUpdate(), compact = compactDirections(),
+                    ),
+                )
             }
             is ReducerEffect.SendCompatibilityError -> if (hiddenForDriving) {
                 Timber.i("Hidden while driving: compatibility error %d not sent", effect.errorCode)

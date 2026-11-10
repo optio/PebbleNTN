@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "osmand-de-2026.10.10",
-  "minimumAppVersionCode": 1,
+  "rulesetVersion": "osmand-de-2026.11.10",
+  "minimumAppVersionCode": 83,
   "createdAt": "2026-10-04T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
@@ -38,13 +38,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i)\\bnehmen\\s+sie\\s+die\\s+(\\d+\\.?\\s+ausfahrt\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))[^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -90,7 +102,74 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-uturn-street-de",
+      "enabled": true,
+      "priority": 181,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-uturn-de one step above it (#134): bigText's first line is 'Wenden <road> <length>' (route_tu). Road line: that line without the length; compact: the road. The U-turn itself is still read only from the title, so a town named Wenden in the road keeps its own turn.",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "regex",
+          "value": "(?i)•\\s*(?:wenden|umkehren|u-turn)\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:wenden|geradeaus)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*k?m[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:wenden|geradeaus)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -108,7 +187,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Wenden' (route_tu). Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Wenden' (route_tu). Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "title",
@@ -136,7 +215,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -174,13 +259,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -224,7 +321,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -262,13 +365,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -312,7 +427,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -330,7 +451,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf links abbiegen, dann' (route_tshl). Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf links abbiegen, dann' (route_tshl). Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -358,7 +479,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -376,7 +503,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf rechts abbiegen, dann' (route_tshr). Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'scharf rechts abbiegen, dann' (route_tshr). Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -404,7 +531,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -442,13 +575,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -492,7 +637,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -530,13 +681,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -580,7 +743,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -598,7 +767,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb links abbiegen, dann' (route_tsll). Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb links abbiegen, dann' (route_tsll). Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -626,7 +795,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -644,7 +819,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb rechts abbiegen, dann' (route_tslr). Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'halb rechts abbiegen, dann' (route_tslr). Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -672,7 +847,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -710,13 +891,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -760,7 +953,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -798,13 +997,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -848,7 +1059,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -866,7 +1083,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Links halten, dann' (route_kl). Keep is drawn as a slight turn, like osmand-keep-left-en. Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Links halten, dann' (route_kl). Keep is drawn as a slight turn, like osmand-keep-left-en. Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -894,7 +1111,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -912,7 +1135,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts halten, dann' (route_kr). Keep is drawn as a slight turn, like osmand-keep-right-en. Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts halten, dann' (route_kr). Keep is drawn as a slight turn, like osmand-keep-right-en. Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -940,7 +1163,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -978,13 +1207,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1028,7 +1269,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1066,13 +1313,25 @@
         "primaryText": {
           "type": "regexCapture",
           "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
           "pattern": "(?i),\\s*dann\\s+(?![\\d.,]+\\s*k?m\\s*(?:\\n|$))([^\\n]+?)\\s+[\\d.,]+\\s*k?m\\s*(?:\\n|$)",
           "group": 1
         },
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1116,7 +1375,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1134,7 +1399,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'links abbiegen, dann' (route_tl). Sharp, slight and keep rank higher, so only a plain left turn lands here. Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'links abbiegen, dann' (route_tl). Sharp, slight and keep rank higher, so only a plain left turn lands here. Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -1162,7 +1427,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1180,7 +1451,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts abbiegen, dann' (route_tr). Sharp, slight and keep rank higher, so only a plain right turn lands here. Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'rechts abbiegen, dann' (route_tr). Sharp, slight and keep rank higher, so only a plain right turn lands here. Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -1208,7 +1479,74 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-straight-street-de",
+      "enabled": true,
+      "priority": 51,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "de"
+      ],
+      "comment": "Variant of osmand-straight-de one step above it (#134): bigText's first line is 'Geradeaus <road> <length>' (route_head). Road line: that line without the length; compact: the road. Second line and ETA: the summary line's arrival clock.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bgeradeaus\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:wenden|geradeaus)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*k?m[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:wenden|geradeaus)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*k?m)?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1226,7 +1564,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Geradeaus' (route_head). Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Geradeaus' (route_head). Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -1254,7 +1592,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }
@@ -1272,7 +1616,7 @@
       "locales": [
         "de"
       ],
-      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Sie sind angekommen.' (arrived_at_destination); 'Ziel erreicht' kept from the contribution. Lowest priority, so a turn always wins over an arrival word. Secondary line: the remaining route distance from bigText's summary line (#76).",
+      "comment": "Contributed by a user via \"Share your rules\" (2026-10, #61) and checked against OsmAnd's German strings (OsmAnd/res/values-de/strings.xml): 'Sie sind angekommen.' (arrived_at_destination); 'Ziel erreicht' kept from the contribution. Lowest priority, so a turn always wins over an arrival word. Second line and ETA: the arrival clock of bigText's summary line (#134; was the remaining distance, #76).",
       "conditions": [
         {
           "field": "combinedText",
@@ -1296,7 +1640,13 @@
         "secondaryText": {
           "type": "regexCapture",
           "field": "bigText",
-          "pattern": "(?im)^([\\d.,]+\\s*k?m)\\s*•\\s*(?:\\d+\\s*h(?:\\s*<?\\s*\\d+\\s*min)?|<?\\s*\\d+\\s*min)\\s*•\\s*\\d{1,2}:\\d{2}\\b",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
           "group": 1
         }
       }

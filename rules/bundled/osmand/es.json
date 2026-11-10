@@ -1,10 +1,71 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "osmand-es-2026.10.4",
-  "minimumAppVersionCode": 1,
+  "rulesetVersion": "osmand-es-2026.11.10",
+  "minimumAppVersionCode": 83,
   "createdAt": "2026-10-04T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
+    {
+      "id": "osmand-roundabout-street-es",
+      "enabled": true,
+      "priority": 191,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-roundabout-es one step above it (#134): bigText's first line is OsmAnd's instruction (route_roundabout_short 'Toma la %dª salida y continúa'), the street and the next step's distance. Road line: that line without the distance; compact: from the exit number on. Second line and ETA: the summary line's arrival clock.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\brotonda\\b|\\btoma\\s+la\\s+(?:\\d+ª?\\s+salida|salida\\s+\\d+)"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "ROUNDABOUT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^toma\\s+la\\s+(\\d+ª?\\s+salida(?:\\s+y\\s+continúa)?[^\\S\\n]+[^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
     {
       "id": "osmand-roundabout-es",
       "enabled": true,
@@ -42,6 +103,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-uturn-street-es",
+      "enabled": true,
+      "priority": 181,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-uturn-es one step above it (#134): bigText's first line is OsmAnd's instruction (route_tu), the street and the next step's distance. Road line: that line without the distance; compact: the street. Second line and ETA: the summary line's arrival clock.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bcambia\\s+de\\s+sentido\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "UTURN_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -82,6 +216,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-right-street-es",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-sharp-right-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_tshr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bfuerte\\s+a\\s+la\\s+derecha\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -122,6 +329,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-sharp-left-street-es",
+      "enabled": true,
+      "priority": 171,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-sharp-left-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_tshl, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bfuerte\\s+a\\s+la\\s+izquierda\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SHARP_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -162,6 +442,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-right-street-es",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-slight-right-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_tslr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bleve\\s+a\\s+la\\s+derecha\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -202,6 +555,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-slight-left-street-es",
+      "enabled": true,
+      "priority": 161,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-slight-left-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_tsll, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bleve\\s+a\\s+la\\s+izquierda\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -242,6 +668,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-right-street-es",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-keep-right-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_kr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bmantente\\s+a\\s+la\\s+derecha\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -282,6 +781,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-keep-left-street-es",
+      "enabled": true,
+      "priority": 121,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-keep-left-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_kl, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bmantente\\s+a\\s+la\\s+izquierda\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "SLIGHT_LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -322,6 +894,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-right-street-es",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-turn-right-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_tr, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bgira\\s+a\\s+la\\s+derecha\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "RIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -362,6 +1007,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-turn-left-street-es",
+      "enabled": true,
+      "priority": 101,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-turn-left-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line (route_tl, the street) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\bgira\\s+a\\s+la\\s+izquierda\\b"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "LEFT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -402,6 +1120,79 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        }
+      }
+    },
+    {
+      "id": "osmand-continue-street-es",
+      "enabled": true,
+      "priority": 51,
+      "packageNames": [
+        "net.osmand",
+        "net.osmand.plus",
+        "net.osmand.dev",
+        "net.osmand.huawei"
+      ],
+      "locales": [
+        "es"
+      ],
+      "comment": "Variant of osmand-continue-es one step above it (#134), as osmand-uturn-street-es: road line from bigText's first line ('Inicia en <calle>', route_head) without the next step's distance; compact: the street.",
+      "conditions": [
+        {
+          "field": "combinedText",
+          "operator": "regex",
+          "value": "(?i)\\binicia\\s+en\\b|\\bcontin"
+        },
+        {
+          "field": "bigText",
+          "operator": "regex",
+          "value": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+(?![\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi)[^\\S\\n]*(?:\\n|$))\\S"
+        }
+      ],
+      "output": {
+        "maneuver": {
+          "type": "literal",
+          "value": "STRAIGHT"
+        },
+        "distanceMeters": {
+          "type": "distance",
+          "field": "combinedText"
+        },
+        "primaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "compactText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?i)^(?:gira\\s+(?:fuerte\\s+|leve\\s+)?a\\s+la\\s+(?:derecha|izquierda)\\s+en|cambia\\s+de\\s+sentido\\s+en|mantente\\s+a\\s+la\\s+(?:derecha|izquierda)\\s+y\\s+continúa\\s+por|toma\\s+la\\s+\\d+ª?\\s+salida(?:\\s+y\\s+continúa|(?!\\s+y\\s+continúa))|inicia\\s+en)[^\\S\\n]+([^\\n]+?)(?:[^\\S\\n]+[\\d.,]+[^\\S\\n]*(?:km|m|mi|ft|yd|nmi))?[^\\S\\n]*(?:\\n|$)",
+          "group": 1
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -442,6 +1233,18 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     },
@@ -478,6 +1281,18 @@
             "text"
           ],
           "stripLeadingDistance": true
+        },
+        "secondaryText": {
+          "type": "regexCapture",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
+          "field": "bigText",
+          "pattern": "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)",
+          "group": 1
         }
       }
     }

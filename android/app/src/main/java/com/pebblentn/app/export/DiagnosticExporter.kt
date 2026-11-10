@@ -42,12 +42,15 @@ class DiagnosticExporter(
     private val installRecord: () -> InstallRecord = { InstallRecord.UNKNOWN },
     /** The When driving log at export time, oldest first (#132 FR14). */
     private val drivingLog: () -> List<DrivingLogEntry> = { emptyList() },
+    /** The watch settings the phone mirrors, by name, or null before any arrived (#134 FR7.6). */
+    private val watchSettings: () -> Map<String, Int>? = { null },
 ) {
     suspend fun build(mode: ExportMode): String {
         val rules = userRules.observeUserRules().first().mapNotNull { it.rule }
         val events = if (mode == ExportMode.RULES_ONLY) emptyList() else debugHistory.observeRecent(debugHistory.exportLimit).first()
         return builder.build(
             drivingLog = drivingLog(),
+            watchSettings = watchSettings(),
             mode = mode,
             userRules = rules,
             events = events,
@@ -80,8 +83,10 @@ class DiagnosticExporter(
         val added = userAddedPackages()
         val install = installRecord()
         val driving = drivingLog()
+        val settings = watchSettings()
         fun render(events: List<DebugEvent>): String = builder.build(
             drivingLog = driving,
+            watchSettings = settings,
             mode = mode,
             userRules = rules,
             events = events,

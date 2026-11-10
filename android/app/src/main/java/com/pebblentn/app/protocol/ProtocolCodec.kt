@@ -1,5 +1,6 @@
 package com.pebblentn.app.protocol
 
+import com.pebblentn.app.core.NavigationInstruction
 import com.pebblentn.app.core.NavigationState
 import com.pebblentn.app.core.ReducerEvent
 import com.pebblentn.app.core.WatchCapabilities
@@ -29,12 +30,16 @@ object ProtocolCodec {
      * available, else null (REQ-ANDROID-017, #94): when set, every state message carries
      * [Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK] in FLAGS and the version, without a leading
      * `v`, as LATEST_PHONE_VERSION. When null both are left out and [flags] is sent as given.
+     *
+     * [compact] is the Directions text setting (#134 FR7.1): when true the road line is the
+     * instruction's `compactText` (the street alone) when the rule found one, else its `primaryText`.
      */
     fun encodeState(
         state: NavigationState,
         flags: Int,
         appVersion: String,
         latestPhoneVersion: String? = null,
+        compact: Boolean = false,
     ): AppMessage {
         val update = latestPhoneVersion?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
         val wireFlags = if (update != null) flags or Protocol.FlagMasks.PHONE_UPDATE_AVAILABLE_MASK else flags
@@ -51,7 +56,7 @@ object ProtocolCodec {
                     .putInt(Protocol.Keys.EVENT, Protocol.Events.NAVIGATION_UPDATE)
                     .putInt(Protocol.Keys.MANEUVER, i.maneuver.code)
                     .putInt(Protocol.Keys.DISTANCE_METERS, i.distanceMeters)
-                    .putString(Protocol.Keys.PRIMARY_TEXT, fitText(i.primaryText, MAX_PRIMARY_BYTES))
+                    .putString(Protocol.Keys.PRIMARY_TEXT, fitText(roadLine(i, compact), MAX_PRIMARY_BYTES))
                     .putString(Protocol.Keys.SECONDARY_TEXT, fitText(i.secondaryText, MAX_SECONDARY_BYTES))
                     .putInt(Protocol.Keys.STOPS_REMAINING, i.stopsRemaining)
                     .putInt(Protocol.Keys.ETA_EPOCH_SECONDS, i.etaEpochSeconds?.let(::toInt32))
@@ -73,6 +78,10 @@ object ProtocolCodec {
         }
         return builder.build()
     }
+
+    /** The road line to send: the compact form in Compact mode when there is one, else the full one. */
+    fun roadLine(instruction: NavigationInstruction, compact: Boolean): String? =
+        if (compact) instruction.compactText ?: instruction.primaryText else instruction.primaryText
 
     fun encodeCompatibilityError(errorCode: Int): AppMessage =
         AppMessage.builder()

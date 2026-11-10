@@ -38,6 +38,10 @@ Material 3 with subtle Pebble styling:
 - shows the exact chosen dataset for review before sharing; nothing is sent automatically;
 - shares by opening the user's email app with the chosen diagnostics attached and recipient/subject prefilled where the platform allows, truncated to the newest 10 MB if larger.
 
+### Watch settings
+- the watchapp's own settings, grouped as on the watch (REQ-ANDROID-021), with When driving for a protocol 1.4 watchapp (REQ-ANDROID-024);
+- a **Directions** group after Appearance (REQ-ANDROID-025, #134): the **Directions text** row, Full or Compact, and the line "Compact shows only the street name when the app gives one.", for every watchapp that sends its settings; a watchapp before protocol 1.5 has no such row, and the phone applies the choice for it.
+
 ### Navigation Apps
 - catalog apps grouped as installed/uninstalled;
 - installed defined apps enabled by default on first discovery;
