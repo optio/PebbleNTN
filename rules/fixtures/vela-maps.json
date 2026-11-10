@@ -260,6 +260,21 @@
 
     {"name": "capture-arrived", "source": "capture", "locale": "en-GB", "packageName": "app.vela",
       "snapshot": {"title": "Arrived"},
-      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-arrived-en", "noDistance": true}}
+      "expected": {"maneuver": "ARRIVE", "ruleId": "vela-arrived-en", "noDistance": true, "noCompactText": true}},
+
+    {"name": "compact-in-distance-onto", "source": "synthetic", "locale": "en-US", "packageName": "app.vela", "nowEpochSeconds": 1794347400, "timeZone": "America/Chicago",
+      "snapshot": {"title": "In 300 m · Turn right onto Main St", "text": "5 min · 1.2 mi · Arrive 4:10 PM"},
+      "comment": "#134 FR7.5: compact is the street after 'onto'; the arrival clock becomes the ETA. The full road line is unchanged (NFR7).",
+      "expected": {"maneuver": "RIGHT", "primaryText": "Turn right onto Main St", "compactText": "Main St", "secondaryText": "4:10 PM", "etaEpochSeconds": 1794348600}},
+
+    {"name": "compact-bare-continue-on", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "Continue on Example Road", "text": "12 min · 6.4 mi · Arrive 16:30"},
+      "comment": "#134 FR7.5: a bare title with 'on'.",
+      "expected": {"maneuver": "STRAIGHT", "primaryText": "Continue on Example Road", "compactText": "Example Road", "secondaryText": "16:30"}},
+
+    {"name": "compact-none-without-street", "source": "synthetic", "locale": "en-US", "packageName": "app.vela",
+      "snapshot": {"title": "In 200 m · Turn left", "text": "5 min · 1.2 mi · Arrive 4:10 PM"},
+      "comment": "#134 FR7.5: no street, only the full form.",
+      "expected": {"maneuver": "LEFT", "primaryText": "Turn left", "noCompactText": true, "secondaryText": "4:10 PM"}}
   ]
 }

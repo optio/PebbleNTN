@@ -24,6 +24,10 @@ Design notes:
   all fall through to ARRIVE. Real arrival phrasings ("Ziel erreicht", "Sei arrivato a
   destinazione") carry no maneuver word, so they still reach it.
 - The ETA (secondaryText) is captured as the last clock time in subText, language-independently.
+  The same capture is the arrival epoch (`etaEpochSeconds`, an `arrivalClock` extractor, #134).
+- The compact road line (`compactText`, #134) is the street after the language's last "onto /
+  toward / on" word in the title ("Svolta a destra su Via Esempio" -> "Via Esempio"). A title
+  without one (a bare turn, a roundabout exit) has no compact form, and Compact shows the full one.
 
 These are authored from documented Google Maps phrasings and MUST be validated against real captures
 per language (especially sharp/slight/keep); run `share logs` from a device in that language.
@@ -37,7 +41,10 @@ OUT_DIR = REPO_ROOT / "rules" / "bundled" / "google-maps"
 PACKAGE = "com.google.android.apps.maps"
 RULESET_DATE = "2026.10.1"
 # Languages added later carry their own date, so regenerating doesn't bump the others' versions.
-RULESET_DATES = {lang: "2026.10.4" for lang in ("it", "fr", "es", "de", "nl", "pt", "pl")}
+# 2026.11.10: compactText and the arrival-clock ETA (#134) for every generated language.
+RULESET_DATES = {lang: "2026.11.10" for lang in ("it", "fr", "es", "de", "nl", "pt", "pl")}
+# The app release that understands compactText and arrivalClock (#134); older apps skip the packs.
+MINIMUM_APP_VERSION_CODE = 83
 
 # Per language: the regex fragments. `turn_*` are full "to the side" phrases; `right`/`left` are the
 # bare direction tokens used by the sharp/slight/keep refinements; the rest are keyword alternations.
@@ -157,6 +164,20 @@ APPROACH = r"(?i)^\s*\d+(?:[.,]\d+)?\s*(?:km|m|mi|ft|pi|yd)\s*·\s*\S"
 # Clock time at the end of subText — the arrival ETA, language-independent.
 ETA_PATTERN = r"(?i)(\d{1,2}:\d{2}(?:\s*[AaPp][Mm])?)\s*$"
 
+# The compact road line (#134): the street after the LAST "onto / toward / on" word of the title (the
+# greedy `^.*` makes it the last), so a direction word earlier in the step ("naar rechts naar de …",
+# "w prawo w …") is skipped. Words from the captured Google Maps phrasings in the fixtures. A
+# roundabout or compass phrase that uses the same word is excluded, so it keeps only the full form.
+COMPACT_PATTERNS = {
+    "it": r"(?i)^.*\b(?:su|verso)\s+(.+?)\s*$",
+    "fr": r"(?i)^.*\b(?:sur|vers|direction\s+d(?:e|u|es))\s+(.+?)\s*$",
+    "es": r"(?i)^.*\b(?:en|hacia|por)\s+(?!la\s+(?:rotonda|glorieta)\b)(.+?)\s*$",
+    "de": r"(?i)^.*\b(?:auf|richtung)\s+(.+?)\s*$",
+    "nl": r"(?i)^.*\b(?:naar|richting|op)\s+(?!(?:(?:de|het)\s+)?(?:rechts|links|rotonde)\b|(?:(?:de|het)\s+)?(?:noord|zuid)?(?:oost|west)?en\s*$)(?:(?:de|het)\s+)?(.+?)\s*$",
+    "pt": r"(?i)^.*\b(?:em\s+direção\s+(?:à|ao|a)|para\s+(?:a|o)|para|na|no)\s+(?!permanecer\b)(.+?)\s*$",
+    "pl": r"(?i)^.*\b(?:w\s+stronę|wzdłuż|na|w)\s+(?!(?:prawo|lewo|prawej|lewej|rondzie)\b)(.+?)\s*$",
+}
+
 
 def kw(pattern: str) -> str:
     """A keyword alternation wrapped in word boundaries, unless marked RAW: (used as written)."""
@@ -168,13 +189,16 @@ def both(mods: str, direction: str) -> str:
     return rf"(?i)(?=.*{kw(mods)})(?=.*\b(?:{direction})\b)"
 
 
-def output(maneuver: str, with_distance: bool = True) -> dict:
+def output(lang: str, maneuver: str, with_distance: bool = True) -> dict:
     out = {"maneuver": {"type": "literal", "value": maneuver}}
     if with_distance:
         out["distanceMeters"] = {"type": "distance", "field": "combinedText"}
     # The title may lead with the distance ("70 m · ..."), which the watch already shows (#26).
     out["primaryText"] = {"type": "firstNonEmpty", "fields": ["title", "text"], "stripLeadingDistance": True}
+    if maneuver != "ARRIVE":  # an arrival or a destination name has no street to shorten to
+        out["compactText"] = {"type": "regexCapture", "field": "title", "pattern": COMPACT_PATTERNS[lang], "group": 1}
     out["secondaryText"] = {"type": "regexCapture", "field": "subText", "pattern": ETA_PATTERN, "group": 1}
+    out["etaEpochSeconds"] = {"type": "arrivalClock", "field": "subText", "pattern": ETA_PATTERN, "group": 1}
     return out
 
 
@@ -189,7 +213,7 @@ def rule(rid, priority, field, value, maneuver, with_distance=True, comment=None
     if comment:
         r["comment"] = comment
     r["conditions"] = [{"field": field, "operator": "regex", "value": value}]
-    r["output"] = output(maneuver, with_distance)
+    r["output"] = output(r["locales"][0], maneuver, with_distance)
     return r
 
 
@@ -224,7 +248,7 @@ def build(lang: str, k: dict) -> dict:
     return {
         "schemaVersion": 1,
         "rulesetVersion": f"google-maps-{lang}-{RULESET_DATES.get(lang, RULESET_DATE)}",
-        "minimumAppVersionCode": 1,
+        "minimumAppVersionCode": MINIMUM_APP_VERSION_CODE,
         "createdAt": "2026-07-28T00:00:00Z",
         "publisher": "PebbleNTN maintainers",
         "rules": rules,

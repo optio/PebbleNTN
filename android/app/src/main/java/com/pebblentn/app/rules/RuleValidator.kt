@@ -77,12 +77,23 @@ object RuleValidator {
     }
 
     private fun collectExtractorErrors(output: RuleOutput, errors: MutableList<String>) {
-        listOfNotNull(output.maneuver, output.distanceMeters, output.primaryText, output.secondaryText, output.etaEpochSeconds, output.stopsRemaining)
-            .forEach { extractor ->
-                if (extractor is RegexCaptureExtractor) {
-                    checkRegex(extractor.pattern, "regexCapture extractor", errors)
-                }
+        listOfNotNull(
+            output.maneuver, output.distanceMeters, output.primaryText, output.secondaryText,
+            output.etaEpochSeconds, output.stopsRemaining, output.compactText,
+        ).forEach { extractor ->
+            when (extractor) {
+                is RegexCaptureExtractor -> checkRegex(extractor.pattern, "regexCapture extractor", errors)
+                is ArrivalClockExtractor -> checkArrivalClock(extractor, errors)
+                else -> Unit
             }
+        }
+    }
+
+    private fun checkArrivalClock(extractor: ArrivalClockExtractor, errors: MutableList<String>) {
+        val where = "arrivalClock extractor"
+        if (extractor.field !in SnapshotFields.NAMES) errors.add("$where: unknown field '${extractor.field}'")
+        if (extractor.group < 0) errors.add("$where: group must be 0 or more")
+        extractor.pattern?.let { checkRegex(it, where, errors) }
     }
 
     private fun checkRegex(pattern: String, where: String, errors: MutableList<String>) {

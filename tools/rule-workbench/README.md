@@ -20,6 +20,8 @@ python3 tools/rule-workbench/workbench.py <command> [...]
 ## Authoritative engine
 
 `test`/`regression` use a **documented subset** re-implementation of the rule engine (the operators
-and extractors the bundled rules use) for fast local iteration. The authoritative engine is the
+and extractors the bundled rules use, `arrivalClock` and `compactText` included, #134) for fast local
+iteration. A fixture's `nowEpochSeconds` and `timeZone` (defaults 0 and UTC) fix the arrival-clock ETA
+(`rules/fixtures/README.md`). The authoritative engine is the
 Kotlin `RuleEngine` exercised by `GoogleMapsRulesRegressionTest`; the two are kept in sync (the
 Python `regression` and the Kotlin test run the same fixtures and must agree).

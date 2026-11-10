@@ -55,10 +55,13 @@ int main(void) {
   about_details(tiny, sizeof(tiny), "0.0.68", "0.0.67", 1, 1, "Phone app connected");
   check("one-byte buffer is just the terminator", tiny, "");
 
-  // #132 FR2.4: About says that When driving is guessed from the speed.
+  // #132 FR2.4: About says that When driving is guessed from the speed; #134 FR7.6: and what
+  // Directions text does. Each note is a line of its own.
   printf("about intro\n");
-  const char *note = strstr(ABOUT_INTRO_TEXT, "\n");
-  check("the When driving line", note ? note + 1 : "", "When driving: guessed from your speed.");
+  const char *driving = strstr(ABOUT_INTRO_TEXT, "\nWhen driving: guessed from your speed.\n");
+  check("the When driving line", driving ? "found" : "missing", "found");
+  const char *last = strrchr(ABOUT_INTRO_TEXT, '\n');
+  check("the Directions text line", last ? last + 1 : "", "Directions text: Compact shows only the street.");
 
   if (failures) {
     printf("%d failure(s)\n", failures);

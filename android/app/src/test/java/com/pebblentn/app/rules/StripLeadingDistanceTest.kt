@@ -12,6 +12,10 @@ class StripLeadingDistanceTest {
         assertEquals("Keep right", DistanceParser.stripLeadingDistance("1.2 km · Keep right"))
         assertEquals("Turn right and go", DistanceParser.stripLeadingDistance("200 m • Turn right and go"))
         assertEquals("Turn left", DistanceParser.stripLeadingDistance("500 ft | Turn left"))
+        // #134: OsmAnd's Chinese titles carry Chinese units.
+        assertEquals("左转然后直行", DistanceParser.stripLeadingDistance("50 米 • 左转然后直行"))
+        assertEquals("靠左行走", DistanceParser.stripLeadingDistance("1.2 公里 • 靠左行走"))
+        assertEquals("a bare Chinese distance", "0 公尺", DistanceParser.stripLeadingDistance("0 公尺"))
     }
 
     @Test

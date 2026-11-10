@@ -43,7 +43,10 @@ User rules have highest precedence. Bundled and downloaded rules remain immutabl
 - duration parser;
 - maneuver mapping;
 - string normalization;
-- bounded join.
+- bounded join;
+- arrival clock (`arrivalClock`, REQ-RULE-019): an `H:MM` / `h:mm AM` clock as written; as `etaEpochSeconds` the next time it shows in the phone's time zone (the engine takes the zone as a parameter; tests pass a fixed one), whole minutes, a minute of grace.
+
+Rule outputs are `maneuver`, `distanceMeters`, `primaryText` (the full road line), `secondaryText`, `etaEpochSeconds`, `stopsRemaining` and `compactText` (the street alone, REQ-RULE-018). The phone picks `compactText` over `primaryText` when the Directions text setting is Compact and the rule found one.
 
 ## Regex safety
 

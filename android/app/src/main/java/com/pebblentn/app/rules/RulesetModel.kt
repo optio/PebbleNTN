@@ -67,6 +67,11 @@ data class RuleOutput(
     val etaEpochSeconds: Extractor? = null,
     /** Public-transit stops left (REQ-RULE-016): a number, or text whose first integer is the count. */
     val stopsRemaining: Extractor? = null,
+    /**
+     * The compact road line (#134): only the street, for the Directions text setting's Compact
+     * form. When absent (or it extracts nothing) Compact sends [primaryText].
+     */
+    val compactText: Extractor? = null,
 )
 
 /**
@@ -111,6 +116,20 @@ data class DistanceExtractor(val field: String) : Extractor
 @Serializable
 @SerialName("duration")
 data class DurationExtractor(val field: String) : Extractor
+
+/**
+ * An arrival clock in [field] (#134): `11:00`, `9:05`, `12:12 PM`, `下午3:05`. With a [pattern], the
+ * clock is read from capture [group] (like [RegexCaptureExtractor]); without one, from the first
+ * clock in the field. As text it is the clock as written; as `etaEpochSeconds` the engine turns it
+ * into the next time the clock shows it (see [ArrivalClock]).
+ */
+@Serializable
+@SerialName("arrivalClock")
+data class ArrivalClockExtractor(
+    val field: String,
+    val pattern: String? = null,
+    val group: Int = 1,
+) : Extractor
 
 @Serializable
 @SerialName("maneuverMap")

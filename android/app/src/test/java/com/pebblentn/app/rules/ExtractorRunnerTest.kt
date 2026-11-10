@@ -74,4 +74,25 @@ class ExtractorRunnerTest {
         assertTrue(runner.run(FieldCopyExtractor("text"), s) is ExtractionResult.None)
         assertTrue(runner.run(BoundedJoinExtractor(listOf("title", "text")), s) is ExtractionResult.None)
     }
+
+    /** #134: the arrival clock as written, from a capture group or the first clock in the field. */
+    @Test
+    fun arrivalClockWithPattern() {
+        val s = snapshot(text = "Sla rechtsaf en volg Voorbeeldstraat 215 m\n2,79 km • 1 u. 5 min • 11:00 • 40 km/u")
+        val extractor = ArrivalClockExtractor("text", "(?m)^[^•\\n]+•[^•\\n]+•\\s*([^•\\n]*?\\d{1,2}:\\d{2}[^•\\n]*?)\\s*(?:•|$)")
+        assertEquals("11:00", text(runner.run(extractor, s)))
+    }
+
+    @Test
+    fun arrivalClockWithoutPattern() {
+        assertEquals("12:12 PM", text(runner.run(ArrivalClockExtractor("subText"), snapshot(subText = "Arrive 12:12 PM"))))
+    }
+
+    @Test
+    fun arrivalClockWithoutAClockIsNone() {
+        val s = snapshot(subText = "Arrive soon", text = "ETA 25:00")
+        assertTrue(runner.run(ArrivalClockExtractor("subText"), s) is ExtractionResult.None)
+        assertTrue(runner.run(ArrivalClockExtractor("text", "ETA (\\S+)"), s) is ExtractionResult.None)
+        assertTrue(runner.run(ArrivalClockExtractor("title"), s) is ExtractionResult.None)
+    }
 }

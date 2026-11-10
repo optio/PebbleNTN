@@ -88,7 +88,7 @@ fun WatchSettingsScreen(
                     }
                     for (section in WatchSettingsUi.sections(mirror)) {
                         if (section.settings.isEmpty()) continue
-                        SettingsSection(stringResource(section.title)) {
+                        SettingsSection(stringResource(section.title), section.note?.let { stringResource(it) }) {
                             section.settings.forEachIndexed { index, setting ->
                                 if (index > 0) HorizontalDivider()
                                 SettingRow(setting, mirror, onClick = { onOpenSetting(setting) })
@@ -118,9 +118,9 @@ private fun NoticeCard(text: String) {
     }
 }
 
-/** A titled group, in the dashboard's style. */
+/** A titled group, in the dashboard's style, with an optional explanation under it. */
 @Composable
-private fun SettingsSection(title: String, content: @Composable () -> Unit) {
+private fun SettingsSection(title: String, note: String? = null, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = title,
@@ -130,6 +130,14 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
         )
         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
             Column { content() }
+        }
+        note?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
         }
     }
 }

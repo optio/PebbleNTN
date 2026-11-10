@@ -33,14 +33,14 @@ object DistanceParser {
     /**
      * "70 m · Slight left onto N155" → "Slight left onto N155" (REQ-RULE-017). Only a distance that is
      * followed by a separator (· • |) is dropped, so a bare "50 m" or a road name starting with a
-     * number stays as it is.
+     * number stays as it is. The Chinese units count too: OsmAnd's zh title is "50 米 • 左转然后直行" (#134).
      */
     fun stripLeadingDistance(text: String): String = LEADING_DISTANCE.matcher(text).replaceFirst("")
 
     private val LEADING_DISTANCE: Pattern = Pattern.compile(
         "(?i)^\\s*\\d+(?:[.,]\\d+)?\\s*" +
             "(?:kilometres|kilometers|kilometre|kilometer|km|miles|mile|mi|feet|foot|ft|pi|yards|yard|yd" +
-            "|metres|meters|metre|meter|m)\\s*[·•|]\\s*",
+            "|metres|meters|metre|meter|m|公里|千米|公尺|米)\\s*[·•|]\\s*",
     )
 
     fun parseMeters(text: String): Int? {

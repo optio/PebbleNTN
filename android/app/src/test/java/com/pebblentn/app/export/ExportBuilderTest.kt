@@ -199,7 +199,7 @@ class ExportBuilderTest {
                 builder.build(mode, emptyList(), listOf(recorded), appVersion = "0.0.60", androidRelease = "15", exportedAt = "2026-10-11T00:00:00Z", appVersionCode = 60),
             ).jsonObject
             val metadata = root.getValue("metadata").jsonObject
-            assertEquals("6 since the driving log (#132)", 6L, metadata.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals("7 since the watch settings (#134)", 7L, metadata.getValue("schemaVersion").jsonPrimitive.long)
             assertEquals(60L, metadata.getValue("appVersionCode").jsonPrimitive.long)
             // Version strings are not personal data: privacy-safe keeps them unredacted.
             val versions = root.getValue("events").jsonArray.single().jsonObject.getValue("versions").jsonObject
@@ -274,7 +274,7 @@ class ExportBuilderTest {
     fun theDrivingLogIsInThePrivacySafeAndTheFullExport() {
         for (mode in listOf(ExportMode.PRIVACY_SAFE, ExportMode.FULL)) {
             val root = buildWithDriving(mode)
-            assertEquals(6L, root.getValue("metadata").jsonObject.getValue("schemaVersion").jsonPrimitive.long)
+            assertEquals(7L, root.getValue("metadata").jsonObject.getValue("schemaVersion").jsonPrimitive.long)
             val log = root.getValue("drivingLog").jsonArray.map { it.jsonObject }
             assertEquals(3, log.size)
             assertEquals(listOf("SAMPLE", "HIDE", "RESET"), log.map { it.getValue("decision").jsonPrimitive.content })
@@ -305,5 +305,48 @@ class ExportBuilderTest {
     fun aRulesOnlyExportHasNoDrivingLog() {
         val log = buildWithDriving(ExportMode.RULES_ONLY).getValue("drivingLog").jsonArray
         assertTrue(log.isEmpty())
+    }
+
+    // --- #134 FR7.6: Directions text and the compact road line ------------------------------------
+
+    private fun buildWithSettings(mode: ExportMode, settings: Map<String, Int>?) = Json.parseToJsonElement(
+        builder.build(
+            mode,
+            emptyList(),
+            listOf(
+                event.copy(
+                    instruction = com.pebblentn.app.core.NavigationInstruction(
+                        com.pebblentn.app.core.Maneuver.RIGHT,
+                        primaryText = "Turn right onto Elm Street",
+                        compactText = "Elm Street",
+                    ),
+                ),
+            ),
+            appVersion = "0.0.83",
+            androidRelease = "16",
+            exportedAt = "2026-11-10T00:00:00Z",
+            watchSettings = settings,
+        ),
+    ).jsonObject
+
+    @Test
+    fun theWatchSettingsAreInEveryModeWithDirectionsText() {
+        for (mode in ExportMode.entries) {
+            val metadata = buildWithSettings(mode, mapOf("DIRECTIONS_TEXT" to 1, "UNITS" to 0)).getValue("metadata").jsonObject
+            val settings = metadata.getValue("watchSettings").jsonObject
+            assertEquals("$mode", 1L, settings.getValue("DIRECTIONS_TEXT").jsonPrimitive.long)
+        }
+        val none = buildWithSettings(ExportMode.FULL, null).getValue("metadata").jsonObject
+        assertEquals("before a watchapp sent any", JsonNull, none.getValue("watchSettings"))
+    }
+
+    @Test
+    fun theCompactRoadLineIsExportedAndRedactedLikeTheFullOne() {
+        val full = buildWithSettings(ExportMode.FULL, null).getValue("events").jsonArray.single().jsonObject
+            .getValue("watchOutput").jsonObject
+        assertEquals("Elm Street", full.getValue("compactText").jsonPrimitive.content)
+        val safe = buildWithSettings(ExportMode.PRIVACY_SAFE, null).getValue("events").jsonArray.single().jsonObject
+            .getValue("watchOutput").jsonObject
+        assertFalse("redacted", safe.getValue("compactText").jsonPrimitive.content.contains("Elm"))
     }
 }

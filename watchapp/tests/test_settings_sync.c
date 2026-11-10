@@ -6,10 +6,12 @@
 
 #include "../src/c/settings_sync.h"
 
+#include "../src/c/directions_text.h"
 #include "../src/c/generated/protocol.h"
 #include "../src/c/shortcuts.h"
 
 #include <stdio.h>
+#include <string.h>
 
 static int failures;
 
@@ -111,7 +113,7 @@ int main(void) {
   expect_bool("every default is valid on a watch with everything", defaults_valid, true);
 
   printf("table\n");
-  expect_int("26 settings", SET_COUNT, 26);
+  expect_int("27 settings", SET_COUNT, 27);
   expect_int("accent count", sync_value_count(SET_ACCENT), 16);
   expect_int("shortcut count", sync_value_count(SET_SHORTCUT_FIRST + SLOT_TAP), ACTION_COUNT);
   expect_int("persist key of the accent", (int)sync_persist_key(SET_ACCENT), 1);
@@ -135,6 +137,21 @@ int main(void) {
   expect_bool("When driving is an int", sync_is_bool(SET_DRIVING_MODE), false);
   expect_int("protocol key of the imperial speed", PBNTN_KEY_SETTING_ACCENT + SET_DRIVING_SPEED_IMPERIAL,
              PBNTN_KEY_SETTING_DRIVING_SPEED_IMPERIAL);
+  // #134: Directions text, protocol 1.5, key 44, persist key 32; Full by default on every watch.
+  expect_int("protocol 1.5", PBNTN_PROTOCOL_MINOR, 5);
+  expect_int("protocol key of Directions text", PBNTN_KEY_SETTING_ACCENT + SET_DIRECTIONS_TEXT,
+             PBNTN_KEY_SETTING_DIRECTIONS_TEXT);
+  expect_int("key 44", PBNTN_KEY_SETTING_DIRECTIONS_TEXT, 44);
+  expect_int("persist key of Directions text", (int)sync_persist_key(SET_DIRECTIONS_TEXT), 32);
+  expect_int("Directions text: Full", sync_default(SET_DIRECTIONS_TEXT, EMERY), 0);
+  expect_int("Directions text: Full on aplite too", sync_default(SET_DIRECTIONS_TEXT, APLITE), 0);
+  expect_int("two values", sync_value_count(SET_DIRECTIONS_TEXT), 2);
+  expect_bool("Compact is valid on aplite", sync_valid(SET_DIRECTIONS_TEXT, 1, APLITE), true);
+  expect_bool("2 is out of range", sync_valid(SET_DIRECTIONS_TEXT, 2, EMERY), false);
+  expect_bool("Directions text is an int", sync_is_bool(SET_DIRECTIONS_TEXT), false);
+  expect_bool("Full's name", strcmp(DIRECTIONS_TEXT_NAME(DIRECTIONS_TEXT_FULL), "Full") == 0, true);
+  expect_bool("Compact's name", strcmp(DIRECTIONS_TEXT_NAME(DIRECTIONS_TEXT_COMPACT), "Compact") == 0, true);
+  expect_bool("out of range is named Full", strcmp(DIRECTIONS_TEXT_NAME(2), "Full") == 0, true);
   expect_bool("Invert is a bool", sync_is_bool(SET_INVERT), true);
   expect_bool("Units is an int", sync_is_bool(SET_UNITS), false);
   expect_int("protocol key of Tap", PBNTN_KEY_SETTING_ACCENT + SET_SHORTCUT_FIRST + SLOT_TAP,

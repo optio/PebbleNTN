@@ -1,7 +1,7 @@
 package com.pebblentn.app.core
 
+import com.pebblentn.app.rules.ArrivalClock
 import java.time.Instant
-import java.time.LocalTime
 import java.time.ZoneId
 
 /**
@@ -166,29 +166,15 @@ class DrivingSpeedEstimator(
 
         private const val MS_TO_KMH = 3.6
 
-        private val CLOCK = Regex("""(\d{1,2}):(\d{2})(?:\s*([AaPp])\.?\s*[Mm]\.?)?""")
-
         /**
          * The epoch time of the arrival clock in [subText] ("Arrive 12:12 PM", "Arrive 20:25"): the
          * last h:mm in it, with AM/PM when present, on the day of [postTimeMillis] in [zone], or the
          * next day when that clock time has already passed. Null when there is no valid clock.
+         * The clock is read by [ArrivalClock], the parser the rule engine uses (#134).
          */
         fun arrivalMillis(subText: String?, postTimeMillis: Long, zone: ZoneId): Long? {
-            val match = subText?.let { CLOCK.findAll(it).lastOrNull() } ?: return null
-            var hour = match.groupValues[1].toInt()
-            val minute = match.groupValues[2].toInt()
-            val meridiem = match.groupValues[3].lowercase()
-            if (minute > 59) return null
-            if (meridiem.isNotEmpty()) {
-                if (hour !in 1..12) return null
-                hour = hour % 12 + if (meridiem == "p") 12 else 0
-            } else if (hour > 23) {
-                return null
-            }
-            val posted = Instant.ofEpochMilli(postTimeMillis).atZone(zone)
-            var arrival = posted.toLocalDate().atTime(LocalTime.of(hour, minute)).atZone(zone)
-            if (arrival.isBefore(posted.minusMinutes(1))) arrival = arrival.plusDays(1)
-            return arrival.toInstant().toEpochMilli()
+            val time = ArrivalClock.parseLast(subText) ?: return null
+            return ArrivalClock.next(time, Instant.ofEpochMilli(postTimeMillis), zone).toInstant().toEpochMilli()
         }
     }
 }

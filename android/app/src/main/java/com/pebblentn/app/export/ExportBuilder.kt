@@ -30,7 +30,7 @@ data class ExportMetadata(
     /**
      * 2 adds [appVersionCode] and the per-event versions (#84); 3 the grouped occurrences (#86); 4
      * [userAddedPackages] and the per-event [ExportedEvent.customPackage]; 5 [install] (#119); 6 the
-     * [ExportBundle.drivingLog] (#132).
+     * [ExportBundle.drivingLog] (#132); 7 [watchSettings] and [ExportedWatchOutput.compactText] (#134).
      */
     val schemaVersion: Int = SCHEMA_VERSION,
     val mode: String,
@@ -51,9 +51,15 @@ data class ExportMetadata(
     val userAddedPackages: Map<String, List<String>> = emptyMap(),
     /** What installed or last updated this version, and when (REQ-DEBUG-015); present in every mode. */
     val install: ExportInstall = ExportInstall.from(InstallRecord.UNKNOWN),
+    /**
+     * The watchapp's settings as the phone mirrors them, by setting name (`DIRECTIONS_TEXT`: 0 Full,
+     * 1 Compact, #134 FR7.6), so a maintainer sees which road line the watch got. Null before a
+     * watchapp ever sent its settings. Setting values are not personal data; present in every mode.
+     */
+    val watchSettings: Map<String, Int>? = null,
 ) {
     companion object {
-        const val SCHEMA_VERSION = 6
+        const val SCHEMA_VERSION = 7
     }
 }
 
@@ -112,6 +118,8 @@ data class ExportedWatchOutput(
     val primaryText: String? = null,
     val secondaryText: String? = null,
     val stopsRemaining: Int? = null,
+    /** The compact road line the rule found (#134), sent instead of [primaryText] in Compact mode. */
+    val compactText: String? = null,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -200,8 +208,11 @@ class ExportBuilder(
         installRecord: InstallRecord = InstallRecord.UNKNOWN,
         /** The When driving log (#132 FR14); left out of a rules-only export. */
         drivingLog: List<DrivingLogEntry> = emptyList(),
+        /** The mirrored watch settings by name (#134 FR7.6), or null before any arrived. */
+        watchSettings: Map<String, Int>? = null,
     ): String {
         val metadata = ExportMetadata(
+            watchSettings = watchSettings,
             mode = mode.name,
             exportedAt = exportedAt,
             appVersion = appVersion,
@@ -236,6 +247,7 @@ class ExportBuilder(
                 primaryText = it.primaryText?.let { text -> if (redact) redactor.redactText(text) else text },
                 secondaryText = it.secondaryText?.let { text -> if (redact) redactor.redactText(text) else text },
                 stopsRemaining = it.stopsRemaining,
+                compactText = it.compactText?.let { text -> if (redact) redactor.redactText(text) else text },
             )
         }
         return ExportedEvent(

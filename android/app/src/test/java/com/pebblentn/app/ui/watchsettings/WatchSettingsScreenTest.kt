@@ -130,6 +130,23 @@ class WatchSettingsScreenTest {
         compose.onNodeWithContentDescription("Preview: Off").assertDoesNotExist()
     }
 
+    // --- Directions text (#134 FR7.2, FR7.4) -----------------------------------------------------
+
+    @Test
+    fun directionsTextShowsForA13WatchappWithItsValueAndExplanation() {
+        val state = WatchSettingsSyncState(
+            mirror = WatchMessages.settings(1, mapOf(WatchSetting.DIRECTIONS_TEXT to 1)),
+            receivedFromWatch = true,
+            watchProtocolMinor = 3,
+        )
+        val opened = mutableListOf<WatchSetting>()
+        compose.setContent { WatchSettingsScreen(state, watchappOpen = true, onOpenSetting = { opened += it }, onBack = {}) }
+        compose.onNodeWithText("Compact").performScrollTo().assertExists()
+        compose.onNodeWithText("Compact shows only the street name when the app gives one.").performScrollTo().assertExists()
+        compose.onNodeWithText("Directions text").performScrollTo().performClick()
+        assertEquals(listOf(WatchSetting.DIRECTIONS_TEXT), opened)
+    }
+
     // --- When driving (#132 FR3, FR4) ------------------------------------------------------------
 
     private fun drivingState(minor: Int?, overrides: Map<WatchSetting, Int> = emptyMap()) = WatchSettingsSyncState(

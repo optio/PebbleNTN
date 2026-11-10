@@ -7,6 +7,7 @@ import com.pebblentn.app.core.ReducerEvent
 import com.pebblentn.app.core.WatchPlatform
 import com.pebblentn.app.core.WatchSetting
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -73,8 +74,8 @@ class ProtocolCodecTest {
         assertEquals(5, msg.intOrNull(Protocol.Keys.STOPS_REMAINING))
         assertNull("a ride has no turn distance", msg.intOrNull(Protocol.Keys.DISTANCE_METERS))
         // #94 (FR1.1): protocol 1.2 adds the update flag and LATEST_PHONE_VERSION; #102 makes it 1.3,
-        // #132 (When driving) 1.4.
-        assertEquals(4, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
+        // #132 (When driving) 1.4, #134 (Directions text) 1.5.
+        assertEquals(5, msg.intOrNull(Protocol.Keys.PROTOCOL_MINOR))
     }
 
     @Test
@@ -275,7 +276,7 @@ class ProtocolCodecTest {
         assertEquals(42, decoded.revision)
         assertEquals(WatchPlatform.EMERY, decoded.platform)
         assertEquals(WatchMessages.EMERY_CAPS, decoded.capabilities)
-        assertEquals("the When driving three read as their defaults", 26, decoded.values.size)
+        assertEquals("the When driving three and Directions text read as their defaults", 27, decoded.values.size)
         assertEquals(sent.values, decoded.values)
         assertEquals(9, decoded.accent)
         assertTrue(decoded.touchEnabled)
@@ -331,5 +332,54 @@ class ProtocolCodecTest {
         assertEquals(4, message.intOrNull(Protocol.Keys.SETTING_DRIVING_SPEED_IMPERIAL))
         assertEquals(43, Protocol.Keys.SETTING_DRIVING_SPEED_IMPERIAL)
         assertNull(message.intOrNull(Protocol.Keys.SETTING_DRIVING_MODE))
+    }
+
+    // --- Protocol 1.5: Directions text (#134 FR7.1, FR7.2) ---------------------------------------
+
+    private fun navigating(primary: String?, compact: String?) = NavigationState.Navigating(
+        instruction = NavigationInstruction(maneuver = Maneuver.RIGHT, primaryText = primary, compactText = compact),
+        stateTimestampSeconds = 100,
+        sessionId = 1,
+    )
+
+    private fun roadLine(state: NavigationState, compact: Boolean): String? =
+        ProtocolCodec.encodeState(state, 0, appVersion, compact = compact).stringOrNull(Protocol.Keys.PRIMARY_TEXT)
+
+    @Test
+    fun fullSendsThePrimaryText() {
+        val state = navigating("Sla rechtsaf en volg Voorbeeldstraat", "Voorbeeldstraat")
+        assertEquals("Sla rechtsaf en volg Voorbeeldstraat", roadLine(state, compact = false))
+        assertEquals("the default is Full", "Sla rechtsaf en volg Voorbeeldstraat", ProtocolCodec.encodeState(state, 0, appVersion).stringOrNull(Protocol.Keys.PRIMARY_TEXT))
+    }
+
+    @Test
+    fun compactSendsTheCompactText() {
+        assertEquals("Voorbeeldstraat", roadLine(navigating("Sla rechtsaf en volg Voorbeeldstraat", "Voorbeeldstraat"), compact = true))
+    }
+
+    @Test
+    fun compactWithoutACompactTextSendsThePrimaryText() {
+        assertEquals("Turn right", roadLine(navigating("Turn right", null), compact = true))
+        assertNull("no road line at all stays absent", roadLine(navigating(null, null), compact = true))
+    }
+
+    @Test
+    fun theCompactTextIsFittedToo() {
+        val long = "Example ".repeat(12).trim()
+        val sent = roadLine(navigating("Turn right onto $long", long), compact = true)!!
+        assertTrue(sent.toByteArray(Charsets.UTF_8).size <= ProtocolCodec.MAX_PRIMARY_BYTES)
+        assertTrue(sent.endsWith("…"))
+    }
+
+    @Test
+    fun aProtocol15ReadyCarriesDirectionsTextAndA14OneDoesNot() {
+        val compact = WatchMessages.settings(revision = 3, overrides = mapOf(WatchSetting.DIRECTIONS_TEXT to 1))
+        val ready15 = WatchMessages.ready15(compact)
+        assertEquals(5, ProtocolCodec.realWatchReadyMinor(ready15))
+        assertEquals(1, ready15.intOrNull(Protocol.Keys.SETTING_DIRECTIONS_TEXT))
+        assertTrue(ProtocolCodec.decodeWatchSettings(ready15)!!.compactDirections)
+        val ready14 = WatchMessages.ready14(compact)
+        assertNull(ready14.intOrNull(Protocol.Keys.SETTING_DIRECTIONS_TEXT))
+        assertFalse("a missing key reads as Full", ProtocolCodec.decodeWatchSettings(ready14)!!.compactDirections)
     }
 }

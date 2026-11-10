@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "google-maps-any-2026.10.16",
-  "minimumAppVersionCode": 1,
+  "rulesetVersion": "google-maps-any-2026.11.10",
+  "minimumAppVersionCode": 83,
   "createdAt": "2026-10-11T00:00:00Z",
   "publisher": "PebbleNTN maintainers",
   "rules": [
@@ -104,6 +104,12 @@
         },
         "secondaryText": {
           "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
           "field": "subText",
           "pattern": "(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1
@@ -212,6 +218,12 @@
         },
         "secondaryText": {
           "type": "regexCapture",
+          "field": "subText",
+          "pattern": "(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
+          "group": 1
+        },
+        "etaEpochSeconds": {
+          "type": "arrivalClock",
           "field": "subText",
           "pattern": "(\\d{1,2}:\\d{2}(?:\\s*[AaPp][Mm])?)",
           "group": 1

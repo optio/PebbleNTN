@@ -17,6 +17,7 @@
 
 #include <pebble.h>
 
+#include "directions_text.h"
 #include "driving_label.h"
 #include "shortcut_apply.h"
 #include "theme.h"
@@ -932,7 +933,10 @@ static void push_drive_window(void) {
 #define ROW_UNITS 9
 #define ROW_DRIVING 10  // When driving (REQ-WATCH-026), after the units its speed follows
 #define ROW_SHORTCUTS 11
-#define MAIN_ROW_COUNT 12
+// Directions text (REQ-WATCH-027, #134): switches Full / Compact in place on every watch, aplite
+// included; last, so the rows above keep their places (and the screenshot tool its row numbers).
+#define ROW_DIRECTIONS 12
+#define MAIN_ROW_COUNT 13
 
 static Window *s_window;
 static MenuLayer *s_menu;
@@ -961,6 +965,7 @@ static const char *const kMainTitles[MAIN_ROW_COUNT] = {
   [ROW_UNITS] = "Distance units",
   [ROW_DRIVING] = "When driving",
   [ROW_SHORTCUTS] = "Shortcuts",
+  [ROW_DIRECTIONS] = "Directions text",
 };
 
 // The setting each row cycles in place, plus one; 0 for a row that opens a door. Backlight opens a
@@ -974,6 +979,7 @@ static const uint8_t kMainCycles[MAIN_ROW_COUNT] = {
   [ROW_ETA_LABEL] = SET_ETA_LABEL + 1,
   [ROW_ARROW] = SET_ARROW_LEFT + 1,
   [ROW_UNITS] = SET_UNITS + 1,
+  [ROW_DIRECTIONS] = SET_DIRECTIONS_TEXT + 1,
 #ifdef PBL_PLATFORM_APLITE
   [ROW_DRIVING] = SET_DRIVING_MODE + 1,  // no When driving door on aplite (heap)
 #endif
@@ -994,6 +1000,7 @@ static void main_row(GContext *ctx, const Layer *cell, MenuIndex *index, void *d
     case ROW_ETA_LABEL: value = eta_label_style_name(settings_eta_label_style()); break;
     case ROW_ABOUT: value = s_about.app_version; break;
     case ROW_BACKLIGHT: value = backlight_mode_name(settings_backlight()); break;
+    case ROW_DIRECTIONS: value = DIRECTIONS_TEXT_NAME(settings_directions_text()); break;
     case ROW_DRIVING:
 #ifdef PBL_PLATFORM_APLITE
       // No room for the speed label on aplite (#132 NFR4): the phone app shows and sets the speed.

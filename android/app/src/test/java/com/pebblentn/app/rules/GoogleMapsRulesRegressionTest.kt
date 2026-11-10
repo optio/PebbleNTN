@@ -44,6 +44,13 @@ class GoogleMapsRulesRegressionTest {
         val noDistance: Boolean = false,
         /** Public-transit stops left (REQ-RULE-016). */
         val stopsRemaining: Int? = null,
+        /** The compact road line, the street alone (#134). */
+        val compactText: String? = null,
+        val noCompactText: Boolean = false,
+        val noSecondaryText: Boolean = false,
+        /** The arrival epoch from the arrival clock, at the fixture's post time and zone (#134). */
+        val etaEpochSeconds: Long? = null,
+        val noEta: Boolean = false,
     )
 
     @Serializable
@@ -53,6 +60,8 @@ class GoogleMapsRulesRegressionTest {
         val packageName: String,
         /** "capture" (derived from a real notification) or "synthetic". */
         val source: String = "synthetic",
+        val nowEpochSeconds: Long = 0,
+        val timeZone: String = "UTC",
         val snapshot: FixtureSnapshot,
         val expected: Expected,
     )
@@ -71,9 +80,10 @@ class GoogleMapsRulesRegressionTest {
      * `package-variant-app.morphe.android.apps.maps-*` fixtures (MicroG Maps, #113) get the Google
      * Maps rules although no rule lists that package.
      */
-    private val engine = RuleEngine(
-        families = com.pebblentn.app.catalog.NavigationAppCatalog.parse(resource("/catalog/navigation-apps.json")).ruleFamilies(),
-    )
+    private val families =
+        com.pebblentn.app.catalog.NavigationAppCatalog.parse(resource("/catalog/navigation-apps.json")).ruleFamilies()
+    private val engine = RuleEngine(families = families)
+    private val checks = FixtureOutputChecks(families)
 
     /** Every bundled Google Maps locale; the engine filters by each fixture's locale. */
     private val locales = listOf("en", "it", "fr", "es", "de", "nl", "zh", "pt", "pl")
@@ -109,7 +119,8 @@ class GoogleMapsRulesRegressionTest {
                 bigText = fixture.snapshot.bigText,
                 iconDrawable = fixture.snapshot.iconDrawable,
             )
-            val result = engine.evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = 0)
+            val result = checks.engine(fixture.timeZone)
+                .evaluate(snapshot, bundledRules, locale = fixture.locale, nowEpochSeconds = fixture.nowEpochSeconds)
 
             if (!fixture.expected.matched) {
                 assertEquals(
@@ -143,6 +154,12 @@ class GoogleMapsRulesRegressionTest {
             }
             if (fixture.expected.noDistance) {
                 assertEquals("fixture '${fixture.name}' must carry no distance", null, result.instruction.distanceMeters)
+            }
+            with(fixture.expected) {
+                checks.check(
+                    fixture.name, result.instruction, compactText, noCompactText,
+                    secondaryText, noSecondaryText, etaEpochSeconds, noEta,
+                )
             }
         }
     }

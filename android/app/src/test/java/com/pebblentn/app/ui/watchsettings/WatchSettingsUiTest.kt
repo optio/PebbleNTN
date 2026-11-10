@@ -100,6 +100,19 @@ class WatchSettingsUiTest {
         assertTrue(WatchSettingsUi.showsDrivingSection(WatchSettingsSyncState(mirror, receivedFromWatch = true, watchProtocolMinor = 4)))
     }
 
+    /** #134 FR7.2, FR7.4: the Directions row is there for every watchapp that sends its settings. */
+    @Test
+    fun theDirectionsSectionIsOfferedOnEveryWatchWithItsNote() {
+        for (caps in listOf(WatchCapabilities.NONE, basalt, WatchMessages.EMERY_CAPS)) {
+            val sections = WatchSettingsUi.sections(WatchMessages.settings(1, caps = caps))
+            val directions = sections.single { WatchSetting.DIRECTIONS_TEXT in it.settings }
+            assertEquals(listOf(WatchSetting.DIRECTIONS_TEXT), directions.settings)
+            assertEquals(com.pebblentn.app.R.string.watch_directions_text_explanation, directions.note)
+        }
+        assertEquals(listOf(0, 1), WatchSettingsUi.options(WatchSetting.DIRECTIONS_TEXT, WatchMessages.settings(1)))
+        assertNull(WatchSettingsUi.preview(WatchSetting.DIRECTIONS_TEXT, 1, WatchPlatform.BASALT))
+    }
+
     @Test
     fun theDrivingSettingsAreNotListedAsOptionRows() {
         assertTrue(rows(WatchMessages.settings(1)).none { it.isDriving })

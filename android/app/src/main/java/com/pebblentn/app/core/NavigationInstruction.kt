@@ -14,6 +14,9 @@ import kotlinx.serialization.Serializable
  * @property secondaryText optional secondary line.
  * @property etaEpochSeconds estimated arrival time as a Unix epoch second, or null.
  * @property stopsRemaining public-transit stops left on the current ride, or null. Never negative.
+ * @property compactText the short form of the road line (#134): only the street, without the
+ *   instruction words, when the rule could tell them apart; null otherwise. The phone sends it
+ *   instead of [primaryText] when the Directions text setting is Compact.
  */
 @Serializable
 data class NavigationInstruction(
@@ -23,6 +26,7 @@ data class NavigationInstruction(
     val secondaryText: String? = null,
     val etaEpochSeconds: Long? = null,
     val stopsRemaining: Int? = null,
+    val compactText: String? = null,
 ) {
     init {
         require(distanceMeters == null || distanceMeters >= 0) {
