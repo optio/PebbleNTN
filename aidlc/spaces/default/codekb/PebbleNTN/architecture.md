@@ -4,144 +4,147 @@
 
 ### System Overview
 
-A two-device system with no server. An Android companion app (`android/app`) listens to navigation-app notifications, turns each one into a normalized `NavigationInstruction` with a declarative rule engine, reduces it into one session state, and sends that state over Pebble AppMessage (PebbleKit Android 2) to a C watchapp (`watchapp/`). The watchapp renders it and syncs its own settings back. Repository tooling (Python) generates the shared protocol constants, validates and regression-tests the rule data, and captures real notifications in an emulator.
+Two deployables talk over Bluetooth through the Pebble mobile app: the Android companion app (`android/app`, Kotlin, Jetpack Compose) and the Pebble watchapp (`watchapp/`, C). A shared AppMessage protocol definition (`protocol/protocol-definition.json`, 1.5) generates the constants for both sides. Rule packs, the app catalog and fixtures are JSON data under `rules/`, staged into the app at build time. Python tools support rule authoring, route capture, protocol generation and store graphics.
 
 ### Architectural Style
 
-**Modular monolith per device, event-driven pipeline, functional core.**
-
-- One Android app module with feature packages (`notification`, `rules`, `core`, `pebble`, `protocol`, `data`, `ui`, ...), wired by hand in `di/AppContainer.kt` (no DI framework, per `spec/700-ai/CodingStandards.md`).
-- Pure, deterministic core: `RuleEngine`, `ExtractorRunner`, `ConditionEvaluator`, `NavigationSessionReducer`, `ProtocolCodec`, `DrivingSpeedEstimator`, `WatchSettingsSync` take inputs and a clock and return values or effects; Android I/O stays at the edges (listener service, `PebbleWatchTransport`, Room, DataStore).
-- Rules are data, not code: JSON rulesets interpreted by a closed set of operators and extractors (REQ-RULE-001/002).
-- Single source of truth for the wire protocol: `protocol/protocol-definition.json` generates `Protocol.kt` and `protocol.h`.
+Client-side monolith per device, no backend. The Android app is a single module with feature packages, manual dependency injection (`di/AppContainer.kt`), pure Kotlin domain logic (rule engine, session reducer, settings sync) kept free of Android types, and Compose screens fed by `StateFlow`s. The watch is an event-driven C program (AppMessage inbox, timers, windows). Evidence: `core/` and `rules/` have no Android imports; `NavigationController` executes reducer effects; `WatchSettingsUi` is pure functions for the screen.
 
 ### Component Relationships
 
 ```mermaid
 flowchart LR
-    NA["Navigation app notification"] --> LS["NavigationNotificationListenerService"]
-    LS --> ND["NotificationDispatcher: master switch + allowlist"]
-    ND -->|eligible only| SF["NotificationSnapshotFactory + LargeIconRecognizer"]
-    SF --> Q["SerialProcessingQueue"]
-    Q --> DCP["DebugCaptureProcessor"]
-    RR["RuleRepository: user, downloaded, bundled"] --> RE["RuleEngine"]
-    DCP --> RE
-    RE --> EX["ExtractorRunner + DistanceParser + DurationParser"]
-    DCP --> DH["DebugHistoryRepository (Room)"]
-    DCP -->|instruction| NC["NavigationController"]
-    DCP -->|speed sample| NC
-    NC --> RED["NavigationSessionReducer"]
-    NC --> DSE["DrivingSpeedEstimator + DrivingPolicy"]
-    RED -->|SendState effect| PC["ProtocolCodec"]
-    PC --> WT["PebbleWatchTransport (PebbleKit 2)"]
-    WT <-->|AppMessage| W["Watchapp main.c"]
-    W --> STRIP["ETA strip: eta_text.c"]
-    UI["Compose UI"] --> AC["AppContainer"]
-    AC --> NC
-    AC --> RR
+  NA[Navigation app notification] --> NI[Notification Intake]
+  NI --> RE[Rule Engine]
+  RP[(Bundled Rule Packs)] --> RE
+  CAT[Navigation App Catalog] --> NI
+  CAT --> RE
+  IC[Large Icon Recognizer] --> RE
+  RE --> SC[Session Core]
+  SC --> WL[Watch Link]
+  DD[Driving Detection] --> WL
+  WSS[Watch Settings Sync] --> WL
+  WL -->|AppMessage via PebbleKit 2| W[Watchapp]
+  W -->|READY, SETTINGS, requests| WL
+  WL --> WSS
+  UI[Companion UI] --> AC[App Container]
+  WSUI[Watch Settings Screen] --> AC
+  AC --> WSS
+  AC --> PS[(Persistence)]
+  NI --> PS
+  PS --> DE[Diagnostics Export]
 ```
 
-Text fallback: the listener hands the package name to the dispatcher; only enabled, allowlisted packages get a snapshot built; a serial queue runs the capture processor, which evaluates the layered rules, records the event and trace in Room, and forwards a matched instruction and any speed sample to the navigation controller. The controller runs the pure reducer and the driving estimator, encodes `SendState` effects with the codec, and sends them through the PebbleKit transport to the watchapp, which renders the arrow, distance, road and ETA strip. The UI reaches everything through the container.
+Text fallback: notifications enter Notification Intake, which uses the catalog and the rule engine (with bundled rule packs and the icon recognizer) to build an instruction. Session Core decides what to send; Watch Link encodes and sends it to the watchapp, also applying When driving and the watch settings mirror. The watchapp sends READY, SETTINGS and state requests back to Watch Link, which feeds Watch Settings Sync. The Companion UI and the Watch Settings Screen act through the App Container. Persistence stores history, rules and preferences, read by Diagnostics Export.
 
 ### Data Flow
 
-1. **Intake**: `onNotificationPosted` → `NotificationDispatcher.onPosted(packageName) { snapshot }`. The content lambda runs only after the master switch and allowlist pass (AGENTS.md rule 7).
-2. **Snapshot**: `NotificationSnapshotFactory` copies `title`, `text`, `subText`, `bigText`, `summaryText`, `infoText`, channel, category, template, progress, and the matched icon drawable name. `combinedText` joins the text fields with spaces.
-3. **Field access**: `SnapshotFields.resolve` maps a rule field name to a value and turns Unicode space separators (NBSP) into ASCII spaces. Newlines in `bigText` are kept, so rules can address line 1 or 2 with `(?m)`.
-4. **Evaluation**: `RuleEngine.evaluate(snapshot, layers, locale, now)` sorts user > downloaded > bundled, then priority descending, then id. It skips other rule families, disabled rules and other locales (language part of the phone locale), short-circuits conditions, and assembles the first match. It records a trace entry per evaluated rule. A regex timeout disables the rule for that run.
-5. **Assembly**: maneuver token → `Maneuver.fromToken`; distance (`Num`) → non-negative Int; primary/secondary → text; `etaEpochSeconds` → `now + seconds` when the extractor is `duration`, otherwise the number as an absolute epoch; `stopsRemaining` → number or first integer in text.
-6. **Session**: `NavigationSessionReducer` quantizes distance, carries the ETA within the session for 5 minutes, launches the watchapp once, deduplicates by `lastSentInstruction != instruction`, and flags stale states after 30 s.
-7. **Wire**: `ProtocolCodec.encodeState` fits primary text to 64 bytes and secondary to 24 bytes on whole characters, and sends `ETA_EPOCH_SECONDS` only when set.
-8. **Watch**: `main.c` stores the fields. The strip shows `secondaryText` ("ETA 17:45"), or in time-left mode a countdown from the epoch, else from the `HH:MM` in `secondaryText` (`eta_parse_clock_minutes`).
+1. `NavigationNotificationListenerService` → `NotificationDispatcher`: master switch and allowlist checked before any extras are read; an immutable `NotificationSnapshot` is queued on `SerialProcessingQueue`.
+2. `NotificationProcessor` runs `RuleEngine.evaluate` (layered rules: user > downloaded > bundled; family and locale filtering) → `NavigationInstruction`; a debug event is recorded.
+3. `NavigationController` feeds `NavigationSessionReducer`; effects (launch, send, stop) go to `PebbleWatchTransport` after `ProtocolCodec.encodeState` (road line Full or Compact from the watch settings mirror).
+4. The watchapp renders and persists its own settings; it sends WATCH_READY (protocol minor, platform, capabilities, all settings) and SETTINGS on change.
+5. Settings arriving at the phone are merged by `WatchSettingsSync.onWatchSettings` into the mirror (`WatchSettingsMirrorRepository`, DataStore); phone edits go through `onPhoneEdit` and are sent as SETTINGS only while the watchapp is open, else queued.
 
 ### Key Design Decisions
 
-| Decision | Rationale (from code and spec) | Implication for change |
-|---|---|---|
-| Declarative closed extractor set | Remote rules must never execute code (REQ-RULE-002) | A new extraction ability means a new extractor type in the schema (hash-protected), the Kotlin model, the validator and the Python workbench |
-| Phone locale picks rule language | Navigation apps follow the system language | A user whose OsmAnd language differs from the phone's gets no match |
-| Distance needs an explicit unit | A bare number was the ETA hour ("23 m" bug, 2026-07-13) | Clock and duration text must never feed the distance extractor |
-| ARRIVE at the bottom of localized ladders | Road names with arrival stems ("Zielstattstraße") | New localized rules keep the ladder order |
-| Reducer dedup on instruction equality | Avoid spamming the watch and vibrations | An ETA epoch that changes every second defeats dedup; a minute-aligned one does not |
-| Secondary text doubles as the ETA string | The watch labels it ETA and parses its clock | Putting a non-clock value (OsmAnd de: remaining km) there shows "ETA 3,3 km" |
-| Rule data staged from `rules/` into assets and test resources | One source of truth for runtime and tests | Editing `rules/` changes app and tests together |
-
-Security: notification content is read only after the allowlist check, the snapshot type has no place for intents, actions or images, and exports are redacted on request (spec/600-security-release). Remote official rule updates exist but are off (no public keys embedded).
+- **Privacy gate first** (AGENTS.md rules 7-9): no content read before the allowlist; no automatic upload.
+- **Declarative rules only** (rule 6): no remote code; strict JSON with a closed extractor set.
+- **Generated protocol constants** (rule 5) checked in CI on both sides.
+- **Watch owns its settings**: the phone keeps a mirror with revisions 0-99 (wrapping, 50-apart tie goes to the watch); the same rule is implemented in `WatchSettingsSync.kt` and `watchapp/src/c/revision.c` / `settings_sync.c`.
+- **Capability-driven settings UI**: `WatchSettingsRules.isOffered` hides settings the watch cannot use; protocol minor gates When driving (1.4) and the watch-side Directions text (1.5).
+- **Pure screen rules**: `WatchSettingsUi` decides sections, rows, labels and previews without Compose, so they are unit-tested on the JVM.
+- **Vendored PebbleKit 2** and reproducible release builds for F-Droid.
 
 ### Improvement Opportunities
 
-- Add an arrival-clock extractor (or a reusable clock-to-epoch utility) so rules can fill `etaEpochSeconds` from `HH:MM` text; inject the zone into the engine as `DrivingSpeedEstimator` already does.
-- Localize `DurationParser` units if duration-based ETA is kept, and align epochs to the minute to protect dedup.
-- Give `secondaryText` one meaning across rulesets (arrival clock), or document per-app semantics.
-- Run the Kotlin rule regression on rules-only PRs (extend `android.yml` paths or `rules.yml`).
-- Split `watchapp/src/c/main.c` (1,479 lines) and `DashboardScreen.kt` (673 lines).
+- Watch settings titles and labels exist twice (watch C strings and phone resources) with no shared source.
+- No per-setting help text on the phone or the watch (issue #139 addresses the phone).
+- English-only resources; no localisation path yet.
+- Large files (`main.c`, `settings_window.c`, `DashboardScreen.kt`, `MainActivity.kt`) concentrate many responsibilities.
+- No coverage measurement.
 
 ## Interaction Diagrams
 
-### Notification to watch (matched OsmAnd turn)
+### Notification to watch
 
 ```mermaid
 sequenceDiagram
-    participant OS as Android
-    participant LS as ListenerService
-    participant ND as Dispatcher
-    participant CP as CaptureProcessor
-    participant RE as RuleEngine
-    participant NC as NavigationController
-    participant RD as Reducer
-    participant TR as PebbleTransport
-    participant W as Watchapp
-    OS->>LS: onNotificationPosted(sbn)
-    LS->>ND: onPosted(net.osmand.plus, snapshotLambda)
-    ND->>ND: appEnabled and allowlist check
-    ND->>CP: enqueue onPosted(snapshot)
-    CP->>RE: evaluate(snapshot, layers, locale, now)
-    RE-->>CP: instruction, ruleId, trace
-    CP->>CP: debugHistory.recordPosted
-    CP->>NC: onInstruction(instruction)
-    NC->>RD: reduce(InstructionReceived)
-    RD-->>NC: state + SendState effect
-    NC->>TR: send(ProtocolCodec.encodeState)
-    TR->>W: AppMessage NAVIGATION_UPDATE
-    W->>W: render arrow, distance, road, ETA strip
+  participant N as Navigation app
+  participant L as NotificationListenerService
+  participant D as NotificationDispatcher
+  participant P as NotificationProcessor
+  participant R as RuleEngine
+  participant C as NavigationController
+  participant S as NavigationSessionReducer
+  participant K as ProtocolCodec
+  participant T as PebbleWatchTransport
+  participant W as Watchapp
+  N->>L: notification posted
+  L->>D: package name
+  D->>D: master switch and allowlist
+  D->>P: snapshot via serial queue
+  P->>R: evaluate snapshot with layered rules
+  R-->>P: NavigationInstruction and trace
+  P->>C: instruction
+  C->>S: reduce event
+  S-->>C: effects launch or send
+  C->>K: encodeState with compact flag
+  K-->>C: AppMessage
+  C->>T: send with retry
+  T->>W: NAVIGATION_UPDATE
 ```
 
-Text fallback: Android posts the notification; the listener passes the package to the dispatcher, which checks the switch and allowlist before queueing; the processor evaluates rules, records the event and forwards the instruction; the controller reduces it and sends the encoded state; the watch renders it.
+Text fallback: the listener hands the package to the dispatcher, which checks the master switch and allowlist, then queues a snapshot. The processor evaluates it with the rule engine and passes the instruction to the controller, whose reducer returns effects. The controller encodes the state (Full or Compact road line) and the transport sends NAVIGATION_UPDATE to the watchapp.
 
-### Watch connects or asks for state
+### Phone Watch settings edit to watch
 
 ```mermaid
 sequenceDiagram
-    participant W as Watchapp
-    participant TR as PebbleTransport
-    participant NC as NavigationController
-    participant RD as Reducer
-    W->>TR: WATCH_READY (protocol major, minor, platform, capabilities)
-    TR->>NC: inbound message
-    NC->>RD: reduce(WatchReady)
-    alt major matches
-        RD-->>NC: SendState(current)
-        NC->>TR: NAVIGATION_UPDATE or NO_ACTIVE_NAVIGATION
-    else major differs
-        RD-->>NC: SendCompatibilityError
-        NC->>TR: PHONE_COMPATIBILITY_ERROR
-    end
-    NC->>TR: pending SETTINGS sync
+  participant U as User
+  participant WS as WatchSettingsScreen
+  participant OL as OptionListScreen
+  participant AC as AppContainer
+  participant C as NavigationController
+  participant Y as WatchSettingsSync
+  participant M as WatchSettingsMirrorRepository
+  participant T as PebbleWatchTransport
+  participant W as Watchapp
+  U->>WS: tap a setting row
+  WS->>OL: navigate to watch-settings/SETTING
+  U->>OL: pick a value
+  OL->>AC: setWatchSetting
+  AC->>C: edit setting
+  C->>Y: onPhoneEdit
+  Y-->>C: mirror updated, revision moved on, setting pending
+  C->>M: persist mirror and pending
+  alt watchapp open
+    C->>T: SETTINGS with revision and pending values
+    T->>W: SETTINGS
+    W-->>T: SETTINGS confirm
+    T-->>C: inbound settings
+    C->>Y: onWatchSettings SAME clears pending
+  else watchapp closed
+    C-->>WS: queued notice shown
+  end
 ```
 
-Text fallback: on WATCH_READY the reducer either resends the current state or reports an incompatible protocol major; pending settings edits follow.
+Text fallback: tapping a row opens the option list; picking a value calls `setWatchSetting` on the container, which asks the controller to apply `WatchSettingsSync.onPhoneEdit` (mirror updated, revision incremented, setting pending) and persist it. If the watchapp is open, the controller sends SETTINGS and the watch's reply confirms it; otherwise the edit waits and the screen says "Will apply when the watchapp next opens". The When driving section edits values in place through the same `onChangeSetting` path.
 
-### Rule maintenance loop
+### Watch settings arriving from the watch
 
 ```mermaid
-flowchart LR
-    CAP["Diagnostics export or route-capture run"] --> SAN["workbench sanitize"]
-    SAN --> FIX["rules/fixtures/app.json"]
-    FIX --> RULE["Edit rules/bundled/app/lang.json or run generator"]
-    RULE --> PY["workbench regression (Python)"]
-    RULE --> KT["Kotlin AppRulesRegressionTest"]
-    PY --> CI["rules.yml, pre-commit"]
-    KT --> CI2["android.yml, release.yml verify"]
+flowchart TD
+  A[WATCH_READY or SETTINGS from watch] --> B[ProtocolCodec.decodeWatchSettings]
+  B --> C{mirror exists?}
+  C -- no --> D[Adopt watch settings]
+  C -- yes --> E[WatchSettingsSync.decide]
+  E -->|phone has newer pending edits| F[Keep phone, resend]
+  E -->|same revision and values| G[Clear pending]
+  E -->|otherwise| H[Adopt watch, drop carried pending]
+  D --> I[Screen shows READY state]
+  G --> I
+  H --> I
+  F --> I
 ```
 
-Text fallback: captures are sanitized into fixtures, rules are edited (localized Google Maps through the generator), and both the Python and Kotlin regressions must pass in hooks and CI.
+Text fallback: inbound settings are decoded; with no mirror they are adopted. Otherwise the revision rule keeps newer phone edits, confirms identical ones, or adopts the watch's values. A pre-1.5 watchapp's missing Directions text keeps the phone's value.

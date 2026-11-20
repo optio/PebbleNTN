@@ -481,7 +481,6 @@
     <string name="watch_settings_section_appearance">Appearance</string>
     <string name="watch_settings_section_directions">Directions</string>
     <string name="watch_setting_directions_text">Directions text</string>
-    <string name="watch_directions_text_explanation">Compact shows only the street name when the app gives one.</string>
     <string-array name="watch_values_directions_text">
         <item>Full</item>
         <item>Compact</item>
@@ -632,6 +631,81 @@
         <item>Next backlight colour</item>
         <item>Units</item>
         <item>Open settings</item>
+    </string-array>
+    <!-- Help per setting (REQ-ANDROID-021, #139): a short line under each row (FR1) and a fuller
+         explanation at the top of its value list (FR2), checked against the watchapp (FR6). A text
+         shown on every watch names no feature some watches lack (FR5.2). -->
+    <string name="watch_setting_accent_help">Sets the colour of the panel with the turn arrow and the distance.</string>
+    <string name="watch_setting_accent_details">The panel with the turn arrow and the distance takes this colour, and the strip with the arrival time takes a matching shade. The text on the panel turns black or white, so you can always read it. Only the colours your watch can show are listed.</string>
+    <string name="watch_setting_invert_help">Shows the directions text dark on light, or light on dark.</string>
+    <string name="watch_setting_invert_details">This changes the area with the instruction and the street name, below the panel. Dark on light, the default, is black text on white. Light on dark is white text on black.</string>
+    <string name="watch_setting_glyph_pack_help">Chooses the drawing style of the turn arrows.</string>
+    <string name="watch_setting_glyph_pack_details">The arrows show each turn, roundabout and arrival. Classic is the default. Bold draws thick solid arrows, and Outline draws hollow ones.</string>
+    <string name="watch_setting_arrow_left_help">Puts the turn arrow on the right or left, with the distance on the other side.</string>
+    <string name="watch_setting_arrow_left_details">Right, the default, puts the arrow on the right and the distance on the left. Left swaps them. Only the layout changes, not what you see.</string>
+    <string name="watch_setting_directions_text_help">Full shows the whole instruction; Compact shows only the street name.</string>
+    <string name="watch_setting_directions_text_details">Full, the default, shows your navigation app\'s instruction with the street name. Compact shows only the street name, so it is quicker to read. When the app gives no street name, Compact shows the full instruction too.</string>
+    <string name="watch_setting_eta_mode_help">Shows the time you will arrive, or how much time is left until you arrive.</string>
+    <string name="watch_setting_eta_mode_details">Arrival time, the default, shows the clock time you are expected to arrive. Time to arrival shows how much time is left instead. Both come from your navigation app.</string>
+    <string name="watch_setting_eta_label_help">Chooses the label in front of the arrival time: \"ETA at / ETA in\" or \"ETA / IN\".</string>
+    <string name="watch_setting_eta_label_details">ETA at / ETA in, the default, spells the label out: \"ETA at\" before a clock time and \"ETA in\" before the time left. ETA / IN is shorter. Which one you see follows ETA display.</string>
+    <string name="watch_setting_units_help">Shows distances in kilometres and metres, or in miles and feet.</string>
+    <string name="watch_setting_units_details">This sets the units of every distance on the watch, such as the distance to the next turn and the early warning distance. Kilometres / metres is the default.</string>
+    <string name="watch_setting_backlight_help">Sets how long PebbleNTN keeps the backlight on each time the directions update.</string>
+    <string name="watch_setting_backlight_details">Watch default leaves the light to your watch. Low lights it for 3 seconds after each update, Medium for 10 seconds, and High keeps it on until you close the app. The longer the light stays on, the more battery it uses.</string>
+    <string name="watch_setting_backlight_color_help">Tints the backlight when PebbleNTN turns it on.</string>
+    <string name="watch_setting_backlight_color_details">PebbleNTN uses this colour when it lights the backlight for you, with Backlight duration on Low, Medium or High. Watch default keeps the colour set on your watch.</string>
+    <string name="watch_setting_vibe_pattern_help">Chooses how the watch buzzes when a new instruction arrives.</string>
+    <string name="watch_setting_vibe_pattern_details">Off, the default, never buzzes for a new instruction. Short pulse buzzes briefly when the next turn changes. Single, Double, Triple and Long buzz each time the instruction changes, at the strength you set below. The early warning has its own settings.</string>
+    <string name="watch_setting_vibe_intensity_help">Sets how strong the new instruction buzz feels.</string>
+    <string name="watch_setting_vibe_intensity_details">A stronger setting buzzes for longer, so it is easier to notice. Medium is the default. Short pulse always uses the watch\'s standard buzz, so this setting does not change it.</string>
+    <string name="watch_setting_early_warn_distance_help">Buzzes when the next turn is this close, so you are warned before you reach it.</string>
+    <string name="watch_setting_early_warn_distance_details">The watch buzzes when the next turn comes within this distance. The default is 25 m, and the list follows Distance units. Off turns the warning off and hides the other early warning settings.</string>
+    <string name="watch_setting_early_warn_distance_details_imperial">The watch buzzes when the next turn comes within this distance. The default is 80 ft, and the list follows Distance units. Off turns the warning off and hides the other early warning settings.</string>
+    <string name="watch_setting_early_warn_repeat_help">Buzzes once per turn, or again each time the distance updates while you are close.</string>
+    <string name="watch_setting_early_warn_repeat_details">Once buzzes a single time for each instruction. Every update, the default, buzzes again each time the distance changes while you are within the early warning distance. When a new instruction arrives already that close, its own buzz counts as the warning.</string>
+    <string name="watch_setting_early_warn_pattern_help">Chooses how the early warning buzz feels.</string>
+    <string name="watch_setting_early_warn_pattern_details">Pick a pattern that feels different from the new instruction buzz, so you can tell the two apart. Double is the default.</string>
+    <string name="watch_setting_early_warn_intensity_help">Sets how strong the early warning buzz feels.</string>
+    <string name="watch_setting_early_warn_intensity_details">A stronger setting buzzes for longer, so it is easier to notice. Medium is the default.</string>
+    <string name="watch_setting_touch_help">Turns the swipe and tap shortcuts on the navigation screen on or off.</string>
+    <string name="watch_setting_touch_details">While Touch is on, a swipe or a tap on the navigation screen runs the action you choose for it below. Touch also has to be on in your watch\'s own settings. Touch is on by default.</string>
+    <string name="watch_setting_shortcut_up_help">Chooses what pressing the Up button does on the navigation screen.</string>
+    <string name="watch_setting_shortcut_up_details">Pick an action for a press of the Up button while directions are shown. A short notice on the watch names most changes. The middle button still opens the settings, and Back still closes the app. By default, Up switches between arrival time and time left.</string>
+    <string name="watch_setting_shortcut_down_help">Chooses what pressing the Down button does on the navigation screen.</string>
+    <string name="watch_setting_shortcut_down_details">Pick an action for a press of the Down button while directions are shown. A short notice on the watch names most changes. The middle button still opens the settings, and Back still closes the app. By default, Down turns on the backlight.</string>
+    <string name="watch_setting_shortcut_swipe_left_help">Chooses what swiping left does on the navigation screen.</string>
+    <string name="watch_setting_shortcut_swipe_left_details">Pick an action for a swipe to the left while directions are shown. Swipes work while Touch is on. A short notice on the watch names most changes. By default, a swipe left switches between arrival time and time left.</string>
+    <string name="watch_setting_shortcut_swipe_right_help">Chooses what swiping right does on the navigation screen.</string>
+    <string name="watch_setting_shortcut_swipe_right_details">Pick an action for a swipe to the right while directions are shown. Swipes work while Touch is on. A short notice on the watch names most changes. By default, a swipe right switches between arrival time and time left.</string>
+    <string name="watch_setting_shortcut_swipe_up_help">Chooses what swiping up does on the navigation screen.</string>
+    <string name="watch_setting_shortcut_swipe_up_details">Pick an action for a swipe up while directions are shown. Swipes work while Touch is on. A short notice on the watch names most changes. By default, a swipe up does nothing.</string>
+    <string name="watch_setting_shortcut_swipe_down_help">Chooses what swiping down does on the navigation screen.</string>
+    <string name="watch_setting_shortcut_swipe_down_details">Pick an action for a swipe down while directions are shown. Swipes work while Touch is on. A short notice on the watch names most changes. By default, a swipe down does nothing.</string>
+    <string name="watch_setting_shortcut_tap_help">Chooses what a tap on the navigation screen does.</string>
+    <string name="watch_setting_shortcut_tap_details">Pick an action for a tap on the screen while directions are shown. Taps work while Touch is on. A short notice on the watch names most changes. By default, a tap turns on the backlight.</string>
+    <string name="watch_setting_driving_mode_help">Closes the watchapp while you drive and brings it back when you slow down.</string>
+    <string name="watch_setting_driving_mode_details">PebbleNTN guesses from your speed whether you are driving. While you drive, it closes the watchapp, and it brings it back once you have slowed down for a while. Show directions, the default, keeps the watchapp open.</string>
+    <string name="watch_setting_driving_speed_help">Above this speed, you count as driving. It follows Distance units.</string>
+    <string name="watch_setting_driving_speed_metric_details">Above this speed, PebbleNTN treats you as driving. Raise it if fast cycling counts as driving, or lower it if slow traffic does not. The default is 25 km/h.</string>
+    <string name="watch_setting_driving_speed_imperial_details">Above this speed, PebbleNTN treats you as driving. Raise it if fast cycling counts as driving, or lower it if slow traffic does not. The default is 15 mph.</string>
+    <!-- What each shortcut action does, indexed like watch_values_shortcut (#139 FR3, shortcuts.c). -->
+    <string-array name="watch_values_shortcut_descriptions">
+        <item>Does nothing.</item>
+        <item>Switches between the arrival time and the time left.</item>
+        <item>Switches the arrival label between \"ETA at / ETA in\" and \"ETA / IN\".</item>
+        <item>Changes the panel to the next colour your watch can show.</item>
+        <item>Changes the panel to the previous colour your watch can show.</item>
+        <item>Switches the directions text between dark on light and light on dark.</item>
+        <item>Moves the turn arrow to the other side, and the distance with it.</item>
+        <item>Switches to the next arrow style: Classic, Bold, then Outline.</item>
+        <item>Turns the new instruction buzz off, or back on with your last pattern. The early warning stays as it is.</item>
+        <item>Steps the early warning distance up. After the longest, it turns the warning off.</item>
+        <item>Steps the early warning distance down. After Off, it starts again at the longest.</item>
+        <item>Turns on the backlight for a moment.</item>
+        <item>Changes the backlight to the next colour.</item>
+        <item>Switches distances between kilometres and miles.</item>
+        <item>Opens the watchapp\'s settings menu.</item>
     </string-array>
     <!-- When driving (REQ-ANDROID-024, #132) -->
     <string name="watch_settings_section_driving">When driving</string>

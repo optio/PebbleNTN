@@ -1,96 +1,71 @@
 # API Documentation
 
-PebbleNTN has no HTTP server API. Its contracts are: the Android notification input, the declarative ruleset JSON, the Pebble AppMessage protocol, the diagnostics export, and a few internal Kotlin APIs that changes to rules touch.
+PebbleNTN has no HTTP server. Its contracts are the notification input, the ruleset JSON, the Pebble AppMessage protocol, the diagnostics export, in-app navigation routes, and the internal Kotlin APIs of the Watch settings screen.
 
-## 1. Notification Input (Android `NotificationListenerService`)
+## 1. Notification Input (`NotificationListenerService`)
 
 | Callback | Handler | Behaviour |
 |---|---|---|
-| `onNotificationPosted(sbn)` | `NotificationDispatcher.onPosted(pkg, buildEligible)` | Master switch, then allowlist, then (only if both pass) build a `NotificationSnapshot` and enqueue it |
-| `onNotificationRemoved(sbn)` | `NotificationDispatcher.onRemoved(pkg)` | Same gate; ends the session (`NavigationStopped`) |
-| `onListenerConnected()` | `AppContainer.onListenerConnected()` | Rediscovers installed navigation apps |
+| `onNotificationPosted` | `NotificationDispatcher` | Master switch, then allowlist, then (only if both pass) a `NotificationSnapshot` is built and queued |
+| `onNotificationRemoved` | `NotificationDispatcher` | Same gate; ends the session |
+| `onListenerConnected` | `AppContainer` | Rediscovers installed navigation apps |
 
-Extras read (`NotificationSnapshotFactory`): `EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_SUB_TEXT`, `EXTRA_BIG_TEXT`, `EXTRA_SUMMARY_TEXT`, `EXTRA_INFO_TEXT`, `EXTRA_TEMPLATE`, `EXTRA_PROGRESS`, `EXTRA_PROGRESS_MAX`, plus `channelId`, `category`, `when`, and the large icon (matched to a drawable name only).
+Extras read: title, text, subText, bigText, summaryText, infoText, template, progress, progress max, channel id, category, when, and the large icon (reduced to a drawable name).
 
 ## 2. Ruleset JSON (schema v1, `schemas/ruleset.schema.json`)
 
-```json
-{ "schemaVersion": 1, "rulesetVersion": "osmand-de-2026.10.10", "minimumAppVersionCode": 1,
-  "createdAt": "…", "publisher": "PebbleNTN maintainers",
-  "rules": [ { "id": "kebab-case", "enabled": true, "priority": 100,
-    "packageNames": ["net.osmand.plus"], "locales": ["de"], "comment": "…",
-    "conditions": [ { "field": "combinedText", "operator": "regex", "value": "(?i)\\brechts\\b" } ],
-    "output": { "maneuver": {…}, "distanceMeters": {…}, "primaryText": {…},
-                "secondaryText": {…}, "etaEpochSeconds": {…}, "stopsRemaining": {…} } } ] }
-```
+Strict parsing (`RulesetCodec`): unknown keys, operators or extractors fail; duplicate ids fail. Limits in `RuleValidator`.
 
-Parsing is strict (`RulesetCodec`): unknown keys, operators or extractor types fail; duplicate ids fail; `schemaVersion` must be 1. Semantic limits (`RuleValidator`): id kebab-case up to 120 characters, 1-20 packages, priority within ±100000, up to 50 conditions, up to 30 locales, regex compiles and is at most 1024 characters.
+- **Fields**: `packageName`, `title`, `text`, `subText`, `bigText`, `summaryText`, `infoText`, `category`, `channelId`, `template`, `combinedText`, `iconDrawable`.
+- **Operators**: `exists`, `notExists`, `equals`, `equalsIgnoreCase`, `contains`, `containsIgnoreCase`, `startsWith`, `endsWith`, `regex` (SafeRegex: 4096-char input cap, 50 ms budget), `in`.
+- **Extractors**: `literal`, `regexCapture`, `fieldCopy`, `firstNonEmpty`, `distance`, `duration`, `arrivalClock` (#134: clock text to the next epoch in the phone's zone), `maneuverMap`, `normalizeString`, `boundedJoin`.
+- **Outputs**: `maneuver`, `distanceMeters`, `primaryText`, `compactText` (#134, street only), `secondaryText`, `etaEpochSeconds`, `stopsRemaining`.
 
-### Fields (`SnapshotFields.resolve`)
+## 3. Pebble AppMessage Protocol 1.5 (`protocol/protocol-definition.json`)
 
-`packageName`, `title`, `text`, `subText`, `bigText`, `summaryText`, `infoText`, `category`, `channelId`, `template`, `combinedText` (title, text, bigText, subText, summaryText, infoText joined by a space), `iconDrawable`. Unknown names resolve to null. Unicode space separators become ASCII spaces; newlines stay (OsmAnd `bigText` has two lines).
-
-### Operators (`ConditionOperator`)
-
-`exists`, `notExists`, `equals`, `equalsIgnoreCase`, `contains`, `containsIgnoreCase`, `startsWith`, `endsWith`, `regex` (find, via `SafeRegex`: input capped at 4096 characters, 50 ms budget), `in` (uses `values`).
-
-### Extractors (`Extractor`, discriminator `type`)
-
-| Type | Parameters | Result |
-|---|---|---|
-| `literal` | `value` | Text |
-| `fieldCopy` | `field` | Text of the field |
-| `firstNonEmpty` | `fields[]`, `stripLeadingDistance` | First non-empty field, optionally without a leading `<distance> ·/•/|` |
-| `regexCapture` | `field`, `pattern`, `group` (1) | Text of the capture group |
-| `distance` | `field` | Num metres (`DistanceParser`: unit required; m/km/ft/mi/yd, spelled-out forms, `pi`, 公里/千米/公尺/米; `.` or `,` decimals) |
-| `duration` | `field` | Num seconds (`DurationParser`: English `h|hr|hrs|hour|hours`, `min|mins|minute|minutes`, `s|sec|secs|second|seconds`, summed) |
-| `maneuverMap` | `field`, `mapping{}`, `default` | Mapped text (exact, then case-insensitive) |
-| `normalizeString` | `field`, `lowercase`, `collapseWhitespace`, `trim` | Text |
-| `boundedJoin` | `fields[]`, `separator`, `maxLength` (64) | Joined text, cut at a surrogate-safe boundary |
-
-### Output assembly (`RuleEngine.assemble`)
-
-| Output | Accepted result | Notes |
-|---|---|---|
-| `maneuver` | Text token | `Maneuver.fromToken`, unknown → `UNKNOWN` |
-| `distanceMeters` | Num | Coerced to at least 0 |
-| `primaryText`, `secondaryText` | Text | A Num result is dropped |
-| `etaEpochSeconds` | Num | `duration` → `nowEpochSeconds + seconds`; any other Num → absolute epoch; Text (for example a `regexCapture` of `18:55`) → dropped, so no clock text can become an ETA today |
-| `stopsRemaining` | Num or Text | First integer of text, at least 0 |
-
-Engine entry point: `RuleEngine(regexBudgetMillis = 50, families = RuleFamilies.NONE).evaluate(snapshot, LayeredRules, locale: String?, nowEpochSeconds: Long): RuleEvaluation(instruction, matchedRuleId, matchedLayer, trace)`. The locale's language part (before `-` or `_`) must be in `rule.locales` when `locales` is non-empty. In production `locale` is `Locale.getDefault().toLanguageTag()` and `now` is the processing time.
-
-## 3. Pebble AppMessage Protocol v1.4 (`protocol/protocol-definition.json`)
-
-Generated into `android/.../protocol/Protocol.kt` and `watchapp/src/c/generated/protocol.h` by `scripts/generate-protocol.sh` (CI checks they are current).
+Generated into `protocol/Protocol.kt` and `watchapp/src/c/generated/protocol.h` by `scripts/generate-protocol.sh` (`--check` in CI and pre-commit).
 
 | Event | Value | Direction | Keys |
 |---|---|---|---|
-| `NAVIGATION_UPDATE` | 1 | phone → watch | `MANEUVER`, `DISTANCE_METERS`, `PRIMARY_TEXT` (≤64 B), `SECONDARY_TEXT` (≤24 B), `ETA_EPOCH_SECONDS` (only when set), `STOPS_REMAINING`, `STATE_TIMESTAMP_SECONDS`, `SESSION_ID`, `FLAGS`, plus version keys |
+| `NAVIGATION_UPDATE` | 1 | phone → watch | `MANEUVER` 3, `DISTANCE_METERS` 4, `PRIMARY_TEXT` 5 (Full or Compact road line), `SECONDARY_TEXT` 6, `ETA_EPOCH_SECONDS` 7, `STATE_TIMESTAMP_SECONDS` 8, `SESSION_ID` 9, `FLAGS` 10, `STOPS_REMAINING` 13 |
 | `NAVIGATION_STOPPED` | 2 | phone → watch | `SESSION_ID`, `FLAGS` |
 | `NO_ACTIVE_NAVIGATION` | 3 | phone → watch | `FLAGS` |
-| `SETTINGS` | 4 | both | `SETTINGS_REVISION`, `SETTING_*` (accent, units, invert, glyph pack, arrow side, ETA mode, ETA label, backlight, vibration, early warning, touch, shortcuts, driving) |
-| `WATCH_READY` | 10 | watch → phone | `PROTOCOL_MAJOR/MINOR`, `APP_VERSION`, `WATCH_PLATFORM`, `WATCH_CAPABILITIES` |
+| `SETTINGS` | 4 | both | `SETTINGS_REVISION` 15, `SETTING_*` 18-44 (phone sends only pending ones) |
+| `WATCH_READY` | 10 | watch → phone | `PROTOCOL_MAJOR` 1, `PROTOCOL_MINOR` 2, `APP_VERSION` 11, `WATCH_PLATFORM` 16, `WATCH_CAPABILITIES` 17, `SETTINGS_REVISION`, all `SETTING_*` (1.3+) |
 | `WATCH_REQUEST_STATE` | 11 | watch → phone | — |
-| `PHONE_COMPATIBILITY_ERROR` | 12 | phone → watch | `ERROR_CODE` (`INCOMPATIBLE_PROTOCOL_MAJOR` = 1) |
+| `PHONE_COMPATIBILITY_ERROR` | 12 | phone → watch | `ERROR_CODE` 12 (`INCOMPATIBLE_PROTOCOL_MAJOR` = 1) |
 
-Every phone message carries `PROTOCOL_MAJOR`, `PROTOCOL_MINOR`, `APP_VERSION`, and `LATEST_PHONE_VERSION` when an update is available. Flags: `EXIT_TO_WATCHFACE_ON_STOP` 0, `VIBRATE_ON_MANEUVER_CHANGE` 1, `ACTIVATE_BACKLIGHT` 2, `STATE_IS_STALE` 3, `PHONE_UPDATE_AVAILABLE` 4. Maneuver codes: `UNKNOWN` 0 … `TRANSIT` 12. The watch's ETA strip uses `ETA_EPOCH_SECONDS` for the time-left countdown when non-zero, else the first valid `H:MM` (with optional AM/PM) in `SECONDARY_TEXT` (REQ-WATCH-014). The app glance countdown runs only with an epoch.
+Every phone message also carries the protocol version, `APP_VERSION` and `LATEST_PHONE_VERSION` 14 when an update exists.
 
-## 4. Diagnostics Export (`export/ExportBuilder.kt`, `spec/300-data/ExportFormat.md`)
+**Setting keys** (value = key − 18 = `WatchSetting.ordinal`): 18 ACCENT, 19 UNITS, 20 INVERT, 21 GLYPH_PACK, 22 ARROW_LEFT, 23 ETA_MODE, 24 BACKLIGHT, 25 VIBE_PATTERN, 26 VIBE_INTENSITY, 27 BACKLIGHT_COLOR, 28 ETA_LABEL, 29 EARLY_WARN_DISTANCE, 30 EARLY_WARN_REPEAT, 31 EARLY_WARN_PATTERN, 32 EARLY_WARN_INTENSITY, 33 TOUCH, 34-40 SHORTCUT_UP / DOWN / SWIPE_LEFT / SWIPE_RIGHT / SWIPE_UP / SWIPE_DOWN / TAP, 41 DRIVING_MODE, 42 DRIVING_SPEED_METRIC, 43 DRIVING_SPEED_IMPERIAL (1.4), 44 DIRECTIONS_TEXT (1.5).
 
-Three modes: full (raw snapshots), privacy-safe (text structurally redacted by `Redactor`), rules-only (user rules, no events). Size-capped; carries app and navigation-app versions, ruleset versions, user-added packages, install record, and the When driving log. Shared through the Android Sharesheet only, never uploaded.
+**Flags**: `EXIT_TO_WATCHFACE_ON_STOP` 0, `VIBRATE_ON_MANEUVER_CHANGE` 1, `ACTIVATE_BACKLIGHT` 2, `STATE_IS_STALE` 3, `PHONE_UPDATE_AVAILABLE` 4. **Capability bits**: COLOR 0, ROUND 1, RGB_BACKLIGHT 2, TOUCH 3. **Platforms**: UNKNOWN, APLITE, BASALT, CHALK, DIORITE, EMERY. **Maneuvers**: UNKNOWN 0 … TRANSIT 12.
+
+## 4. Diagnostics Export (schema 7, `export/ExportBuilder.kt`, `spec/300-data/ExportFormat.md`)
+
+Modes: full, privacy-safe (structural redaction by `Redactor`), rules-only. Size-capped (newest 10 MB). Carries versions, rulesets, user packages, install record, driving log, `metadata.watchSettings` by name, and `watchOutput.compactText`. Shared via the Sharesheet only.
 
 ## 5. Other External Calls
 
-- **GitHub releases feed** (`update/ReleaseFetcher.kt`): optional update check, never on a Google Play install.
-- **Signed official ruleset updates** (`update/RuleUpdateRepository.kt`, Ed25519): implemented, disabled (no embedded public keys).
+- GitHub releases feed (`update/ReleaseFetcher.kt`): optional, never on a Google Play install.
+- Signed official ruleset updates (`update/RuleUpdateRepository.kt`, Ed25519): implemented, disabled.
 
-## 6. Internal APIs a Rule Change Touches
+## 6. In-app Routes (`ui/MainActivity.kt`)
 
-| API | Location | Contract |
-|---|---|---|
-| `DurationParser.parseSeconds(text): Int?` | `rules/DurationParser.kt` | First match of each hour/minute/second pattern, summed; null when none |
-| `DistanceParser.parseMeters(text): Int?`, `stripLeadingDistance(text)` | `rules/DistanceParser.kt` | Unit mandatory; leading distance dropped only before `·`, `•` or `|` |
-| `DrivingSpeedEstimator.arrivalMillis(subText, postTimeMillis, zone): Long?` | `core/DrivingSpeedEstimator.kt` | Last `h:mm` (AM/PM aware) on the post day in `zone`, next day if already past by more than 1 min; the existing clock-to-epoch logic |
-| `NavigationSessionReducer.reduce(state, event)` | `core/NavigationSessionReducer.kt` | Resends only on instruction change; ETA carry-over for 5 min within a session |
-| Python engine subset `evaluate(snap, rules, locale, families)` | `tools/rule-workbench/workbench.py` | Mirrors the Kotlin engine for `literal`, `fieldCopy`, `firstNonEmpty`, `boundedJoin`, `distance`, `regexCapture`, `maneuverMap`; returns no ETA |
+`dashboard`, `debug`, debug detail, `watch-settings`, `watch-settings/{setting}` (setting = `WatchSetting.name`), `navigation-apps`, app packages, rules screens, `rules-review`, `rule-editor`, share diagnostics, onboarding.
+
+## 7. Internal Watch Settings APIs (intent focus)
+
+| API | Contract |
+|---|---|
+| `WatchSettingsUi.sections(model): List<WatchSettingsSection>` | Groups and rows the watch offers; `WatchSettingsSection(title: @StringRes Int, settings, note: @StringRes Int? = null)` |
+| `WatchSettingsUi.title(setting): @StringRes Int` | Exhaustive mapping, 27 entries (both driving speeds share one title) |
+| `WatchSettingsUi.valueLabels(setting, imperial): @ArrayRes Int` | Value labels indexed by value |
+| `WatchSettingsUi.options(setting, model): List<Int>` | Values offered, watch-menu order |
+| `WatchSettingsUi.preview(setting, value, platform): WatchPreview?` | Preview image or null |
+| `WatchSettingsUi.status(state)`, `showsQueuedNotice`, `showsDrivingSection`, `drivingSpeedValue`, `drivingDefaultValue`, `showsDrivingReset` | Screen state helpers |
+| `WatchSettingsScreen(state, watchappOpen, onOpenSetting, onBack, modifier, onChangeSetting)` | Composable entry |
+| `OptionListScreen(setting, model, queued, onSelect, onBack, modifier)` | Composable value list |
+| `WatchSettingsRules.isOffered(setting, caps)`, `isValid`, `options`, `defaultValue` | Capability and range rules (same as watch `sync_valid` / `sync_default`) |
+| `WatchSettingsSync.onPhoneEdit / onWatchSettings / outgoing / decide` | Revisioned sync |
+| `AppContainer.setWatchSetting(setting, value)` → `NavigationController.onPhoneSettingEdit` | Edit entry point from UI |

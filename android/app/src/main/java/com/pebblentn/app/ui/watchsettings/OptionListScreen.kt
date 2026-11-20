@@ -37,7 +37,9 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -47,9 +49,10 @@ import com.pebblentn.app.core.WatchSettingsModel
 
 /**
  * The values of one watch setting (REQ-ANDROID-021, #102 FR5/FR6), the current one selected.
- * Picking a value changes it at once, as on the watch. For a visual setting the preview of the
- * selected value sits above the list, from the reported watch's image set, in greyscale on a
- * black-and-white watch; the colour list also shows a swatch per row.
+ * Picking a value changes it at once, as on the watch. A fuller explanation of the setting comes
+ * first (#139 FR2). For a visual setting the preview of the selected value sits below it, above the
+ * list, from the reported watch's image set, in greyscale on a black-and-white watch; the colour
+ * list also shows a swatch per row. The shortcut actions each say what they do (#139 FR3).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +66,8 @@ fun OptionListScreen(
 ) {
     val title = stringResource(WatchSettingsUi.title(setting))
     val selected = model[setting]
+    // Only the shortcut actions say what each one does (#139 FR3); indexed by value.
+    val descriptions = WatchSettingsUi.valueDescriptions(setting)?.let { stringArrayResource(it) }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -77,6 +82,14 @@ fun OptionListScreen(
         },
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            // What the setting does, first, above any preview (#139 FR2).
+            item(key = "details") {
+                Text(
+                    text = stringResource(WatchSettingsUi.details(setting, imperial = model.units == 1)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp).testTag(WatchSettingsTags.DETAILS),
+                )
+            }
             WatchSettingsUi.preview(setting, selected, model.platform)?.let { preview ->
                 item(key = "preview") {
                     PreviewImage(preview, stringResource(R.string.cd_watch_preview, valueLabel(setting, selected, model)))
@@ -97,7 +110,14 @@ fun OptionListScreen(
                 }
             }
             items(WatchSettingsUi.options(setting, model), key = { "value-$it" }) { value ->
-                OptionRow(setting, value, model, selected = value == selected, onSelect = { onSelect(value) })
+                OptionRow(
+                    setting = setting,
+                    value = value,
+                    model = model,
+                    description = descriptions?.getOrNull(value),
+                    selected = value == selected,
+                    onSelect = { onSelect(value) },
+                )
                 HorizontalDivider()
             }
         }
@@ -120,11 +140,16 @@ private fun PreviewImage(preview: WatchPreview, description: String) {
     }
 }
 
+/**
+ * One value with its radio button and, for a shortcut action, what it does under its name (#139
+ * FR3). The row is one selectable item, so TalkBack reads the name and the description together.
+ */
 @Composable
 private fun OptionRow(
     setting: WatchSetting,
     value: Int,
     model: WatchSettingsModel,
+    description: String?,
     selected: Boolean,
     onSelect: () -> Unit,
 ) {
@@ -137,6 +162,7 @@ private fun OptionRow(
             null
         },
         headlineContent = { Text(label) },
+        supportingContent = description?.let { { Text(it) } },
         trailingContent = { RadioButton(selected = selected, onClick = null) },
     )
 }
