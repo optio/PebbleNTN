@@ -1,0 +1,1 @@
+• help text for every Watch settings row (#139)
