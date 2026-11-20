@@ -86,11 +86,8 @@ object WatchSettingsUi {
                 R.string.watch_settings_section_appearance,
                 listOf(WatchSetting.ACCENT, WatchSetting.INVERT, WatchSetting.GLYPH_PACK, WatchSetting.ARROW_LEFT),
             ),
-            WatchSettingsSection(
-                R.string.watch_settings_section_directions,
-                listOf(WatchSetting.DIRECTIONS_TEXT),
-                note = R.string.watch_directions_text_explanation,
-            ),
+            // The row's help line says what Full and Compact show, so the group has no note (#139 FR4.1).
+            WatchSettingsSection(R.string.watch_settings_section_directions, listOf(WatchSetting.DIRECTIONS_TEXT)),
             WatchSettingsSection(R.string.watch_settings_section_eta, listOf(WatchSetting.ETA_MODE, WatchSetting.ETA_LABEL)),
             WatchSettingsSection(R.string.watch_settings_section_units, listOf(WatchSetting.UNITS)),
             WatchSettingsSection(
@@ -175,6 +172,87 @@ object WatchSettingsUi {
         WatchSetting.DRIVING_SPEED_METRIC, WatchSetting.DRIVING_SPEED_IMPERIAL -> R.string.watch_setting_driving_speed
         WatchSetting.DIRECTIONS_TEXT -> R.string.watch_setting_directions_text
     }
+
+    /**
+     * The short help line under [setting]'s row: what it changes on the watch (REQ-ANDROID-021, #139
+     * FR1). Exhaustive like [title], so a new setting does not compile until it has help (FR1.4). The
+     * two driving speeds share one line, as they share one title.
+     */
+    @StringRes
+    fun help(setting: WatchSetting): Int = when (setting) {
+        WatchSetting.ACCENT -> R.string.watch_setting_accent_help
+        WatchSetting.UNITS -> R.string.watch_setting_units_help
+        WatchSetting.INVERT -> R.string.watch_setting_invert_help
+        WatchSetting.GLYPH_PACK -> R.string.watch_setting_glyph_pack_help
+        WatchSetting.ARROW_LEFT -> R.string.watch_setting_arrow_left_help
+        WatchSetting.ETA_MODE -> R.string.watch_setting_eta_mode_help
+        WatchSetting.BACKLIGHT -> R.string.watch_setting_backlight_help
+        WatchSetting.VIBE_PATTERN -> R.string.watch_setting_vibe_pattern_help
+        WatchSetting.VIBE_INTENSITY -> R.string.watch_setting_vibe_intensity_help
+        WatchSetting.BACKLIGHT_COLOR -> R.string.watch_setting_backlight_color_help
+        WatchSetting.ETA_LABEL -> R.string.watch_setting_eta_label_help
+        WatchSetting.EARLY_WARN_DISTANCE -> R.string.watch_setting_early_warn_distance_help
+        WatchSetting.EARLY_WARN_REPEAT -> R.string.watch_setting_early_warn_repeat_help
+        WatchSetting.EARLY_WARN_PATTERN -> R.string.watch_setting_early_warn_pattern_help
+        WatchSetting.EARLY_WARN_INTENSITY -> R.string.watch_setting_early_warn_intensity_help
+        WatchSetting.TOUCH -> R.string.watch_setting_touch_help
+        WatchSetting.SHORTCUT_UP -> R.string.watch_setting_shortcut_up_help
+        WatchSetting.SHORTCUT_DOWN -> R.string.watch_setting_shortcut_down_help
+        WatchSetting.SHORTCUT_SWIPE_LEFT -> R.string.watch_setting_shortcut_swipe_left_help
+        WatchSetting.SHORTCUT_SWIPE_RIGHT -> R.string.watch_setting_shortcut_swipe_right_help
+        WatchSetting.SHORTCUT_SWIPE_UP -> R.string.watch_setting_shortcut_swipe_up_help
+        WatchSetting.SHORTCUT_SWIPE_DOWN -> R.string.watch_setting_shortcut_swipe_down_help
+        WatchSetting.SHORTCUT_TAP -> R.string.watch_setting_shortcut_tap_help
+        WatchSetting.DRIVING_MODE -> R.string.watch_setting_driving_mode_help
+        WatchSetting.DRIVING_SPEED_METRIC, WatchSetting.DRIVING_SPEED_IMPERIAL -> R.string.watch_setting_driving_speed_help
+        WatchSetting.DIRECTIONS_TEXT -> R.string.watch_setting_directions_text_help
+    }
+
+    /**
+     * The fuller explanation at the top of [setting]'s value list (REQ-ANDROID-021, #139 FR2): what
+     * it does, when it matters and what it costs. Exhaustive like [help] (FR2.3); the driving rows
+     * open no list and never show theirs. A text that names a distance or a speed follows the watch's
+     * units, chosen with [imperial] as [valueLabels] chooses (FR5.3).
+     */
+    @StringRes
+    fun details(setting: WatchSetting, imperial: Boolean): Int = when (setting) {
+        WatchSetting.ACCENT -> R.string.watch_setting_accent_details
+        WatchSetting.UNITS -> R.string.watch_setting_units_details
+        WatchSetting.INVERT -> R.string.watch_setting_invert_details
+        WatchSetting.GLYPH_PACK -> R.string.watch_setting_glyph_pack_details
+        WatchSetting.ARROW_LEFT -> R.string.watch_setting_arrow_left_details
+        WatchSetting.ETA_MODE -> R.string.watch_setting_eta_mode_details
+        WatchSetting.BACKLIGHT -> R.string.watch_setting_backlight_details
+        WatchSetting.VIBE_PATTERN -> R.string.watch_setting_vibe_pattern_details
+        WatchSetting.VIBE_INTENSITY -> R.string.watch_setting_vibe_intensity_details
+        WatchSetting.BACKLIGHT_COLOR -> R.string.watch_setting_backlight_color_details
+        WatchSetting.ETA_LABEL -> R.string.watch_setting_eta_label_details
+        WatchSetting.EARLY_WARN_DISTANCE ->
+            if (imperial) R.string.watch_setting_early_warn_distance_details_imperial else R.string.watch_setting_early_warn_distance_details
+        WatchSetting.EARLY_WARN_REPEAT -> R.string.watch_setting_early_warn_repeat_details
+        WatchSetting.EARLY_WARN_PATTERN -> R.string.watch_setting_early_warn_pattern_details
+        WatchSetting.EARLY_WARN_INTENSITY -> R.string.watch_setting_early_warn_intensity_details
+        WatchSetting.TOUCH -> R.string.watch_setting_touch_details
+        WatchSetting.SHORTCUT_UP -> R.string.watch_setting_shortcut_up_details
+        WatchSetting.SHORTCUT_DOWN -> R.string.watch_setting_shortcut_down_details
+        WatchSetting.SHORTCUT_SWIPE_LEFT -> R.string.watch_setting_shortcut_swipe_left_details
+        WatchSetting.SHORTCUT_SWIPE_RIGHT -> R.string.watch_setting_shortcut_swipe_right_details
+        WatchSetting.SHORTCUT_SWIPE_UP -> R.string.watch_setting_shortcut_swipe_up_details
+        WatchSetting.SHORTCUT_SWIPE_DOWN -> R.string.watch_setting_shortcut_swipe_down_details
+        WatchSetting.SHORTCUT_TAP -> R.string.watch_setting_shortcut_tap_details
+        WatchSetting.DRIVING_MODE -> R.string.watch_setting_driving_mode_details
+        WatchSetting.DRIVING_SPEED_METRIC -> R.string.watch_setting_driving_speed_metric_details
+        WatchSetting.DRIVING_SPEED_IMPERIAL -> R.string.watch_setting_driving_speed_imperial_details
+        WatchSetting.DIRECTIONS_TEXT -> R.string.watch_setting_directions_text_details
+    }
+
+    /**
+     * What each value of [setting] does, indexed by value like [valueLabels], or null when its
+     * values carry no description: only the shortcut actions have them (#139 FR3.1, FR3.3).
+     */
+    @ArrayRes
+    fun valueDescriptions(setting: WatchSetting): Int? =
+        if (setting.isShortcut) R.array.watch_values_shortcut_descriptions else null
 
     /** The labels of [setting]'s values, indexed by value; distances follow the watch's units. */
     @ArrayRes

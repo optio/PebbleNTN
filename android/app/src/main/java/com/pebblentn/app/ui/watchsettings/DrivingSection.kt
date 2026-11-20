@@ -40,12 +40,18 @@ object DrivingSectionTags {
     const val SWITCH = "watch-settings-driving-switch"
     const val SLIDER = "watch-settings-driving-slider"
     const val RESET = "watch-settings-driving-reset"
+
+    /** The short help lines under the switch and the speed (#139 FR4.3). */
+    const val SWITCH_HELP = "watch-settings-driving-switch-help"
+    const val SPEED_HELP = "watch-settings-driving-speed-help"
 }
 
 /**
  * The When driving section of the Watch settings screen (#132 FR3): the Hide switch, the driving
  * speed of the unit in use with a slider in steps of 5 (greyed out while the switch is off), the
- * reset button when the speed is not the default, and the explanation. No watch preview (FR3.5).
+ * reset button when the speed is not the default, and the explanation, which stays as the section's
+ * note (#139 FR4.2). The switch and the speed each have a short help line (#139 FR4.3, REQ-ANDROID-024).
+ * No watch preview (FR3.5).
  * [onChange] edits a setting like any other watch setting: it is synced to the watch (FR1).
  */
 @Composable
@@ -76,6 +82,14 @@ internal fun DrivingSection(model: WatchSettingsModel, onChange: (WatchSetting, 
                             },
                         ),
                     headlineContent = { Text(stringResource(R.string.watch_setting_driving_mode)) },
+                    // The short help line, as under the other rows (#139 FR4.3).
+                    supportingContent = {
+                        Text(
+                            text = stringResource(WatchSettingsUi.help(WatchSetting.DRIVING_MODE)),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.testTag(DrivingSectionTags.SWITCH_HELP),
+                        )
+                    },
                     trailingContent = { Switch(checked = hide, onCheckedChange = null) },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
                 )
@@ -108,7 +122,7 @@ internal fun DrivingSection(model: WatchSettingsModel, onChange: (WatchSetting, 
 }
 
 /**
- * "Driving speed" with its value and a slider over the unit's list. The value is sent when the drag
+ * "Driving speed" with its help line, its value and a slider over the unit's list. The value is sent when the drag
  * ends, not on every step, so one change is one synced edit.
  */
 @Composable
@@ -122,6 +136,13 @@ private fun SpeedRow(hide: Boolean, current: Int, count: Int, speedLabel: String
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(stringResource(R.string.watch_setting_driving_speed), style = MaterialTheme.typography.bodyLarge)
+        // Shared by both units, and says the speed follows Distance units (#139 FR4.3).
+        Text(
+            text = stringResource(WatchSettingsUi.help(WatchSetting.DRIVING_SPEED_METRIC)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag(DrivingSectionTags.SPEED_HELP),
+        )
         Text(
             text = stringResource(R.string.watch_driving_speed_value, speedLabel),
             style = MaterialTheme.typography.bodyMedium,

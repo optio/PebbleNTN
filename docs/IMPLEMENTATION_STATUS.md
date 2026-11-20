@@ -1,6 +1,37 @@
 # Implementation Status
 
-_Last updated: 2026-11-10_
+_Last updated: 2026-11-20_
+
+## Watch settings help text (2026-11-20, #139)
+
+**Milestone:** post-M12 enhancement, phone only (no protocol or watchapp change). Branch
+`feat/watch-settings-help`; it is released by the release workflow on merge.
+
+**Requirements being implemented.** #139 FR1–FR7, NFR1–NFR5 (record
+`aidlc/spaces/default/intents/261120-watch-settings-help/`), as REQ-ANDROID-021 (Help paragraph and
+acceptance), with REQ-ANDROID-024, REQ-ANDROID-025 and `AndroidUI.md` amended.
+- Every Watch settings row shows a short help line under its value (`WatchSettingsUi.help`). Every
+  value list starts with a fuller explanation (`WatchSettingsUi.details`, with the early warning in
+  the watch's units). The 15 shortcut actions carry descriptions (`watch_values_shortcut_descriptions`).
+- The Directions note is now the Directions text row's help. The When driving paragraph stays, and
+  its switch and speed get help lines. Wording checked against `watchapp/src/c/` (table in the
+  record's `code-summary.md`).
+- 54 new strings and 1 array. `watch_directions_text_explanation` is removed.
+
+**Library versions.** No new library.
+
+**Commands executed.** Baseline of the two Watch settings test classes (12 + 14, green); scoped
+Gradle runs per layer (16 + 25, green); full `:app:testDebugUnitTest` (768 tests, 0 failures, 4
+skipped); `:app:lintDebug` (0 errors, no warning in a changed file); `scripts/validate-spec-assets.sh`
+(OK, 34 files); `StoreScreenshotsTest` with `PEBBLENTN_STORE_SCREENSHOTS_DIR` (2-watch-settings and
+3-accent-colour changed); `tools/play_store_graphics.py` and `--check` with the pebble tool's Python,
+because the system `python3` has no Pillow (OK).
+
+**Known blockers.** None. `spec/400-ui/WatchUI.md` still says the early warning is Off by default,
+while the watchapp's default is 25 m since #102. Left for a follow-up.
+
+**Next atomic task.** Build and Test: `scripts/test-all.sh`, the release APK size delta (< 50 KB), and
+a look at the screen on a phone with TalkBack and at 200 % font size.
 
 ## OsmAnd street and arrival time, Directions text, Play debug symbols (2026-11-10, #134, #136)
 

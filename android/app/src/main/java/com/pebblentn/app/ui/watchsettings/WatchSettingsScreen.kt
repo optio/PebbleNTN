@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -35,10 +36,21 @@ import com.pebblentn.app.core.WatchSetting
 import com.pebblentn.app.core.WatchSettingsModel
 import com.pebblentn.app.core.WatchSettingsSyncState
 
+/** Test tags of the Watch settings rows and the value list's explanation (#139). */
+object WatchSettingsTags {
+    const val DETAILS = "watch-settings-option-details"
+
+    /** The row of [setting] on the Watch settings screen. */
+    fun row(setting: WatchSetting): String = "watch-settings-row-${setting.name.lowercase()}"
+
+    /** The short help line under [setting]'s value. */
+    fun help(setting: WatchSetting): String = "watch-settings-help-${setting.name.lowercase()}"
+}
+
 /**
  * The watchapp's own settings, shown and changed on the phone (REQ-ANDROID-021, #102). The groups
- * mirror the watch's menu, and only what the watch reported it can do is offered. Each row opens
- * [OptionListScreen]. Before a watchapp sent its settings the screen says to open it; with a
+ * mirror the watch's menu, and only what the watch reported it can do is offered. Each row shows a
+ * short help line under its value (#139 FR1) and opens [OptionListScreen]. Before a watchapp sent its settings the screen says to open it; with a
  * watchapp too old to send them it says to update it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,7 +130,10 @@ private fun NoticeCard(text: String) {
     }
 }
 
-/** A titled group, in the dashboard's style, with an optional explanation under it. */
+/**
+ * A titled group, in the dashboard's style, with an optional explanation under it. No group has a
+ * note since the Directions one became row help (#139 FR4.1); the slot stays for a future one.
+ */
 @Composable
 private fun SettingsSection(title: String, note: String? = null, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -142,18 +157,34 @@ private fun SettingsSection(title: String, note: String? = null, content: @Compo
     }
 }
 
-/** A setting and its current value; the whole row opens the option list. */
+/**
+ * A setting, its current value and its short help line (#139 FR1); the whole row opens the option
+ * list. One clickable item, so TalkBack reads title, value and help together (NFR1); no line limit,
+ * so the help wraps at a large font instead of being cut off (NFR2).
+ */
 @Composable
 private fun SettingRow(setting: WatchSetting, model: WatchSettingsModel, onClick: () -> Unit) {
     val title = stringResource(WatchSettingsUi.title(setting))
     ListItem(
-        modifier = Modifier.clickable(
-            role = Role.Button,
-            onClickLabel = stringResource(R.string.cd_watch_setting_change, title),
-            onClick = onClick,
-        ),
+        modifier = Modifier
+            .testTag(WatchSettingsTags.row(setting))
+            .clickable(
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.cd_watch_setting_change, title),
+                onClick = onClick,
+            ),
         headlineContent = { Text(title) },
-        supportingContent = { Text(valueLabel(setting, model[setting], model)) },
+        supportingContent = {
+            Column {
+                Text(valueLabel(setting, model[setting], model), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = stringResource(WatchSettingsUi.help(setting)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag(WatchSettingsTags.help(setting)),
+                )
+            }
+        },
         trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     )

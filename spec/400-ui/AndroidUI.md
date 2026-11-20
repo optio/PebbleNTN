@@ -40,7 +40,10 @@ Material 3 with subtle Pebble styling:
 
 ### Watch settings
 - the watchapp's own settings, grouped as on the watch (REQ-ANDROID-021), with When driving for a protocol 1.4 watchapp (REQ-ANDROID-024);
-- a **Directions** group after Appearance (REQ-ANDROID-025, #134): the **Directions text** row, Full or Compact, and the line "Compact shows only the street name when the app gives one.", for every watchapp that sends its settings; a watchapp before protocol 1.5 has no such row, and the phone applies the choice for it.
+- a **Directions** group after Appearance (REQ-ANDROID-025, #134): the **Directions text** row, Full or Compact, for every watchapp that sends its settings; a watchapp before protocol 1.5 has no such row, and the phone applies the choice for it;
+- under each row's value, a short help line in a smaller, muted style that says what the setting changes on the watch (#139): always visible, wrapping at large font sizes, and read by TalkBack together with the row's title and value. The Directions text row's help says what Full and Compact show, so the group has no separate note; the When driving switch and speed rows have help lines too, and the When driving explanation stays under its group;
+- each value list starts with a fuller explanation of the setting in two to four sentences, above the preview and the values: what it does, when it matters, its cost (battery for the backlight duration) and a default that is not obvious. A distance in it follows the watch's units;
+- on the shortcut lists (Up and Down buttons, swipes, Tap) each action has a one-line description of what it does under its name; other lists show plain names. Help never names a feature the watch lacks: only the Touch and gesture rows, shown on a touch watch, speak of touch.
 
 ### Navigation Apps
 - catalog apps grouped as installed/uninstalled;

@@ -1,0 +1,175 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR6.1",
+    "FR6.2",
+    "FR7.1",
+    "FR7.2",
+    "FR7.3",
+    "FR7.4",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreen.kt"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "android/app/src/main/res/values/strings.xml"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreen.kt"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUi.kt"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/OptionListScreen.kt"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "android/app/src/main/res/values/strings.xml"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUi.kt"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/OptionListScreen.kt"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "android/app/src/test/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreenTest.kt"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUi.kt"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUi.kt"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/DrivingSection.kt"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/DrivingSection.kt"
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "android/app/src/test/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreenTest.kt"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreen.kt"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "android/app/src/test/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUiTest.kt"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUi.kt"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261120-watch-settings-help/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "android/app/src/main/res/values/strings.xml"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "requirements/REQ-ANDROID.md"
+    },
+    {
+      "id": "FR7.2",
+      "status": "OK",
+      "target": "spec/400-ui/AndroidUI.md"
+    },
+    {
+      "id": "FR7.3",
+      "status": "OK",
+      "target": "MANIFEST.sha256.json"
+    },
+    {
+      "id": "FR7.4",
+      "status": "OK",
+      "target": "tools/play-store-sources/phone/2-watch-settings.png"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "android/app/src/test/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreenTest.kt"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "android/app/src/test/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreenTest.kt"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "android/app/src/test/java/com/pebblentn/app/ui/watchsettings/WatchSettingsScreenTest.kt"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261120-watch-settings-help/construction/build-and-test/test-results.md"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "android/app/src/main/java/com/pebblentn/app/ui/watchsettings/WatchSettingsUi.kt"
+    }
+  ]
+}

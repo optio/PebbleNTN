@@ -1,70 +1,67 @@
 # Code Structure
 
+Components are described once in [component-inventory.md](component-inventory.md); this file shows layout, classification and patterns.
+
 ## Repository Layout
 
-| Path | Contents | Classification |
+```
+android/                 Gradle multi-module build (app, pebblekit, fixture-publisher)
+  app/src/main/java/com/pebblentn/app/
+    catalog/  core/  data/ data/db/  di/  export/  notification/ notification/icon/
+    pebble/  protocol/  rules/  system/  update/
+    ui/ (MainActivity, apps, components, dashboard, debug, format, onboarding, rules, share, theme, watchsettings)
+  app/src/main/res/      values/strings.xml (English only), colors, themes, drawables (previews, icons)
+  app/src/test/          106 JVM test files (JUnit 4 + Robolectric), resources/driving/*.json
+  app/src/androidTest/   1 instrumented test
+  app/schemas/room/      Room schema exports v1-v8
+  pebblekit/             vendored Rebble PebbleKit Android 2
+  fixture-publisher/     debug app posting synthetic notifications
+watchapp/                Pebble C watchapp: src/c/ (43 files), tests/ (13), resources/, tools/, store/
+protocol/                protocol-definition.json + generate.py + check_consistency.py
+rules/                   bundled/<app>/<lang>.json (22), catalog/navigation-apps.json, fixtures/ (5 + README)
+schemas/                 ruleset and app-catalog JSON Schemas
+tools/                   rule-workbench/, route-capture/, play_store_graphics.py, play-store-sources/
+scripts/                 build, test, validate, version, changelog, emulator helpers
+spec/ requirements/ docs/ examples/   specification, REQ ids, status, privacy, store docs
+fastlane/ fdroid/ screenshots/        store listings and screenshots
+.github/workflows/ .githooks/         CI/CD and pre-commit
+```
+
+## Android Package Classification
+
+| Package | Files | Category |
 |---|---|---|
-| `android/app/` | Companion app `com.pebblentn.app` (Kotlin, Compose): 136 main Kotlin files, 107 unit-test files, Room schemas v1-8 | Application |
-| `android/pebblekit/` | Vendored PebbleKit Android 2 (`io.rebble.pebblekit2`), Kotlin + AIDL | Library (third-party source) |
-| `android/fixture-publisher/` | Debug app posting synthetic navigation notifications | Test tool |
-| `watchapp/` | Pebble C watchapp: `src/c/` (42 files incl. generated `protocol.h`), `tests/` (13 host tests), `resources/` (maneuver bitmaps, 3 glyph packs), `tools/`, `store/` | Application |
-| `protocol/` | `protocol-definition.json`, `generate.py`, `check_consistency.py` | Code generator |
-| `rules/` | `bundled/<app>/<lang>.json` (22 rulesets), `catalog/navigation-apps.json`, `fixtures/<app>.json` (5) + README | Rule data and test fixtures |
-| `schemas/` | `ruleset.schema.json`, `app-catalog.schema.json` | Contracts (ruleset schema hash-protected) |
-| `examples/` | `example-ruleset.json`, `protocol-definition.json` (protected mirror) | Contracts |
-| `tools/` | `rule-workbench/` (CLI + Google Maps generator), `route-capture/` (emulator harness), Play store graphics | Maintainer tools (Python) |
-| `scripts/` | build, test, version, validate, release changelog, git hooks installer | Build scripts |
-| `spec/`, `requirements/`, `docs/` | Specification (hash-protected), REQ files, implementation status, store/privacy docs | Documentation |
-| `.github/` | 6 workflows, issue templates, funding | CI/CD |
-| `fastlane/`, `fdroid/`, `screenshots/` | Store metadata, F-Droid recipe, watch screenshots | Distribution assets |
+| `core/` | 14 | Model/Entity + Service (pure domain: instruction, reducer, watch settings model and sync, driving policy, preview catalog) |
+| `rules/` | 13 | Service + Utility (engine, extractors, parsers, validator, codec) |
+| `notification/`, `notification/icon/` | 9 + 5 | Controller/Handler (listener, dispatcher) + Service |
+| `pebble/` | 4 | Service + Adapter (controller, PebbleKit transport, listener service, mapper) |
+| `protocol/` | 4 | Model + Utility (generated `Protocol.kt`, codec, message, transport interface) |
+| `data/`, `data/db/` | 18 + 11 | Repository/DAO (Room, DataStore) |
+| `export/` | 4 | Service (export builder, redactor, share) |
+| `update/` | 10 | Service (version, install source, update check, signed rulesets) |
+| `catalog/` | 3 | Service + Model |
+| `di/`, `system/`, `PebbleNtnApplication.kt` | 3 + 3 + 1 | Configuration |
+| `ui/**` | 39 | Controller (Compose screens, view models, pure UI rules) |
 
-## Android App Packages (`android/app/src/main/java/com/pebblentn/app/`)
+## Watch Settings Area (intent focus)
 
-| Package | Files | Role | Key types |
-|---|---|---|---|
-| `notification/` | 9 | Listener, privacy gate, snapshot, serial queue, capture processor | `NavigationNotificationListenerService`, `NotificationDispatcher`, `NotificationSnapshot`, `NotificationSnapshotFactory`, `DebugCaptureProcessor` |
-| `notification/icon/` | 5 | Large-icon-to-drawable-name matching (#74) | `LargeIconRecognizer`, `IconMatcher`, `AppIconReferences` |
-| `rules/` | 12 | Declarative rule engine | `RulesetModel` (`Ruleset`, `Rule`, `Condition`, `RuleOutput`, 9 `Extractor` types), `RuleEngine`, `ExtractorRunner`, `ConditionEvaluator`, `SnapshotFields`, `DistanceParser`, `DurationParser`, `SafeRegex`, `RuleValidator`, `RulesetCodec`, `AssetRuleRepository`, `RulePreviewService` |
-| `core/` | 14 | Pure domain: instruction, maneuver, reducer, state, quantizer, settings models, driving | `NavigationInstruction`, `Maneuver`, `NavigationSessionReducer`, `NavigationState`, `DrivingSpeedEstimator`, `DrivingPolicy`, `WatchSettingsModel`, `WatchSettingsSync` |
-| `pebble/` | 4 | Watch bridge | `NavigationController`, `PebbleWatchTransport`, `PebbleAppMessageMapper`, `WatchListenerService` |
-| `protocol/` | 4 | Wire vocabulary | `Protocol` (generated), `ProtocolCodec`, `AppMessage`, `WatchTransport` |
-| `catalog/` | 3 | Navigation-app catalog, rule families, user-added packages | `NavigationAppCatalog`, `RuleFamilies`, `EffectiveCatalog` |
-| `data/` + `data/db/` | 18 + 11 | Repositories (DataStore, Room), DAOs, entities | `DebugHistoryRepository`, `UserRuleRepository`, `EnabledAppRepository`, `PebbleNtnDatabase` (v8) |
-| `export/` | 4 | Diagnostics export and share | `ExportBuilder`, `Redactor`, `DiagnosticExporter` |
-| `update/` | 10 | Update checks, install source, signed ruleset updates | `UpdateCheckRepository`, `RuleUpdateRepository`, `RulesetSignatureVerifier` |
-| `system/` | 3 | Android system hooks | `NotificationListenerRefresher`, `NavigationAppInstallReceiver` |
-| `ui/` | 35 | Compose screens and view models | `MainActivity`, dashboard, rules, debug, watchsettings, share, onboarding, apps |
-| `di/` | 3 | Manual DI container | `AppContainer` |
-
-## Rule Data Structure
-
-- `rules/bundled/<app>/<lang>.json`: one `Ruleset` (`schemaVersion` 1, `rulesetVersion` `<app>-<lang>-YYYY.MM.N`, `rules[]`). Rule ids end with the language suffix (`osmand-turn-right-de`). Variants of a base rule take priority +1 (`-street`, `-then`, `-distance-title`).
-- OsmAnd ladder (all languages): roundabout 190, U-turn 180, sharp 170, slight 160, keep 120, turn 100, straight/continue 50, arrive 40. The German file adds `-street` and `-then` variants at +1 that read `bigText`.
-- `rules/fixtures/<app>.json`: `{ note, fixtures: [{ name, source, locale, packageName, snapshot{title,text,subText,bigText,iconDrawable}, comment, expected{matched, maneuver, distanceMeters, ruleId, primaryText, secondaryText, noDistance, noPrimaryText, stopsRemaining} }] }`.
+| File | Lines | Role |
+|---|---|---|
+| `core/WatchSettingsModel.kt` | 287 | `WatchSetting` enum (27 entries in protocol key order, value counts, capability needs, defaults), `WatchSettingsRules` (valid, offered, options), `WatchSettingsModel`, `WatchCapabilities`, `WatchPlatform`, value constants |
+| `core/WatchSettingsSync.kt` | 147 | Revision rule, merge, phone edit, outgoing; `WatchSettingsSyncState` (mirror, pending, protocol minor) |
+| `core/PreviewCatalog.kt` | 224 | Drawable per visual setting value and platform |
+| `ui/watchsettings/WatchSettingsUi.kt` | 229 | Pure rules: status, sections (with optional `note`), title `@StringRes` per setting, value label `@ArrayRes`, options, preview, driving helpers, accent colours |
+| `ui/watchsettings/WatchSettingsScreen.kt` | 167 | Scaffold; notice cards; `SettingsSection` (title, outlined card, optional note); `SettingRow` (`ListItem`: headline title, supporting value, chevron) |
+| `ui/watchsettings/OptionListScreen.kt` | 158 | Value list with radio buttons, preview image, queued card, accent swatches |
+| `ui/watchsettings/DrivingSection.kt` | 144 | When driving: switch, speed slider, reset, explanation |
+| `res/values/strings.xml` lines 473-675 | — | All Watch settings strings and value arrays |
 
 ## Code Patterns
 
-- **Pure function + injected clock**: `EpochClock`, `zone: () -> ZoneId`, `nowEpochSeconds` parameters make time-dependent logic testable.
-- **Sealed result types**: `ExtractionResult` (`Text`, `Num`, `None`), `RuleValidationResult`, `PreviewResult`, `ReducerEffect`, `NavigationState`.
-- **kotlinx.serialization polymorphism**: extractors use `@SerialName` with `classDiscriminator = "type"`; strict parsing rejects unknown keys and types.
-- **Reducer and effects**: `reduce(state, event) → (state, effects)`; the controller runs the effects under a mutex.
-- **Privacy gate by lambda**: the snapshot builder is a lambda only invoked after the allowlist passes.
-- **Generated constants**: never hand-edit `Protocol.kt` / `protocol.h` (AGENTS.md rule 5).
-- **Watch logic split for host tests**: pure C units (`eta_text.c`, `glance_text.c`, ...) each with `tests/test_<unit>.c`.
-- **KDoc with traceability**: classes cite REQ ids and GitHub issues (#74, #76, #113, #132).
-
-## File Classification Summary
-
-| Category | Examples |
-|---|---|
-| Model/Entity | `RulesetModel.kt`, `NotificationSnapshot.kt`, `NavigationInstruction.kt`, `data/db/*Entity.kt` |
-| Controller/Handler | `NavigationNotificationListenerService.kt`, `WatchListenerService.kt`, `NavigationController.kt` |
-| Service/UseCase | `RuleEngine.kt`, `ExtractorRunner.kt`, `NavigationSessionReducer.kt`, `DrivingSpeedEstimator.kt`, `DebugCaptureProcessor.kt` |
-| Repository/DAO | `data/*Repository.kt`, `data/db/*Dao.kt`, `rules/RuleRepository.kt` |
-| Utility | `DistanceParser.kt`, `DurationParser.kt`, `SafeRegex.kt`, `SnapshotFields.kt`, `Hashing.kt` |
-| Configuration | `di/AppContainer.kt`, `build.gradle.kts`, `libs.versions.toml`, `AndroidManifest.xml` |
-| Migration | `PebbleNtnDatabase.kt` (`MIGRATION_1_2`..`MIGRATION_7_8`), `android/app/schemas/room/` |
-| Test | `android/app/src/test/**`, `watchapp/tests/`, `rules/fixtures/`, `tools/route-capture/tests/` |
-| Static/Asset | `res/values/strings.xml` (443 strings), `watchapp/resources/images/`, `screenshots/` |
-
-The component list and their dependencies are recorded once in [component-inventory.md](component-inventory.md).
+- **Pure logic objects** (`WatchSettingsUi`, `WatchSettingsRules`, `WatchSettingsSync`, `RuleEngine`, `NavigationSessionReducer`) with Compose/Android at the edges.
+- **Exhaustive `when` over enums** for resource mapping (`WatchSettingsUi.title`, `valueLabels`): adding an enum entry fails compilation until mapped.
+- **Immutable data classes + `copy`/`with`**; `StateFlow` state exposed by repositories/controller.
+- **Manual DI** in `AppContainer`; routes in `MainActivity` (`watch-settings`, `watch-settings/{setting}`).
+- **KDoc citing REQ ids and issue numbers** on nearly every declaration.
+- **Test tags** as constants (`DrivingSectionTags`); most UI tests find nodes by English text.
+- **Watch C**: modules per concern with host-testable pure parts (`*_text.c`, `revision.c`, `settings_sync.c`), windows in `settings_window.c`, `main.c`.

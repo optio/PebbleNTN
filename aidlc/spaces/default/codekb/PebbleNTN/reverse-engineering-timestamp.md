@@ -2,21 +2,22 @@
 
 ## Run Record
 
-- Date: 2026-11-10
-- Commit: 2afb066a6453db76d188fd00b51f4fbdd9d2d930
-- Breadth requested: full rescan of the whole repository (snapshot path `./`); depth Minimal; developer link only (scan and synthesis by the developer agent)
-- Intent: `osmand-bigtext` (GitHub issue #134: OsmAnd street from `bigText` line 1 and arrival clock from `bigText` line 2 for en, fr, es, it, nl, pt, pl, zh, de; `etaEpochSeconds` for OsmAnd and Google Maps)
-- Replaces: the prior store from commit `61787f5` (focused scan for `hide-when-driving`), wholesale
-- Emphasis: the rule engine (`rules/` Kotlin package), bundled rule packs, fixtures, both regression engines, the ETA path from rule output to the watch strip
+- Date: 2026-11-20
+- Commit: 073f51d446fee2d02ff2da9bab80e2d65ee85df3
+- Breadth: full rescan of the whole repository (snapshot path `./`); depth Minimal; developer is the only link (scan and synthesis)
+- Intent: `watch-settings-help` (GitHub issue #139: clear help text for each setting on the phone's Watch settings screen)
+- Replaces: the prior store from commit `2afb066` (full scan for `osmand-bigtext`), wholesale
+- Emphasis: the Watch settings area (`ui/watchsettings/`, `core/WatchSettingsModel.kt`, `core/WatchSettingsSync.kt`, strings, tests, REQ-ANDROID-021/-024/-025, AndroidUI.md, WatchUI.md)
 - Not run: no builds, tests or programs (scan by reading only)
+- Scan record: `aidlc/spaces/default/intents/261120-watch-settings-help/inception/reverse-engineering/developer-scan.md`
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: full
-intent: osmand-bigtext
-fingerprint: 9cf02d7489a1b37fc0a0b9e5f8cf9a4c32f76680
+intent: watch-settings-help
+fingerprint: 8e64f3916a1d6d016ff86db82772d306b6e550fa
 analyzed:
   paths:
     - ./
@@ -24,12 +25,11 @@ analyzed:
     - Notification Intake
     - Large Icon Recognizer
     - Rule Engine
-    - Bundled Rule Packs
-    - Rule Fixtures and Regression
     - Navigation App Catalog
     - Session Core
     - Driving Detection
     - Watch Settings Sync
+    - Watch Settings Screen
     - Watch Link
     - Persistence
     - Diagnostics Export
@@ -38,23 +38,28 @@ analyzed:
     - App Container
     - PebbleKit 2 Vendored
     - Fixture Publisher
+    - Bundled Rule Packs
+    - Rule Fixtures and Regression
     - Watchapp
     - Protocol Generator
     - Rule Workbench
     - Route Capture Harness
+    - Store Graphics Generator
     - Build and Release Scripts
     - Specification and Contracts
     - Store and Distribution Assets
 shallow:
   paths:
-    - android/app/src/main/java/com/pebblentn/app/ui/
-    - android/app/src/main/java/com/pebblentn/app/update/
-    - android/app/src/main/java/com/pebblentn/app/export/
+    - android/app/src/main/java/com/pebblentn/app/notification/
+    - android/app/src/main/java/com/pebblentn/app/rules/
     - android/app/src/main/java/com/pebblentn/app/data/
+    - android/app/src/main/java/com/pebblentn/app/export/
+    - android/app/src/main/java/com/pebblentn/app/update/
     - android/pebblekit/
     - android/fixture-publisher/
-    - watchapp/resources/
-    - tools/route-capture/
+    - watchapp/
+    - rules/
+    - tools/
     - spec/
     - docs/
     - fastlane/
