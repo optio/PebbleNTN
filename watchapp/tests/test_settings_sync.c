@@ -7,6 +7,7 @@
 #include "../src/c/settings_sync.h"
 
 #include "../src/c/directions_text.h"
+#include "../src/c/early_warning.h"
 #include "../src/c/generated/protocol.h"
 #include "../src/c/shortcuts.h"
 
@@ -96,7 +97,7 @@ int main(void) {
   expect_int("early warning pattern: Double", sync_default(SET_WARN_PATTERN, EMERY), VIBE_PATTERN_DOUBLE);
   expect_int("swipe left: ETA toggle", sync_default(SET_SHORTCUT_FIRST + SLOT_SWIPE_LEFT, EMERY),
              ACTION_ETA_MODE);
-  expect_int("early warning: 25 m", sync_default(SET_WARN_DISTANCE, EMERY), 2);
+  expect_int("early warning: Off (#141)", sync_default(SET_WARN_DISTANCE, EMERY), EARLY_WARN_OFF);
   expect_int("early warning: every update", sync_default(SET_WARN_REPEAT, EMERY), 1);
   expect_int("early warning strength: Medium", sync_default(SET_WARN_INTENSITY, EMERY), 1);
   expect_int("Touch: On", sync_default(SET_TOUCH, EMERY), 1);

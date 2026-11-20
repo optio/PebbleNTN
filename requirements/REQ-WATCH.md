@@ -111,7 +111,7 @@ On a touch watch (Pebble Time 2), the watchapp SHALL opt into the system touch n
 
 ## REQ-WATCH-022 — Early-warning vibration
 The watchapp SHALL offer an **early warning**: a vibration as the next maneuver comes within a user-chosen distance, with its own pattern and strength so it can be told apart from the new-instruction buzz (REQ-WATCH-016). Its settings SHALL be applied immediately and persisted across launches:
-- **Distance**: Off, 10, 25 (default), 50, 100 or 200 m. The threshold is in metres; with imperial units the label SHALL show the nearest round feet value (30, 80, 160, 330, 650 ft).
+- **Distance**: Off (default: the early warning is opt-in, #141), 10, 25, 50, 100 or 200 m. The threshold is in metres; with imperial units the label SHALL show the nearest round feet value (30, 80, 160, 330, 650 ft).
 - **Repeat**: **Once** buzzes the first time an update is at or under the threshold for an instruction, and re-arms only on new information (a changed maneuver or primary text). **Every update** (default) buzzes on each update at or under the threshold.
 - **Pattern** (Single, Double — the default —, Triple, Long; no Off, which is what an Off distance is for) and **Strength** (Light, Medium — the default —, Strong), realised as in REQ-WATCH-016.
 

@@ -39,7 +39,7 @@ class WatchSettingsModelTest {
         assertEquals("Double", 2, colour.earlyWarnPattern)
         assertEquals("ETA toggle", ShortcutActions.ETA_MODE, colour.shortcutSwipeLeft)
         assertEquals("ETA toggle", ShortcutActions.ETA_MODE, colour.shortcutSwipeRight)
-        assertEquals("25 m", 2, colour.earlyWarnDistance)
+        assertEquals("Off (#141)", 0, colour.earlyWarnDistance)
         assertEquals("every update", 1, colour.earlyWarnRepeat)
         assertEquals("Medium", 1, colour.earlyWarnIntensity)
         assertEquals("ETA toggle", ShortcutActions.ETA_MODE, colour.shortcutUp)

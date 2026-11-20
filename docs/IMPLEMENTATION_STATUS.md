@@ -1,6 +1,31 @@
 # Implementation Status
 
-_Last updated: 2026-11-20_
+_Last updated: 2026-11-21_
+
+## Early warning Off by default (2026-11-21, #141)
+
+**Milestone:** post-M12 fix, watchapp and phone, with no protocol change. Branch
+`fix/early-warning-off-default`; it is released by the release workflow on merge.
+
+**Requirements being implemented.** #141, as REQ-WATCH-022 (Distance: Off is the default).
+- Watchapp `kDefaults[SET_WARN_DISTANCE]` is `EARLY_WARN_OFF` (it was 25 m since #102). Repeat,
+  pattern and strength keep their defaults. This matches `early_warning.h` and
+  `spec/400-ui/WatchUI.md`, which already said Off. The #139 follow-up about WatchUI.md is resolved by
+  this change.
+- Phone `WatchSetting.EARLY_WARN_DISTANCE` default is 0, so the mirror agrees with the watch. The
+  early warning explanation now names Off as the default, with 25 m / 80 ft as an example.
+- Existing installs keep their saved distance; only fresh installs and settings resets start at Off.
+
+**Library versions.** No new library.
+
+**Commands executed.** `scripts/test-watchapp-unit.sh` (settings_sync green); scoped Gradle run of
+`ui.watchsettings.*` and `core.*` (green); `scripts/validate-spec-assets.sh` (OK);
+`StoreScreenshotsTest` with `PEBBLENTN_STORE_SCREENSHOTS_DIR` (no image changed); `scripts/test-all.sh`.
+
+**Known blockers.** None.
+
+**Next atomic task.** Merge, release, and upload the new `watchapp.pbw` to the Pebble appstore, so
+fresh watch installs get the Off default.
 
 ## Watch settings help text (2026-11-20, #139)
 
