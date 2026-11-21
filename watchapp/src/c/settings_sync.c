@@ -2,6 +2,7 @@
 
 #include "directions_text.h"
 #include "driving_label.h"
+#include "early_warning.h"
 #include "generated/protocol.h"
 #include "revision.h"
 #include "shortcuts.h"
@@ -43,13 +44,14 @@ static const uint8_t kRules[SET_COUNT] = {
   [SET_DIRECTIONS_TEXT] = DIRECTIONS_TEXT_COUNT,          // Full, Compact (#134)
 };
 
-// Defaults of a fresh install (#102 testing): New instruction vibration Off, Medium strengths, an early
-// warning at 25 m on every update with a Double pattern, Touch on, Backlight now on Tap and Down, and
+// Defaults of a fresh install (#102 testing): New instruction vibration Off, Medium strengths, the early
+// warning Off (#141: it is opt-in), with Every update and a Double pattern ready once a distance is
+// chosen, Touch on, Backlight now on Tap and Down, and
 // the ETA toggle on Up and the left and right swipes. Everything else starts at 0.
 static const uint8_t kDefaults[SET_COUNT] = {
   [SET_VIBE_PATTERN] = VIBE_PATTERN_SILENT,
   [SET_VIBE_INTENSITY] = 1,
-  [SET_WARN_DISTANCE] = 2,  // EARLY_WARN_25M
+  [SET_WARN_DISTANCE] = EARLY_WARN_OFF,  // #141: opt-in, no buzz before a turn until chosen
   [SET_WARN_REPEAT] = 1,    // EARLY_WARN_REPEAT_EVERY
   [SET_WARN_PATTERN] = VIBE_PATTERN_DOUBLE,
   [SET_WARN_INTENSITY] = 1,

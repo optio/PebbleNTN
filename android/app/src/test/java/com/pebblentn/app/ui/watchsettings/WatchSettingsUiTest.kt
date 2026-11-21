@@ -144,14 +144,14 @@ class WatchSettingsUiTest {
         assertEquals("descriptions are distinct", descriptions.size, descriptions.toSet().size)
     }
 
-    /** FR5.3: the early-warning explanation names its default in the watch's units. */
+    /** FR5.3: the early-warning explanation names Off as its default (#141) and its example distance in the watch's units. */
     @Test
     fun theEarlyWarningExplanationFollowsTheUnits() {
         val metric = context.getString(WatchSettingsUi.details(WatchSetting.EARLY_WARN_DISTANCE, imperial = false))
         val imperial = context.getString(WatchSettingsUi.details(WatchSetting.EARLY_WARN_DISTANCE, imperial = true))
         assertNotEquals(metric, imperial)
-        assertTrue(metric.contains("25 m") && !metric.contains(" ft"))
-        assertTrue(imperial.contains("80 ft") && !imperial.contains(" m,"))
+        assertTrue(metric.startsWith("Off, the default") && metric.contains("25 m") && !metric.contains(" ft"))
+        assertTrue(imperial.startsWith("Off, the default") && imperial.contains("80 ft") && !imperial.contains(" m,"))
         assertEquals(
             "a text without a distance is the same in both units",
             WatchSettingsUi.details(WatchSetting.BACKLIGHT, imperial = false),

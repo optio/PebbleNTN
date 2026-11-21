@@ -33,7 +33,7 @@ enum class WatchSetting(
     VIBE_INTENSITY(3, defaultValue = 1),
     BACKLIGHT_COLOR(11, needs = Protocol.CapabilityMasks.RGB_BACKLIGHT_MASK),
     ETA_LABEL(2),
-    EARLY_WARN_DISTANCE(6, defaultValue = 2), // 25 m
+    EARLY_WARN_DISTANCE(6, defaultValue = 0), // Off: the early warning is opt-in (#141)
     EARLY_WARN_REPEAT(2, defaultValue = 1), // every update
     EARLY_WARN_PATTERN(5, firstValue = 1, defaultValue = 2),
     EARLY_WARN_INTENSITY(3, defaultValue = 1),
