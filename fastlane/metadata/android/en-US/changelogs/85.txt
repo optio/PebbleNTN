@@ -1,0 +1,1 @@
+• early warning Off by default on a fresh install (#141)
