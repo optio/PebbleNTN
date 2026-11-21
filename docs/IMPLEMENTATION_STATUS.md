@@ -2,6 +2,38 @@
 
 _Last updated: 2026-11-21_
 
+## Google Maps rule fixes from diagnostics (2026-11-21, #143)
+
+**Milestone:** post-M12 rules fix, bundled rules only (no engine, protocol or watchapp change).
+Branch `fix/gm-rules-143`; it is released by the release workflow on merge.
+
+**Requirements being implemented.** #143, found by replaying two full diagnostics exports (Google
+Maps en-US, Android 17, about 770 distinct cards) through the bundled rules with the workbench.
+- Lane rules accept "Use the 2nd from the right/left lane" (the four `use-lane` rules). The
+  interchange card no longer falls through to `destination-approach` as ARRIVE.
+- `destination-approach-en` excludes steps starting with "At".
+- Exit rules accept a road number before "exit" ("Take the N9 exit"; the four `take-exit` rules).
+  "Take the 2nd exit" is not caught.
+- New `google-maps-walk-to-stop-en` (196): the stop is the main text, the arrival time comes from
+  subText.
+- New `google-maps-drive-overview-en` (195) and `google-maps-enter-exit-via-en` (56).
+- New `google-maps-icon-fallback` in `any.json` (32): a titled card no text rule understands, with a
+  recognised turn icon, takes the icon's arrow. Destination icons are excluded. The table is a subset
+  of `icon-step`'s, so the device's icon candidates don't change.
+- Ruleset versions `google-maps-en-2026.11.21` and `google-maps-any-2026.11.21`. 17 fixtures with
+  placeholder names (capture and synthetic, including guards). Replaying the real exports changes
+  exactly the 19 affected cards and nothing else.
+
+**Library versions.** No new library.
+
+**Commands executed.** `python3 tools/rule-workbench/workbench.py regression` (Google Maps 223/223);
+`scripts/validate-rules.sh` (OK); `scripts/validate-spec-assets.sh` (OK); `scripts/test-all.sh`.
+
+**Known blockers.** None.
+
+**Next atomic task.** Merge and release; check a motorway interchange and a transit walk on a real
+phone.
+
 ## Early warning Off by default (2026-11-21, #141)
 
 **Milestone:** post-M12 fix, watchapp and phone, with no protocol change. Branch
