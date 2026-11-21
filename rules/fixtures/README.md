@@ -147,6 +147,29 @@ whose icon didn't match, and keeps the rule's default (UNKNOWN).
 - Still open: a ProgressStyle card whose title is only the destination name, without a distance,
   is left unmatched, because a bare title can be anything.
 
+## What a month of driving and a city trip taught us (#143, 2026-11)
+
+Two full diagnostics exports (en-US, Android 17, about 770 distinct cards) replayed through the
+bundled rules with the workbench:
+
+- **Lane guidance counted from the side.** `At the interchange <n>-<name>, Use the 2nd from the
+  right lane to follow signs for …` matched no lane rule. With a distance it fell into
+  `google-maps-destination-approach-en` and showed the arrival flag up to 2.9 km early; without
+  one it matched nothing. The lane rules now accept `the 2nd from the right/left lane`, and the
+  fallback also skips steps starting with "At".
+- **A road number before "exit".** `Take the N9 exit toward …` matched nothing. The exit rules
+  accept a road reference with at most one trailing letter, so `Take the 2nd exit` stays out.
+- **Transit walking.** `Walk 3 min (200 m)` / `<stop> · Departs 21:01` showed "Departs 21:01" as
+  the main text; `google-maps-walk-to-stop-en` shows the stop with the arrival time from subText.
+  Station steps `Enter via <entrance>` / `Exit via <exit>` are walking steps
+  (`google-maps-enter-exit-via-en`). `Drive 5 min (1.9 km)` / `Arrive 21:26 · <destination>` is the
+  driving overview (`google-maps-drive-overview-en`, no distance).
+- **Icon fallback.** `google-maps-icon-fallback` (`any.json`, priority 32): a titled card no text
+  rule understands, in any language, with a recognised turn icon takes the icon's arrow instead of
+  nothing or the arrival flag. Destination icons are excluded, so the final approach stays ARRIVE.
+  The icon can be stale far before a turn (`maneuver_name_change` while the text says keep left);
+  a text rule always wins there (`icon-fallback-text-rule-wins`).
+
 ## Vela Maps: synthetic until a capture (#120, 2026-10)
 
 - **Every `vela-maps.json` fixture is synthetic.** The card's shape comes from Vela's public
